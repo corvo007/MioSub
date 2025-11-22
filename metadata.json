@@ -1,0 +1,5 @@
+{
+  "name": "Gemini Subtitle Pro",
+  "description": "AI-powered bilingual subtitle generator with automatic splitting for long videos, formatting fixes for PotPlayer/Windows, and history management.",
+  "requestFramePermissions": []
+}
