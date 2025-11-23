@@ -24,6 +24,18 @@ export enum GenerationStatus {
 
 export type OutputFormat = 'srt' | 'ass';
 
+// Settings Types
+export type Genre = 'general' | 'anime' | 'movie' | 'news' | 'tech';
+
+export interface AppSettings {
+  geminiKey: string;
+  openaiKey: string;
+  transcriptionModel: string; // 'whisper-1' | 'gpt-4o-audio-preview'
+  genre: Genre;
+  customTranslationPrompt: string;
+  customProofreadingPrompt: string;
+}
+
 // Gemini Response Schema Helper Types
 export interface GeminiSubtitleSchema {
   start: string; // Expecting "MM:SS" or "HH:MM:SS" or "SS.ms"

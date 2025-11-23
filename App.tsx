@@ -1,10 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Upload, FileVideo, Download, History, Trash2, Play, CheckCircle, AlertCircle, Languages, Loader2, Sparkles, Settings, X, Eye, EyeOff } from 'lucide-react';
-import { SubtitleItem, HistoryItem, GenerationStatus, OutputFormat } from './types';
+import React, { useState, useEffect } from 'react';
+import { Upload, FileVideo, Download, History, Trash2, Play, CheckCircle, AlertCircle, Languages, Loader2, Sparkles, Settings, X, Eye, EyeOff, MessageSquareText, AudioLines, Clapperboard, Monitor, Newspaper } from 'lucide-react';
+import { SubtitleItem, HistoryItem, GenerationStatus, OutputFormat, AppSettings, Genre } from './types';
 import { generateSrtContent, generateAssContent, downloadFile } from './utils';
 import { generateSubtitles, proofreadSubtitles } from './gemini';
 
 const STORAGE_KEY = 'gemini_subtitle_history';
+const SETTINGS_KEY = 'gemini_subtitle_settings';
+
+const DEFAULT_SETTINGS: AppSettings = {
+  geminiKey: process.env.API_KEY || '',
+  openaiKey: process.env.OPENAI_API_KEY || '',
+  transcriptionModel: 'whisper-1',
+  genre: 'general',
+  customTranslationPrompt: '',
+  customProofreadingPrompt: ''
+};
 
 export default function App() {
   const [file, setFile] = useState<File | null>(null);
@@ -17,12 +27,8 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // API Keys State - initialized from env but mutable via Settings
-  const [apiKeys, setApiKeys] = useState({
-    gemini: process.env.API_KEY || '',
-    openai: process.env.OPENAI_API_KEY || ''
-  });
-
+  // Settings State
+  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showOpenAIKey, setShowOpenAIKey] = useState(false);
 
@@ -30,15 +36,27 @@ export default function App() {
 
   // --- Initialization ---
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
+    // Load History
+    const storedHistory = localStorage.getItem(STORAGE_KEY);
+    if (storedHistory) {
       try {
-        setHistory(JSON.parse(stored));
-      } catch (e) {
-        console.error("Failed to load history");
-      }
+        setHistory(JSON.parse(storedHistory));
+      } catch (e) { console.error("History load error"); }
+    }
+    // Load Settings
+    const storedSettings = localStorage.getItem(SETTINGS_KEY);
+    if (storedSettings) {
+      try {
+        const parsed = JSON.parse(storedSettings);
+        setSettings(prev => ({ ...prev, ...parsed }));
+      } catch (e) { console.error("Settings load error"); }
     }
   }, []);
+
+  // Save settings on change
+  useEffect(() => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  }, [settings]);
 
   // --- Helpers ---
   const getFileDuration = (f: File): Promise<number> => {
@@ -89,29 +107,19 @@ export default function App() {
         const d = await getFileDuration(selectedFile);
         setDuration(d);
       } catch (e) {
-        console.warn("Could not determine duration", e);
         setDuration(0);
       }
     }
   };
 
   const handleGenerate = async () => {
-    // Input Validation
     if (!file) {
-      setError("Please upload a video or audio file first.");
+      setError("Please upload a media file first.");
       return;
     }
 
-    const effectiveGeminiKey = apiKeys.gemini.trim();
-    const effectiveOpenaiKey = apiKeys.openai.trim();
-
-    if (!effectiveGeminiKey) {
-      setError("Gemini API Key is missing. Please configure it in Settings.");
-      setShowSettings(true);
-      return;
-    }
-    if (!effectiveOpenaiKey) {
-      setError("OpenAI API Key is missing. Please configure it in Settings.");
+    if (!settings.geminiKey || !settings.openaiKey) {
+      setError("API Keys are missing. Please configure them in Settings.");
       setShowSettings(true);
       return;
     }
@@ -120,11 +128,9 @@ export default function App() {
     setError(null);
 
     try {
-      const result = await generateSubtitles(file, duration, effectiveGeminiKey, effectiveOpenaiKey, (msg) => setProgressMsg(msg));
+      const result = await generateSubtitles(file, duration, settings, (msg) => setProgressMsg(msg));
       
-      if (result.length === 0) {
-        throw new Error("No subtitles were generated.");
-      }
+      if (result.length === 0) throw new Error("No subtitles were generated.");
 
       setSubtitles(result);
       setStatus(GenerationStatus.COMPLETED);
@@ -138,10 +144,8 @@ export default function App() {
 
   const handleProofread = async () => {
     if (subtitles.length === 0 || !file) return;
-    const effectiveKey = apiKeys.gemini.trim();
-    
-    if (!effectiveKey) {
-      setError("Gemini API Key is missing. Please configure it in Settings.");
+    if (!settings.geminiKey) {
+      setError("Gemini API Key is missing.");
       setShowSettings(true);
       return;
     }
@@ -150,7 +154,7 @@ export default function App() {
     setError(null);
 
     try {
-      const refined = await proofreadSubtitles(subtitles, effectiveKey, (msg) => setProgressMsg(msg));
+      const refined = await proofreadSubtitles(file, subtitles, settings, (msg) => setProgressMsg(msg));
       setSubtitles(refined);
       setStatus(GenerationStatus.COMPLETED);
       saveToHistory(refined, file);
@@ -162,12 +166,8 @@ export default function App() {
 
   const handleDownload = (format: OutputFormat) => {
     if (!subtitles.length) return;
-    
     const fileNameBase = file?.name.split('.').slice(0, -1).join('.') || 'subtitles';
-    const content = format === 'srt' 
-      ? generateSrtContent(subtitles)
-      : generateAssContent(subtitles, fileNameBase);
-    
+    const content = format === 'srt' ? generateSrtContent(subtitles) : generateAssContent(subtitles, fileNameBase);
     downloadFile(`${fileNameBase}.${format}`, content, format);
   };
 
@@ -186,6 +186,10 @@ export default function App() {
     }
   };
 
+  const updateSetting = (key: keyof AppSettings, value: any) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
   const StatusBadge = () => {
     switch (status) {
       case GenerationStatus.PROCESSING:
@@ -200,7 +204,7 @@ export default function App() {
         return (
           <div className="flex items-center space-x-2 text-purple-400 bg-purple-400/10 px-4 py-2 rounded-full animate-pulse">
             <Sparkles className="w-4 h-4 animate-spin" />
-            <span className="text-sm font-medium">{progressMsg || 'Polishing Translations...'}</span>
+            <span className="text-sm font-medium">{progressMsg || 'Polishing...'}</span>
           </div>
         );
       case GenerationStatus.COMPLETED:
@@ -234,7 +238,7 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight">Gemini Subtitle Pro</h1>
-              <p className="text-sm text-slate-400">Whisper Transcription + Gemini Translation</p>
+              <p className="text-sm text-slate-400">Whisper / GPT-4o + Gemini 3 Pro</p>
             </div>
           </div>
           
@@ -242,7 +246,6 @@ export default function App() {
             <button 
               onClick={() => setShowSettings(true)}
               className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm font-medium group"
-              title="Configure API Keys"
             >
               <Settings className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" />
               <span className="hidden sm:inline">Settings</span>
@@ -307,7 +310,13 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="mt-6">
+              {/* Genre Display */}
+              <div className="mt-4 flex items-center justify-between text-xs text-slate-400 bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                  <span className="flex items-center"><Monitor className="w-3 h-3 mr-1" /> Model: <span className="text-indigo-300 ml-1">{settings.transcriptionModel}</span></span>
+                  <span className="flex items-center"><Clapperboard className="w-3 h-3 mr-1" /> Genre: <span className="text-indigo-300 ml-1 capitalize">{settings.genre}</span></span>
+              </div>
+
+              <div className="mt-4">
                 <button
                   onClick={handleGenerate}
                   disabled={isProcessing}
@@ -325,7 +334,7 @@ export default function App() {
                   ) : (
                     <Play className="w-5 h-5 fill-current" />
                   )}
-                  <span>{status === GenerationStatus.IDLE || status === GenerationStatus.COMPLETED || status === GenerationStatus.ERROR ? 'Generate with Whisper' : 'Generating...'}</span>
+                  <span>{status === GenerationStatus.IDLE || status === GenerationStatus.COMPLETED || status === GenerationStatus.ERROR ? 'Start Processing' : 'Processing...'}</span>
                 </button>
               </div>
 
@@ -345,17 +354,11 @@ export default function App() {
                   Download
                 </h2>
                 <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => handleDownload('srt')}
-                    className="flex items-center justify-center space-x-2 p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-lg transition-all"
-                  >
+                  <button onClick={() => handleDownload('srt')} className="flex items-center justify-center space-x-2 p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-lg transition-all">
                     <span className="font-bold text-slate-200">.SRT</span>
                     <span className="text-xs text-slate-500">Universal</span>
                   </button>
-                  <button
-                    onClick={() => handleDownload('ass')}
-                    className="flex items-center justify-center space-x-2 p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-lg transition-all"
-                  >
+                  <button onClick={() => handleDownload('ass')} className="flex items-center justify-center space-x-2 p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-lg transition-all">
                     <span className="font-bold text-slate-200">.ASS</span>
                     <span className="text-xs text-slate-500">Styled</span>
                   </button>
@@ -388,9 +391,7 @@ export default function App() {
 
             {/* Main Content Area */}
             <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col shadow-2xl relative h-[600px]">
-              
               {showHistory ? (
-                /* History View */
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                   {history.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-slate-500 opacity-50">
@@ -425,7 +426,6 @@ export default function App() {
                   )}
                 </div>
               ) : (
-                /* Subtitle Preview View */
                 <div className="flex-1 overflow-y-auto custom-scrollbar relative">
                   {subtitles.length > 0 ? (
                     <div className="divide-y divide-slate-800">
@@ -438,9 +438,6 @@ export default function App() {
                             <div className="flex-1 space-y-1">
                               <p className="text-slate-300 leading-relaxed">{sub.original}</p>
                               <p className="text-indigo-300 leading-relaxed font-medium">{sub.translated}</p>
-                            </div>
-                            <div className="text-xs font-mono text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                              #{sub.id}
                             </div>
                           </div>
                         </div>
@@ -457,7 +454,6 @@ export default function App() {
                   )}
                 </div>
               )}
-              
             </div>
           </div>
         </div>
@@ -465,8 +461,8 @@ export default function App() {
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-lg shadow-2xl relative my-8">
             <button 
               onClick={() => setShowSettings(false)} 
               className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
@@ -476,60 +472,123 @@ export default function App() {
             
             <h2 className="text-xl font-bold text-white mb-6 flex items-center">
               <Settings className="w-5 h-5 mr-2 text-indigo-400" />
-              API Settings
+              Settings
             </h2>
 
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini API Key</label>
-                <div className="relative">
-                  <input 
-                    type={showGeminiKey ? "text" : "password"}
-                    value={apiKeys.gemini}
-                    onChange={(e) => setApiKeys({...apiKeys, gemini: e.target.value})}
-                    placeholder="Enter Gemini API Key"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
-                  />
-                  <button 
-                    onClick={() => setShowGeminiKey(!showGeminiKey)}
-                    className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300"
-                  >
-                    {showGeminiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+            <div className="space-y-6">
+              
+              {/* API Keys Section */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">API Configuration</h3>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini API Key</label>
+                  <div className="relative">
+                    <input 
+                      type={showGeminiKey ? "text" : "password"}
+                      value={settings.geminiKey}
+                      onChange={(e) => updateSetting('geminiKey', e.target.value)}
+                      placeholder="Enter Gemini API Key"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
+                    />
+                    <button onClick={() => setShowGeminiKey(!showGeminiKey)} className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
+                      {showGeminiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI API Key</label>
+                  <div className="relative">
+                    <input 
+                      type={showOpenAIKey ? "text" : "password"}
+                      value={settings.openaiKey}
+                      onChange={(e) => updateSetting('openaiKey', e.target.value)}
+                      placeholder="Enter OpenAI API Key"
+                      className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
+                    />
+                     <button onClick={() => setShowOpenAIKey(!showOpenAIKey)} className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
+                      {showOpenAIKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI API Key (for Whisper)</label>
-                <div className="relative">
-                  <input 
-                    type={showOpenAIKey ? "text" : "password"}
-                    value={apiKeys.openai}
-                    onChange={(e) => setApiKeys({...apiKeys, openai: e.target.value})}
-                    placeholder="Enter OpenAI API Key"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
-                  />
-                   <button 
-                    onClick={() => setShowOpenAIKey(!showOpenAIKey)}
-                    className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300"
-                  >
-                    {showOpenAIKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
+              {/* Model & Genre Section */}
+              <div className="space-y-3 pt-4 border-t border-slate-800">
+                 <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Transcription & Style</h3>
+                 
+                 <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Transcription Model</label>
+                      <div className="relative">
+                        <AudioLines className="absolute left-3 top-2.5 w-4 h-4 text-slate-500" />
+                        <select 
+                          value={settings.transcriptionModel}
+                          onChange={(e) => updateSetting('transcriptionModel', e.target.value)}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 pl-9 pr-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm appearance-none"
+                        >
+                          <option value="whisper-1">Whisper (Standard)</option>
+                          <option value="gpt-4o-audio-preview">GPT-4o Audio</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Genre / Context</label>
+                      <div className="relative">
+                        <Clapperboard className="absolute left-3 top-2.5 w-4 h-4 text-slate-500" />
+                        <select 
+                          value={settings.genre}
+                          onChange={(e) => updateSetting('genre', e.target.value as Genre)}
+                          className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 pl-9 pr-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm appearance-none"
+                        >
+                          <option value="general">General</option>
+                          <option value="anime">Anime / Animation</option>
+                          <option value="movie">Movies / TV Series</option>
+                          <option value="news">News / Documentary</option>
+                          <option value="tech">Tech / Education</option>
+                        </select>
+                      </div>
+                    </div>
+                 </div>
               </div>
 
-              <div className="pt-2">
+              {/* Custom Prompts Section */}
+              <div className="space-y-3 pt-4 border-t border-slate-800">
+                 <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center">
+                    <MessageSquareText className="w-4 h-4 mr-1.5" />
+                    Custom Prompts (Optional)
+                 </h3>
+                 <p className="text-xs text-slate-500 mb-2">Leave blank to use the default prompts for the selected genre.</p>
+
+                 <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Translation Prompt</label>
+                    <textarea 
+                        value={settings.customTranslationPrompt}
+                        onChange={(e) => updateSetting('customTranslationPrompt', e.target.value)}
+                        placeholder="Override system instruction for initial translation..."
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 h-20 resize-none"
+                    />
+                 </div>
+                 
+                 <div>
+                    <label className="block text-xs font-medium text-slate-400 mb-1">Proofreading Prompt</label>
+                    <textarea 
+                        value={settings.customProofreadingPrompt}
+                        onChange={(e) => updateSetting('customProofreadingPrompt', e.target.value)}
+                        placeholder="Override system instruction for proofreading..."
+                        className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 h-20 resize-none"
+                    />
+                 </div>
+              </div>
+
+              <div className="pt-4">
                 <button 
                   onClick={() => setShowSettings(false)}
                   className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium py-2.5 rounded-lg shadow-lg shadow-indigo-500/25 transition-all"
                 >
-                  Save & Close
+                  Save Configuration
                 </button>
               </div>
-              
-              <p className="text-xs text-slate-500 text-center pt-2">
-                Keys entered here override environment variables.
-              </p>
             </div>
           </div>
         </div>

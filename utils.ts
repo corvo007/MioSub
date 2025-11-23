@@ -96,6 +96,19 @@ export const fileToBase64 = (file: File): Promise<string> => {
   });
 };
 
+export const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const result = reader.result as string;
+            const base64 = result.split(',')[1];
+            resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+};
+
 // --- Subtitle Generation Utils ---
 
 export const generateSrtContent = (subtitles: SubtitleItem[]): string => {
@@ -270,19 +283,6 @@ export const sliceAudioBuffer = async (originalBuffer: AudioBuffer, start: numbe
   return audioBufferToWav(resampled);
 };
 
-// Legacy support for simple full extraction
-export const extractAudioFromVideo = async (file: File): Promise<File> => {
-  const LIMIT_MB = 1000; // Increased limit
-  if (file.size > LIMIT_MB * 1024 * 1024) {
-     // If too big, we might skip or warn. For now, try to process.
-     console.warn("Large file detected, extraction might take time.");
-  }
-  const buffer = await decodeAudio(file);
-  // Full resample
-  const blob = await sliceAudioBuffer(buffer, 0, buffer.duration);
-  return new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".wav", { type: "audio/wav" });
-};
-
 export function audioBufferToWav(buffer: AudioBuffer): Blob {
   const numChannels = buffer.numberOfChannels;
   const sampleRate = buffer.sampleRate;
@@ -329,12 +329,20 @@ export function audioBufferToWav(buffer: AudioBuffer): Blob {
   return new Blob([arrayBuffer], { type: 'audio/wav' });
 }
 
-// --- OpenAI Whisper ---
+// --- OpenAI API (Whisper & GPT-4o Audio) ---
 
-export const transcribeWithWhisper = async (audioBlob: Blob, apiKey: string): Promise<SubtitleItem[]> => {
+export const transcribeAudio = async (audioBlob: Blob, apiKey: string, model: string = 'whisper-1'): Promise<SubtitleItem[]> => {
+  if (model.includes('gpt-4o')) {
+    return transcribeWithOpenAIChat(audioBlob, apiKey, model);
+  } else {
+    return transcribeWithWhisper(audioBlob, apiKey, model);
+  }
+};
+
+const transcribeWithWhisper = async (audioBlob: Blob, apiKey: string, model: string): Promise<SubtitleItem[]> => {
   const formData = new FormData();
   formData.append('file', audioBlob, 'audio.wav');
-  formData.append('model', 'whisper-1');
+  formData.append('model', model); // usually 'whisper-1'
   formData.append('response_format', 'verbose_json');
 
   let attempt = 0;
@@ -371,10 +379,79 @@ export const transcribeWithWhisper = async (audioBlob: Blob, apiKey: string): Pr
       console.warn(`Whisper attempt ${attempt + 1} failed:`, e);
       lastError = e;
       attempt++;
-      // Exponential backoff: 1s, 2s, 4s
       if (attempt < maxRetries) await new Promise(res => setTimeout(res, 1000 * Math.pow(2, attempt - 1)));
     }
   }
 
-  throw lastError || new Error("Failed to connect to Whisper API after multiple attempts. Please check your network and API key.");
+  throw lastError || new Error("Failed to connect to Whisper API.");
+};
+
+const transcribeWithOpenAIChat = async (audioBlob: Blob, apiKey: string, model: string): Promise<SubtitleItem[]> => {
+  const base64Audio = await blobToBase64(audioBlob);
+
+  const requestBody = {
+    model: model, // e.g., 'gpt-4o-audio-preview'
+    modalities: ["text"],
+    messages: [
+      {
+        role: "user",
+        content: [
+          { 
+            type: "text", 
+            text: "Transcribe the following audio. Return ONLY a JSON object with a 'segments' array. Each segment must have 'start' (number, seconds), 'end' (number, seconds), and 'text' (string). Do not include any other markdown." 
+          },
+          {
+            type: "input_audio",
+            input_audio: {
+              data: base64Audio,
+              format: "wav"
+            }
+          }
+        ]
+      }
+    ]
+  };
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(`GPT-4o Transcription Error: ${err.error?.message || response.statusText}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+    
+    // Parse the JSON from the text response
+    let segments: any[] = [];
+    try {
+      const cleanJson = content.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(cleanJson);
+      segments = parsed.segments || parsed.items || parsed;
+    } catch (e) {
+      console.warn("Failed to parse GPT-4o JSON response", content);
+      // Fallback simple line parsing could go here, but avoiding for brevity
+    }
+
+    if (!Array.isArray(segments)) return [];
+
+    return segments.map((seg, idx) => ({
+      id: idx + 1,
+      startTime: formatTime(parseFloat(seg.start)),
+      endTime: formatTime(parseFloat(seg.end)),
+      original: seg.text ? seg.text.trim() : "",
+      translated: ""
+    }));
+
+  } catch (e: any) {
+    throw new Error(`GPT-4o Audio Transcription failed: ${e.message}`);
+  }
 };
