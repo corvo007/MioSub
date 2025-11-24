@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
-import { Upload, FileVideo, Download, History, Trash2, Play, CheckCircle, AlertCircle, Languages, Loader2, Sparkles, Settings, X, Eye, EyeOff, MessageSquareText, AudioLines, Clapperboard, Monitor, Newspaper } from 'lucide-react';
+import ReactDOM from 'react-dom/client';
+import { Upload, FileVideo, Download, History, Trash2, Play, CheckCircle, AlertCircle, Languages, Loader2, Sparkles, Settings, X, Eye, EyeOff, MessageSquareText, AudioLines, Clapperboard, Monitor, CheckSquare, Square, RefreshCcw, Type } from 'lucide-react';
 import { SubtitleItem, HistoryItem, GenerationStatus, OutputFormat, AppSettings, Genre } from './types';
 import { generateSrtContent, generateAssContent, downloadFile } from './utils';
-import { generateSubtitles, proofreadSubtitles } from './gemini';
+import { generateSubtitles, proofreadSubtitles, proofreadSpecificBatches, PROOFREAD_BATCH_SIZE } from './gemini';
 
 const STORAGE_KEY = 'gemini_subtitle_history';
 const SETTINGS_KEY = 'gemini_subtitle_settings';
@@ -13,8 +15,11 @@ const DEFAULT_SETTINGS: AppSettings = {
   transcriptionModel: 'whisper-1',
   genre: 'general',
   customTranslationPrompt: '',
-  customProofreadingPrompt: ''
+  customProofreadingPrompt: '',
+  outputMode: 'bilingual'
 };
+
+const GENRE_PRESETS = ['general', 'anime', 'movie', 'news', 'tech'];
 
 export default function App() {
   const [file, setFile] = useState<File | null>(null);
@@ -32,7 +37,15 @@ export default function App() {
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showOpenAIKey, setShowOpenAIKey] = useState(false);
 
+  // Batch Selection State
+  const [selectedBatches, setSelectedBatches] = useState<Set<number>>(new Set());
+  
+  // View State
+  const [showSourceText, setShowSourceText] = useState(true);
+
   const isProcessing = status === GenerationStatus.UPLOADING || status === GenerationStatus.PROCESSING || status === GenerationStatus.PROOFREADING;
+  
+  const isCustomGenre = !GENRE_PRESETS.includes(settings.genre);
 
   // --- Initialization ---
   useEffect(() => {
@@ -48,7 +61,8 @@ export default function App() {
     if (storedSettings) {
       try {
         const parsed = JSON.parse(storedSettings);
-        setSettings(prev => ({ ...prev, ...parsed }));
+        // Merge defaults in case new settings were added
+        setSettings(prev => ({ ...DEFAULT_SETTINGS, ...parsed }));
       } catch (e) { console.error("Settings load error"); }
     }
   }, []);
@@ -93,6 +107,24 @@ export default function App() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedHistory));
   };
 
+  const toggleBatch = (index: number) => {
+      const newSet = new Set(selectedBatches);
+      if (newSet.has(index)) {
+          newSet.delete(index);
+      } else {
+          newSet.add(index);
+      }
+      setSelectedBatches(newSet);
+  };
+
+  const toggleAllBatches = (totalBatches: number) => {
+      if (selectedBatches.size === totalBatches) {
+          setSelectedBatches(new Set());
+      } else {
+          setSelectedBatches(new Set(Array.from({ length: totalBatches }, (_, i) => i)));
+      }
+  };
+
   // --- Handlers ---
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -102,6 +134,7 @@ export default function App() {
       setError(null);
       setSubtitles([]);
       setStatus(GenerationStatus.IDLE);
+      setSelectedBatches(new Set());
       
       try {
         const d = await getFileDuration(selectedFile);
@@ -126,10 +159,10 @@ export default function App() {
 
     setStatus(GenerationStatus.UPLOADING);
     setError(null);
-    setSubtitles([]); // Clear previous results before starting
+    setSubtitles([]);
+    setSelectedBatches(new Set());
 
     try {
-      // Pass 'setSubtitles' as the 5th argument for streaming updates
       const result = await generateSubtitles(
         file, 
         duration, 
@@ -150,32 +183,54 @@ export default function App() {
     }
   };
 
-  const handleProofread = async () => {
-    if (subtitles.length === 0 || !file) return;
-    if (!settings.geminiKey) {
-      setError("Gemini API Key is missing.");
-      setShowSettings(true);
-      return;
-    }
+  const runProofread = async (batchIndices: number[]) => {
+      if (subtitles.length === 0 || !file) return;
+      if (!settings.geminiKey) {
+          setError("Gemini API Key is missing.");
+          setShowSettings(true);
+          return;
+      }
 
-    setStatus(GenerationStatus.PROOFREADING);
-    setError(null);
+      setStatus(GenerationStatus.PROOFREADING);
+      setError(null);
 
-    try {
-      const refined = await proofreadSubtitles(file, subtitles, settings, (msg) => setProgressMsg(msg));
-      setSubtitles(refined);
-      setStatus(GenerationStatus.COMPLETED);
-      saveToHistory(refined, file);
-    } catch (err: any) {
-      setStatus(GenerationStatus.ERROR);
-      setError("Proofreading failed: " + err.message);
-    }
+      try {
+          const refined = await proofreadSpecificBatches(
+              file, 
+              subtitles, 
+              batchIndices, 
+              settings, 
+              (msg) => setProgressMsg(msg)
+          );
+          setSubtitles(refined);
+          setStatus(GenerationStatus.COMPLETED);
+          saveToHistory(refined, file);
+          // Clear selection after success
+          if (batchIndices.length === Math.ceil(subtitles.length / PROOFREAD_BATCH_SIZE)) {
+             setSelectedBatches(new Set());
+          }
+      } catch (err: any) {
+          setStatus(GenerationStatus.ERROR);
+          setError("Proofreading failed: " + err.message);
+      }
+  };
+
+  const handleProofreadSelected = () => {
+      if (selectedBatches.size === 0) return;
+      runProofread(Array.from(selectedBatches));
+  };
+
+  const handleProofreadSingleBatch = (index: number) => {
+      runProofread([index]);
   };
 
   const handleDownload = (format: OutputFormat) => {
     if (!subtitles.length) return;
     const fileNameBase = file?.name?.split('.').slice(0, -1).join('.') || 'subtitles';
-    const content = format === 'srt' ? generateSrtContent(subtitles) : generateAssContent(subtitles, fileNameBase);
+    const isBilingual = settings.outputMode === 'bilingual';
+    const content = format === 'srt' 
+        ? generateSrtContent(subtitles, isBilingual) 
+        : generateAssContent(subtitles, fileNameBase, isBilingual);
     downloadFile(`${fileNameBase}.${format}`, content, format);
   };
 
@@ -185,6 +240,7 @@ export default function App() {
     setFile({ name: item.fileName, size: 0 } as File); 
     setShowHistory(false);
     setError(null);
+    setSelectedBatches(new Set());
   };
 
   const clearHistory = () => {
@@ -196,6 +252,125 @@ export default function App() {
 
   const updateSetting = (key: keyof AppSettings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  // --- Rendering Chunks ---
+  const renderSubtitleList = () => {
+    const chunks: SubtitleItem[][] = [];
+    for (let i = 0; i < subtitles.length; i += PROOFREAD_BATCH_SIZE) {
+        chunks.push(subtitles.slice(i, i + PROOFREAD_BATCH_SIZE));
+    }
+    
+    if (chunks.length === 0) {
+        return (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-600">
+               <div className="w-16 h-16 border-2 border-slate-700 border-dashed rounded-full flex items-center justify-center mb-4">
+                  <Languages className="w-6 h-6" />
+               </div>
+               <p className="font-medium">No subtitles generated yet</p>
+               <p className="text-sm mt-2 max-w-xs text-center opacity-70">Upload a video or audio file to start.</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="p-4 space-y-6">
+            {/* Header Controls for Selection */}
+            {status === GenerationStatus.COMPLETED && (
+                 <div className="flex items-center justify-between bg-slate-800/80 p-3 rounded-lg border border-slate-700 sticky top-0 z-20 backdrop-blur-md shadow-md">
+                    <button 
+                        onClick={() => toggleAllBatches(chunks.length)}
+                        className="flex items-center space-x-2 text-sm text-slate-300 hover:text-white transition-colors"
+                    >
+                        {selectedBatches.size === chunks.length ? <CheckSquare className="w-4 h-4 text-indigo-400" /> : <Square className="w-4 h-4 text-slate-500" />}
+                        <span>{selectedBatches.size === chunks.length ? 'Deselect All' : 'Select All Segments'}</span>
+                    </button>
+                    
+                    <div className="flex space-x-2">
+                        <button 
+                            onClick={() => setShowSourceText(!showSourceText)}
+                            className="p-1.5 text-slate-400 hover:text-white rounded transition-colors"
+                            title={showSourceText ? "Hide Original Text" : "Show Original Text"}
+                        >
+                            {showSourceText ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                        </button>
+                        <div className="w-px bg-slate-600 mx-2 h-6 self-center"></div>
+                        <button
+                            onClick={handleProofreadSelected}
+                            disabled={selectedBatches.size === 0}
+                            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm ${
+                                selectedBatches.size > 0 
+                                ? 'bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer' 
+                                : 'bg-slate-700 text-slate-500 cursor-not-allowed opacity-50'
+                            }`}
+                        >
+                            <Sparkles className="w-3 h-3" />
+                            <span>Proofread Selected {selectedBatches.size > 0 ? `(${selectedBatches.size})` : ''}</span>
+                        </button>
+                    </div>
+                 </div>
+            )}
+
+            {chunks.map((chunk, chunkIdx) => {
+                const isSelected = selectedBatches.has(chunkIdx);
+                const startTime = chunk[0].startTime.split(',')[0];
+                const endTime = chunk[chunk.length - 1].endTime.split(',')[0];
+                
+                return (
+                    <div key={chunkIdx} className={`border rounded-xl overflow-hidden transition-all ${isSelected ? 'border-indigo-500/50 bg-indigo-500/5' : 'border-slate-700/50 bg-slate-900/40'}`}>
+                        {/* Batch Header */}
+                        <div 
+                            className={`px-4 py-3 flex justify-between items-center ${isSelected ? 'bg-indigo-900/20' : 'bg-slate-800/50'}`}
+                        >
+                            <div className="flex items-center space-x-3">
+                                {status === GenerationStatus.COMPLETED && (
+                                    <button 
+                                        onClick={() => toggleBatch(chunkIdx)}
+                                        className="text-slate-400 hover:text-indigo-400 focus:outline-none"
+                                    >
+                                        {isSelected ? <CheckSquare className="w-5 h-5 text-indigo-400" /> : <Square className="w-5 h-5" />}
+                                    </button>
+                                )}
+                                <div>
+                                    <h3 className={`text-sm font-semibold ${isSelected ? 'text-indigo-300' : 'text-slate-300'}`}>
+                                        Segment {chunkIdx + 1}
+                                    </h3>
+                                    <p className="text-xs text-slate-500 font-mono mt-0.5">{startTime} - {endTime}</p>
+                                </div>
+                            </div>
+                            
+                            {status === GenerationStatus.COMPLETED && (
+                                <button
+                                    onClick={() => handleProofreadSingleBatch(chunkIdx)}
+                                    title="Re-proofread this segment only"
+                                    className="p-2 text-slate-500 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+                                >
+                                    <RefreshCcw className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
+                        
+                        {/* List Items */}
+                        <div className="divide-y divide-slate-800/50">
+                            {chunk.map((sub) => (
+                                <div key={sub.id} className="p-3 hover:bg-slate-800/30 transition-colors flex items-start space-x-4">
+                                    <div className="text-[10px] font-mono text-slate-600 min-w-[50px] pt-2">
+                                        {(sub.startTime || '').split(',')[0]}
+                                    </div>
+                                    <div className="flex-1 space-y-1">
+                                        {showSourceText && (
+                                            <p className="text-sm text-slate-400 leading-relaxed opacity-70 mb-1">{sub.original}</p>
+                                        )}
+                                        <p className="text-lg text-indigo-300 leading-relaxed font-medium">{sub.translated}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
   };
 
   const StatusBadge = () => {
@@ -359,7 +534,7 @@ export default function App() {
               <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 shadow-xl animate-fade-in">
                 <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
                   <Download className="w-5 h-5 mr-2 text-emerald-400" />
-                  Download
+                  Download ({settings.outputMode === 'bilingual' ? 'Bi' : 'Zh'})
                 </h2>
                 <div className="grid grid-cols-2 gap-3">
                   <button onClick={() => handleDownload('srt')} className="flex items-center justify-center space-x-2 p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-lg transition-all">
@@ -384,15 +559,6 @@ export default function App() {
                 <h2 className="text-lg font-semibold text-white">
                   {showHistory ? 'History' : 'Subtitle Preview'}
                 </h2>
-                {!showHistory && subtitles.length > 0 && status === GenerationStatus.COMPLETED && (
-                  <button 
-                    onClick={handleProofread}
-                    className="flex items-center space-x-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-lg text-xs font-bold text-white shadow-md transition-all animate-fade-in"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    <span>Deep Polish (Gemini 3 Pro)</span>
-                  </button>
-                )}
               </div>
               <StatusBadge />
             </div>
@@ -435,31 +601,7 @@ export default function App() {
                 </div>
               ) : (
                 <div className="flex-1 overflow-y-auto custom-scrollbar relative w-full" ref={(el) => { if (el && status === GenerationStatus.PROCESSING) el.scrollTop = el.scrollHeight; }}>
-                  {subtitles.length > 0 ? (
-                    <div className="divide-y divide-slate-800">
-                      {subtitles.map((sub) => (
-                        <div key={sub.id} className="p-4 hover:bg-slate-800/30 transition-colors group">
-                          <div className="flex items-start space-x-4">
-                            <div className="text-xs font-mono text-slate-500 min-w-[80px] pt-1">
-                              {(sub.startTime || '').split(',')[0]}
-                            </div>
-                            <div className="flex-1 space-y-1">
-                              <p className="text-slate-300 leading-relaxed">{sub.original}</p>
-                              <p className="text-indigo-300 leading-relaxed font-medium">{sub.translated}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                     <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-600">
-                        <div className="w-16 h-16 border-2 border-slate-700 border-dashed rounded-full flex items-center justify-center mb-4">
-                           <Languages className="w-6 h-6" />
-                        </div>
-                        <p className="font-medium">No subtitles generated yet</p>
-                        <p className="text-sm mt-2 max-w-xs text-center opacity-70">Upload a video or audio file to start.</p>
-                     </div>
-                  )}
+                   {renderSubtitleList()}
                 </div>
               )}
             </div>
@@ -470,7 +612,7 @@ export default function App() {
       {/* Settings Modal */}
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl relative my-12">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-3xl shadow-2xl relative my-12">
             <button 
               onClick={() => setShowSettings(false)} 
               className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"
@@ -488,35 +630,37 @@ export default function App() {
               {/* API Keys Section */}
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">API Configuration</h3>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini API Key</label>
-                  <div className="relative">
-                    <input 
-                      type={showGeminiKey ? "text" : "password"}
-                      value={settings.geminiKey}
-                      onChange={(e) => updateSetting('geminiKey', e.target.value.trim())}
-                      placeholder="Enter Gemini API Key"
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
-                    />
-                    <button onClick={() => setShowGeminiKey(!showGeminiKey)} className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
-                      {showGeminiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI API Key</label>
-                  <div className="relative">
-                    <input 
-                      type={showOpenAIKey ? "text" : "password"}
-                      value={settings.openaiKey}
-                      onChange={(e) => updateSetting('openaiKey', e.target.value.trim())}
-                      placeholder="Enter OpenAI API Key"
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
-                    />
-                     <button onClick={() => setShowOpenAIKey(!showOpenAIKey)} className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
-                      {showOpenAIKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini API Key</label>
+                      <div className="relative">
+                        <input 
+                          type={showGeminiKey ? "text" : "password"}
+                          value={settings.geminiKey}
+                          onChange={(e) => updateSetting('geminiKey', e.target.value.trim())}
+                          placeholder="Enter Gemini API Key"
+                          className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
+                        />
+                        <button onClick={() => setShowGeminiKey(!showGeminiKey)} className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
+                          {showGeminiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI API Key</label>
+                      <div className="relative">
+                        <input 
+                          type={showOpenAIKey ? "text" : "password"}
+                          value={settings.openaiKey}
+                          onChange={(e) => updateSetting('openaiKey', e.target.value.trim())}
+                          placeholder="Enter OpenAI API Key"
+                          className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
+                        />
+                         <button onClick={() => setShowOpenAIKey(!showOpenAIKey)} className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300">
+                          {showOpenAIKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
                 </div>
               </div>
 
@@ -545,8 +689,15 @@ export default function App() {
                       <div className="relative">
                         <Clapperboard className="absolute left-3 top-2.5 w-4 h-4 text-slate-500" />
                         <select 
-                          value={settings.genre}
-                          onChange={(e) => updateSetting('genre', e.target.value as Genre)}
+                          value={isCustomGenre ? 'custom' : settings.genre}
+                          onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === 'custom') {
+                                  updateSetting('genre', '');
+                              } else {
+                                  updateSetting('genre', val);
+                              }
+                          }}
                           className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 pl-9 pr-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm appearance-none"
                         >
                           <option value="general">General</option>
@@ -554,9 +705,51 @@ export default function App() {
                           <option value="movie">Movies / TV Series</option>
                           <option value="news">News / Documentary</option>
                           <option value="tech">Tech / Education</option>
+                          <option value="custom">Custom...</option>
                         </select>
                       </div>
+                      {/* Conditional Custom Input */}
+                      {isCustomGenre && (
+                          <div className="mt-2 animate-fade-in">
+                              <input
+                                  type="text"
+                                  value={settings.genre}
+                                  onChange={(e) => updateSetting('genre', e.target.value)}
+                                  placeholder="E.g., Minecraft Gameplay, Medical Lecture..."
+                                  className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm placeholder-slate-600"
+                                  autoFocus
+                              />
+                          </div>
+                      )}
                     </div>
+                 </div>
+              </div>
+
+               {/* Output Mode Section */}
+               <div className="space-y-3 pt-4 border-t border-slate-800">
+                 <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">File Output Options</h3>
+                 
+                 <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Export Mode</label>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
+                            onClick={() => updateSetting('outputMode', 'bilingual')}
+                            className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'bilingual' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}
+                        >
+                            <Languages className="w-4 h-4" />
+                            <span>Bilingual (Orig + CN)</span>
+                        </button>
+                         <button
+                            onClick={() => updateSetting('outputMode', 'target_only')}
+                            className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'target_only' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}
+                        >
+                            <Type className="w-4 h-4" />
+                            <span>Chinese Only</span>
+                        </button>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-2">
+                        Controls the content of the downloaded .SRT / .ASS files. "Bilingual" includes original text.
+                    </p>
                  </div>
               </div>
 

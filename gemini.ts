@@ -1,8 +1,9 @@
+
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { parseGeminiResponse, formatTime, decodeAudio, sliceAudioBuffer, transcribeAudio, timeToSeconds, blobToBase64 } from "./utils";
 import { SubtitleItem, AppSettings, Genre } from "./types";
 
-const PROOFREAD_BATCH_SIZE = 50; 
+export const PROOFREAD_BATCH_SIZE = 20;
 const TRANSLATION_BATCH_SIZE = 20;
 const PROCESSING_CHUNK_DURATION = 300; // 5 minutes chunk
 
@@ -57,9 +58,16 @@ const TRANSLATION_SCHEMA = {
   },
 };
 
+const SAFETY_SETTINGS = [
+  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+];
+
 // --- PROMPT GENERATORS ---
 
-const getSystemInstruction = (genre: Genre, customPrompt?: string, mode: 'refinement' | 'translation' | 'proofreading' = 'translation'): string => {
+const getSystemInstruction = (genre: string, customPrompt?: string, mode: 'refinement' | 'translation' | 'proofreading' = 'translation'): string => {
   if (customPrompt && customPrompt.trim().length > 0) {
     return customPrompt;
   }
@@ -71,11 +79,12 @@ const getSystemInstruction = (genre: Genre, customPrompt?: string, mode: 'refine
     
     YOUR TASKS:
     1. Listen to the audio to verify the transcription.
-    2. FIX TIMESTAMPS: Ensure start/end times match the audio speech perfectly.
+    2. FIX TIMESTAMPS: Ensure start/end times match the audio speech perfectly. **Timestamps MUST be within the duration of the audio provided. Do NOT hallucinate hours if the audio is only minutes.**
     3. FIX TRANSCRIPTION: Correct mishearings, typos, and proper nouns (names, terminology).
-    4. SPLIT LINES: If a segment is too long (> 15 words or > 4 seconds) or contains multiple sentences, SPLIT it into multiple segments.
-    5. REMOVE HALLUCINATIONS: Delete segments that have no corresponding speech in the audio.
-    6. FORMAT: Return a valid JSON array of objects with "start", "end", and "text".
+    4. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (uh, um, ah, eto, ano, 呃, 那个) unless necessary for context.
+    5. SPLIT LINES: If a segment is too long (> 15 words or > 4 seconds) or contains multiple sentences, SPLIT it into multiple segments.
+    6. REMOVE HALLUCINATIONS: Delete segments that have no corresponding speech in the audio.
+    7. FORMAT: Return a valid JSON array of objects with "start", "end", and "text".
     
     Genre Context: ${genre}`;
   }
@@ -88,29 +97,32 @@ const getSystemInstruction = (genre: Genre, customPrompt?: string, mode: 'refine
       case 'movie': genreContext = "Genre: Movie/TV. Natural dialogue, concise, easy to read."; break;
       case 'news': genreContext = "Genre: News. Formal, objective, standard terminology."; break;
       case 'tech': genreContext = "Genre: Tech. Precise terminology. Keep standard English acronyms."; break;
-      default: genreContext = "Genre: General. Neutral and accurate."; break;
+      case 'general': genreContext = "Genre: General. Neutral and accurate."; break;
+      default: 
+        // Custom Context Handling
+        genreContext = `Context: ${genre}. Translate using tone, terminology, and style appropriate for this specific context.`; 
+        break;
     }
 
     return `You are a professional translator. Translate the following subtitles to Simplified Chinese (zh-CN).
     RULES:
-    - Translate "text" to "text_translated".
-    - Maintain the "id" exactly.
-    - Output valid JSON.
+    1. Translate "text" to "text_translated".
+    2. Maintain the "id" exactly.
+    3. **REMOVE FILLER WORDS**: Completely ignore and remove stuttering, hesitation, and filler words (e.g., "uh", "um", "ah", "eto", "ano", "呃", "这个", "那个", "嗯"). The translation must be fluent written Chinese, not a literal transcription of broken speech.
+    4. Output valid JSON.
     ${genreContext}`;
   }
 
   // 3. Deep Proofreading Prompt (Pro 3)
   return `You are an expert Subtitle Quality Assurance Specialist using Gemini 3 Pro.
-    Your goal is to perfect the subtitles by fixing timestamps, formatting, transcription errors, and translation errors.
-    Return valid JSON matching input structure.`;
+    Your goal is to perfect the subtitles.
+    
+    CRITICAL INSTRUCTIONS:
+    1. **REMOVE FILLER WORDS**: Delete any remaining filler words (e.g., 呃, 嗯, 啊, eto, ano) that disrupt flow. The result should be clean, professional subtitles.
+    2. **FIX TIMESTAMPS**: Ensure they are strictly within the audio range. Do not allow timestamps to exceed the video duration.
+    3. **FLUENCY**: Ensure the Chinese translation is natural and culturally appropriate for the context: ${genre}.
+    4. Return valid JSON matching input structure.`;
 };
-
-const SAFETY_SETTINGS = [
-  { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-  { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-];
 
 // --- MAIN FUNCTIONS ---
 
@@ -166,14 +178,10 @@ export const generateSubtitles = async (
       throw new Error(`Transcription failed on chunk ${chunkIndex}: ${e.message}`);
     }
 
-    // NOTE: We keep rawSegments timestamps relative (0-based) to the chunk audio
-    // to ensure Gemini Refine aligns them correctly with the sliced audio.
-    // We will add the cursor offset at the very end.
-
     // C. Step 2: Gemini Refine (2.5 Flash)
     let refinedSegments: SubtitleItem[] = [];
     if (rawSegments.length > 0) {
-        onProgress?.(`[Chunk ${chunkIndex}] 2/3 Refining with Gemini 2.5 Flash (Audio Check)...`);
+        onProgress?.(`[Chunk ${chunkIndex}] 2/3 Refining (Audio-Grounded)...`);
         
         const refineSystemInstruction = getSystemInstruction(settings.genre, undefined, 'refinement');
         const refinePrompt = `
@@ -198,9 +206,9 @@ export const generateSubtitles = async (
                 }
             });
             
-            refinedSegments = parseGeminiResponse(refineResponse.text);
+            // Pass cursor + duration as maxDuration to prevent timestamp hallucinations
+            refinedSegments = parseGeminiResponse(refineResponse.text, PROCESSING_CHUNK_DURATION);
             
-            // If refinement returns nothing, fallback to raw
             if (refinedSegments.length === 0) {
                  refinedSegments = [...rawSegments];
             }
@@ -213,22 +221,18 @@ export const generateSubtitles = async (
     // D. Step 3: Gemini Translate (2.5 Flash)
     let finalChunkSubs: SubtitleItem[] = [];
     if (refinedSegments.length > 0) {
-        onProgress?.(`[Chunk ${chunkIndex}] 3/3 Translating...`);
+        onProgress?.(`[Chunk ${chunkIndex}] 3/3 Translating (Text-Only)...`);
         
-        // Prepare data for translation
         const toTranslate = refinedSegments.map((seg, idx) => ({
             id: idx + 1,
             original: seg.original, 
-            start: seg.startTime,   // 0-based
-            end: seg.endTime        // 0-based
+            start: seg.startTime,
+            end: seg.endTime
         }));
 
         const translateSystemInstruction = getSystemInstruction(settings.genre, settings.customTranslationPrompt, 'translation');
-        
-        // Translate
         const translatedItems = await translateBatch(ai, toTranslate, translateSystemInstruction);
         
-        // Map back to global IDs and Absolute Time
         finalChunkSubs = translatedItems.map(item => ({
             id: globalIdCounter++,
             startTime: formatTime(timeToSeconds(item.start) + cursor),
@@ -238,7 +242,6 @@ export const generateSubtitles = async (
         }));
     }
 
-    // E. Update State (Streaming)
     allSubtitles = [...allSubtitles, ...finalChunkSubs];
     onIntermediateResult?.(allSubtitles);
 
@@ -257,7 +260,7 @@ async function translateBatch(ai: GoogleGenAI, items: any[], systemInstruction: 
   for (let i = 0; i < items.length; i += TRANSLATION_BATCH_SIZE) {
     const batch = items.slice(i, i + TRANSLATION_BATCH_SIZE);
     const payload = batch.map(item => ({ id: item.id, text: item.original }));
-    const prompt = `Translate to Simplified Chinese:\n${JSON.stringify(payload)}`;
+    const prompt = `Translate to Simplified Chinese. REMOVE ALL FILLER WORDS:\n${JSON.stringify(payload)}`;
 
     try {
       const response = await generateContentWithRetry(ai, {
@@ -292,7 +295,6 @@ async function translateBatch(ai: GoogleGenAI, items: any[], systemInstruction: 
 
     } catch (e) {
       console.error("Translation batch failed", e);
-      // Fallback: keep original only
       batch.forEach(item => {
         result.push({ ...item, translated: "" });
       });
@@ -301,39 +303,19 @@ async function translateBatch(ai: GoogleGenAI, items: any[], systemInstruction: 
   return result;
 }
 
-// --- PROOFREADING (Optional Step 4 - Gemini 3 Pro) ---
+// --- CORE BATCH PROCESSING LOGIC ---
 
-export const proofreadSubtitles = async (
-  file: File,
-  subtitles: SubtitleItem[],
+async function processBatch(
+  ai: GoogleGenAI,
+  batch: SubtitleItem[],
+  audioBuffer: AudioBuffer | null,
+  lastEndTime: string,
   settings: AppSettings,
-  onProgress?: (msg: string) => void
-): Promise<SubtitleItem[]> => {
-  const geminiKey = settings.geminiKey?.trim();
-  if (!geminiKey) throw new Error("API Key is missing.");
-  
-  const ai = new GoogleGenAI({ apiKey: geminiKey });
-  
-  onProgress?.("Loading audio for contextual proofreading...");
-  let audioBuffer: AudioBuffer;
-  try {
-     audioBuffer = await decodeAudio(file);
-  } catch(e) {
-     console.warn("Could not decode audio for proofreading, falling back to text-only.");
-     return proofreadTextOnly(subtitles, settings, ai, onProgress);
-  }
-
-  const totalBatches = Math.ceil(subtitles.length / PROOFREAD_BATCH_SIZE);
-  let refinedSubtitles: SubtitleItem[] = [];
-  let lastEndTime = "00:00:00,000";
-  const systemInstruction = getSystemInstruction(settings.genre, settings.customProofreadingPrompt, 'proofreading');
-
-  for (let i = 0; i < totalBatches; i++) {
-    const startIdx = i * PROOFREAD_BATCH_SIZE;
-    const endIdx = startIdx + PROOFREAD_BATCH_SIZE;
-    const batch = subtitles.slice(startIdx, endIdx);
-
-    onProgress?.(`Proofreading batch ${i + 1}/${totalBatches} (Listening & Analyzing)...`);
+  systemInstruction: string,
+  batchLabel: string,
+  totalVideoDuration?: number
+): Promise<SubtitleItem[]> {
+    if (batch.length === 0) return [];
 
     const batchStartStr = batch[0].startTime;
     const batchEndStr = batch[batch.length - 1].endTime;
@@ -341,11 +323,16 @@ export const proofreadSubtitles = async (
     const endSec = timeToSeconds(batchEndStr);
 
     let base64Audio = "";
-    try {
-        const blob = await sliceAudioBuffer(audioBuffer, Math.max(0, startSec - 1), Math.min(audioBuffer.duration, endSec + 1));
-        base64Audio = await blobToBase64(blob);
-    } catch(e) {
-        console.warn("Audio slice failed, sending text only.");
+    if (audioBuffer) {
+        try {
+            if (startSec < endSec) {
+                // Add padding to context
+                const blob = await sliceAudioBuffer(audioBuffer, Math.max(0, startSec - 1), Math.min(audioBuffer.duration, endSec + 1));
+                base64Audio = await blobToBase64(blob);
+            }
+        } catch(e) {
+            console.warn(`Audio slice failed for ${batchLabel}, falling back to text-only.`);
+        }
     }
 
     const payload = batch.map(s => ({
@@ -357,15 +344,19 @@ export const proofreadSubtitles = async (
     }));
 
     const prompt = `
-      Batch ${i+1}/${totalBatches}.
+      Batch ${batchLabel}.
       PREVIOUS END TIME: "${lastEndTime}".
+      TOTAL VIDEO DURATION (approx): ${totalVideoDuration ? formatTime(totalVideoDuration) : 'Unknown'}.
+      
       INSTRUCTIONS:
-      1. Listen to the audio.
-      2. Fix transcription errors (source).
-      3. Fix translation errors (Chinese).
-      4. SPLIT long lines if the audio has pauses.
-      5. Adjust timestamps to match audio perfectly.
-      6. Return valid JSON.
+      1. Listen to the audio (if available).
+      2. **REMOVE FILLER WORDS**: Delete any and all filler words (e.g., 呃, 嗯, 啊, eto, ano) to create clean, fluent Chinese subtitles.
+      3. Fix transcription errors (source).
+      4. Fix translation errors (Chinese).
+      5. SPLIT long lines if the audio has pauses.
+      6. **FIX TIMESTAMPS**: Adjust start/end times to match audio perfectly. **DO NOT generate timestamps past the actual audio.**
+      7. Return valid JSON.
+      
       Current Subtitles JSON:
       ${JSON.stringify(payload)}
     `;
@@ -392,46 +383,97 @@ export const proofreadSubtitles = async (
       });
 
       const text = response.text || "[]";
-      const processedBatch = parseGeminiResponse(text);
+      // Use totalVideoDuration as maxDuration to filter out hallucinations
+      const processedBatch = parseGeminiResponse(text, totalVideoDuration);
 
       if (processedBatch.length > 0) {
-        lastEndTime = processedBatch[processedBatch.length - 1].endTime;
-        refinedSubtitles = [...refinedSubtitles, ...processedBatch];
-      } else {
-        refinedSubtitles = [...refinedSubtitles, ...batch];
+        return processedBatch;
       }
-
     } catch (e) {
-      console.error(`Batch ${i+1} proofreading failed.`, e);
-      refinedSubtitles = [...refinedSubtitles, ...batch];
-      if (batch.length > 0) lastEndTime = batch[batch.length - 1].endTime;
+      console.error(`Batch ${batchLabel} processing failed.`, e);
     }
-  }
+    // Fallback: return original batch
+    return batch;
+}
 
-  return refinedSubtitles.map((s, i) => ({ ...s, id: i + 1 }));
+// --- PROOFREADING FUNCTIONS ---
+
+export const proofreadSpecificBatches = async (
+  file: File,
+  allSubtitles: SubtitleItem[],
+  batchIndices: number[], // 0-based indices of chunks
+  settings: AppSettings,
+  onProgress?: (msg: string) => void
+): Promise<SubtitleItem[]> => {
+  const geminiKey = settings.geminiKey?.trim();
+  if (!geminiKey) throw new Error("API Key is missing.");
+  const ai = new GoogleGenAI({ apiKey: geminiKey });
+
+  onProgress?.("Loading audio for context...");
+  let audioBuffer: AudioBuffer | null = null;
+  try {
+     audioBuffer = await decodeAudio(file);
+  } catch(e) {
+     console.warn("Audio decode failed, proceeding with text-only mode.");
+  }
+  
+  const systemInstruction = getSystemInstruction(settings.genre, settings.customProofreadingPrompt, 'proofreading');
+  
+  // Clone subtitles
+  const currentSubtitles = [...allSubtitles];
+  
+  // Split into chunks to manage replacement easily
+  const chunks: SubtitleItem[][] = [];
+  for (let i = 0; i < currentSubtitles.length; i += PROOFREAD_BATCH_SIZE) {
+      chunks.push(currentSubtitles.slice(i, i + PROOFREAD_BATCH_SIZE));
+  }
+  
+  const sortedIndices = [...batchIndices].sort((a, b) => a - b);
+  
+  for (let i = 0; i < sortedIndices.length; i++) {
+     const batchIdx = sortedIndices[i];
+     if (batchIdx >= chunks.length) continue;
+     
+     const batch = chunks[batchIdx];
+     
+     // Get lastEndTime from the end of the previous chunk (processed or not)
+     let lastEndTime = "00:00:00,000";
+     if (batchIdx > 0) {
+         const prevChunk = chunks[batchIdx - 1];
+         if (prevChunk.length > 0) {
+             lastEndTime = prevChunk[prevChunk.length - 1].endTime;
+         }
+     }
+     
+     onProgress?.(`Polishing Segment ${batchIdx + 1} (${i + 1}/${sortedIndices.length})...`);
+     
+     const processed = await processBatch(
+        ai, 
+        batch, 
+        audioBuffer, 
+        lastEndTime, 
+        settings, 
+        systemInstruction, 
+        `${batchIdx + 1}`,
+        audioBuffer?.duration
+     );
+     
+     // Update the chunk in place
+     chunks[batchIdx] = processed;
+  }
+  
+  // Flatten and re-ID
+  return chunks.flat().map((s, i) => ({ ...s, id: i + 1 }));
 };
 
-async function proofreadTextOnly(subtitles: SubtitleItem[], settings: AppSettings, ai: GoogleGenAI, onProgress?: (msg: string) => void): Promise<SubtitleItem[]> {
-    const systemInstruction = getSystemInstruction(settings.genre, settings.customProofreadingPrompt, 'proofreading');
-    const totalBatches = Math.ceil(subtitles.length / PROOFREAD_BATCH_SIZE);
-    let refined: SubtitleItem[] = [];
-
-    for (let i = 0; i < totalBatches; i++) {
-        const batch = subtitles.slice(i*PROOFREAD_BATCH_SIZE, (i+1)*PROOFREAD_BATCH_SIZE);
-        onProgress?.(`Proofreading batch ${i+1}/${totalBatches} (Text Only)...`);
-        
-        try {
-            const prompt = `Refine these subtitles:\n${JSON.stringify(batch)}`;
-            const response = await generateContentWithRetry(ai, {
-                model: 'gemini-3-pro-preview',
-                contents: { parts: [{ text: prompt }] },
-                config: { responseMimeType: "application/json", systemInstruction }
-            });
-            const parsed = parseGeminiResponse(response.text);
-            refined = [...refined, ...(parsed.length ? parsed : batch)];
-        } catch(e) {
-            refined = [...refined, ...batch];
-        }
-    }
-    return refined;
-}
+export const proofreadSubtitles = async (
+  file: File,
+  subtitles: SubtitleItem[],
+  settings: AppSettings,
+  onProgress?: (msg: string) => void
+): Promise<SubtitleItem[]> => {
+  // Process ALL batches
+  const totalBatches = Math.ceil(subtitles.length / PROOFREAD_BATCH_SIZE);
+  const allIndices = Array.from({ length: totalBatches }, (_, i) => i);
+  return proofreadSpecificBatches(file, subtitles, allIndices, settings, onProgress);
+};

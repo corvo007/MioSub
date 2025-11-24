@@ -1,3 +1,4 @@
+
 export interface SubtitleItem {
   id: number;
   startTime: string; // Format: HH:MM:SS,ms
@@ -31,9 +32,10 @@ export interface AppSettings {
   geminiKey: string;
   openaiKey: string;
   transcriptionModel: string; // 'whisper-1' | 'gpt-4o-audio-preview'
-  genre: Genre;
+  genre: string; // Changed from Genre to string to support custom input
   customTranslationPrompt: string;
   customProofreadingPrompt: string;
+  outputMode: 'bilingual' | 'target_only';
 }
 
 // Gemini Response Schema Helper Types
