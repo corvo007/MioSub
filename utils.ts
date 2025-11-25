@@ -22,22 +22,22 @@ export const timeToSeconds = (timeStr: string): number => {
   // Clean up
   const cleanStr = timeStr.replace(/[^0-9:.,]/g, '').replace('.', ',');
   const parts = cleanStr.split(':');
-  
-  let h=0, m=0, s=0, ms=0;
-  
+
+  let h = 0, m = 0, s = 0, ms = 0;
+
   if (parts.length === 3) {
     h = parseInt(parts[0], 10) || 0;
     m = parseInt(parts[1], 10) || 0;
     const s_parts = parts[2].split(',');
     s = parseInt(s_parts[0], 10) || 0;
-    ms = parseInt((s_parts[1] || '0').padEnd(3,'0').slice(0,3), 10) || 0;
+    ms = parseInt((s_parts[1] || '0').padEnd(3, '0').slice(0, 3), 10) || 0;
   } else if (parts.length === 2) {
     m = parseInt(parts[0], 10) || 0;
     const s_parts = parts[1].split(',');
     s = parseInt(s_parts[0], 10) || 0;
-    ms = parseInt((s_parts[1] || '0').padEnd(3,'0').slice(0,3), 10) || 0;
+    ms = parseInt((s_parts[1] || '0').padEnd(3, '0').slice(0, 3), 10) || 0;
   }
-  
+
   return h * 3600 + m * 60 + s + (ms / 1000);
 };
 
@@ -49,14 +49,14 @@ export const normalizeTimestamp = (timeStr: string, maxDuration?: number): strin
 
   const cleanStr = timeStr.replace(/[^0-9:.,]/g, '').replace('.', ',');
   let parts = cleanStr.split(':');
-  
+
   let secondsPart = parts.pop() || '0';
   let minutesPart = parts.pop() || '0';
   let hoursPart = parts.pop() || '0';
 
   let [secsStr, msStr] = secondsPart.split(',');
   if (!msStr) msStr = '000';
-  
+
   let h = parseInt(hoursPart, 10) || 0;
   let m = parseInt(minutesPart, 10) || 0;
   let s = parseInt(secsStr, 10) || 0;
@@ -69,16 +69,16 @@ export const normalizeTimestamp = (timeStr: string, maxDuration?: number): strin
 
   // Formatting complete, now basic validation if maxDuration provided
   if (maxDuration) {
-      const totalSeconds = h * 3600 + m * 60 + s + (ms / 1000);
-      if (totalSeconds > maxDuration + 30) { 
-          // If timestamp is way beyond duration (allowing 30s buffer), likely a parsing error or hallucination
-          // Try to recover if it looks like hours were confused for minutes
-          if (h > 0 && maxDuration < 3600) {
-             // Heuristic: If video < 1 hour but we have hours, maybe shift down
-             m += h * 60; // Wait, usually it's just wrong mapping. 
-             h = 0;
-          }
+    const totalSeconds = h * 3600 + m * 60 + s + (ms / 1000);
+    if (totalSeconds > maxDuration + 30) {
+      // If timestamp is way beyond duration (allowing 30s buffer), likely a parsing error or hallucination
+      // Try to recover if it looks like hours were confused for minutes
+      if (h > 0 && maxDuration < 3600) {
+        // Heuristic: If video < 1 hour but we have hours, maybe shift down
+        m += h * 60; // Wait, usually it's just wrong mapping. 
+        h = 0;
       }
+    }
   }
 
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')},${ms.toString().padStart(3, '0')}`;
@@ -90,7 +90,7 @@ export const normalizeTimestamp = (timeStr: string, maxDuration?: number): strin
 export const toAssTime = (normalizedTime: string): string => {
   const [hms, ms] = normalizedTime.split(',');
   const [h, m, s] = hms.split(':');
-  const cs = ms.slice(0, 2); 
+  const cs = ms.slice(0, 2);
   const p2 = (n: string) => n.padStart(2, '0').slice(-2);
   const hours = parseInt(h, 10);
   return `${hours}:${p2(m)}:${p2(s)}.${cs}`;
@@ -102,7 +102,7 @@ export const parseSrt = (content: string): SubtitleItem[] => {
   const normalized = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   const blocks = normalized.split(/\n\n+/);
   const items: SubtitleItem[] = [];
-  
+
   blocks.forEach((block) => {
     const lines = block.trim().split('\n');
     if (lines.length < 3) return;
@@ -110,27 +110,60 @@ export const parseSrt = (content: string): SubtitleItem[] => {
     // Line 1: ID
     // Line 2: Time
     // Line 3+: Text
-    
+
     // Sometimes index 0 is empty if file starts with newlines
     let startIndex = 0;
     if (!lines[0].match(/^\d+$/) && lines[1]?.match(/^\d+$/)) startIndex = 1;
-    
+
     // Check if it looks like a valid block
     const timeLine = lines[startIndex + 1];
     if (!timeLine || !timeLine.includes('-->')) return;
-    
+
     const [start, end] = timeLine.split('-->').map(t => t.trim());
     const textLines = lines.slice(startIndex + 2);
-    // Rough heuristic for bilingual: if multiple lines, assume original/translated or just multiline
-    // For editing purposes, we put everything in "original" and let the user re-translate or fix
-    const fullText = textLines.join('\n');
-    
+
+    // Heuristic for Bilingual SRT:
+    // If we have multiple lines, we try to split them.
+    // Case 1: 2 lines -> Line 1 = Original, Line 2 = Translated
+    // Case 2: Even number of lines -> First half = Original, Second half = Translated
+    // Case 3: Odd number of lines > 1 -> First line = Original, Rest = Translated (or vice versa? Let's assume 1st line is Source)
+    // Fallback: All to Original
+
+    let original = "";
+    let translated = "";
+
+    if (textLines.length === 2) {
+      original = textLines[0];
+      translated = textLines[1];
+    } else if (textLines.length > 2 && textLines.length % 2 === 0) {
+      const mid = textLines.length / 2;
+      original = textLines.slice(0, mid).join('\n');
+      translated = textLines.slice(mid).join('\n');
+    } else {
+      // Default fallback or odd lines: Treat all as original for now, 
+      // OR if user specifically wants "New Project" style which is usually 1 line orig / 1 line trans
+      // Let's try to detect if it looks like a split.
+      // For now, let's just put everything in original if it's ambiguous, 
+      // BUT the user specifically asked to support "generated format".
+      // The generated format is `Original\nTranslated`.
+      // So if there are multiple lines, we should try to split.
+      if (textLines.length > 1) {
+        // Simple split: First line original, rest translated? 
+        // Or maybe the user edited it to be multi-line.
+        // Let's stick to the "Split in half" heuristic if possible, otherwise just 1st line vs rest.
+        original = textLines[0];
+        translated = textLines.slice(1).join('\n');
+      } else {
+        original = textLines.join('\n');
+      }
+    }
+
     items.push({
       id: items.length + 1,
       startTime: normalizeTimestamp(start),
       endTime: normalizeTimestamp(end),
-      original: fullText,
-      translated: '' // If importing existing SRT, we treat it as source to be processed/proofread
+      original: original,
+      translated: translated
     });
   });
   return items;
@@ -140,10 +173,10 @@ export const parseAss = (content: string): SubtitleItem[] => {
   const lines = content.split(/\r?\n/);
   const items: SubtitleItem[] = [];
   let format: string[] = [];
-  
+
   // Find Events section
   let inEvents = false;
-  
+
   lines.forEach(line => {
     const trimmed = line.trim();
     if (trimmed === '[Events]') {
@@ -151,42 +184,66 @@ export const parseAss = (content: string): SubtitleItem[] => {
       return;
     }
     if (!inEvents) return;
-    
+
     if (trimmed.startsWith('Format:')) {
       format = trimmed.substring(7).split(',').map(s => s.trim().toLowerCase());
       return;
     }
-    
+
     if (trimmed.startsWith('Dialogue:')) {
       if (format.length === 0) return; // Need format first
-      
+
       const parts = trimmed.substring(9).split(',');
       if (parts.length > format.length) {
-          // Join the last text parts back together because text can contain commas
-          const textPart = parts.slice(format.length - 1).join(',');
-          parts.splice(format.length - 1, parts.length - (format.length - 1), textPart);
+        // Join the last text parts back together because text can contain commas
+        const textPart = parts.slice(format.length - 1).join(',');
+        parts.splice(format.length - 1, parts.length - (format.length - 1), textPart);
       }
-      
+
       const startIdx = format.indexOf('start');
       const endIdx = format.indexOf('end');
       const textIdx = format.indexOf('text');
-      
+
       if (startIdx === -1 || endIdx === -1 || textIdx === -1) return;
-      
-      let text = parts[textIdx] || "";
-      // Clean ASS tags like {\an8} or \N
-      text = text.replace(/{[^}]+}/g, '').replace(/\\N/g, '\n').trim();
-      
-      // ASS time is H:MM:SS.cc -> normalize to HH:MM:SS,mmm
-      // We rely on normalizeTimestamp to handle the colon/dot diffs mostly
-      // But we need to ensure 0:00:00.00 becomes suitable for parser
-      
+
+      let rawText = parts[textIdx] || "";
+
+      // Parse specific generator tags:
+      // Format: {\rSecondary}ORIGINAL\N{\r}TRANSLATED
+      // Or just TRANSLATED (if target_only)
+
+      let original = "";
+      let translated = "";
+
+      // Check for our specific bilingual signature
+      if (rawText.includes('{\\rSecondary}') && rawText.includes('{\\r}')) {
+        // Extract Original
+        const secondaryMatch = rawText.match(/{\\rSecondary}(.*?)(?:\\N)?{\\r}/);
+        if (secondaryMatch) {
+          original = secondaryMatch[1];
+        }
+
+        // Extract Translated (everything after {\r})
+        const mainMatch = rawText.split('{\\r}');
+        if (mainMatch.length > 1) {
+          translated = mainMatch[1];
+        }
+      } else {
+        // Fallback: Treat as Original (or maybe Translated? The user wants to see the "New Project" style)
+        // If it's a plain ASS, usually it's just the subtitle text.
+        // Let's put it in Original so it shows up at least.
+        original = rawText;
+      }
+
+      // Clean up ASS tags from the extracted text
+      const clean = (t: string) => t.replace(/{[^}]+}/g, '').replace(/\\N/g, '\n').trim();
+
       items.push({
         id: items.length + 1,
         startTime: normalizeTimestamp(parts[startIdx]),
         endTime: normalizeTimestamp(parts[endIdx]),
-        original: text,
-        translated: ''
+        original: clean(original),
+        translated: clean(translated)
       });
     }
   });
@@ -209,16 +266,16 @@ export const fileToBase64 = (file: File): Promise<string> => {
 };
 
 export const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            const result = reader.result as string;
-            const base64 = result.split(',')[1];
-            resolve(base64);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    });
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 };
 
 // --- Subtitle Generation Utils ---
@@ -240,7 +297,7 @@ export const generateAssContent = (subtitles: SubtitleItem[], title: string, bil
   // Updated Styles: 
   // Default: Fontsize 75 (Large), White (Primary) -> Used for Translation
   // Secondary: Fontsize 48 (Small), Yellow (Original) -> Used for Original Text
-  
+
   const header = `[Script Info]
 ; Script generated by Gemini Subtitle Pro
 Title: ${title}
@@ -266,20 +323,20 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
       const end = toAssTime(sub.endTime);
       const originalText = sub.original || "";
       const translatedText = sub.translated || "";
-      
+
       const cleanOriginal = originalText.replace(/\n/g, '\\N').replace(/\r/g, '');
       const cleanTranslated = translatedText.replace(/\n/g, '\\N').replace(/\r/g, '');
-      
+
       let text = "";
       if (bilingual) {
-          // Layout: Original (Small/Secondary) on TOP. Translated (Large/Default) on BOTTOM.
-          // \rSecondary sets style to Secondary. \r resets to Default.
-          text = `{\\rSecondary}${cleanOriginal}\\N{\\r}${cleanTranslated}`;
+        // Layout: Original (Small/Secondary) on TOP. Translated (Large/Default) on BOTTOM.
+        // \rSecondary sets style to Secondary. \r resets to Default.
+        text = `{\\rSecondary}${cleanOriginal}\\N{\\r}${cleanTranslated}`;
       } else {
-          // Just translated text using Default style (large)
-          text = cleanTranslated;
+        // Just translated text using Default style (large)
+        text = cleanTranslated;
       }
-      
+
       return `Dialogue: 0,${start},${end},Default,,0,0,0,,${text}`;
     })
     .join('\n');
@@ -311,28 +368,28 @@ export const parseGeminiResponse = (jsonResponse: string | null | undefined, max
     const firstBracket = cleanJson.indexOf('[');
     const lastBracket = cleanJson.lastIndexOf(']');
     if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
-        jsonToParse = cleanJson.substring(firstBracket, lastBracket + 1);
+      jsonToParse = cleanJson.substring(firstBracket, lastBracket + 1);
     }
 
     let items: GeminiSubtitleSchema[] = [];
     let parsed: any;
     try {
       parsed = JSON.parse(jsonToParse);
-    } catch(e) {
+    } catch (e) {
       const match = cleanJson.match(/\[.*\]/s);
       if (match) {
-         parsed = JSON.parse(match[0]);
+        parsed = JSON.parse(match[0]);
       } else {
         throw e;
       }
     }
 
     if (Array.isArray(parsed)) {
-        items = parsed;
+      items = parsed;
     } else if (parsed && parsed.subtitles && Array.isArray(parsed.subtitles)) {
-        items = parsed.subtitles;
+      items = parsed.subtitles;
     } else if (parsed && parsed.items && Array.isArray(parsed.items)) {
-        items = parsed.items;
+      items = parsed.items;
     }
 
     // Filter and map
@@ -340,7 +397,7 @@ export const parseGeminiResponse = (jsonResponse: string | null | undefined, max
       // Robust key access
       const rawOriginal = item.text_original || (item as any).original_text || (item as any).original || item.text || '';
       const rawTranslated = item.text_translated || (item as any).translated_text || (item as any).translated || (item as any).translation || '';
-      
+
       // Mutate item to normalized keys for next step
       item.text_original = String(rawOriginal).trim();
       item.text_translated = String(rawTranslated).trim();
@@ -349,19 +406,19 @@ export const parseGeminiResponse = (jsonResponse: string | null | undefined, max
 
     return items.map((item, index) => {
       if (!item.start || !item.end) return null;
-      
+
       // Validate Timestamps against maxDuration if provided
       // This prevents the "03:24:45" bug in a 20 min video
       if (maxDuration) {
-          const startSec = timeToSeconds(item.start);
-          if (startSec > maxDuration + 10) { // Allow small buffer
-              return null;
-          }
+        const startSec = timeToSeconds(item.start);
+        if (startSec > maxDuration + 10) { // Allow small buffer
+          return null;
+        }
       }
 
       let startStr = normalizeTimestamp(item.start, maxDuration);
       let endStr = normalizeTimestamp(item.end, maxDuration);
-      
+
       let startSec = timeToSeconds(startStr);
       let endSec = timeToSeconds(endStr);
 
@@ -370,7 +427,7 @@ export const parseGeminiResponse = (jsonResponse: string | null | undefined, max
         startStr = formatTime(startSec); endStr = formatTime(endSec);
       }
       if (endSec - startSec < 0.5) {
-          endSec = startSec + 1.5; endStr = formatTime(endSec);
+        endSec = startSec + 1.5; endStr = formatTime(endSec);
       }
       return {
         id: index + 1,
@@ -402,21 +459,21 @@ export const sliceAudioBuffer = async (originalBuffer: AudioBuffer, start: numbe
   const safeStart = Math.max(0, start);
   const safeEnd = Math.min(duration, end);
   const length = safeEnd - safeStart;
-  
+
   if (length <= 0) throw new Error("Invalid slice duration");
 
   // 16kHz mono is standard for Whisper
   const targetRate = 16000;
   const offlineCtx = new OfflineAudioContext(1, length * targetRate, targetRate);
-  
+
   const source = offlineCtx.createBufferSource();
   source.buffer = originalBuffer;
   source.connect(offlineCtx.destination);
-  
+
   // Start playing the original buffer at the negative offset of our start time
   // This effectively shifts the audio so that 'start' becomes 0 in the offline context
   source.start(0, safeStart, length);
-  
+
   const resampled = await offlineCtx.startRendering();
   return audioBufferToWav(resampled);
 };
@@ -430,16 +487,16 @@ export function audioBufferToWav(buffer: AudioBuffer): Blob {
   const blockAlign = numChannels * bytesPerSample;
   const dataByteCount = buffer.length * blockAlign;
   const bufferLength = 44 + dataByteCount;
-  
+
   const arrayBuffer = new ArrayBuffer(bufferLength);
   const view = new DataView(arrayBuffer);
-  
+
   const writeString = (view: DataView, offset: number, string: string) => {
     for (let i = 0; i < string.length; i++) {
       view.setUint8(offset + i, string.charCodeAt(i));
     }
   };
-  
+
   writeString(view, 0, 'RIFF');
   view.setUint32(4, 36 + dataByteCount, true);
   writeString(view, 8, 'WAVE');
@@ -453,7 +510,7 @@ export function audioBufferToWav(buffer: AudioBuffer): Blob {
   view.setUint16(34, bitDepth, true);
   writeString(view, 36, 'data');
   view.setUint32(40, dataByteCount, true);
-  
+
   let offset = 44;
   for (let i = 0; i < buffer.length; i++) {
     for (let channel = 0; channel < numChannels; channel++) {
@@ -534,9 +591,9 @@ const transcribeWithOpenAIChat = async (audioBlob: Blob, apiKey: string, model: 
       {
         role: "user",
         content: [
-          { 
-            type: "text", 
-            text: "Transcribe the following audio. Return ONLY a JSON object with a 'segments' array. Each segment must have 'start' (number, seconds), 'end' (number, seconds), and 'text' (string). Do not include any other markdown." 
+          {
+            type: "text",
+            text: "Transcribe the following audio. Return ONLY a JSON object with a 'segments' array. Each segment must have 'start' (number, seconds), 'end' (number, seconds), and 'text' (string). Do not include any other markdown."
           },
           {
             type: "input_audio",
@@ -567,7 +624,7 @@ const transcribeWithOpenAIChat = async (audioBlob: Blob, apiKey: string, model: 
 
     const data = await response.json();
     const content = data.choices[0]?.message?.content;
-    
+
     // Parse the JSON from the text response
     let segments: any[] = [];
     try {

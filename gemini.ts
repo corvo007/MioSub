@@ -68,18 +68,18 @@ const SAFETY_SETTINGS = [
 // --- PROMPT GENERATORS ---
 
 const getSystemInstruction = (
-    genre: string, 
-    customPrompt: string | undefined, 
-    mode: 'refinement' | 'translation' | 'proofread' | 'fix_timestamps' | 'retranslate' = 'translation'
+  genre: string,
+  customPrompt: string | undefined,
+  mode: 'refinement' | 'translation' | 'proofread' | 'fix_timestamps' | 'retranslate' = 'translation'
 ): string => {
-  
+
   // If custom prompt is provided, usually we prepend/mix it, but for simplicity if a user overrides "Proofreading Prompt", we use it for "Deep Proofread" mode.
   if (mode === 'proofread' && customPrompt && customPrompt.trim().length > 0) {
-      return customPrompt;
+    return customPrompt;
   }
   // We allow custom prompt override for translation phase too
   if (mode === 'translation' && customPrompt && customPrompt.trim().length > 0) {
-      return customPrompt;
+    return customPrompt;
   }
 
   // 1. Refinement Prompt (Flash 2.5) - Initial Pass
@@ -122,7 +122,7 @@ const getSystemInstruction = (
 
   // 3. Fix Timestamps Prompt (Flash 2.5)
   if (mode === 'fix_timestamps') {
-      return `You are a Subtitle Timing Specialist. 
+    return `You are a Subtitle Timing Specialist. 
       Your goal is to align timestamps and fix transcription gaps using the audio.
       
       RULES:
@@ -157,19 +157,19 @@ const getSystemInstruction = (
 // --- MAIN FUNCTIONS ---
 
 export const generateSubtitles = async (
-  file: File, 
+  file: File,
   duration: number,
   settings: AppSettings,
   onProgress?: (msg: string) => void,
   onIntermediateResult?: (subs: SubtitleItem[]) => void
 ): Promise<SubtitleItem[]> => {
-  
-  const geminiKey = settings.geminiKey?.trim();
-  const openaiKey = settings.openaiKey?.trim();
+
+  const geminiKey = settings.geminiKey?.trim() || process.env.API_KEY || process.env.GEMINI_API_KEY;
+  const openaiKey = settings.openaiKey?.trim() || process.env.OPENAI_API_KEY;
 
   if (!geminiKey) throw new Error("Gemini API Key is missing.");
   if (!openaiKey) throw new Error("OpenAI API Key is missing.");
-  
+
   const ai = new GoogleGenAI({ apiKey: geminiKey });
 
   // 1. Decode Audio
@@ -193,7 +193,7 @@ export const generateSubtitles = async (
   while (cursor < totalDuration) {
     const end = Math.min(cursor + PROCESSING_CHUNK_DURATION, totalDuration);
     onProgress?.(`Processing Chunk ${chunkIndex}/${totalChunks} (${formatTime(cursor)} - ${formatTime(end)})...`);
-    
+
     // A. Slice Audio
     const wavBlob = await sliceAudioBuffer(audioBuffer, cursor, end);
     const base64Audio = await blobToBase64(wavBlob);
@@ -211,64 +211,64 @@ export const generateSubtitles = async (
     // C. Step 2: Gemini Refine (2.5 Flash)
     let refinedSegments: SubtitleItem[] = [];
     if (rawSegments.length > 0) {
-        onProgress?.(`[Chunk ${chunkIndex}] 2/3 Refining (Audio-Grounded)...`);
-        
-        const refineSystemInstruction = getSystemInstruction(settings.genre, undefined, 'refinement');
-        const refinePrompt = `
+      onProgress?.(`[Chunk ${chunkIndex}] 2/3 Refining (Audio-Grounded)...`);
+
+      const refineSystemInstruction = getSystemInstruction(settings.genre, undefined, 'refinement');
+      const refinePrompt = `
         Refine this raw transcription based on the attached audio.
         Raw Transcription: ${JSON.stringify(rawSegments.map(s => ({ start: s.startTime, end: s.endTime, text: s.original })))}
         `;
 
-        try {
-            const refineResponse = await generateContentWithRetry(ai, {
-                model: 'gemini-2.5-flash',
-                contents: {
-                    parts: [
-                        { inlineData: { mimeType: "audio/wav", data: base64Audio } },
-                        { text: refinePrompt }
-                    ]
-                },
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: REFINEMENT_SCHEMA,
-                    systemInstruction: refineSystemInstruction,
-                    safetySettings: SAFETY_SETTINGS,
-                }
-            });
-            
-            refinedSegments = parseGeminiResponse(refineResponse.text, PROCESSING_CHUNK_DURATION);
-            
-            if (refinedSegments.length === 0) {
-                 refinedSegments = [...rawSegments];
-            }
-        } catch (e) {
-            console.error(`Refinement failed for chunk ${chunkIndex}, falling back to raw.`, e);
-            refinedSegments = [...rawSegments];
+      try {
+        const refineResponse = await generateContentWithRetry(ai, {
+          model: 'gemini-2.5-flash',
+          contents: {
+            parts: [
+              { inlineData: { mimeType: "audio/wav", data: base64Audio } },
+              { text: refinePrompt }
+            ]
+          },
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: REFINEMENT_SCHEMA,
+            systemInstruction: refineSystemInstruction,
+            safetySettings: SAFETY_SETTINGS,
+          }
+        });
+
+        refinedSegments = parseGeminiResponse(refineResponse.text, PROCESSING_CHUNK_DURATION);
+
+        if (refinedSegments.length === 0) {
+          refinedSegments = [...rawSegments];
         }
+      } catch (e) {
+        console.error(`Refinement failed for chunk ${chunkIndex}, falling back to raw.`, e);
+        refinedSegments = [...rawSegments];
+      }
     }
 
     // D. Step 3: Gemini Translate (2.5 Flash)
     let finalChunkSubs: SubtitleItem[] = [];
     if (refinedSegments.length > 0) {
-        onProgress?.(`[Chunk ${chunkIndex}] 3/3 Translating (Text-Only)...`);
-        
-        const toTranslate = refinedSegments.map((seg, idx) => ({
-            id: idx + 1,
-            original: seg.original, 
-            start: seg.startTime,
-            end: seg.endTime
-        }));
+      onProgress?.(`[Chunk ${chunkIndex}] 3/3 Translating (Text-Only)...`);
 
-        const translateSystemInstruction = getSystemInstruction(settings.genre, settings.customTranslationPrompt, 'translation');
-        const translatedItems = await translateBatch(ai, toTranslate, translateSystemInstruction);
-        
-        finalChunkSubs = translatedItems.map(item => ({
-            id: globalIdCounter++,
-            startTime: formatTime(timeToSeconds(item.start) + cursor),
-            endTime: formatTime(timeToSeconds(item.end) + cursor),
-            original: item.original,
-            translated: item.translated
-        }));
+      const toTranslate = refinedSegments.map((seg, idx) => ({
+        id: idx + 1,
+        original: seg.original,
+        start: seg.startTime,
+        end: seg.endTime
+      }));
+
+      const translateSystemInstruction = getSystemInstruction(settings.genre, settings.customTranslationPrompt, 'translation');
+      const translatedItems = await translateBatch(ai, toTranslate, translateSystemInstruction);
+
+      finalChunkSubs = translatedItems.map(item => ({
+        id: globalIdCounter++,
+        startTime: formatTime(timeToSeconds(item.start) + cursor),
+        endTime: formatTime(timeToSeconds(item.end) + cursor),
+        original: item.original,
+        translated: item.translated
+      }));
     }
 
     allSubtitles = [...allSubtitles, ...finalChunkSubs];
@@ -285,11 +285,11 @@ export const generateSubtitles = async (
 
 async function translateBatch(ai: GoogleGenAI, items: any[], systemInstruction: string): Promise<any[]> {
   const result: any[] = [];
-  
+
   for (let i = 0; i < items.length; i += TRANSLATION_BATCH_SIZE) {
     const batch = items.slice(i, i + TRANSLATION_BATCH_SIZE);
     const payload = batch.map(item => ({ id: item.id, text: item.original }));
-    
+
     const prompt = `Task: Translate the following ${batch.length} items to Simplified Chinese.
     
     STRICT RULES:
@@ -324,14 +324,14 @@ async function translateBatch(ai: GoogleGenAI, items: any[], systemInstruction: 
       }
 
       const transMap = new Map(translatedData.map((t: any) => [t.id, t.text_translated]));
-      
+
       batch.forEach(item => {
         const translatedText = transMap.get(item.id);
         // Fallback: If translation is missing or empty, use original text.
         // This prevents empty subtitles in the final output.
         result.push({
           ...item,
-          translated: (translatedText && translatedText.trim().length > 0) ? translatedText : item.original 
+          translated: (translatedText && translatedText.trim().length > 0) ? translatedText : item.original
         });
       });
 
@@ -360,69 +360,69 @@ async function processBatch(
   mode: BatchOperationMode = 'proofread',
   batchComment?: string
 ): Promise<SubtitleItem[]> {
-    if (batch.length === 0) return [];
+  if (batch.length === 0) return [];
 
-    const batchStartStr = batch[0].startTime;
-    const batchEndStr = batch[batch.length - 1].endTime;
-    const startSec = timeToSeconds(batchStartStr);
-    const endSec = timeToSeconds(batchEndStr);
+  const batchStartStr = batch[0].startTime;
+  const batchEndStr = batch[batch.length - 1].endTime;
+  const startSec = timeToSeconds(batchStartStr);
+  const endSec = timeToSeconds(batchEndStr);
 
-    // Audio is required for fix_timestamps and proofread. Optional/Ignored for retranslate.
-    let base64Audio = "";
-    const needsAudio = mode !== 'retranslate';
+  // Audio is required for fix_timestamps and proofread. Optional/Ignored for retranslate.
+  let base64Audio = "";
+  const needsAudio = mode !== 'retranslate';
 
-    if (audioBuffer && needsAudio) {
-        try {
-            if (startSec < endSec) {
-                // Add padding to context
-                const blob = await sliceAudioBuffer(audioBuffer, Math.max(0, startSec - 1), Math.min(audioBuffer.duration, endSec + 1));
-                base64Audio = await blobToBase64(blob);
-            }
-        } catch(e) {
-            console.warn(`Audio slice failed for ${batchLabel}, falling back to text-only.`);
-        }
+  if (audioBuffer && needsAudio) {
+    try {
+      if (startSec < endSec) {
+        // Add padding to context
+        const blob = await sliceAudioBuffer(audioBuffer, Math.max(0, startSec - 1), Math.min(audioBuffer.duration, endSec + 1));
+        base64Audio = await blobToBase64(blob);
+      }
+    } catch (e) {
+      console.warn(`Audio slice failed for ${batchLabel}, falling back to text-only.`);
     }
+  }
 
-    const payload = batch.map(s => ({
-      id: s.id,
-      start: s.startTime,
-      end: s.endTime,
-      text_original: s.original,
-      text_translated: s.translated,
-      comment: s.comment // Include user comment
-    }));
+  const payload = batch.map(s => ({
+    id: s.id,
+    start: s.startTime,
+    end: s.endTime,
+    text_original: s.original,
+    text_translated: s.translated,
+    comment: s.comment // Include user comment
+  }));
 
-    let prompt = "";
-    const hasBatchComment = batchComment && batchComment.trim().length > 0;
-    const hasLineComments = batch.some(s => s.comment && s.comment.trim().length > 0);
+  let prompt = "";
+  const hasBatchComment = batchComment && batchComment.trim().length > 0;
+  const hasLineComments = batch.some(s => s.comment && s.comment.trim().length > 0);
 
-    let specificInstruction = "";
-    
-    if (hasLineComments && !hasBatchComment) {
-         // Case 1: Line Comments Only
-         specificInstruction = `
+  let specificInstruction = "";
+
+  if (hasLineComments && !hasBatchComment) {
+    // Case 1: Line Comments Only
+    specificInstruction = `
     USER LINE INSTRUCTIONS:
     1. Specific lines have "comment" fields. You MUST strictly follow these manual corrections.
     2. CRITICAL: For lines WITHOUT comments, DO NOT MODIFY THEM. Preserve them exactly as is. Only change lines with comments.
     `;
-    } else if (hasLineComments && hasBatchComment) {
-         // Case 2: Line Comments AND Batch Comment
-         specificInstruction = `
+  } else if (hasLineComments && hasBatchComment) {
+    // Case 2: Line Comments AND Batch Comment
+    specificInstruction = `
     USER INSTRUCTIONS:
     1. First, address the specific "comment" fields on individual lines.
     2. Second, apply this GLOBAL BATCH INSTRUCTION to the whole segment: "${batchComment}".
     3. You may modify any line to satisfy the global instruction or specific comments.
     `;
-    } else if (hasBatchComment && !hasLineComments) {
-         // Case 3: Batch Comment Only
-         specificInstruction = `
+  } else if (hasBatchComment && !hasLineComments) {
+    // Case 3: Batch Comment Only
+    specificInstruction = `
     USER BATCH INSTRUCTION (Apply to ALL lines in this batch): "${batchComment}"
     `;
-    }
-    // Case 4: No Comments -> Default behavior (prompt below covers it)
+  }
+  // Case 4: No Comments -> Default behavior (prompt below covers it)
 
-    if (mode === 'retranslate') {
-        prompt = `
+  if (mode === 'retranslate') {
+    prompt = `
         Batch ${batchLabel}.
         RE-TRANSLATE TASK.
         Ignore timestamps. Focus on Translation Quality.
@@ -437,8 +437,8 @@ async function processBatch(
         Input:
         ${JSON.stringify(payload)}
         `;
-    } else if (mode === 'fix_timestamps') {
-        prompt = `
+  } else if (mode === 'fix_timestamps') {
+    prompt = `
         Batch ${batchLabel}.
         FIX TIMESTAMPS & ALIGNMENT TASK.
         PREVIOUS END TIME: "${lastEndTime}".
@@ -453,9 +453,9 @@ async function processBatch(
         Input:
         ${JSON.stringify(payload)}
         `;
-    } else {
-        // Deep Proofread
-        prompt = `
+  } else {
+    // Deep Proofread
+    prompt = `
         Batch ${batchLabel}.
         DEEP PROOFREAD TASK.
         PREVIOUS END TIME: "${lastEndTime}".
@@ -473,45 +473,45 @@ async function processBatch(
         Current Subtitles JSON:
         ${JSON.stringify(payload)}
         `;
-    }
+  }
 
-    try {
-      const parts: any[] = [{ text: prompt }];
-      if (base64Audio) {
-        parts.push({
-            inlineData: {
-                mimeType: "audio/wav",
-                data: base64Audio
-            }
-        });
-      }
-
-      // Model Selection:
-      // Proofread -> Gemini 3 Pro (Best quality)
-      // Fix Timestamps / Retranslate -> Gemini 2.5 Flash (Fast/Efficient)
-      const model = mode === 'proofread' ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
-
-      const response = await generateContentWithRetry(ai, {
-        model: model,
-        contents: { parts: parts },
-        config: {
-          responseMimeType: "application/json",
-          systemInstruction: systemInstruction,
-          safetySettings: SAFETY_SETTINGS,
+  try {
+    const parts: any[] = [{ text: prompt }];
+    if (base64Audio) {
+      parts.push({
+        inlineData: {
+          mimeType: "audio/wav",
+          data: base64Audio
         }
       });
-
-      const text = response.text || "[]";
-      const processedBatch = parseGeminiResponse(text, totalVideoDuration);
-
-      if (processedBatch.length > 0) {
-        return processedBatch;
-      }
-    } catch (e) {
-      console.error(`Batch ${batchLabel} processing failed (${mode}).`, e);
     }
-    // Fallback: return original batch
-    return batch;
+
+    // Model Selection:
+    // Proofread -> Gemini 3 Pro (Best quality)
+    // Fix Timestamps / Retranslate -> Gemini 2.5 Flash (Fast/Efficient)
+    const model = mode === 'proofread' ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
+
+    const response = await generateContentWithRetry(ai, {
+      model: model,
+      contents: { parts: parts },
+      config: {
+        responseMimeType: "application/json",
+        systemInstruction: systemInstruction,
+        safetySettings: SAFETY_SETTINGS,
+      }
+    });
+
+    const text = response.text || "[]";
+    const processedBatch = parseGeminiResponse(text, totalVideoDuration);
+
+    if (processedBatch.length > 0) {
+      return processedBatch;
+    }
+  } catch (e) {
+    console.error(`Batch ${batchLabel} processing failed (${mode}).`, e);
+  }
+  // Fallback: return original batch
+  return batch;
 }
 
 // --- BATCH EXECUTION ---
@@ -525,7 +525,7 @@ export const runBatchOperation = async (
   batchComments: Record<number, string> = {}, // Pass map of batch index -> comment
   onProgress?: (msg: string) => void
 ): Promise<SubtitleItem[]> => {
-  const geminiKey = settings.geminiKey?.trim();
+  const geminiKey = settings.geminiKey?.trim() || process.env.API_KEY || process.env.GEMINI_API_KEY;
   if (!geminiKey) throw new Error("API Key is missing.");
   const ai = new GoogleGenAI({ apiKey: geminiKey });
 
@@ -534,68 +534,68 @@ export const runBatchOperation = async (
   // but processBatch logic for retranslate ignores audio anyway. 
   // However, Proofread and Fix Timestamps need it.
   if (mode !== 'retranslate' && file) {
-      onProgress?.("Loading audio for context...");
-      try {
-         audioBuffer = await decodeAudio(file);
-      } catch(e) {
-         console.warn("Audio decode failed, proceeding with text-only mode.");
-      }
+    onProgress?.("Loading audio for context...");
+    try {
+      audioBuffer = await decodeAudio(file);
+    } catch (e) {
+      console.warn("Audio decode failed, proceeding with text-only mode.");
+    }
   } else if (mode !== 'retranslate' && !file) {
-      // If we are in Proofread mode but no file exists (SRT import), we fallback to text-only behavior inside processBatch (it handles null buffer)
-      console.log("No media file provided, running in text-only context.");
+    // If we are in Proofread mode but no file exists (SRT import), we fallback to text-only behavior inside processBatch (it handles null buffer)
+    console.log("No media file provided, running in text-only context.");
   }
-  
+
   const systemInstruction = getSystemInstruction(
-      settings.genre, 
-      mode === 'proofread' ? settings.customProofreadingPrompt : settings.customTranslationPrompt, 
-      mode
+    settings.genre,
+    mode === 'proofread' ? settings.customProofreadingPrompt : settings.customTranslationPrompt,
+    mode
   );
-  
+
   const currentSubtitles = [...allSubtitles];
   const chunks: SubtitleItem[][] = [];
   for (let i = 0; i < currentSubtitles.length; i += PROOFREAD_BATCH_SIZE) {
-      chunks.push(currentSubtitles.slice(i, i + PROOFREAD_BATCH_SIZE));
+    chunks.push(currentSubtitles.slice(i, i + PROOFREAD_BATCH_SIZE));
   }
-  
-  const sortedIndices = [...batchIndices].sort((a, b) => a - b);
-  
-  for (let i = 0; i < sortedIndices.length; i++) {
-     const batchIdx = sortedIndices[i];
-     if (batchIdx >= chunks.length) continue;
-     
-     const batch = chunks[batchIdx];
-     
-     // Context for timestamps
-     let lastEndTime = "00:00:00,000";
-     if (batchIdx > 0) {
-         const prevChunk = chunks[batchIdx - 1];
-         if (prevChunk.length > 0) {
-             lastEndTime = prevChunk[prevChunk.length - 1].endTime;
-         }
-     }
-     
-     let actionLabel = "";
-     if (mode === 'proofread') actionLabel = "Polishing";
-     else if (mode === 'fix_timestamps') actionLabel = "Aligning";
-     else actionLabel = "Translating";
 
-     onProgress?.(`${actionLabel} Segment ${batchIdx + 1} (${i + 1}/${sortedIndices.length})...`);
-     
-     const processed = await processBatch(
-        ai, 
-        batch, 
-        audioBuffer, 
-        lastEndTime, 
-        settings, 
-        systemInstruction, 
-        `${batchIdx + 1}`,
-        audioBuffer?.duration,
-        mode,
-        batchComments[batchIdx] // Pass the comment for this specific batch
-     );
-     
-     chunks[batchIdx] = processed;
+  const sortedIndices = [...batchIndices].sort((a, b) => a - b);
+
+  for (let i = 0; i < sortedIndices.length; i++) {
+    const batchIdx = sortedIndices[i];
+    if (batchIdx >= chunks.length) continue;
+
+    const batch = chunks[batchIdx];
+
+    // Context for timestamps
+    let lastEndTime = "00:00:00,000";
+    if (batchIdx > 0) {
+      const prevChunk = chunks[batchIdx - 1];
+      if (prevChunk.length > 0) {
+        lastEndTime = prevChunk[prevChunk.length - 1].endTime;
+      }
+    }
+
+    let actionLabel = "";
+    if (mode === 'proofread') actionLabel = "Polishing";
+    else if (mode === 'fix_timestamps') actionLabel = "Aligning";
+    else actionLabel = "Translating";
+
+    onProgress?.(`${actionLabel} Segment ${batchIdx + 1} (${i + 1}/${sortedIndices.length})...`);
+
+    const processed = await processBatch(
+      ai,
+      batch,
+      audioBuffer,
+      lastEndTime,
+      settings,
+      systemInstruction,
+      `${batchIdx + 1}`,
+      audioBuffer?.duration,
+      mode,
+      batchComments[batchIdx] // Pass the comment for this specific batch
+    );
+
+    chunks[batchIdx] = processed;
   }
-  
+
   return chunks.flat().map((s, i) => ({ ...s, id: i + 1 }));
 };
