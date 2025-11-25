@@ -25,6 +25,8 @@ export enum GenerationStatus {
 
 export type OutputFormat = 'srt' | 'ass';
 
+export type BatchOperationMode = 'fix_timestamps' | 'retranslate' | 'proofread';
+
 // Settings Types
 export type Genre = 'general' | 'anime' | 'movie' | 'news' | 'tech';
 

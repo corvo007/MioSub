@@ -1,10 +1,10 @@
 
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold } from "@google/genai";
 import { parseGeminiResponse, formatTime, decodeAudio, sliceAudioBuffer, transcribeAudio, timeToSeconds, blobToBase64 } from "./utils";
-import { SubtitleItem, AppSettings, Genre } from "./types";
+import { SubtitleItem, AppSettings, Genre, BatchOperationMode } from "./types";
 
 export const PROOFREAD_BATCH_SIZE = 20;
-const TRANSLATION_BATCH_SIZE = 20;
+const TRANSLATION_BATCH_SIZE = 10; // Reduced from 20 to improve stability
 const PROCESSING_CHUNK_DURATION = 300; // 5 minutes chunk
 
 // --- RATE LIMIT HELPER ---
@@ -67,30 +67,40 @@ const SAFETY_SETTINGS = [
 
 // --- PROMPT GENERATORS ---
 
-const getSystemInstruction = (genre: string, customPrompt?: string, mode: 'refinement' | 'translation' | 'proofreading' = 'translation'): string => {
-  if (customPrompt && customPrompt.trim().length > 0) {
-    return customPrompt;
+const getSystemInstruction = (
+    genre: string, 
+    customPrompt: string | undefined, 
+    mode: 'refinement' | 'translation' | 'proofread' | 'fix_timestamps' | 'retranslate' = 'translation'
+): string => {
+  
+  // If custom prompt is provided, usually we prepend/mix it, but for simplicity if a user overrides "Proofreading Prompt", we use it for "Deep Proofread" mode.
+  if (mode === 'proofread' && customPrompt && customPrompt.trim().length > 0) {
+      return customPrompt;
+  }
+  // We allow custom prompt override for translation phase too
+  if (mode === 'translation' && customPrompt && customPrompt.trim().length > 0) {
+      return customPrompt;
   }
 
-  // 1. Refinement Prompt (Flash 2.5)
+  // 1. Refinement Prompt (Flash 2.5) - Initial Pass
   if (mode === 'refinement') {
     return `You are a professional Subtitle QA Specialist. 
     You will receive an audio chunk and a raw JSON transcription.
     
     YOUR TASKS:
     1. Listen to the audio to verify the transcription.
-    2. FIX TIMESTAMPS: Ensure start/end times match the audio speech perfectly. **Timestamps MUST be within the duration of the audio provided. Do NOT hallucinate hours if the audio is only minutes.**
-    3. FIX TRANSCRIPTION: Correct mishearings, typos, and proper nouns (names, terminology).
-    4. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (uh, um, ah, eto, ano, 呃, 那个) unless necessary for context.
-    5. SPLIT LINES: If a segment is too long (> 15 words or > 4 seconds) or contains multiple sentences, SPLIT it into multiple segments.
-    6. REMOVE HALLUCINATIONS: Delete segments that have no corresponding speech in the audio.
-    7. FORMAT: Return a valid JSON array of objects with "start", "end", and "text".
+    2. **CHECK FOR MISSED HEARING**: If there is speech in the audio that is MISSING from the transcription, you MUST ADD IT.
+    3. FIX TIMESTAMPS: Ensure start/end times match the audio speech perfectly. **Timestamps MUST be strictly within the provided audio duration.**
+    4. FIX TRANSCRIPTION: Correct mishearings, typos, and proper nouns (names, terminology).
+    5. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (uh, um, ah, eto, ano, 呃, 那个).
+    6. SPLIT LINES: STRICT RULE. If a segment is longer than 4 seconds or > 25 characters, YOU MUST SPLIT IT into shorter, natural segments.
+    7. FORMAT: Return a valid JSON array.
     
     Genre Context: ${genre}`;
   }
 
-  // 2. Translation Prompt (Flash 2.5)
-  if (mode === 'translation') {
+  // 2. Translation Prompt (Flash 2.5) - Initial Pass & Re-translate
+  if (mode === 'translation' || mode === 'retranslate') {
     let genreContext = "";
     switch (genre) {
       case 'anime': genreContext = "Genre: Anime. Use casual, emotive tone. Preserve honorifics nuances."; break;
@@ -98,30 +108,48 @@ const getSystemInstruction = (genre: string, customPrompt?: string, mode: 'refin
       case 'news': genreContext = "Genre: News. Formal, objective, standard terminology."; break;
       case 'tech': genreContext = "Genre: Tech. Precise terminology. Keep standard English acronyms."; break;
       case 'general': genreContext = "Genre: General. Neutral and accurate."; break;
-      default: 
-        // Custom Context Handling
-        genreContext = `Context: ${genre}. Translate using tone, terminology, and style appropriate for this specific context.`; 
-        break;
+      default: genreContext = `Context: ${genre}. Translate using tone/terminology appropriate for this context.`; break;
     }
 
-    return `You are a professional translator. Translate the following subtitles to Simplified Chinese (zh-CN).
+    return `You are a professional translator. Translate subtitles to Simplified Chinese (zh-CN).
     RULES:
-    1. Translate "text" to "text_translated".
-    2. Maintain the "id" exactly.
-    3. **REMOVE FILLER WORDS**: Completely ignore and remove stuttering, hesitation, and filler words (e.g., "uh", "um", "ah", "eto", "ano", "呃", "这个", "那个", "嗯"). The translation must be fluent written Chinese, not a literal transcription of broken speech.
-    4. Output valid JSON.
+    1. **CHECK FOR MISSED TRANSLATION**: Ensure every meaningful part of the original text is translated.
+    2. **REMOVE FILLER WORDS**: Completely ignore stuttering, hesitation, and filler words (e.g., "uh", "um", "ah", "eto", "ano", "呃", "这个", "那个").
+    3. The translation must be fluent written Chinese, not a literal transcription of broken speech.
+    4. Maintain the "id" exactly.
     ${genreContext}`;
   }
 
-  // 3. Deep Proofreading Prompt (Pro 3)
+  // 3. Fix Timestamps Prompt (Flash 2.5)
+  if (mode === 'fix_timestamps') {
+      return `You are a Subtitle Timing Specialist. 
+      Your goal is to align timestamps and fix transcription gaps using the audio.
+      
+      RULES:
+      1. **ALIGNMENT**: Adjust start/end times to match the audio perfectly.
+      2. **SPLITTING**: STRICTLY SPLIT any segment longer than 4 seconds or > 25 Chinese characters. This is critical for readability.
+      3. **MISSED AUDIO**: If the audio contains speech that is NOT in the text, transcribe it and insert it.
+      4. **LANGUAGE SAFETY**: The 'text_translated' field MUST BE SIMPLIFIED CHINESE. Do not output English in this field.
+      5. **NO TRANSLATION CHANGE**: Do not change the Chinese translation unless it is completely wrong or missing.
+      6. **NO FILLERS**: Remove filler words from the original text.
+      7. **STRICT TIMING**: Timestamps must not exceed the audio duration.
+      
+      Context: ${genre}`;
+  }
+
+  // 4. Deep Proofreading Prompt (Pro 3)
   return `You are an expert Subtitle Quality Assurance Specialist using Gemini 3 Pro.
     Your goal is to perfect the subtitles.
     
     CRITICAL INSTRUCTIONS:
-    1. **REMOVE FILLER WORDS**: Delete any remaining filler words (e.g., 呃, 嗯, 啊, eto, ano) that disrupt flow. The result should be clean, professional subtitles.
-    2. **FIX TIMESTAMPS**: Ensure they are strictly within the audio range. Do not allow timestamps to exceed the video duration.
-    3. **FLUENCY**: Ensure the Chinese translation is natural and culturally appropriate for the context: ${genre}.
-    4. Return valid JSON matching input structure.`;
+    1. **MISSED CONTENT**: Check for any speech in the audio that was missed in the text. ADD IT if found.
+    2. **MISSED TRANSLATION**: Check if the current translation missed any meaning from the original. Fix it.
+    3. **LANGUAGE SAFETY**: The 'text_translated' field MUST BE SIMPLIFIED CHINESE. If the audio is English, the translation MUST be Chinese. NEVER output English in the translated field.
+    4. **SPLITTING**: STRICTLY SPLIT any segment longer than 4 seconds or > 25 Chinese characters. This is the most important rule for readability.
+    5. **REMOVE FILLER WORDS**: Delete any remaining filler words (e.g., 呃, 嗯, 啊, eto, ano) that disrupt flow.
+    6. **FIX TIMESTAMPS**: Ensure they are strictly within the audio range. 
+    7. **FLUENCY**: Ensure the Chinese translation is natural and culturally appropriate for: ${genre}.
+    8. Return valid JSON matching input structure.`;
 };
 
 // --- MAIN FUNCTIONS ---
@@ -185,7 +213,7 @@ export const generateSubtitles = async (
         
         const refineSystemInstruction = getSystemInstruction(settings.genre, undefined, 'refinement');
         const refinePrompt = `
-        Refine this raw transcription based on the attached audio. 
+        Refine this raw transcription based on the attached audio.
         Raw Transcription: ${JSON.stringify(rawSegments.map(s => ({ start: s.startTime, end: s.endTime, text: s.original })))}
         `;
 
@@ -206,7 +234,6 @@ export const generateSubtitles = async (
                 }
             });
             
-            // Pass cursor + duration as maxDuration to prevent timestamp hallucinations
             refinedSegments = parseGeminiResponse(refineResponse.text, PROCESSING_CHUNK_DURATION);
             
             if (refinedSegments.length === 0) {
@@ -260,7 +287,17 @@ async function translateBatch(ai: GoogleGenAI, items: any[], systemInstruction: 
   for (let i = 0; i < items.length; i += TRANSLATION_BATCH_SIZE) {
     const batch = items.slice(i, i + TRANSLATION_BATCH_SIZE);
     const payload = batch.map(item => ({ id: item.id, text: item.original }));
-    const prompt = `Translate to Simplified Chinese. REMOVE ALL FILLER WORDS:\n${JSON.stringify(payload)}`;
+    
+    const prompt = `Task: Translate the following ${batch.length} items to Simplified Chinese.
+    
+    STRICT RULES:
+    1. Output exactly ${batch.length} items. One-to-one mapping with input IDs.
+    2. ID matching is critical. Do not skip any ID.
+    3. Check for missed translations in the source text.
+    4. Remove filler words.
+    
+    Input JSON:
+    ${JSON.stringify(payload)}`;
 
     try {
       const response = await generateContentWithRetry(ai, {
@@ -287,16 +324,20 @@ async function translateBatch(ai: GoogleGenAI, items: any[], systemInstruction: 
       const transMap = new Map(translatedData.map((t: any) => [t.id, t.text_translated]));
       
       batch.forEach(item => {
+        const translatedText = transMap.get(item.id);
+        // Fallback: If translation is missing or empty, use original text.
+        // This prevents empty subtitles in the final output.
         result.push({
           ...item,
-          translated: transMap.get(item.id) || "" 
+          translated: (translatedText && translatedText.trim().length > 0) ? translatedText : item.original 
         });
       });
 
     } catch (e) {
       console.error("Translation batch failed", e);
+      // Fallback: Use original text on API failure
       batch.forEach(item => {
-        result.push({ ...item, translated: "" });
+        result.push({ ...item, translated: item.original });
       });
     }
   }
@@ -313,7 +354,8 @@ async function processBatch(
   settings: AppSettings,
   systemInstruction: string,
   batchLabel: string,
-  totalVideoDuration?: number
+  totalVideoDuration?: number,
+  mode: BatchOperationMode = 'proofread'
 ): Promise<SubtitleItem[]> {
     if (batch.length === 0) return [];
 
@@ -322,8 +364,11 @@ async function processBatch(
     const startSec = timeToSeconds(batchStartStr);
     const endSec = timeToSeconds(batchEndStr);
 
+    // Audio is required for fix_timestamps and proofread. Optional/Ignored for retranslate.
     let base64Audio = "";
-    if (audioBuffer) {
+    const needsAudio = mode !== 'retranslate';
+
+    if (audioBuffer && needsAudio) {
         try {
             if (startSec < endSec) {
                 // Add padding to context
@@ -343,23 +388,57 @@ async function processBatch(
       text_translated: s.translated
     }));
 
-    const prompt = `
-      Batch ${batchLabel}.
-      PREVIOUS END TIME: "${lastEndTime}".
-      TOTAL VIDEO DURATION (approx): ${totalVideoDuration ? formatTime(totalVideoDuration) : 'Unknown'}.
-      
-      INSTRUCTIONS:
-      1. Listen to the audio (if available).
-      2. **REMOVE FILLER WORDS**: Delete any and all filler words (e.g., 呃, 嗯, 啊, eto, ano) to create clean, fluent Chinese subtitles.
-      3. Fix transcription errors (source).
-      4. Fix translation errors (Chinese).
-      5. SPLIT long lines if the audio has pauses.
-      6. **FIX TIMESTAMPS**: Adjust start/end times to match audio perfectly. **DO NOT generate timestamps past the actual audio.**
-      7. Return valid JSON.
-      
-      Current Subtitles JSON:
-      ${JSON.stringify(payload)}
-    `;
+    let prompt = "";
+
+    if (mode === 'retranslate') {
+        prompt = `
+        Batch ${batchLabel}.
+        RE-TRANSLATE TASK.
+        Ignore timestamps. Focus on Translation Quality.
+        Instructions:
+        1. Translate the "text_original" to "text_translated" accurately.
+        2. **CHECK FOR MISSED TRANSLATION**: Ensure no meaning is lost.
+        3. Remove filler words.
+        4. Keep IDs the same.
+        
+        Input:
+        ${JSON.stringify(payload)}
+        `;
+    } else if (mode === 'fix_timestamps') {
+        prompt = `
+        Batch ${batchLabel}.
+        FIX TIMESTAMPS & ALIGNMENT TASK.
+        PREVIOUS END TIME: "${lastEndTime}".
+        
+        Instructions:
+        1. Listen to audio. Align "start" and "end" perfectly.
+        2. **MISSED AUDIO**: If you hear speech not in text, ADD IT.
+        3. **SPLIT LONG LINES**: If a segment is > 4s or > 25 chars, SPLIT IT.
+        4. **LANGUAGE**: 'text_translated' MUST BE SIMPLIFIED CHINESE. Do not overwrite with English.
+        
+        Input:
+        ${JSON.stringify(payload)}
+        `;
+    } else {
+        // Deep Proofread
+        prompt = `
+        Batch ${batchLabel}.
+        DEEP PROOFREAD TASK.
+        PREVIOUS END TIME: "${lastEndTime}".
+        TOTAL VIDEO DURATION: ${totalVideoDuration ? formatTime(totalVideoDuration) : 'Unknown'}.
+        
+        Instructions:
+        1. Listen to the audio.
+        2. **CHECK FOR MISSED HEARING/AUDIO**: Add any speech missing from text.
+        3. **CHECK FOR MISSED TRANSLATION**: Fix any lost meaning.
+        4. **LANGUAGE CHECK**: 'text_translated' MUST BE SIMPLIFIED CHINESE. Do not output English.
+        5. **SPLIT LONG LINES**: If a segment is > 4s or > 25 chars, SPLIT IT.
+        6. **FIX TIMESTAMPS**: Align to audio.
+        
+        Current Subtitles JSON:
+        ${JSON.stringify(payload)}
+        `;
+    }
 
     try {
       const parts: any[] = [{ text: prompt }];
@@ -372,8 +451,13 @@ async function processBatch(
         });
       }
 
+      // Model Selection:
+      // Proofread -> Gemini 3 Pro (Best quality)
+      // Fix Timestamps / Retranslate -> Gemini 2.5 Flash (Fast/Efficient)
+      const model = mode === 'proofread' ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
+
       const response = await generateContentWithRetry(ai, {
-        model: 'gemini-3-pro-preview',
+        model: model,
         contents: { parts: parts },
         config: {
           responseMimeType: "application/json",
@@ -383,46 +467,55 @@ async function processBatch(
       });
 
       const text = response.text || "[]";
-      // Use totalVideoDuration as maxDuration to filter out hallucinations
       const processedBatch = parseGeminiResponse(text, totalVideoDuration);
 
       if (processedBatch.length > 0) {
+        // For retranslate mode, we might lose timestamps if the model isn't careful, 
+        // but our parseGeminiResponse tries to handle it. 
+        // If retranslate mode didn't return timestamps (unlikely given schema), we'd merge back.
         return processedBatch;
       }
     } catch (e) {
-      console.error(`Batch ${batchLabel} processing failed.`, e);
+      console.error(`Batch ${batchLabel} processing failed (${mode}).`, e);
     }
     // Fallback: return original batch
     return batch;
 }
 
-// --- PROOFREADING FUNCTIONS ---
+// --- BATCH EXECUTION ---
 
-export const proofreadSpecificBatches = async (
+export const runBatchOperation = async (
   file: File,
   allSubtitles: SubtitleItem[],
   batchIndices: number[], // 0-based indices of chunks
   settings: AppSettings,
+  mode: BatchOperationMode,
   onProgress?: (msg: string) => void
 ): Promise<SubtitleItem[]> => {
   const geminiKey = settings.geminiKey?.trim();
   if (!geminiKey) throw new Error("API Key is missing.");
   const ai = new GoogleGenAI({ apiKey: geminiKey });
 
-  onProgress?.("Loading audio for context...");
   let audioBuffer: AudioBuffer | null = null;
-  try {
-     audioBuffer = await decodeAudio(file);
-  } catch(e) {
-     console.warn("Audio decode failed, proceeding with text-only mode.");
+  // Retranslate doesn't strictly need audio context loaded upfront if we aren't slicing, 
+  // but processBatch logic for retranslate ignores audio anyway. 
+  // However, Proofread and Fix Timestamps need it.
+  if (mode !== 'retranslate') {
+      onProgress?.("Loading audio for context...");
+      try {
+         audioBuffer = await decodeAudio(file);
+      } catch(e) {
+         console.warn("Audio decode failed, proceeding with text-only mode.");
+      }
   }
   
-  const systemInstruction = getSystemInstruction(settings.genre, settings.customProofreadingPrompt, 'proofreading');
+  const systemInstruction = getSystemInstruction(
+      settings.genre, 
+      mode === 'proofread' ? settings.customProofreadingPrompt : settings.customTranslationPrompt, 
+      mode
+  );
   
-  // Clone subtitles
   const currentSubtitles = [...allSubtitles];
-  
-  // Split into chunks to manage replacement easily
   const chunks: SubtitleItem[][] = [];
   for (let i = 0; i < currentSubtitles.length; i += PROOFREAD_BATCH_SIZE) {
       chunks.push(currentSubtitles.slice(i, i + PROOFREAD_BATCH_SIZE));
@@ -436,7 +529,7 @@ export const proofreadSpecificBatches = async (
      
      const batch = chunks[batchIdx];
      
-     // Get lastEndTime from the end of the previous chunk (processed or not)
+     // Context for timestamps
      let lastEndTime = "00:00:00,000";
      if (batchIdx > 0) {
          const prevChunk = chunks[batchIdx - 1];
@@ -445,7 +538,12 @@ export const proofreadSpecificBatches = async (
          }
      }
      
-     onProgress?.(`Polishing Segment ${batchIdx + 1} (${i + 1}/${sortedIndices.length})...`);
+     let actionLabel = "";
+     if (mode === 'proofread') actionLabel = "Polishing";
+     else if (mode === 'fix_timestamps') actionLabel = "Aligning";
+     else actionLabel = "Translating";
+
+     onProgress?.(`${actionLabel} Segment ${batchIdx + 1} (${i + 1}/${sortedIndices.length})...`);
      
      const processed = await processBatch(
         ai, 
@@ -455,25 +553,24 @@ export const proofreadSpecificBatches = async (
         settings, 
         systemInstruction, 
         `${batchIdx + 1}`,
-        audioBuffer?.duration
+        audioBuffer?.duration,
+        mode
      );
      
-     // Update the chunk in place
      chunks[batchIdx] = processed;
   }
   
-  // Flatten and re-ID
   return chunks.flat().map((s, i) => ({ ...s, id: i + 1 }));
 };
 
+// Backward compatibility wrapper if needed, or just remove `proofreadSubtitles` if unused
 export const proofreadSubtitles = async (
   file: File,
   subtitles: SubtitleItem[],
   settings: AppSettings,
   onProgress?: (msg: string) => void
 ): Promise<SubtitleItem[]> => {
-  // Process ALL batches
   const totalBatches = Math.ceil(subtitles.length / PROOFREAD_BATCH_SIZE);
   const allIndices = Array.from({ length: totalBatches }, (_, i) => i);
-  return proofreadSpecificBatches(file, subtitles, allIndices, settings, onProgress);
+  return runBatchOperation(file, subtitles, allIndices, settings, 'proofread', onProgress);
 };

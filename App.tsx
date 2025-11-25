@@ -1,17 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
-import { Upload, FileVideo, Download, History, Trash2, Play, CheckCircle, AlertCircle, Languages, Loader2, Sparkles, Settings, X, Eye, EyeOff, MessageSquareText, AudioLines, Clapperboard, Monitor, CheckSquare, Square, RefreshCcw, Type } from 'lucide-react';
-import { SubtitleItem, HistoryItem, GenerationStatus, OutputFormat, AppSettings, Genre } from './types';
+import { Upload, FileVideo, Download, History, Trash2, Play, CheckCircle, AlertCircle, Languages, Loader2, Sparkles, Settings, X, Eye, EyeOff, MessageSquareText, AudioLines, Clapperboard, Monitor, CheckSquare, Square, RefreshCcw, Type, Clock, Wand2 } from 'lucide-react';
+import { SubtitleItem, HistoryItem, GenerationStatus, OutputFormat, AppSettings, Genre, BatchOperationMode } from './types';
 import { generateSrtContent, generateAssContent, downloadFile } from './utils';
-import { generateSubtitles, proofreadSubtitles, proofreadSpecificBatches, PROOFREAD_BATCH_SIZE } from './gemini';
+import { generateSubtitles, runBatchOperation, PROOFREAD_BATCH_SIZE } from './gemini';
 
 const STORAGE_KEY = 'gemini_subtitle_history';
 const SETTINGS_KEY = 'gemini_subtitle_settings';
 
 const DEFAULT_SETTINGS: AppSettings = {
-  geminiKey: process.env.API_KEY || '',
-  openaiKey: process.env.OPENAI_API_KEY || '',
+  geminiKey: '',
+  openaiKey: '',
   transcriptionModel: 'whisper-1',
   genre: 'general',
   customTranslationPrompt: '',
@@ -61,7 +61,8 @@ export default function App() {
     if (storedSettings) {
       try {
         const parsed = JSON.parse(storedSettings);
-        // Merge defaults in case new settings were added
+        // Only merge if not overriding empty keys intentionally, but user wants clean slate logic if missing.
+        // Actually user wants initial fields empty. If localStorage has data, we use it. If not, we use default (empty).
         setSettings(prev => ({ ...DEFAULT_SETTINGS, ...parsed }));
       } catch (e) { console.error("Settings load error"); }
     }
@@ -183,11 +184,12 @@ export default function App() {
     }
   };
 
-  const runProofread = async (batchIndices: number[]) => {
-      if (subtitles.length === 0 || !file) return;
-      if (!settings.geminiKey) {
-          setError("Gemini API Key is missing.");
-          setShowSettings(true);
+  const handleBatchAction = async (mode: BatchOperationMode, singleIndex?: number) => {
+      const indices = singleIndex !== undefined ? [singleIndex] : Array.from(selectedBatches);
+      
+      if (indices.length === 0) return;
+      if (!file || !settings.geminiKey) {
+          setError("Missing file or API Key.");
           return;
       }
 
@@ -195,33 +197,25 @@ export default function App() {
       setError(null);
 
       try {
-          const refined = await proofreadSpecificBatches(
+          const refined = await runBatchOperation(
               file, 
               subtitles, 
-              batchIndices, 
-              settings, 
+              indices, 
+              settings,
+              mode,
               (msg) => setProgressMsg(msg)
           );
           setSubtitles(refined);
           setStatus(GenerationStatus.COMPLETED);
           saveToHistory(refined, file);
-          // Clear selection after success
-          if (batchIndices.length === Math.ceil(subtitles.length / PROOFREAD_BATCH_SIZE)) {
+          // Clear selection after success if it was a multi-select action
+          if (singleIndex === undefined && indices.length === Math.ceil(subtitles.length / PROOFREAD_BATCH_SIZE)) {
              setSelectedBatches(new Set());
           }
       } catch (err: any) {
           setStatus(GenerationStatus.ERROR);
-          setError("Proofreading failed: " + err.message);
+          setError(`Action failed: ${err.message}`);
       }
-  };
-
-  const handleProofreadSelected = () => {
-      if (selectedBatches.size === 0) return;
-      runProofread(Array.from(selectedBatches));
-  };
-
-  const handleProofreadSingleBatch = (index: number) => {
-      runProofread([index]);
   };
 
   const handleDownload = (format: OutputFormat) => {
@@ -277,35 +271,71 @@ export default function App() {
         <div className="p-4 space-y-6">
             {/* Header Controls for Selection */}
             {status === GenerationStatus.COMPLETED && (
-                 <div className="flex items-center justify-between bg-slate-800/80 p-3 rounded-lg border border-slate-700 sticky top-0 z-20 backdrop-blur-md shadow-md">
-                    <button 
-                        onClick={() => toggleAllBatches(chunks.length)}
-                        className="flex items-center space-x-2 text-sm text-slate-300 hover:text-white transition-colors"
-                    >
-                        {selectedBatches.size === chunks.length ? <CheckSquare className="w-4 h-4 text-indigo-400" /> : <Square className="w-4 h-4 text-slate-500" />}
-                        <span>{selectedBatches.size === chunks.length ? 'Deselect All' : 'Select All Segments'}</span>
-                    </button>
-                    
-                    <div className="flex space-x-2">
+                 <div className="flex flex-wrap items-center gap-3 bg-slate-800/80 p-3 rounded-lg border border-slate-700 sticky top-0 z-20 backdrop-blur-md shadow-md justify-between">
+                    <div className="flex items-center space-x-4">
+                        <button 
+                            onClick={() => toggleAllBatches(chunks.length)}
+                            className="flex items-center space-x-2 text-sm text-slate-300 hover:text-white transition-colors"
+                        >
+                            {selectedBatches.size === chunks.length ? <CheckSquare className="w-4 h-4 text-indigo-400" /> : <Square className="w-4 h-4 text-slate-500" />}
+                            <span>{selectedBatches.size === chunks.length ? 'Deselect All' : 'Select All'}</span>
+                        </button>
+
                         <button 
                             onClick={() => setShowSourceText(!showSourceText)}
-                            className="p-1.5 text-slate-400 hover:text-white rounded transition-colors"
-                            title={showSourceText ? "Hide Original Text" : "Show Original Text"}
+                            className="flex items-center space-x-2 text-sm text-slate-400 hover:text-white transition-colors"
                         >
                             {showSourceText ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                            <span className="hidden sm:inline">{showSourceText ? "Hide Original" : "Show Original"}</span>
                         </button>
-                        <div className="w-px bg-slate-600 mx-2 h-6 self-center"></div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                        <div className="text-xs text-slate-500 font-mono mr-2">
+                             {selectedBatches.size} Selected
+                        </div>
+                        
+                        {/* Action Buttons */}
                         <button
-                            onClick={handleProofreadSelected}
+                            onClick={() => handleBatchAction('fix_timestamps')}
                             disabled={selectedBatches.size === 0}
-                            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm ${
+                            title="Fix Timestamps (Gemini 2.5 Flash)"
+                            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${
                                 selectedBatches.size > 0 
-                                ? 'bg-indigo-600 hover:bg-indigo-500 text-white cursor-pointer' 
-                                : 'bg-slate-700 text-slate-500 cursor-not-allowed opacity-50'
+                                ? 'bg-slate-700 border-slate-600 text-emerald-400 hover:bg-slate-600 hover:border-emerald-400/50' 
+                                : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'
+                            }`}
+                        >
+                            <Clock className="w-3 h-3" />
+                            <span className="hidden sm:inline">Fix Time</span>
+                        </button>
+
+                        <button
+                            onClick={() => handleBatchAction('retranslate')}
+                            disabled={selectedBatches.size === 0}
+                            title="Re-translate Text (Gemini 2.5 Flash)"
+                            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${
+                                selectedBatches.size > 0 
+                                ? 'bg-slate-700 border-slate-600 text-blue-400 hover:bg-slate-600 hover:border-blue-400/50' 
+                                : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'
+                            }`}
+                        >
+                            <Languages className="w-3 h-3" />
+                            <span className="hidden sm:inline">Translate</span>
+                        </button>
+
+                        <button
+                            onClick={() => handleBatchAction('proofread')}
+                            disabled={selectedBatches.size === 0}
+                            title="Deep Proofread (Gemini 3 Pro)"
+                            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${
+                                selectedBatches.size > 0 
+                                ? 'bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500' 
+                                : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'
                             }`}
                         >
                             <Sparkles className="w-3 h-3" />
-                            <span>Proofread Selected {selectedBatches.size > 0 ? `(${selectedBatches.size})` : ''}</span>
+                            <span className="hidden sm:inline">Proofread</span>
                         </button>
                     </div>
                  </div>
@@ -340,13 +370,22 @@ export default function App() {
                             </div>
                             
                             {status === GenerationStatus.COMPLETED && (
-                                <button
-                                    onClick={() => handleProofreadSingleBatch(chunkIdx)}
-                                    title="Re-proofread this segment only"
-                                    className="p-2 text-slate-500 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-                                >
-                                    <RefreshCcw className="w-4 h-4" />
-                                </button>
+                                <div className="flex items-center space-x-1">
+                                    <button
+                                        onClick={() => handleBatchAction('fix_timestamps', chunkIdx)}
+                                        title="Fix Time"
+                                        className="p-2 text-slate-500 hover:text-emerald-400 hover:bg-slate-700 rounded-lg transition-colors"
+                                    >
+                                        <Clock className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleBatchAction('proofread', chunkIdx)}
+                                        title="Deep Proofread"
+                                        className="p-2 text-slate-500 hover:text-indigo-400 hover:bg-slate-700 rounded-lg transition-colors"
+                                    >
+                                        <Wand2 className="w-4 h-4" />
+                                    </button>
+                                </div>
                             )}
                         </div>
                         
@@ -534,7 +573,7 @@ export default function App() {
               <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 shadow-xl animate-fade-in">
                 <h2 className="text-lg font-semibold text-white mb-4 flex items-center">
                   <Download className="w-5 h-5 mr-2 text-emerald-400" />
-                  Download ({settings.outputMode === 'bilingual' ? 'Bi' : 'Zh'})
+                  Download ({settings.outputMode === 'bilingual' ? 'Bilingual' : 'Chinese Only'})
                 </h2>
                 <div className="grid grid-cols-2 gap-3">
                   <button onClick={() => handleDownload('srt')} className="flex items-center justify-center space-x-2 p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-lg transition-all">
