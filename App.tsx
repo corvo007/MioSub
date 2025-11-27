@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import ReactDOM from 'react-dom/client';
+
 import { Upload, FileVideo, Download, Trash2, Play, CheckCircle, AlertCircle, Languages, Loader2, Sparkles, Settings, X, Eye, EyeOff, MessageSquareText, AudioLines, Clapperboard, Monitor, CheckSquare, Square, RefreshCcw, Type, Clock, Wand2, FileText, RotateCcw, MessageCircle, GitCommit, ArrowLeft, Plus } from 'lucide-react';
-import { SubtitleItem, GenerationStatus, OutputFormat, AppSettings, Genre, BatchOperationMode, SubtitleSnapshot, ChunkStatus } from './types';
+import { SubtitleItem, GenerationStatus, OutputFormat, AppSettings, Genre, BatchOperationMode, SubtitleSnapshot, ChunkStatus, GENRE_PRESETS } from './types';
 import { generateSrtContent, generateAssContent, downloadFile, parseSrt, parseAss } from './utils';
 import { generateSubtitles, runBatchOperation } from './gemini';
 
@@ -19,11 +19,42 @@ const DEFAULT_SETTINGS: AppSettings = {
     customProofreadingPrompt: '',
     outputMode: 'bilingual',
     proofreadBatchSize: 20,
+    translationBatchSize: 20,
+    chunkDuration: 300,
     concurrencyFlash: 5,
     concurrencyPro: 2
 };
 
-const GENRE_PRESETS = ['general', 'anime', 'movie', 'news', 'tech'];
+
+
+const TimeTracker = ({ startTime, completed, total, status }: { startTime: number, completed: number, total: number, status: GenerationStatus }) => {
+    const [now, setNow] = useState(Date.now());
+    useEffect(() => {
+        const timer = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    if (!startTime) return null;
+
+    const elapsed = Math.floor((now - startTime) / 1000);
+    let remaining: number | null = null;
+
+    if (completed > 0 && total > completed) {
+        const avgTime = (now - startTime) / completed;
+        remaining = Math.floor((avgTime * (total - completed)) / 1000);
+    }
+
+    return (
+        <div className="flex justify-between text-xs text-slate-400 mb-4 px-1">
+            <span>Time Used: {elapsed}s</span>
+            {remaining !== null && status !== GenerationStatus.COMPLETED && (
+                <span>
+                    Est. Remaining: {remaining}s
+                </span>
+            )}
+        </div>
+    );
+};
 
 export default function App() {
     // View State
@@ -45,6 +76,7 @@ export default function App() {
 
     // Settings State
     const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+    const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
 
     // Batch Selection & Comment State
     const [selectedBatches, setSelectedBatches] = useState<Set<number>>(new Set());
@@ -71,11 +103,13 @@ export default function App() {
                 setSettings(prev => ({ ...DEFAULT_SETTINGS, ...parsed }));
             } catch (e) { console.error("Settings load error"); }
         }
+        setIsSettingsLoaded(true);
     }, []);
 
     useEffect(() => {
+        if (!isSettingsLoaded) return;
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-    }, [settings]);
+    }, [settings, isSettingsLoaded]);
 
     useEffect(() => {
         if (status === GenerationStatus.PROCESSING && subtitleListRef.current) {
@@ -243,14 +277,12 @@ export default function App() {
                     </div>
 
                     {startTime && (
-                        <div className="flex justify-between text-xs text-slate-400 mb-4 px-1">
-                            <span>Time Used: {Math.round((Date.now() - startTime) / 1000)}s</span>
-                            {percent > 0 && percent < 100 && (
-                                <span>
-                                    Est. Remaining: {Math.round(((Date.now() - startTime) / percent * (100 - percent)) / 1000)}s
-                                </span>
-                            )}
-                        </div>
+                        <TimeTracker
+                            startTime={startTime}
+                            completed={completed}
+                            total={total}
+                            status={status}
+                        />
                     )}
 
                     <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar bg-slate-950/50 p-4 rounded-lg border border-slate-800">
@@ -447,7 +479,7 @@ export default function App() {
                             {file ? (
                                 <div className="flex items-center p-3 bg-slate-800 rounded-lg border border-slate-700/50">
                                     <FileVideo className="w-8 h-8 text-indigo-400 mr-3 flex-shrink-0" />
-                                    <div className="overflow-hidden flex-1 min-w-0"><p className="text-xs font-medium text-white truncate" title={file.name}>{file.name}</p><p className="text-[10px] text-slate-500">{Math.floor(duration / 60)}:{Math.floor(duration % 60).toString().padStart(2, '0')} â€?{(file.size / (1024 * 1024)).toFixed(1)}MB</p></div>
+                                    <div className="overflow-hidden flex-1 min-w-0"><p className="text-xs font-medium text-white truncate" title={file.name}>{file.name}</p><p className="text-[10px] text-slate-500">{Math.floor(duration / 60)}:{Math.floor(duration % 60).toString().padStart(2, '0')} ï¿½?{(file.size / (1024 * 1024)).toFixed(1)}MB</p></div>
                                     <label className="cursor-pointer p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors ml-1" title="Change Source File"><RefreshCcw className="w-3 h-3" /><input type="file" accept="video/*,audio/*" onChange={handleFileChange} className="hidden" disabled={isProcessing} /></label>
                                 </div>
                             ) : (
@@ -546,6 +578,14 @@ export default function App() {
                                     <div>
                                         <label className="block text-sm font-medium text-slate-300 mb-1.5">Proofread Batch Size</label>
                                         <input type="number" value={settings.proofreadBatchSize} onChange={(e) => updateSetting('proofreadBatchSize', parseInt(e.target.value) || 20)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Translation Batch Size</label>
+                                        <input type="number" value={settings.translationBatchSize} onChange={(e) => updateSetting('translationBatchSize', parseInt(e.target.value) || 20)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Chunk Duration (s)</label>
+                                        <input type="number" value={settings.chunkDuration} onChange={(e) => updateSetting('chunkDuration', parseInt(e.target.value) || 300)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-slate-300 mb-1.5">Concurrency (Flash)</label>

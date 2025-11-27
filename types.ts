@@ -38,6 +38,7 @@ export type OutputFormat = 'srt' | 'ass';
 export type BatchOperationMode = 'fix_timestamps' | 'retranslate' | 'proofread';
 
 // Settings Types
+export const GENRE_PRESETS = ['general', 'anime', 'movie', 'news', 'tech'];
 export type Genre = 'general' | 'anime' | 'movie' | 'news' | 'tech';
 
 export interface AppSettings {
@@ -49,6 +50,8 @@ export interface AppSettings {
   customProofreadingPrompt: string;
   outputMode: 'bilingual' | 'target_only';
   proofreadBatchSize: number;
+  translationBatchSize: number;
+  chunkDuration: number;
   concurrencyFlash: number;
   concurrencyPro: number;
 }
