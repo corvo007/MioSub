@@ -480,7 +480,7 @@ export default function App() {
                             {file ? (
                                 <div className="flex items-center p-3 bg-slate-800 rounded-lg border border-slate-700/50">
                                     <FileVideo className="w-8 h-8 text-indigo-400 mr-3 flex-shrink-0" />
-                                    <div className="overflow-hidden flex-1 min-w-0"><p className="text-xs font-medium text-white truncate" title={file.name}>{file.name}</p><p className="text-[10px] text-slate-500">{Math.floor(duration / 60)}:{Math.floor(duration % 60).toString().padStart(2, '0')} �?{(file.size / (1024 * 1024)).toFixed(1)}MB</p></div>
+                                    <div className="overflow-hidden flex-1 min-w-0"><p className="text-xs font-medium text-white truncate" title={file.name}>{file.name}</p><p className="text-[10px] text-slate-500">{Math.floor(duration / 60)}:{Math.floor(duration % 60).toString().padStart(2, '0')} · {(file.size / (1024 * 1024)).toFixed(1)}MB</p></div>
                                     <label className="cursor-pointer p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors ml-1" title="Change Source File"><RefreshCcw className="w-3 h-3" /><input type="file" accept="video/*,audio/*" onChange={handleFileChange} className="hidden" disabled={isProcessing} /></label>
                                 </div>
                             ) : (
