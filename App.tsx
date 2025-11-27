@@ -261,8 +261,9 @@ export default function App() {
             return String(a.id).localeCompare(String(b.id));
         });
 
-        const total = chunks.length > 0 ? chunks[0].total : 0;
-        const completed = chunks.filter(c => c.status === 'completed').length;
+        const contentChunks = chunks.filter(c => c.id !== 'init');
+        const total = contentChunks.length > 0 ? contentChunks[0].total : 0;
+        const completed = contentChunks.filter(c => c.status === 'completed').length;
         const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
         return (
