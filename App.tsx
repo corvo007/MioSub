@@ -1,9 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Upload, FileVideo, Download, Trash2, Play, CheckCircle, AlertCircle, Languages, Loader2, Sparkles, Settings, X, Eye, EyeOff, MessageSquareText, AudioLines, Clapperboard, Monitor, CheckSquare, Square, RefreshCcw, Type, Clock, Wand2, FileText, RotateCcw, MessageCircle, GitCommit, ArrowLeft, Plus, Book, ShieldCheck, Scissors } from 'lucide-react';
+import { SubtitleItem, GenerationStatus, OutputFormat, AppSettings, Genre, BatchOperationMode, SubtitleSnapshot, ChunkStatus, GENRE_PRESETS, DEFAULT_QC_CONFIG, GlossaryItem } from './types';
+import { generateSrtContent, generateAssContent, downloadFile, parseSrt, parseAss, decodeAudio, logger } from './utils';
+import { generateSubtitles, runBatchOperation, generateGlossary } from './gemini';
+import { createQualityControlPipeline, QCPipelineResult } from './qualityControl';
+import { QC_REVIEW_PROMPT, QC_FIX_PROMPT, QC_VALIDATE_PROMPT } from './prompts';
+import { SmartSegmenter } from './smartSegmentation';
+import { TerminologyChecker, TerminologyIssue } from './terminologyChecker';
 
-import { Upload, FileVideo, Download, Trash2, Play, CheckCircle, AlertCircle, Languages, Loader2, Sparkles, Settings, X, Eye, EyeOff, MessageSquareText, AudioLines, Clapperboard, Monitor, CheckSquare, Square, RefreshCcw, Type, Clock, Wand2, FileText, RotateCcw, MessageCircle, GitCommit, ArrowLeft, Plus } from 'lucide-react';
-import { SubtitleItem, GenerationStatus, OutputFormat, AppSettings, Genre, BatchOperationMode, SubtitleSnapshot, ChunkStatus, GENRE_PRESETS } from './types';
-import { generateSrtContent, generateAssContent, downloadFile, parseSrt, parseAss } from './utils';
-import { generateSubtitles, runBatchOperation } from './gemini';
 
 const SETTINGS_KEY = 'gemini_subtitle_settings';
 
@@ -22,7 +26,8 @@ const DEFAULT_SETTINGS: AppSettings = {
     translationBatchSize: 20,
     chunkDuration: 300,
     concurrencyFlash: 5,
-    concurrencyPro: 2
+    concurrencyPro: 2,
+    qualityControl: DEFAULT_QC_CONFIG
 };
 
 
@@ -58,10 +63,14 @@ const TimeTracker = ({ startTime, completed, total, status }: { startTime: numbe
 
 export default function App() {
     // View State
-    const [view, setView] = useState<'home' | 'workspace'>('home');
+    const [view, setView] = useState<'home' | 'workspace' | 'quality_control'>('home');
 
     // Logic State
     const [activeTab, setActiveTab] = useState<'new' | 'import'>('new');
+    const [settingsTab, setSettingsTab] = useState('api');
+    const [qcStatus, setQcStatus] = useState<'idle' | 'running' | 'completed' | 'error'>('idle');
+    const [qcProgress, setQcProgress] = useState('');
+    const [qcResult, setQcResult] = useState<QCPipelineResult | null>(null);
     const [file, setFile] = useState<File | null>(null);
     const [duration, setDuration] = useState<number>(0);
     const [status, setStatus] = useState<GenerationStatus>(GenerationStatus.IDLE);
@@ -87,8 +96,15 @@ export default function App() {
     const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
     const [startTime, setStartTime] = useState<number | null>(null);
 
+    // Phase 4 State
+    const [glossary, setGlossary] = useState<GlossaryItem[]>([]);
+    const [termIssues, setTermIssues] = useState<TerminologyIssue[]>([]);
+    const [isGeneratingGlossary, setIsGeneratingGlossary] = useState(false);
+    const [useSmartSplit, setUseSmartSplit] = useState(true);
+
     // Refs
     const subtitleListRef = useRef<HTMLDivElement>(null);
+    const audioCacheRef = useRef<{ file: File, buffer: AudioBuffer } | null>(null);
 
     const isProcessing = status === GenerationStatus.UPLOADING || status === GenerationStatus.PROCESSING || status === GenerationStatus.PROOFREADING;
 
@@ -100,8 +116,22 @@ export default function App() {
         if (storedSettings) {
             try {
                 const parsed = JSON.parse(storedSettings);
+
+                // Migration: Fix legacy model names
+                if (parsed.qualityControl) {
+                    if (parsed.qualityControl.reviewModel?.modelName === 'gemini-3.0-pro') {
+                        parsed.qualityControl.reviewModel.modelName = 'gemini-3-pro-preview';
+                    }
+                    if (parsed.qualityControl.fixModel?.modelName === 'gemini-3.0-pro') {
+                        parsed.qualityControl.fixModel.modelName = 'gemini-3-pro-preview';
+                    }
+                    if (parsed.qualityControl.validateModel?.modelName === 'gemini-3.0-pro') {
+                        parsed.qualityControl.validateModel.modelName = 'gemini-3-pro-preview';
+                    }
+                }
+
                 setSettings(prev => ({ ...DEFAULT_SETTINGS, ...parsed }));
-            } catch (e) { console.error("Settings load error"); }
+            } catch (e) { logger.warn("Settings load error", e); }
         }
         setIsSettingsLoaded(true);
     }, []);
@@ -169,11 +199,15 @@ export default function App() {
         setSelectedBatches(newSet);
     };
 
+
+
     // --- Handlers ---
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const selectedFile = e.target.files[0];
+            logger.info("File selected", { name: selectedFile.name, size: selectedFile.size, type: selectedFile.type });
             setFile(selectedFile);
+            audioCacheRef.current = null;
             setError(null);
             if (activeTab === 'new' && subtitles.length > 0 && status === GenerationStatus.COMPLETED) {
                 if (!confirm("This will replace the current file and may require re-generation. Continue?")) return;
@@ -186,6 +220,7 @@ export default function App() {
     const handleSubtitleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const subFile = e.target.files[0];
+            logger.info("Subtitle file imported", { name: subFile.name });
             const reader = new FileReader();
             reader.onload = (ev) => {
                 const content = ev.target?.result as string;
@@ -208,12 +243,18 @@ export default function App() {
             setError("API Keys are missing. Please configure them in Settings."); setShowSettings(true); return;
         }
         setStatus(GenerationStatus.UPLOADING); setError(null); setSubtitles([]); setSnapshots([]); setBatchComments({}); setSelectedBatches(new Set()); setChunkProgress({}); setStartTime(Date.now());
+        logger.info("Starting subtitle generation", { file: file.name, duration, settings: { ...settings, geminiKey: '***', openaiKey: '***' } });
         try {
             setStatus(GenerationStatus.PROCESSING);
             const result = await generateSubtitles(file, duration, settings, (update) => { setChunkProgress(prev => ({ ...prev, [update.id]: update })); }, (newSubs) => setSubtitles(newSubs));
             if (result.length === 0) throw new Error("No subtitles were generated.");
             setSubtitles(result); setStatus(GenerationStatus.COMPLETED); createSnapshot("Initial Generation", result);
-        } catch (err: any) { setStatus(GenerationStatus.ERROR); setError(err.message); }
+            logger.info("Subtitle generation completed", { count: result.length });
+        } catch (err: any) {
+            setStatus(GenerationStatus.ERROR);
+            setError(err.message);
+            logger.error("Subtitle generation failed", err);
+        }
     };
 
     const handleBatchAction = async (mode: BatchOperationMode, singleIndex?: number) => {
@@ -222,27 +263,127 @@ export default function App() {
         if (!settings.geminiKey && !ENV_GEMINI_KEY) { setError("Missing API Key."); return; }
         if (mode === 'fix_timestamps' && !file) { setError("Cannot fix timestamps without source media file."); return; }
         setStatus(GenerationStatus.PROOFREADING); setError(null); setChunkProgress({}); setStartTime(Date.now());
+        logger.info(`Starting batch action: ${mode}`, { indices, mode });
         try {
             const refined = await runBatchOperation(file, subtitles, indices, settings, mode, batchComments, (update) => { setChunkProgress(prev => ({ ...prev, [update.id]: update })); });
             setSubtitles(refined); setStatus(GenerationStatus.COMPLETED);
             setBatchComments(prev => { const next = { ...prev }; indices.forEach(idx => delete next[idx]); return next; });
             if (singleIndex === undefined) setSelectedBatches(new Set());
-            const actionName = mode === 'fix_timestamps' ? 'Fix Time' : mode === 'retranslate' ? 'Retranslate' : 'Proofread';
+            const actionName = mode === 'fix_timestamps' ? 'Fix Time' : 'Proofread';
             createSnapshot(`${actionName} (${indices.length} segments)`, refined);
-        } catch (err: any) { setStatus(GenerationStatus.ERROR); setError(`Action failed: ${err.message}`); }
+            logger.info(`Batch action ${mode} completed`);
+        } catch (err: any) {
+            setStatus(GenerationStatus.ERROR);
+            setError(`Action failed: ${err.message}`);
+            logger.error(`Batch action ${mode} failed`, err);
+        }
     };
 
-    const handleDownload = (format: OutputFormat) => {
-        if (!subtitles.length) return;
-        const fileNameBase = file?.name?.split('.').slice(0, -1).join('.') || 'subtitles';
+    const handleStartQCPipeline = async () => {
+        if (!file) { setError("No media file loaded"); return; }
+        if (subtitles.length === 0) { setError("No subtitles to check"); return; }
+        if (!settings.geminiKey && !ENV_GEMINI_KEY) { setError("API Key missing"); return; }
+
+        // Calculate selected indices from selectedBatches
+        const batchSize = settings.proofreadBatchSize || 20;
+        const selectedIndices = selectedBatches.size > 0
+            ? Array.from(selectedBatches).flatMap(batchIdx => {
+                const start = Number(batchIdx) * batchSize;
+                return Array.from({ length: batchSize }, (_, i) => start + i)
+                    .filter(idx => idx < subtitles.length);
+            })
+            : undefined;
+
+        setQcStatus('running');
+        setQcProgress(selectedIndices
+            ? `Initializing QC for ${selectedIndices.length} selected subtitles...`
+            : 'Initializing QC for all subtitles...'
+        );
+        setQcResult(null);
+
+        try {
+            // Check if audio buffer is available
+            let audioBuffer: AudioBuffer;
+            if (settings.qualityControl?.audioCacheEnabled && audioCacheRef.current?.file === file) {
+                setQcProgress('Using cached audio context...');
+                audioBuffer = audioCacheRef.current.buffer;
+            } else {
+                setQcProgress('Loading audio context...');
+                audioBuffer = await decodeAudio(file);
+                if (settings.qualityControl?.audioCacheEnabled) {
+                    audioCacheRef.current = { file, buffer: audioBuffer };
+                }
+            }
+
+            const config = settings.qualityControl || DEFAULT_QC_CONFIG;
+
+            setQcProgress('Starting Quality Control Pipeline...');
+            logger.info("Starting QC Pipeline", { selectedIndicesCount: selectedIndices?.length, config });
+
+            const result = await createQualityControlPipeline(
+                subtitles,
+                selectedIndices, // Pass selected indices
+                audioBuffer,
+                0, // Start from beginning
+                config,
+                settings.genre,
+                { gemini: settings.geminiKey || ENV_GEMINI_KEY, openai: settings.openaiKey || ENV_OPENAI_KEY },
+                {
+                    review: (g) => QC_REVIEW_PROMPT(g),
+                    fix: (g, issues) => QC_FIX_PROMPT(g, issues),
+                    validate: (g, issues) => QC_VALIDATE_PROMPT(g, issues)
+                },
+                {
+                    onProgress: (stage, progress, msg) => {
+                        setQcProgress(`${stage}: ${msg}`);
+                    },
+                    onIterationComplete: async (iter, issues, subs) => {
+                        setSubtitles(subs);
+                        setQcProgress(`Iteration ${iter} complete. Found ${issues.length} issues.`);
+                        return 'continue';
+                    }
+                }
+            );
+
+            setQcResult(result);
+            setSubtitles(result.finalSubtitles);
+            setQcStatus('completed');
+            createSnapshot(`QC Complete (${result.iterations} iters)`, result.finalSubtitles);
+            logger.info("QC Pipeline completed", { iterations: result.iterations, passed: result.passedValidation });
+
+        } catch (e: any) {
+            logger.error("QC Pipeline failed", e);
+            setError(`QC Pipeline Failed: ${e.message}`);
+            setQcStatus('error');
+        }
+    };
+
+    const updateSetting = (key: keyof AppSettings, value: any) => {
+        setSettings(prev => {
+            const newSettings = { ...prev, [key]: value };
+            return newSettings;
+        });
+    };
+
+    const handleDownload = (format: 'srt' | 'ass') => {
+        if (subtitles.length === 0) return;
         const isBilingual = settings.outputMode === 'bilingual';
-        const content = format === 'srt' ? generateSrtContent(subtitles, isBilingual) : generateAssContent(subtitles, fileNameBase, isBilingual);
-        downloadFile(`${fileNameBase}.${format}`, content, format);
+        const content = format === 'srt'
+            ? generateSrtContent(subtitles, isBilingual)
+            : generateAssContent(subtitles, file ? file.name : "video", isBilingual);
+        const filename = file ? file.name.replace(/\.[^/.]+$/, "") : "subtitles";
+        logger.info(`Downloading subtitles: ${filename}.${format}`);
+        downloadFile(`${filename}.${format}`, content, format);
     };
 
-    const updateLineComment = (id: number, comment: string) => { setSubtitles(prev => prev.map(s => s.id === id ? { ...s, comment } : s)); };
-    const updateBatchComment = (chunkIdx: number, comment: string) => { setBatchComments(prev => ({ ...prev, [chunkIdx]: comment })); };
-    const updateSetting = (key: keyof AppSettings, value: any) => { setSettings(prev => ({ ...prev, [key]: value })); };
+    const updateBatchComment = (index: number, comment: string) => {
+        setBatchComments(prev => ({ ...prev, [index]: comment }));
+    };
+
+    const updateLineComment = (id: number, comment: string) => {
+        setSubtitles(prev => prev.map(s => s.id === id ? { ...s, comment } : s));
+    };
+
     const goBackHome = () => {
         if (subtitles.length > 0 && !confirm("Go back to home? Unsaved progress will be lost.")) return;
         setView('home'); setSubtitles([]); setFile(null); setDuration(0); setStatus(GenerationStatus.IDLE); setSnapshots([]); setBatchComments({}); setSelectedBatches(new Set()); setError(null);
@@ -363,14 +504,12 @@ export default function App() {
                         <div className="flex items-center space-x-2">
                             <div className="text-xs text-slate-500 font-mono mr-2 hidden sm:block">{selectedBatches.size} Selected</div>
                             {file && (
-                                <button onClick={() => handleBatchAction('fix_timestamps')} disabled={selectedBatches.size === 0} title="Fix Timestamps (Audio Required)" className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-slate-700 border-slate-600 text-emerald-400 hover:bg-slate-600 hover:border-emerald-400/50' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}>
+                                <button onClick={() => handleBatchAction('fix_timestamps')} disabled={selectedBatches.size === 0} title="Fix Timestamps (Preserves Translation)" className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-slate-700 border-slate-600 text-emerald-400 hover:bg-slate-600 hover:border-emerald-400/50' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}>
                                     <Clock className="w-3 h-3" /><span className="hidden sm:inline">Fix Time</span>
                                 </button>
                             )}
-                            <button onClick={() => handleBatchAction('retranslate')} disabled={selectedBatches.size === 0} title="Re-translate Text" className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-slate-700 border-slate-600 text-blue-400 hover:bg-slate-600 hover:border-blue-400/50' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}>
-                                <Languages className="w-3 h-3" /><span className="hidden sm:inline">Translate</span>
-                            </button>
-                            <button onClick={() => handleBatchAction('proofread')} disabled={selectedBatches.size === 0} title="Deep Proofread (Respects Comments)" className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}>
+
+                            <button onClick={() => handleBatchAction('proofread')} disabled={selectedBatches.size === 0} title="Proofread Translation (Preserves Timestamps)" className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}>
                                 <Sparkles className="w-3 h-3" /><span className="hidden sm:inline">Proofread</span>
                             </button>
                         </div>
@@ -434,6 +573,344 @@ export default function App() {
         );
     };
 
+    const handleGenerateGlossary = async () => {
+        if (subtitles.length === 0) {
+            setError("No subtitles available to analyze.");
+            return;
+        }
+        setIsGeneratingGlossary(true);
+        try {
+            const apiKey = settings.geminiKey || ENV_GEMINI_KEY;
+            const terms = await generateGlossary(subtitles, apiKey, settings.genre);
+
+            // Merge with existing glossary to avoid duplicates
+            const existingTerms = new Set(settings.glossary?.map(g => g.term.toLowerCase()) || []);
+            const newTerms = terms.filter(t => !existingTerms.has(t.term.toLowerCase()));
+
+            const updatedGlossary = [...(settings.glossary || []), ...newTerms];
+            updateSetting('glossary', updatedGlossary);
+
+            if (newTerms.length === 0) {
+                // Maybe show a toast? For now just console
+                logger.info("No new terms found.");
+            }
+        } catch (e: any) {
+            logger.error("Glossary generation failed", e);
+            setError(e.message);
+        } finally {
+            setIsGeneratingGlossary(false);
+        }
+    };
+
+    const SettingsModal = () => {
+        if (!showSettings) return null;
+
+        return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl animate-fade-in relative overflow-hidden">
+                    <div className="p-6 overflow-y-auto custom-scrollbar">
+                        <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
+                        <h2 className="text-xl font-bold text-white mb-6 flex items-center"><Settings className="w-5 h-5 mr-2 text-indigo-400" /> Settings</h2>
+
+                        <div className="flex space-x-1 border-b border-slate-700 mb-6 overflow-x-auto">
+                            {['api', 'performance', 'transcription', 'prompts', 'terminology'].map((tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setSettingsTab(tab)}
+                                    className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${settingsTab === tab ? 'bg-slate-800 text-indigo-400 border-t border-x border-slate-700' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}`}
+                                >
+                                    {tab === 'api' && 'API Keys'}
+                                    {tab === 'performance' && 'Performance'}
+                                    {tab === 'transcription' && 'Transcription'}
+                                    {tab === 'prompts' && 'Prompts'}
+                                    {tab === 'terminology' && 'Terminology'}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="space-y-6 min-h-[400px]">
+                            {settingsTab === 'api' && (
+                                <div className="space-y-3 animate-fade-in">
+                                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">API Configuration</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini API Key</label>
+                                            <div className="relative"><input type="password" value={settings.geminiKey} onChange={(e) => updateSetting('geminiKey', e.target.value.trim())} placeholder="Enter Gemini API Key" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
+                                            {ENV_GEMINI_KEY && !settings.geminiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> Using API Key from environment</p>)}
+                                            {ENV_GEMINI_KEY && settings.geminiKey && (<p className="text-xs text-amber-400 mt-1">Overriding environment API Key</p>)}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI API Key</label>
+                                            <div className="relative"><input type="password" value={settings.openaiKey} onChange={(e) => updateSetting('openaiKey', e.target.value.trim())} placeholder="Enter OpenAI API Key" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
+                                            {ENV_OPENAI_KEY && !settings.openaiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> Using API Key from environment</p>)}
+                                            {ENV_OPENAI_KEY && settings.openaiKey && (<p className="text-xs text-amber-400 mt-1">Overriding environment API Key</p>)}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {settingsTab === 'performance' && (
+                                <div className="space-y-3 animate-fade-in">
+                                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Performance & Batching</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Proofread Batch Size</label>
+                                            <input type="number" value={settings.proofreadBatchSize} onChange={(e) => updateSetting('proofreadBatchSize', parseInt(e.target.value) || 20)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Translation Batch Size</label>
+                                            <input type="number" value={settings.translationBatchSize} onChange={(e) => updateSetting('translationBatchSize', parseInt(e.target.value) || 20)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Chunk Duration (s)</label>
+                                            <input type="number" value={settings.chunkDuration} onChange={(e) => updateSetting('chunkDuration', parseInt(e.target.value) || 300)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Concurrency (Flash)</label>
+                                            <input type="number" value={settings.concurrencyFlash} onChange={(e) => updateSetting('concurrencyFlash', parseInt(e.target.value) || 5)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Concurrency (Pro)</label>
+                                            <input type="number" value={settings.concurrencyPro} onChange={(e) => updateSetting('concurrencyPro', parseInt(e.target.value) || 2)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {settingsTab === 'transcription' && (
+                                <div className="space-y-3 animate-fade-in">
+                                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Transcription & Style</h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Transcription Model</label>
+                                            <div className="relative"><AudioLines className="absolute left-3 top-2.5 w-4 h-4 text-slate-500" /><select value={settings.transcriptionModel} onChange={(e) => updateSetting('transcriptionModel', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 pl-9 pr-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm appearance-none"><option value="whisper-1">Whisper (Standard)</option><option value="gpt-4o-audio-preview">GPT-4o Audio</option></select></div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Genre / Context</label>
+                                            <div className="relative"><Clapperboard className="absolute left-3 top-2.5 w-4 h-4 text-slate-500" /><select value={isCustomGenre ? 'custom' : settings.genre} onChange={(e) => { const val = e.target.value; if (val === 'custom') updateSetting('genre', ''); else updateSetting('genre', val); }} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 pl-9 pr-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm appearance-none"><option value="general">General</option><option value="anime">Anime / Animation</option><option value="movie">Movies / TV Series</option><option value="news">News / Documentary</option><option value="tech">Tech / Education</option><option value="custom">Custom...</option></select></div>
+                                        </div>
+                                    </div>
+                                    {isCustomGenre && (
+                                        <div className="pt-2 animate-fade-in"><label className="block text-xs font-medium text-indigo-400 mb-1.5">Custom Context / Genre Description</label><input type="text" value={settings.genre} onChange={(e) => updateSetting('genre', e.target.value)} placeholder="E.g., Minecraft Gameplay, Medical Lecture, 19th Century Drama... (Be specific for better tone)" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm placeholder-slate-600 shadow-inner" autoFocus /></div>
+                                    )}
+
+                                    <div className="pt-4 border-t border-slate-800">
+                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Export Mode</label>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <button onClick={() => updateSetting('outputMode', 'bilingual')} className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'bilingual' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}><Languages className="w-4 h-4" /><span>Bilingual (Original + CN)</span></button>
+                                            <button onClick={() => updateSetting('outputMode', 'target_only')} className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'target_only' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}><Type className="w-4 h-4" /><span>Chinese Only</span></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {settingsTab === 'prompts' && (
+                                <div className="space-y-3 animate-fade-in">
+                                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center"><MessageSquareText className="w-4 h-4 mr-1.5" /> Custom Prompts (Optional)</h3>
+                                    <p className="text-xs text-slate-500 mb-2">Leave blank to use the default prompts for the selected genre.</p>
+                                    <div><label className="block text-xs font-medium text-slate-400 mb-1">Translation Prompt</label><textarea value={settings.customTranslationPrompt} onChange={(e) => updateSetting('customTranslationPrompt', e.target.value)} placeholder="Override system instruction for initial translation..." className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 h-20 resize-none" /></div>
+                                    <div><label className="block text-xs font-medium text-slate-400 mb-1">Proofreading Prompt</label><textarea value={settings.customProofreadingPrompt} onChange={(e) => updateSetting('customProofreadingPrompt', e.target.value)} placeholder="Override system instruction for proofreading..." className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 h-20 resize-none" /></div>
+                                </div>
+                            )}
+
+                            {/* {settingsTab === 'quality_control' && (
+                                <div className="space-y-4 animate-fade-in">
+                                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center"><Sparkles className="w-4 h-4 mr-1.5" /> Quality Control Pipeline</h3>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                                            <h4 className="text-xs font-bold text-indigo-300 mb-2">Review Stage</h4>
+                                            <div className="space-y-2">
+                                                <label className="block text-xs text-slate-400">Model</label>
+                                                <select
+                                                    value={settings.qualityControl?.reviewModel.modelName}
+                                                    onChange={(e) => {
+                                                        const newQC = { ...settings.qualityControl || DEFAULT_QC_CONFIG };
+                                                        newQC.reviewModel.modelName = e.target.value;
+                                                        updateSetting('qualityControl', newQC);
+                                                    }}
+                                                    className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-slate-200"
+                                                >
+                                                    <option value="gemini-3-pro-preview">Gemini 3 Pro</option>
+                                                    <option value="gemini-3-pro-preview">Gemini 3 Pro</option>
+                                                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                                                    <option value="gpt-5.1">GPT-5.1</option>
+                                                    <option value="gpt-5-pro">GPT-5 Pro</option>
+                                                    <option value="gpt-4o">GPT-4o</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                                            <h4 className="text-xs font-bold text-emerald-300 mb-2">Fix Stage</h4>
+                                            <div className="space-y-2">
+                                                <label className="block text-xs text-slate-400">Model</label>
+                                                <select
+                                                    value={settings.qualityControl?.fixModel.modelName}
+                                                    onChange={(e) => {
+                                                        const newQC = { ...settings.qualityControl || DEFAULT_QC_CONFIG };
+                                                        newQC.fixModel.modelName = e.target.value;
+                                                        updateSetting('qualityControl', newQC);
+                                                    }}
+                                                    className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-slate-200"
+                                                >
+                                                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                                                    <option value="gemini-3-pro-preview">Gemini 3 Pro</option>
+                                                    <option value="gpt-5.1">GPT-5.1</option>
+                                                    <option value="gpt-5-pro">GPT-5 Pro</option>
+                                                    <option value="gpt-4o">GPT-4o</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                                            <h4 className="text-xs font-bold text-purple-300 mb-2">Validate Stage</h4>
+                                            <div className="space-y-2">
+                                                <label className="block text-xs text-slate-400">Model</label>
+                                                <select
+                                                    value={settings.qualityControl?.validateModel.modelName}
+                                                    onChange={(e) => {
+                                                        const newQC = { ...settings.qualityControl || DEFAULT_QC_CONFIG };
+                                                        newQC.validateModel.modelName = e.target.value;
+                                                        updateSetting('qualityControl', newQC);
+                                                    }}
+                                                    className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200"
+                                                >
+                                                    <option value="gpt-5.1">GPT-5.1</option>
+                                                    <option value="gpt-5-pro">GPT-5 Pro</option>
+                                                    <option value="gpt-4o">GPT-4o</option>
+                                                    <option value="gemini-3-pro-preview">Gemini 3 Pro</option>
+                                                    <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )} */}
+
+                            {settingsTab === 'terminology' && (
+                                <div className="space-y-4 animate-fade-in">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center"><Book className="w-4 h-4 mr-1.5" /> Glossary & Terminology</h3>
+                                        <div className="flex items-center space-x-2">
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm("Are you sure you want to clear the entire glossary? This action cannot be undone.")) {
+                                                        updateSetting('glossary', []);
+                                                    }
+                                                }}
+                                                disabled={!settings.glossary || settings.glossary.length === 0}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-2 transition-colors ${!settings.glossary || settings.glossary.length === 0 ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20'}`}
+                                                title="Clear all terms"
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                                <span className="hidden sm:inline">Clear All</span>
+                                            </button>
+                                            <button
+                                                onClick={handleGenerateGlossary}
+                                                disabled={isGeneratingGlossary || subtitles.length === 0}
+                                                className={`px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-2 transition-colors ${isGeneratingGlossary || subtitles.length === 0 ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white'}`}
+                                            >
+                                                {isGeneratingGlossary ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                                                <span>{isGeneratingGlossary ? 'Analyzing...' : 'Auto-Generate from Subtitles'}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden">
+                                        <table className="w-full text-sm text-left">
+                                            <thead className="text-xs text-slate-400 uppercase bg-slate-800 border-b border-slate-700">
+                                                <tr>
+                                                    <th className="px-4 py-3">Term (Original)</th>
+                                                    <th className="px-4 py-3">Translation</th>
+                                                    <th className="px-4 py-3">Notes</th>
+                                                    <th className="px-4 py-3 w-10"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-700">
+                                                {(settings.glossary || []).map((item, idx) => (
+                                                    <tr key={idx} className="hover:bg-slate-800/50 group">
+                                                        <td className="px-4 py-2">
+                                                            <input
+                                                                type="text"
+                                                                value={item.term}
+                                                                onChange={(e) => {
+                                                                    const newGlossary = [...(settings.glossary || [])];
+                                                                    newGlossary[idx].term = e.target.value;
+                                                                    updateSetting('glossary', newGlossary);
+                                                                }}
+                                                                className="bg-transparent border-none focus:ring-0 w-full text-slate-200 placeholder-slate-600"
+                                                                placeholder="Term"
+                                                            />
+                                                        </td>
+                                                        <td className="px-4 py-2">
+                                                            <input
+                                                                type="text"
+                                                                value={item.translation}
+                                                                onChange={(e) => {
+                                                                    const newGlossary = [...(settings.glossary || [])];
+                                                                    newGlossary[idx].translation = e.target.value;
+                                                                    updateSetting('glossary', newGlossary);
+                                                                }}
+                                                                className="bg-transparent border-none focus:ring-0 w-full text-slate-200 placeholder-slate-600"
+                                                                placeholder="Translation"
+                                                            />
+                                                        </td>
+                                                        <td className="px-4 py-2">
+                                                            <input
+                                                                type="text"
+                                                                value={item.notes || ''}
+                                                                onChange={(e) => {
+                                                                    const newGlossary = [...(settings.glossary || [])];
+                                                                    newGlossary[idx].notes = e.target.value;
+                                                                    updateSetting('glossary', newGlossary);
+                                                                }}
+                                                                className="bg-transparent border-none focus:ring-0 w-full text-slate-400 placeholder-slate-700 text-xs"
+                                                                placeholder="Context/Notes"
+                                                            />
+                                                        </td>
+                                                        <td className="px-4 py-2 text-right">
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newGlossary = settings.glossary?.filter((_, i) => i !== idx);
+                                                                    updateSetting('glossary', newGlossary);
+                                                                }}
+                                                                className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                <tr>
+                                                    <td colSpan={4} className="px-4 py-2 text-center border-t border-slate-700/50">
+                                                        <button
+                                                            onClick={() => {
+                                                                const newGlossary = [...(settings.glossary || []), { term: '', translation: '' }];
+                                                                updateSetting('glossary', newGlossary);
+                                                            }}
+                                                            className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center justify-center py-1"
+                                                        >
+                                                            <Plus className="w-3 h-3 mr-1" /> Add Term
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="pt-4 border-t border-slate-800 flex justify-end">
+                                <button onClick={() => setShowSettings(false)} className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium py-2 px-6 rounded-lg shadow-lg shadow-indigo-500/25 transition-all">
+                                    Save Configuration
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     const renderHome = () => (
         <div className="min-h-screen bg-slate-950 flex flex-col p-4 md:p-8">
             <header className="flex justify-between items-center mb-12">
@@ -473,6 +950,7 @@ export default function App() {
                     </div>
                     <div className="flex items-center space-x-2">
                         <button onClick={() => setShowSnapshots(!showSnapshots)} disabled={snapshots.length === 0} className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors text-sm font-medium ${snapshots.length > 0 ? 'bg-indigo-900/30 border-indigo-500/50 text-indigo-200' : 'bg-slate-900 border-slate-800 text-slate-600'}`}><GitCommit className="w-4 h-4" /><span className="hidden sm:inline">Versions</span></button>
+                        {/* <button onClick={() => setView('quality_control')} className="flex items-center space-x-2 px-4 py-2 border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-lg transition-colors text-sm font-medium"><Sparkles className="w-4 h-4" /><span className="hidden sm:inline">Quality Control</span></button> */}
                         <button onClick={() => setShowSettings(true)} className="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm font-medium group"><Settings className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" /></button>
                     </div>
                 </header>
@@ -510,6 +988,15 @@ export default function App() {
                             <div className="flex flex-col space-y-2 text-xs text-slate-400 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
                                 <div className="flex items-center justify-between"><span className="flex items-center text-slate-500"><Monitor className="w-3 h-3 mr-2" /> Model</span><span className="font-medium text-slate-300">{settings.transcriptionModel === 'whisper-1' ? 'Whisper' : 'GPT-4o'}</span></div>
                                 <div className="flex items-center justify-between"><span className="flex items-center text-slate-500"><Clapperboard className="w-3 h-3 mr-2" /> Genre</span><span className="font-medium text-slate-300 truncate max-w-[120px]" title={settings.genre}>{settings.genre}</span></div>
+                                <div className="flex items-center justify-between">
+                                    <span className="flex items-center text-slate-500"><Scissors className="w-3 h-3 mr-2" /> Smart Split</span>
+                                    <button
+                                        onClick={() => setUseSmartSplit(!useSmartSplit)}
+                                        className={`w-8 h-4 rounded-full transition-colors relative ${useSmartSplit ? 'bg-indigo-600' : 'bg-slate-700'}`}
+                                    >
+                                        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${useSmartSplit ? 'left-4.5' : 'left-0.5'}`} style={{ left: useSmartSplit ? '18px' : '2px' }}></div>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         {activeTab === 'new' && (
@@ -530,8 +1017,14 @@ export default function App() {
                             </div>
                         )}
                     </div>
+
                     <div className="lg:col-span-9 flex flex-col h-[500px] lg:h-full min-h-0">
-                        <div className="flex items-center justify-between mb-2 h-8 shrink-0"><div className="flex items-center space-x-2"></div><StatusBadge /></div>
+                        <div className="flex items-center justify-between mb-2 h-8 shrink-0">
+                            <div className="flex items-center space-x-2">
+
+                            </div>
+                            <StatusBadge />
+                        </div>
                         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col shadow-2xl relative flex-1 min-h-0">
                             {showSnapshots ? (
                                 <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar w-full relative">
@@ -543,106 +1036,252 @@ export default function App() {
                             )}
                         </div>
                     </div>
+
+
+                    {/* Consistency Dialog */}
+
+
+
                 </div>
             </div>
-            <ProgressOverlay />
+        </div>
+    );
+
+    const renderQualityControl = () => (
+        <div className="min-h-screen bg-slate-950 text-slate-200 p-4 md:p-8 flex flex-col">
+            <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col space-y-6">
+                <header className="flex items-center justify-between pb-6 border-b border-slate-800">
+                    <div className="flex items-center space-x-4">
+                        <button onClick={() => setView('workspace')} className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white">
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <div>
+                            <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-indigo-400" />
+                                Quality Control Pipeline
+                            </h1>
+                            <p className="text-xs text-slate-400">Automated Review, Fix, and Validation</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                        {qcStatus === 'completed' && (
+                            <button
+                                onClick={() => { setView('workspace'); }}
+                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors shadow-lg shadow-emerald-500/20 flex items-center"
+                            >
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Apply & Return
+                            </button>
+                        )}
+                    </div>
+                </header>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+                    <div className="lg:col-span-1 space-y-6">
+                        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
+                            <h3 className="text-sm font-semibold text-slate-300 mb-4 uppercase tracking-wider">Pipeline Status</h3>
+
+                            <div className="flex flex-col items-center justify-center py-6 space-y-4">
+                                {qcStatus === 'idle' && (
+                                    <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center">
+                                        <Sparkles className="w-8 h-8 text-slate-600" />
+                                    </div>
+                                )}
+                                {qcStatus === 'running' && (
+                                    <div className="relative">
+                                        <div className="w-16 h-16 rounded-full border-4 border-slate-800 border-t-indigo-500 animate-spin"></div>
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <Loader2 className="w-6 h-6 text-indigo-400 animate-pulse" />
+                                        </div>
+                                    </div>
+                                )}
+                                {qcStatus === 'completed' && (
+                                    <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+                                        <CheckCircle className="w-8 h-8 text-emerald-500" />
+                                    </div>
+                                )}
+                                {qcStatus === 'error' && (
+                                    <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20">
+                                        <AlertCircle className="w-8 h-8 text-red-500" />
+                                    </div>
+                                )}
+
+                                <div className="text-center">
+                                    <p className="text-lg font-medium text-white">
+                                        {qcStatus === 'idle' && 'Ready to Start'}
+                                        {qcStatus === 'running' && 'Processing...'}
+                                        {qcStatus === 'completed' && 'QC Completed'}
+                                        {qcStatus === 'error' && 'Pipeline Failed'}
+                                    </p>
+                                    <p className="text-sm text-slate-400 mt-1 max-w-[200px] mx-auto">
+                                        {qcStatus === 'running' ? qcProgress : (qcStatus === 'idle' ? 'Run the automated quality control pipeline to detect and fix issues.' : '')}
+                                        {qcStatus === 'error' && error}
+                                    </p>
+                                </div>
+
+                                {qcStatus === 'running' && (
+                                    <div className="w-full max-w-xs mx-auto mt-4">
+                                        <div className="flex justify-between mb-2">
+                                            {['Review', 'Fix', 'Validate'].map((step, i) => {
+                                                const currentStep = qcProgress.toLowerCase().includes('review') ? 0
+                                                    : qcProgress.toLowerCase().includes('fix') ? 1
+                                                        : qcProgress.toLowerCase().includes('validate') ? 2 : -1;
+
+                                                const isActive = i === currentStep;
+                                                const isCompleted = i < currentStep;
+
+                                                return (
+                                                    <div key={step} className="flex flex-col items-center">
+                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all ${isActive ? 'border-indigo-500 bg-indigo-500/20 text-indigo-400' : isCompleted ? 'border-emerald-500 bg-emerald-500/20 text-emerald-400' : 'border-slate-700 bg-slate-800 text-slate-600'}`}>
+                                                            {isCompleted ? <CheckCircle className="w-4 h-4" /> : <span className="text-xs font-bold">{i + 1}</span>}
+                                                        </div>
+                                                        <span className={`text-[10px] mt-1 font-medium ${isActive ? 'text-indigo-400' : isCompleted ? 'text-emerald-400' : 'text-slate-600'}`}>{step}</span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                        <div className="h-1 bg-slate-800 rounded-full overflow-hidden">
+                                            <div className="h-full bg-indigo-500/50 animate-progress-indeterminate"></div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {qcStatus === 'idle' && (
+                                    <button
+                                        onClick={handleStartQCPipeline}
+                                        className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl font-semibold shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center"
+                                    >
+                                        <Play className="w-5 h-5 mr-2 fill-current" />
+                                        Start Pipeline
+                                    </button>
+                                )}
+                                {qcStatus === 'completed' && (
+                                    <button
+                                        onClick={handleStartQCPipeline}
+                                        className="w-full py-2 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-medium transition-colors flex items-center justify-center"
+                                    >
+                                        <RotateCcw className="w-4 h-4 mr-2" />
+                                        Run Again
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {qcResult && (
+                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm animate-fade-in">
+                                <h3 className="text-sm font-semibold text-slate-300 mb-4 uppercase tracking-wider">Summary</h3>
+                                <div className="space-y-3">
+                                    <div className="flex justify-between items-center p-2 bg-slate-800/50 rounded">
+                                        <span className="text-sm text-slate-400">Iterations</span>
+                                        <span className="font-mono font-medium text-white">{qcResult.iterations}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center p-2 bg-slate-800/50 rounded">
+                                        <span className="text-sm text-slate-400">Total Issues</span>
+                                        <span className="font-mono font-medium text-amber-400">{qcResult.allIssues.length}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center p-2 bg-slate-800/50 rounded">
+                                        <span className="text-sm text-slate-400">Validation</span>
+                                        <span className={`font-mono font-medium ${qcResult.passedValidation ? 'text-emerald-400' : 'text-red-400'}`}>
+                                            {qcResult.passedValidation ? 'PASSED' : 'FAILED'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm flex flex-col min-h-[500px]">
+                        <h3 className="text-sm font-semibold text-slate-300 mb-4 uppercase tracking-wider flex items-center">
+                            <GitCommit className="w-4 h-4 mr-2" />
+                            Pipeline History
+                        </h3>
+
+                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
+                            {!qcResult && qcStatus === 'idle' && (
+                                <div className="h-full flex flex-col items-center justify-center text-slate-600 opacity-50">
+                                    <Sparkles className="w-12 h-12 mb-3" />
+                                    <p>Pipeline results will appear here</p>
+                                </div>
+                            )}
+
+                            {qcResult?.history.map((iteration, idx) => (
+                                <div key={idx} className="border border-slate-700/50 rounded-lg overflow-hidden bg-slate-800/30">
+                                    <div className="bg-slate-800/80 px-4 py-2 border-b border-slate-700/50 flex justify-between items-center">
+                                        <span className="text-xs font-bold text-slate-300 uppercase">Iteration {iteration.iteration}</span>
+                                        <span className="text-xs font-mono text-slate-500">Step {idx + 1}</span>
+                                    </div>
+                                    <div className="p-4 space-y-3">
+                                        {iteration.stages.map((stage: any, stageIdx: number) => (
+                                            <div key={stageIdx} className="border-l-2 border-slate-600 pl-3">
+                                                <div className="text-xs font-semibold text-slate-400 uppercase mb-1">{stage.name}</div>
+
+                                                {stage.name === 'Review' && (
+                                                    <div className="text-sm">
+                                                        <div className="text-amber-400 mb-1">
+                                                            Issues Found: {stage.output?.issues?.length || 0}
+                                                        </div>
+                                                        {stage.output?.issues?.length > 0 && (
+                                                            <ul className="list-disc list-inside space-y-1 text-slate-400 text-xs">
+                                                                {stage.output.issues.slice(0, 3).map((issue: any, i: number) => (
+                                                                    <li key={i}>
+                                                                        <span className="text-amber-500">[{issue.severity}]</span> {issue.description.slice(0, 60)}...
+                                                                    </li>
+                                                                ))}
+                                                                {stage.output.issues.length > 3 && (
+                                                                    <li className="opacity-50">...and {stage.output.issues.length - 3} more</li>
+                                                                )}
+                                                            </ul>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                {stage.name === 'Fix' && (
+                                                    <div className="text-sm text-blue-400">
+                                                        Fixes Applied: {stage.output?.fixedSubtitles?.length || 0} subtitles processed
+                                                    </div>
+                                                )}
+
+                                                {stage.name === 'Validate' && (
+                                                    <div className="text-sm">
+                                                        <div className={stage.output?.passedValidation ? 'text-emerald-400' : 'text-red-400'}>
+                                                            Validation: {stage.output?.passedValidation ? 'PASSED ✓' : 'FAILED ✗'}
+                                                        </div>
+                                                        {stage.output?.newIssues?.length > 0 && (
+                                                            <div className="mt-1 text-xs text-slate-500">
+                                                                New Issues: {stage.output.newIssues.length}
+                                                            </div>
+                                                        )}
+                                                        {stage.output?.unresolvedIssues?.length > 0 && (
+                                                            <div className="text-xs text-red-400">
+                                                                Unresolved: {stage.output.unresolvedIssues.length}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                <div className="text-xs text-slate-600 mt-1">
+                                                    Duration: {(stage.duration / 1000).toFixed(1)}s
+                                                    {stage.success ? ' ✓' : ' ✗'}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 
     return (
-        <>
-            {view === 'home' ? renderHome() : renderWorkspace()}
-            {showSettings && (
-                <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in overflow-y-auto">
-                    <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-2xl shadow-2xl relative my-12">
-                        <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
-                        <h2 className="text-xl font-bold text-white mb-6 flex items-center"><Settings className="w-5 h-5 mr-2 text-indigo-400" /> Settings</h2>
-                        <div className="space-y-6">
-                            <div className="space-y-3">
-                                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">API Configuration</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini API Key</label>
-                                        <div className="relative"><input type="password" value={settings.geminiKey} onChange={(e) => updateSetting('geminiKey', e.target.value.trim())} placeholder="Enter Gemini API Key" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
-                                        {ENV_GEMINI_KEY && !settings.geminiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> Using API Key from environment</p>)}
-                                        {ENV_GEMINI_KEY && settings.geminiKey && (<p className="text-xs text-amber-400 mt-1">Overriding environment API Key</p>)}
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI API Key</label>
-                                        <div className="relative"><input type="password" value={settings.openaiKey} onChange={(e) => updateSetting('openaiKey', e.target.value.trim())} placeholder="Enter OpenAI API Key" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
-                                        {ENV_OPENAI_KEY && !settings.openaiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> Using API Key from environment</p>)}
-                                        {ENV_OPENAI_KEY && settings.openaiKey && (<p className="text-xs text-amber-400 mt-1">Overriding environment API Key</p>)}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3 pt-4 border-t border-slate-800">
-                                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Performance & Batching</h3>
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Proofread Batch Size</label>
-                                        <input type="number" value={settings.proofreadBatchSize} onChange={(e) => updateSetting('proofreadBatchSize', parseInt(e.target.value) || 20)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Translation Batch Size</label>
-                                        <input type="number" value={settings.translationBatchSize} onChange={(e) => updateSetting('translationBatchSize', parseInt(e.target.value) || 20)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Chunk Duration (s)</label>
-                                        <input type="number" value={settings.chunkDuration} onChange={(e) => updateSetting('chunkDuration', parseInt(e.target.value) || 300)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Concurrency (Flash)</label>
-                                        <input type="number" value={settings.concurrencyFlash} onChange={(e) => updateSetting('concurrencyFlash', parseInt(e.target.value) || 5)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Concurrency (Pro)</label>
-                                        <input type="number" value={settings.concurrencyPro} onChange={(e) => updateSetting('concurrencyPro', parseInt(e.target.value) || 2)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3 pt-4 border-t border-slate-800">
-                                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Transcription & Style</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Transcription Model</label>
-                                        <div className="relative"><AudioLines className="absolute left-3 top-2.5 w-4 h-4 text-slate-500" /><select value={settings.transcriptionModel} onChange={(e) => updateSetting('transcriptionModel', e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 pl-9 pr-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm appearance-none"><option value="whisper-1">Whisper (Standard)</option><option value="gpt-4o-audio-preview">GPT-4o Audio</option></select></div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Genre / Context</label>
-                                        <div className="relative"><Clapperboard className="absolute left-3 top-2.5 w-4 h-4 text-slate-500" /><select value={isCustomGenre ? 'custom' : settings.genre} onChange={(e) => { const val = e.target.value; if (val === 'custom') updateSetting('genre', ''); else updateSetting('genre', val); }} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 pl-9 pr-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm appearance-none"><option value="general">General</option><option value="anime">Anime / Animation</option><option value="movie">Movies / TV Series</option><option value="news">News / Documentary</option><option value="tech">Tech / Education</option><option value="custom">Custom...</option></select></div>
-                                    </div>
-                                </div>
-                                {isCustomGenre && (
-                                    <div className="pt-2 animate-fade-in"><label className="block text-xs font-medium text-indigo-400 mb-1.5">Custom Context / Genre Description</label><input type="text" value={settings.genre} onChange={(e) => updateSetting('genre', e.target.value)} placeholder="E.g., Minecraft Gameplay, Medical Lecture, 19th Century Drama... (Be specific for better tone)" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-3 px-4 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm placeholder-slate-600 shadow-inner" autoFocus /></div>
-                                )}
-                            </div>
-
-                            <div className="space-y-3 pt-4 border-t border-slate-800">
-                                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">File Output Options</h3>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-300 mb-1.5">Export Mode</label>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <button onClick={() => updateSetting('outputMode', 'bilingual')} className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'bilingual' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}><Languages className="w-4 h-4" /><span>Bilingual (Original + CN)</span></button>
-                                        <button onClick={() => updateSetting('outputMode', 'target_only')} className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'target_only' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}><Type className="w-4 h-4" /><span>Chinese Only</span></button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-3 pt-4 border-t border-slate-800">
-                                <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center"><MessageSquareText className="w-4 h-4 mr-1.5" /> Custom Prompts (Optional)</h3>
-                                <p className="text-xs text-slate-500 mb-2">Leave blank to use the default prompts for the selected genre.</p>
-                                <div><label className="block text-xs font-medium text-slate-400 mb-1">Translation Prompt</label><textarea value={settings.customTranslationPrompt} onChange={(e) => updateSetting('customTranslationPrompt', e.target.value)} placeholder="Override system instruction for initial translation..." className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 h-20 resize-none" /></div>
-                                <div><label className="block text-xs font-medium text-slate-400 mb-1">Proofreading Prompt</label><textarea value={settings.customProofreadingPrompt} onChange={(e) => updateSetting('customProofreadingPrompt', e.target.value)} placeholder="Override system instruction for proofreading..." className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 h-20 resize-none" /></div>
-                            </div>
-
-                            <div className="pt-4"><button onClick={() => setShowSettings(false)} className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-medium py-2.5 rounded-lg shadow-lg shadow-indigo-500/25 transition-all">Save Configuration</button></div>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </>
+        <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-indigo-500/30">
+            <ProgressOverlay />
+            <SettingsModal />
+            {view === 'home' && renderHome()}
+            {view === 'workspace' && renderWorkspace()}
+            {/* {view === 'quality_control' && renderQualityControl()} */}
+        </div>
     );
-
 }

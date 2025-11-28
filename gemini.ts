@@ -1,7 +1,9 @@
 import { GoogleGenAI, Type, HarmCategory, HarmBlockThreshold, Content, Part } from "@google/genai";
-import { parseGeminiResponse, formatTime, decodeAudio, sliceAudioBuffer, transcribeAudio, timeToSeconds, blobToBase64, extractJsonArray, mapInParallel } from "./utils";
-import { SubtitleItem, AppSettings, BatchOperationMode, ChunkStatus } from "./types";
+import { ConsistencyIssue } from "./consistencyValidation";
+import { parseGeminiResponse, formatTime, decodeAudio, sliceAudioBuffer, transcribeAudio, timeToSeconds, blobToBase64, extractJsonArray, mapInParallel, logger } from "./utils";
+import { SubtitleItem, AppSettings, BatchOperationMode, ChunkStatus, GlossaryItem } from "./types";
 import { getSystemInstruction } from "./prompts";
+import { SmartSegmenter } from "./smartSegmentation";
 
 export const PROOFREAD_BATCH_SIZE = 20; // Default fallback
 
@@ -10,7 +12,11 @@ export const PROOFREAD_BATCH_SIZE = 20; // Default fallback
 async function generateContentWithRetry(ai: GoogleGenAI, params: any, retries = 3) {
   for (let i = 0; i < retries; i++) {
     try {
-      return await ai.models.generateContent(params);
+      const result = await ai.models.generateContent(params);
+      if ((result as any).usageMetadata) {
+        logger.debug("Gemini Token Usage", (result as any).usageMetadata);
+      }
+      return result;
     } catch (e: any) {
       // Check for 429 (Resource Exhausted) or 503 (Service Unavailable)
       const isRateLimit = e.status === 429 || e.message?.includes('429') || e.response?.status === 429;
@@ -18,7 +24,7 @@ async function generateContentWithRetry(ai: GoogleGenAI, params: any, retries = 
 
       if ((isRateLimit || isServerOverload) && i < retries - 1) {
         const delay = Math.pow(2, i) * 2000 + Math.random() * 1000; // 2s, 4s, 8s + jitter
-        console.warn(`Gemini API Busy (${e.status}). Retrying in ${Math.round(delay)}ms...`);
+        logger.warn(`Gemini API Busy (${e.status}). Retrying in ${Math.round(delay)}ms...`, { attempt: i + 1, error: e.message });
         await new Promise(r => setTimeout(r, delay));
       } else {
         throw e;
@@ -45,6 +51,7 @@ async function generateContentWithLongOutput(
 
   try {
     // Initial generation
+    logger.debug(`Generating content with model: ${modelName}`, { systemInstruction: systemInstruction.substring(0, 100) + "..." });
     let response = await generateContentWithRetry(ai, {
       model: modelName,
       contents: messages,
@@ -53,6 +60,7 @@ async function generateContentWithLongOutput(
         responseSchema: schema,
         systemInstruction: systemInstruction,
         safetySettings: SAFETY_SETTINGS,
+        maxOutputTokens: 65536,
       }
     });
 
@@ -83,7 +91,7 @@ async function generateContentWithLongOutput(
         }
       } catch (e) {
         // Parse failed, assume truncation
-        console.warn("JSON parse failed, attempting to continue generation...", e);
+        logger.warn("JSON parse failed, attempting to continue generation...", { error: e.message, currentLength: fullText.length });
 
         // Append previous response to history
         messages.push({ role: 'model', parts: [{ text: text }] });
@@ -98,6 +106,7 @@ async function generateContentWithLongOutput(
             responseSchema: schema,
             systemInstruction: systemInstruction,
             safetySettings: SAFETY_SETTINGS,
+            maxOutputTokens: 65536,
           }
         });
 
@@ -112,7 +121,7 @@ async function generateContentWithLongOutput(
       }
     }
   } catch (e) {
-    console.error("Long output generation failed", e);
+    logger.error("Long output generation failed", e);
     throw e;
   }
 
@@ -144,6 +153,21 @@ const TRANSLATION_SCHEMA = {
       text_translated: { type: Type.STRING, description: "Simplified Chinese translation" },
     },
     required: ["id", "text_translated"],
+  },
+};
+
+const BATCH_SCHEMA = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      id: { type: Type.INTEGER },
+      start: { type: Type.STRING, description: "HH:MM:SS,mmm" },
+      end: { type: Type.STRING, description: "HH:MM:SS,mmm" },
+      text_original: { type: Type.STRING },
+      text_translated: { type: Type.STRING, description: "Simplified Chinese translation" },
+    },
+    required: ["id", "start", "end", "text_original", "text_translated"],
   },
 };
 
@@ -179,6 +203,7 @@ export const generateSubtitles = async (
     audioBuffer = await decodeAudio(file);
     onProgress?.({ id: 'init', total: 0, status: 'completed', message: `Audio decoded. Duration: ${formatTime(audioBuffer.duration)}` });
   } catch (e) {
+    logger.error("Failed to decode audio", e);
     throw new Error("Failed to decode audio. Please ensure the file is a valid video/audio format.");
   }
 
@@ -188,15 +213,34 @@ export const generateSubtitles = async (
 
   // Prepare chunks
   const chunksParams = [];
-  let cursor = 0;
-  for (let i = 0; i < totalChunks; i++) {
-    const end = Math.min(cursor + chunkDuration, totalDuration);
-    chunksParams.push({
-      index: i + 1,
-      start: cursor,
-      end: end
+
+  if (settings.useSmartSplit) {
+    onProgress?.({ id: 'init', total: 0, status: 'processing', message: "Analyzing audio for smart segmentation..." });
+    const segmenter = new SmartSegmenter();
+    const segments = await segmenter.segmentAudio(audioBuffer, chunkDuration);
+    logger.info("Smart Segmentation Results", { count: segments.length, segments });
+
+    segments.forEach((seg, i) => {
+      chunksParams.push({
+        index: i + 1,
+        start: seg.start,
+        end: seg.end
+      });
     });
-    cursor += chunkDuration;
+    onProgress?.({ id: 'init', total: 0, status: 'completed', message: `Smart split created ${segments.length} chunks.` });
+  } else {
+    // Standard fixed-size chunking
+    let cursor = 0;
+    for (let i = 0; i < totalChunks; i++) {
+      const end = Math.min(cursor + chunkDuration, totalDuration);
+      chunksParams.push({
+        index: i + 1,
+        start: cursor,
+        end: end
+      });
+      cursor += chunkDuration;
+    }
+    logger.info("Fixed Segmentation Results", { count: chunksParams.length, chunks: chunksParams });
   }
 
   const chunkResults: SubtitleItem[][] = new Array(chunksParams.length).fill([]);
@@ -207,6 +251,7 @@ export const generateSubtitles = async (
     const { index, start, end } = chunk;
 
     onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'transcribing', message: 'Transcribing...' });
+    logger.debug(`[Chunk ${index}] Processing started. Range: ${start}-${end}`);
 
     // A. Slice Audio
     const wavBlob = await sliceAudioBuffer(audioBuffer, start, end);
@@ -217,8 +262,9 @@ export const generateSubtitles = async (
     let rawSegments: SubtitleItem[] = [];
     try {
       rawSegments = await transcribeAudio(wavBlob, openaiKey, settings.transcriptionModel);
+      logger.debug(`[Chunk ${index}] Transcription complete. Segments: ${rawSegments.length}`);
     } catch (e: any) {
-      console.warn(`Transcription warning on chunk ${index}: ${e.message}`);
+      logger.warn(`Transcription warning on chunk ${index}: ${e.message}`);
       throw new Error(`Transcription failed on chunk ${index}: ${e.message}`);
     }
 
@@ -227,7 +273,7 @@ export const generateSubtitles = async (
     if (rawSegments.length > 0) {
       onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'refining', message: 'Refining...' });
 
-      const refineSystemInstruction = getSystemInstruction(settings.genre, undefined, 'refinement');
+      const refineSystemInstruction = getSystemInstruction(settings.genre, undefined, 'refinement', settings.glossary);
       const refinePrompt = `
         Refine this raw transcription based on the attached audio.
         Raw Transcription: ${JSON.stringify(rawSegments.map(s => ({ start: s.startTime, end: s.endTime, text: s.original })))}
@@ -247,6 +293,7 @@ export const generateSubtitles = async (
             responseSchema: REFINEMENT_SCHEMA,
             systemInstruction: refineSystemInstruction,
             safetySettings: SAFETY_SETTINGS,
+            maxOutputTokens: 65536,
           }
         });
 
@@ -255,8 +302,10 @@ export const generateSubtitles = async (
         if (refinedSegments.length === 0) {
           refinedSegments = [...rawSegments];
         }
-      } catch (e) {
-        console.error(`Refinement failed for chunk ${index}, falling back to raw.`, e);
+        logger.debug(`[Chunk ${index}] Refinement complete. Segments: ${refinedSegments.length}`);
+      }
+      catch (e) {
+        logger.error(`Refinement failed for chunk ${index}, falling back to raw.`, e);
         refinedSegments = [...rawSegments];
       }
     }
@@ -273,9 +322,11 @@ export const generateSubtitles = async (
         end: seg.endTime
       }));
 
-      const translateSystemInstruction = getSystemInstruction(settings.genre, settings.customTranslationPrompt, 'translation');
+      const translateSystemInstruction = getSystemInstruction(settings.genre, settings.customTranslationPrompt, 'translation', settings.glossary);
       // translateBatch is also parallelized now
+      logger.debug(`[Chunk ${index}] Starting translation of ${toTranslate.length} items`);
       const translatedItems = await translateBatch(ai, toTranslate, translateSystemInstruction, concurrency, settings.translationBatchSize || 20);
+      logger.debug(`[Chunk ${index}] Translation complete. Items: ${translatedItems.length}`);
 
       finalChunkSubs = translatedItems.map(item => ({
         id: 0, // Placeholder, will re-index later
@@ -315,8 +366,10 @@ async function translateBatch(ai: GoogleGenAI, items: any[], systemInstruction: 
     STRICT RULES:
     1. Output exactly ${batch.length} items. One-to-one mapping with input IDs.
     2. ID matching is critical. Do not skip any ID.
-    3. Check for missed translations in the source text.
-    4. Remove filler words.
+    3. **CHECK FOR MISSED TRANSLATION**: Ensure no meaning is lost from source text.
+    4. **REMOVE FILLER WORDS**: Ignore stuttering and filler words.
+    5. **LANGUAGE**: 'text_translated' MUST BE SIMPLIFIED CHINESE.
+    6. **FINAL CHECK**: Verify all IDs match and translation is complete before outputting.
     
     Input JSON:
     ${JSON.stringify(payload)}`;
@@ -330,6 +383,7 @@ async function translateBatch(ai: GoogleGenAI, items: any[], systemInstruction: 
           responseSchema: TRANSLATION_SCHEMA,
           systemInstruction: systemInstruction,
           safetySettings: SAFETY_SETTINGS,
+          maxOutputTokens: 65536,
         }
       });
 
@@ -340,7 +394,7 @@ async function translateBatch(ai: GoogleGenAI, items: any[], systemInstruction: 
         translatedData = JSON.parse(clean);
         if (!Array.isArray(translatedData) && (translatedData as any).items) translatedData = (translatedData as any).items;
       } catch (e) {
-        console.warn("Translation JSON parse error");
+        logger.warn("Translation JSON parse error");
       }
 
       const transMap = new Map(translatedData.map((t: any) => [t.id, t.text_translated]));
@@ -354,7 +408,7 @@ async function translateBatch(ai: GoogleGenAI, items: any[], systemInstruction: 
       });
 
     } catch (e) {
-      console.error("Translation batch failed", e);
+      logger.error("Translation batch failed", e);
       return batch.map(item => ({ ...item, translated: item.original }));
     }
   });
@@ -383,21 +437,20 @@ async function processBatch(
   const startSec = timeToSeconds(batchStartStr);
   const endSec = timeToSeconds(batchEndStr);
 
-  // Audio is required for fix_timestamps and proofread. Optional/Ignored for retranslate.
+  // Audio is required for both fix_timestamps and proofread modes.
   let base64Audio = "";
-  const needsAudio = mode !== 'retranslate';
 
   let audioOffset = 0;
-  if (audioBuffer && needsAudio) {
+  if (audioBuffer) {
     try {
       if (startSec < endSec) {
-        // Add padding to context
-        audioOffset = Math.max(0, startSec - 1);
-        const blob = await sliceAudioBuffer(audioBuffer, audioOffset, Math.min(audioBuffer.duration, endSec + 1));
+        // Add padding to context (5 seconds before and after)
+        audioOffset = Math.max(0, startSec - 5);
+        const blob = await sliceAudioBuffer(audioBuffer, audioOffset, Math.min(audioBuffer.duration, endSec + 5));
         base64Audio = await blobToBase64(blob);
       }
     } catch (e) {
-      console.warn(`Audio slice failed for ${batchLabel}, falling back to text-only.`);
+      logger.warn(`Audio slice failed for ${batchLabel}, falling back to text-only.`);
     }
   }
 
@@ -439,59 +492,84 @@ async function processBatch(
   }
   // Case 4: No Comments -> Default behavior (prompt below covers it)
 
-  if (mode === 'retranslate') {
+  if (mode === 'fix_timestamps') {
     prompt = `
-        Batch ${batchLabel}.
-        RE-TRANSLATE TASK.
-        Ignore timestamps. Focus on Translation Quality.
-        ${specificInstruction}
-        
-        Instructions:
-        1. Translate the "text_original" to "text_translated" accurately.
-        2. **CHECK FOR MISSED TRANSLATION**: Ensure no meaning is lost.
-        3. Remove filler words.
-        4. Keep IDs the same.
-        
-        Input:
-        ${JSON.stringify(payload)}
-        `;
-  } else if (mode === 'fix_timestamps') {
-    prompt = `
-        Batch ${batchLabel}.
-        FIX TIMESTAMPS & ALIGNMENT TASK.
-        PREVIOUS END TIME: "${lastEndTime}".
-        ${specificInstruction}
-        
-        Instructions:
-        1. Listen to audio. Align "start" and "end" perfectly.
-        2. **MISSED AUDIO**: If you hear speech not in text, ADD IT.
-        3. **REDISTRIBUTE**: If you find the input text is "bunched up" or compressed into a short time while the audio continues, YOU MUST SPREAD IT OUT to match the actual speech timing.
-        4. **SPLIT LONG LINES**: If a segment is > 4s or > 25 chars, SPLIT IT.
-        5. **LANGUAGE**: 'text_translated' MUST BE SIMPLIFIED CHINESE. Do not output English in this field.
-        6. **FINAL CHECK**: Before outputting, strictly verify that ALL previous rules (1-5) have been perfectly followed. Correct any remaining errors.
-        
-        Input:
-        ${JSON.stringify(payload)}
+    Batch ${batchLabel}.
+    TIMESTAMP ALIGNMENT & SEGMENTATION TASK
+    Previous batch ended at: "${lastEndTime}"
+    ${specificInstruction}
+
+    TASK RULES (Priority Order):
+    
+    [P1 - PRIMARY] Perfect Timestamp Alignment
+    → Listen to audio carefully
+    → Align "start" and "end" to actual speech boundaries in audio
+    → Timestamps MUST be relative to provided audio file (starting at 00:00:00)
+    → Fix bunched-up or spread-out timing issues
+    
+    [P2 - MANDATORY] Segment Splitting for Readability
+    → SPLIT any segment >4 seconds OR >25 Chinese characters
+    → When splitting: distribute timing based on actual audio speech
+    → Ensure splits occur at natural speech breaks
+    
+    [P3 - CONTENT] Audio Verification
+    → If you hear speech NOT in the text → ADD new subtitle entries
+    → Remove filler words from 'text_original' (uh, um, 呃, 嗯, etc.)
+    
+    [P4 - ABSOLUTE] Translation Preservation
+    → DO NOT modify 'text_translated' under ANY circumstances
+    → Even if it's English, wrong, or nonsensical → LEAVE IT
+    → Translation is handled by Proofread function, not here
+    
+    FINAL VERIFICATION:
+    ✓ All timestamps aligned to audio
+    ✓ Long segments split appropriately  
+    ✓ No missed speech
+    ✓ 'text_translated' completely unchanged
+
+    Input JSON:
+    ${JSON.stringify(payload)}
         `;
   } else {
-    // Deep Proofread
+    // Proofread - Focus on TRANSLATION quality, may adjust timing when necessary
     prompt = `
-        Batch ${batchLabel}.
-        DEEP PROOFREAD TASK.
-        PREVIOUS END TIME: "${lastEndTime}".
-        TOTAL VIDEO DURATION: ${totalVideoDuration ? formatTime(totalVideoDuration) : 'Unknown'}.
-        ${specificInstruction}
-        
-        Instructions:
-        1. Listen to the audio.
-        2. **CHECK FOR MISSED HEARING/AUDIO**: Add any speech missing from text.
-        3. **CHECK FOR MISSED TRANSLATION**: Fix any lost meaning.
-        4. **LANGUAGE CHECK**: 'text_translated' MUST BE SIMPLIFIED CHINESE. Do not output English.
-        5. **SPLIT LONG LINES**: If a segment is > 4s or > 25 chars, SPLIT IT.
-        6. **FIX TIMESTAMPS**: Align to audio.
-        
-        Current Subtitles JSON:
-        ${JSON.stringify(payload)}
+    Batch ${batchLabel}.
+    TRANSLATION QUALITY IMPROVEMENT TASK
+    Previous batch ended at: "${lastEndTime}"
+    Total video duration: ${totalVideoDuration ? formatTime(totalVideoDuration) : 'Unknown'}
+    ${specificInstruction}
+
+    TASK RULES (Priority Order):
+    
+    [P1 - PRIMARY] Translation Quality Excellence
+    → Fix mistranslations and missed meanings
+    → Improve awkward or unnatural Chinese phrasing
+    → Ensure ALL 'text_translated' are fluent Simplified Chinese (never English/Japanese/etc.)
+    → Verify translation captures full intent of 'text_original'
+    
+    [P2 - CONTENT] Audio Content Verification
+    → Listen to audio carefully
+    → If you hear speech NOT in subtitles → ADD new subtitle entries
+    → Verify 'text_original' matches what was actually said
+    
+    [P3 - SUPPORTING] Timestamp Adjustments (When Needed)
+    → You MAY adjust timestamps to support better translation
+    → Example: merging/splitting segments for more natural translation flow
+    → Keep timestamps within provided audio range (00:00:00 to audio end)
+    → Ensure start < end for all segments
+    
+    [P4 - PRESERVATION] Default Behavior
+    → For subtitles WITHOUT issues: preserve them as-is
+    → Only modify when there's a clear translation quality problem
+    
+    FINAL VERIFICATION:
+    ✓ All 'text_translated' are fluent Simplified Chinese
+    ✓ No missed meaning from 'text_original'
+    ✓ No missed speech from audio
+    ✓ Translation quality significantly improved
+
+    Current Subtitles JSON:
+    ${JSON.stringify(payload)}
         `;
   }
 
@@ -517,38 +595,28 @@ async function processBatch(
       model,
       systemInstruction,
       parts,
-      undefined // Schema is flexible here as we parse manually or let the model decide
+      BATCH_SCHEMA // Use the new schema
     );
 
 
     let processedBatch = parseGeminiResponse(text, totalVideoDuration);
 
     if (processedBatch.length > 0) {
-      // Fix: Detect if Gemini returned relative timestamps (starting from ~0) instead of absolute
-      // This happens because we sent a sliced audio file.
+      // Since we requested relative timestamps (from 00:00:00) in the prompt,
+      // and we provided a sliced audio file, the timestamps returned are relative to the slice.
+      // We MUST add the audioOffset to convert them back to absolute video time.
       if (audioOffset > 0) {
-        const firstStart = timeToSeconds(processedBatch[0].startTime);
-        const expectedRelativeStart = startSec - audioOffset; // Should be around 1.0s
-        const expectedAbsoluteStart = startSec;
-
-        const diffRelative = Math.abs(firstStart - expectedRelativeStart);
-        const diffAbsolute = Math.abs(firstStart - expectedAbsoluteStart);
-
-        // If the timestamp is closer to the relative start (0-based) than the absolute start,
-        // we assume it's relative and add the offset.
-        if (diffRelative < diffAbsolute) {
-          processedBatch = processedBatch.map(item => ({
-            ...item,
-            startTime: formatTime(timeToSeconds(item.startTime) + audioOffset),
-            endTime: formatTime(timeToSeconds(item.endTime) + audioOffset)
-          }));
-        }
+        processedBatch = processedBatch.map(item => ({
+          ...item,
+          startTime: formatTime(timeToSeconds(item.startTime) + audioOffset),
+          endTime: formatTime(timeToSeconds(item.endTime) + audioOffset)
+        }));
       }
 
       return processedBatch;
     }
   } catch (e) {
-    console.error(`Batch ${batchLabel} processing failed (${mode}).`, e);
+    logger.error(`Batch ${batchLabel} processing failed (${mode}).`, e);
   }
   // Fallback: return original batch
   return batch;
@@ -570,25 +638,24 @@ export const runBatchOperation = async (
   const ai = new GoogleGenAI({ apiKey: geminiKey });
 
   let audioBuffer: AudioBuffer | null = null;
-  // Retranslate doesn't strictly need audio context loaded upfront if we aren't slicing, 
-  // but processBatch logic for retranslate ignores audio anyway. 
-  // However, Proofread and Fix Timestamps need it.
-  if (mode !== 'retranslate' && file) {
+  // Both Proofread and Fix Timestamps need audio context.
+  if (file) {
     onProgress?.({ id: 'init', total: 0, status: 'processing', message: "Loading audio..." });
     try {
       audioBuffer = await decodeAudio(file);
     } catch (e) {
-      console.warn("Audio decode failed, proceeding with text-only mode.");
+      logger.warn("Audio decode failed, proceeding with text-only mode.", e);
     }
-  } else if (mode !== 'retranslate' && !file) {
+  } else {
     // If we are in Proofread mode but no file exists (SRT import), we fallback to text-only behavior inside processBatch (it handles null buffer)
-    console.log("No media file provided, running in text-only context.");
+    logger.info("No media file provided, running in text-only context.");
   }
 
   const systemInstruction = getSystemInstruction(
     settings.genre,
     mode === 'proofread' ? settings.customProofreadingPrompt : settings.customTranslationPrompt,
-    mode
+    mode,
+    settings.glossary
   );
 
   const currentSubtitles = [...allSubtitles];
@@ -666,6 +733,7 @@ export const runBatchOperation = async (
 
     const groupLabel = group.length > 1 ? `${group[0] + 1}-${group[group.length - 1] + 1}` : `${firstBatchIdx + 1}`;
     onProgress?.({ id: groupLabel, total: groups.length, status: 'processing', message: `${actionLabel}...` });
+    logger.debug(`[Batch ${groupLabel}] Starting ${mode} operation. Merged items: ${mergedBatch.length}`);
 
     const processed = await processBatch(
       ai,
@@ -679,6 +747,7 @@ export const runBatchOperation = async (
       mode,
       mergedComment
     );
+    logger.debug(`[Batch ${groupLabel}] Operation complete. Result items: ${processed.length}`);
 
     if (processed.length > 0) {
       chunks[firstBatchIdx] = processed;
@@ -690,4 +759,167 @@ export const runBatchOperation = async (
   });
 
   return chunks.flat().map((s, i) => ({ ...s, id: i + 1 }));
+};
+
+/**
+ * Auto-generate a glossary from the current subtitles.
+ * Uses Gemini to identify key terms, names, and specialized vocabulary.
+ */
+export const generateGlossary = async (
+  subtitles: SubtitleItem[],
+  apiKey: string,
+  genre: string
+): Promise<GlossaryItem[]> => {
+  if (!apiKey) throw new Error("Gemini API Key is missing.");
+  const ai = new GoogleGenAI({ apiKey });
+
+  // Prepare a sample of the text to avoid context limit issues if the file is huge.
+  // We'll take the first 200 lines, middle 100, and last 100 to get a good spread.
+  let textSample = "";
+  // Gemini context window is large (1M+ tokens), so we can process most subtitle files entirely.
+  // We only sample if the file is extremely large (> 10,000 lines) to avoid timeouts.
+  if (subtitles.length > 10000) {
+    const start = subtitles.slice(0, 2000);
+    const midIdx = Math.floor(subtitles.length / 2);
+    const mid = subtitles.slice(midIdx, midIdx + 2000);
+    const end = subtitles.slice(-2000);
+    textSample = [...start, ...mid, ...end].map(s => s.original).join("\n");
+  } else {
+    textSample = subtitles.map(s => s.original).join("\n");
+  }
+
+  const prompt = `
+    Task: Extract a glossary of key terms from the subtitle text.
+
+      Context / Genre: ${genre}
+
+    FOCUS AREAS:
+    1. **Proper Names**: People, places, organizations.
+    2. **Specialized Terminology**: Terms specific to this genre/context.
+    3. **Recurring Terms**: Technical terms or slang appearing multiple times.
+
+      RULES:
+    1. **DEDUPLICATION**: Only list each unique term once. If a term appears multiple times, include it only once.
+    2. **SIMPLIFIED CHINESE**: All translations MUST BE in Simplified Chinese (zh-CN).
+    3. **RELEVANCE**: Only include terms important for consistent translation (not common words).
+    4. **NOTES**: Use the "notes" field to clarify context if the term is ambiguous.
+    5. **FINAL CHECK**: Verify all terms are unique, relevant, and translations are accurate.
+
+    Text Sample:
+    ${textSample}
+    `;
+
+  const schema = {
+    type: Type.ARRAY,
+    items: {
+      type: Type.OBJECT,
+      properties: {
+        term: { type: Type.STRING },
+        translation: { type: Type.STRING },
+        notes: { type: Type.STRING }
+      },
+      required: ["term", "translation"]
+    }
+  };
+
+  try {
+    const response = await generateContentWithRetry(ai, {
+      model: 'gemini-2.5-flash',
+      contents: { parts: [{ text: prompt }] },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+        temperature: 0.3,
+        maxOutputTokens: 65536,
+      }
+    });
+
+    const text = response.text;
+    if (!text) return [];
+    return JSON.parse(text) as GlossaryItem[];
+  } catch (e) {
+    logger.error("Failed to generate glossary:", e);
+    throw new Error("Failed to generate glossary. Please try again.");
+  }
+};
+
+export const checkGlobalConsistency = async (
+  subtitles: SubtitleItem[],
+  apiKey: string,
+  genre: string
+): Promise<ConsistencyIssue[]> => {
+  if (!apiKey) throw new Error("Gemini API Key is missing.");
+  const ai = new GoogleGenAI({ apiKey });
+
+  // Prepare a sample of the text
+  let textSample = "";
+  if (subtitles.length > 500) {
+    const start = subtitles.slice(0, 200);
+    const midIdx = Math.floor(subtitles.length / 2);
+    const mid = subtitles.slice(midIdx, midIdx + 100);
+    const end = subtitles.slice(-100);
+    textSample = [...start, ...mid, ...end].map(s => s.translated).join("\n");
+  } else {
+    textSample = subtitles.map(s => s.translated).join("\n");
+  }
+
+  const prompt = `
+    Task: Analyze translated subtitle text for GLOBAL CONSISTENCY issues.
+
+      Context / Genre: ${genre}
+
+    FOCUS AREAS:
+    1. **Term Consistency**: Same name/term translated differently.
+       Example: "John" as "约翰" in one place, "强" in another.
+    2. **Tone Consistency**: Sudden shifts in formality or speaking style without context.
+    3. **Style Consistency**: Mixing different translation approaches.
+
+    SEVERITY GUIDELINES:
+    - **high**: Same proper noun translated 2+ different ways, major tone shifts.
+    - **medium**: Minor terminology inconsistencies, slight style variations.
+    - **low**: Trivial word choice differences that don't affect comprehension.
+
+    RULES:
+    1. **BE PRECISE**: Only report ACTUAL inconsistencies, not normal stylistic variation.
+    2. **PROVIDE EXAMPLES**: Include the conflicting terms/phrases in the description.
+    3. **SET TYPE**: Always use "ai_consistency" as the type.
+    4. **FINAL CHECK**: Verify each reported issue is a real inconsistency before including it.
+
+    Text Sample (${subtitles.length} segments):
+    ${textSample}
+    `;
+
+  const schema = {
+    type: Type.ARRAY,
+    items: {
+      type: Type.OBJECT,
+      properties: {
+        type: { type: Type.STRING },
+        segmentId: { type: Type.INTEGER },
+        description: { type: Type.STRING },
+        severity: { type: Type.STRING }
+      },
+      required: ["type", "description", "severity"]
+    }
+  };
+
+  try {
+    const response = await generateContentWithRetry(ai, {
+      model: 'gemini-2.5-flash',
+      contents: { parts: [{ text: prompt }] },
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+        temperature: 0.3,
+        maxOutputTokens: 65536,
+      }
+    });
+
+    const text = response.text;
+    if (!text) return [];
+    return JSON.parse(text) as ConsistencyIssue[];
+  } catch (e) {
+    logger.error("Failed to check consistency:", e);
+    return [];
+  }
 };

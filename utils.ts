@@ -573,6 +573,7 @@ export function audioBufferToWav(buffer: AudioBuffer): Blob {
 // --- OpenAI API (Whisper & GPT-4o Audio) ---
 
 export const transcribeAudio = async (audioBlob: Blob, apiKey: string, model: string = 'whisper-1'): Promise<SubtitleItem[]> => {
+  logger.debug(`Starting transcription with model: ${model}`);
   if (model.includes('gpt-4o')) {
     return transcribeWithOpenAIChat(audioBlob, apiKey, model);
   } else {
@@ -617,7 +618,7 @@ const transcribeWithWhisper = async (audioBlob: Blob, apiKey: string, model: str
         translated: '' // Filled later by Gemini
       }));
     } catch (e: any) {
-      console.warn(`Whisper attempt ${attempt + 1} failed:`, e);
+      logger.warn(`Whisper attempt ${attempt + 1} failed:`, e);
       lastError = e;
       attempt++;
       if (attempt < maxRetries) await new Promise(res => setTimeout(res, 1000 * Math.pow(2, attempt - 1)));
@@ -628,6 +629,7 @@ const transcribeWithWhisper = async (audioBlob: Blob, apiKey: string, model: str
 };
 
 const transcribeWithOpenAIChat = async (audioBlob: Blob, apiKey: string, model: string): Promise<SubtitleItem[]> => {
+  logger.debug(`Starting OpenAI Chat transcription with model: ${model}`);
   const base64Audio = await blobToBase64(audioBlob);
 
   const requestBody = {
@@ -728,3 +730,61 @@ export async function mapInParallel<T, R>(
   return results;
 }
 
+
+// --- Logger Utility ---
+
+export enum LogLevel {
+  DEBUG = 0,
+  INFO = 1,
+  WARN = 2,
+  ERROR = 3,
+  NONE = 4
+}
+
+class Logger {
+  private level: LogLevel = LogLevel.DEBUG;
+
+  setLevel(level: LogLevel) {
+    this.level = level;
+  }
+
+  private formatMessage(level: string, message: string, data?: any) {
+    const timestamp = new Date().toISOString();
+    // Handle circular references or large objects if needed, but simple stringify is usually ok for debug
+    let dataString = '';
+    if (data !== undefined) {
+      try {
+        dataString = `\nData: ${JSON.stringify(data, null, 2)}`;
+      } catch (e) {
+        dataString = `\nData: [Circular or Non-Serializable Object]`;
+      }
+    }
+    return `[${timestamp}] [${level}] ${message}${dataString}`;
+  }
+
+  debug(message: string, data?: any) {
+    if (this.level <= LogLevel.DEBUG) {
+      console.debug(this.formatMessage('DEBUG', message, data));
+    }
+  }
+
+  info(message: string, data?: any) {
+    if (this.level <= LogLevel.INFO) {
+      console.info(this.formatMessage('INFO', message, data));
+    }
+  }
+
+  warn(message: string, data?: any) {
+    if (this.level <= LogLevel.WARN) {
+      console.warn(this.formatMessage('WARN', message, data));
+    }
+  }
+
+  error(message: string, data?: any) {
+    if (this.level <= LogLevel.ERROR) {
+      console.error(this.formatMessage('ERROR', message, data));
+    }
+  }
+}
+
+export const logger = new Logger();

@@ -9,10 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react-dom": "^19.2.0",
     "@google/genai": "^1.30.0",
+    "@ricky0123/vad-web": "^0.0.30",
+    "lucide-react": "^0.554.0",
+    "onnxruntime-web": "^1.23.2",
+    "openai": "^6.9.1",
     "react": "^19.2.0",
-    "lucide-react": "^0.554.0"
+    "react-dom": "^19.2.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
