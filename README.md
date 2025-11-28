@@ -8,26 +8,48 @@
 
 ## ✨ Features
 
-- **🤖 AI Transcription**: Transcribe video/audio using OpenAI Whisper (via API).
-- **🌍 Smart Translation**: Translate subtitles to Simplified Chinese using Gemini 2.5 Flash.
-- **🧐 Deep Proofreading**: Polish and correct subtitles with Gemini 3 Pro, ensuring natural and accurate phrasing.
-- **⚡ Batch Operations**:
-    - **Fix Timestamps**: Automatically align subtitle timestamps with audio.
-    - **Re-translate**: Select specific segments to re-translate.
-    - **Proofread**: Batch polish selected segments.
-- **📸 Version Control**: Built-in snapshot system to save and restore different versions of your work.
-- **📂 Dual Modes**:
-    - **New Project**: Start from scratch with a video/audio file.
-    - **Import Mode**: Edit existing `.srt` or `.ass` files.
-- **💾 Bilingual Export**: Download subtitles in SRT or ASS formats (Bilingual or Target Language).
+### Core AI Features
+- **🤖 AI Transcription**: Transcribe video/audio using OpenAI Whisper (via API)
+- **🌍 Smart Translation**: Translate subtitles to Simplified Chinese using Gemini 2.5 Flash
+- **🧐 Deep Proofreading**: Polish and correct subtitles with Gemini 2.0 Flash or Gemini 2.0 Pro, ensuring natural and accurate phrasing
+- **🎯 Smart Segmentation**: Intelligent audio segmentation using Silero VAD for optimal subtitle timing
+
+### Quality Control Pipeline ⚠️ WIP
+> [!NOTE]
+> This feature is currently under development and not yet fully functional.
+
+- **🔍 Automated QC**: Three-stage Review→Fix→Validate pipeline with configurable iterations
+- **📊 Quality Metrics**: Acceptance criteria based on issue severity and rate per minute
+- **🎭 Genre-Aware**: Tailored prompts for different content genres (documentary, drama, technical, etc.)
+- **🔄 Iterative Refinement**: Automatic iteration until quality standards are met
+
+### Terminology Management
+- **📚 Custom Glossary**: Maintain project-specific terminology and translations
+- **✅ Consistency Checking**: Automatic detection of terminology inconsistencies
+- **🔄 AI-Generated Terms**: Generate glossary suggestions from source content
+
+### Batch Operations
+- **⏱️ Fix Timestamps**: Automatically align subtitle timestamps with audio using AI
+- **🔄 Re-translate**: Select specific segments to re-translate
+- **✏️ Proofread**: Batch polish selected segments with context awareness
+
+### Workflow Features
+- **📸 Version Control**: Built-in snapshot system to save and restore different versions of your work
+- **📂 Dual Modes**: Start from scratch (New Project) or edit existing files (Import Mode)
+- **💾 Bilingual Export**: Download subtitles in SRT or ASS formats (Bilingual or Target Language)
+- **🐛 Debug Logging**: Comprehensive logging system with configurable verbosity for troubleshooting
 
 ## 🛠️ Tech Stack
 
 - **Frontend**: [React 19](https://react.dev/), [Vite](https://vitejs.dev/), [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/), [Lucide React](https://lucide.dev/) (Icons)
+- **Styling**: Vanilla CSS with modern design patterns
 - **AI Integration**:
-    - [Google GenAI SDK](https://www.npmjs.com/package/@google/genai) (Gemini 2.5 Flash, Gemini 3 Pro)
-    - OpenAI API (Whisper-1)
+    - [Google GenAI SDK](https://www.npmjs.com/package/@google/genai) (Gemini 2.0 Flash, Gemini 2.0 Pro)
+    - [OpenAI API](https://www.npmjs.com/package/openai) (Whisper-1, GPT-4o series for QC)
+- **Audio Processing**:
+    - [@ricky0123/vad-web](https://www.npmjs.com/package/@ricky0123/vad-web) (Silero VAD for smart segmentation)
+    - [onnxruntime-web](https://www.npmjs.com/package/onnxruntime-web) (ML model runtime)
+- **Icons**: [Lucide React](https://lucide.dev/)
 
 ## 🚀 Run Locally
 
