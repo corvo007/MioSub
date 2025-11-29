@@ -277,7 +277,7 @@ export default function App() {
 
     // Logic State
     const [activeTab, setActiveTab] = useState<'new' | 'import'>('new');
-    const [settingsTab, setSettingsTab] = useState('api');
+    const [settingsTab, setSettingsTab] = useState('general');
 
     const [file, setFile] = useState<File | null>(null);
     const [duration, setDuration] = useState<number>(0);
@@ -1548,78 +1548,95 @@ export default function App() {
                         <h2 className="text-xl font-bold text-white mb-6 flex items-center"><Settings className="w-5 h-5 mr-2 text-indigo-400" /> Settings</h2>
 
                         <div className="flex space-x-1 border-b border-slate-700 mb-6 overflow-x-auto">
-                            {['api', 'performance', 'transcription'].map((tab) => (
+                            {['general', 'performance', 'glossary'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setSettingsTab(tab)}
                                     className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${settingsTab === tab ? 'bg-slate-800 text-indigo-400 border-t border-x border-slate-700' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}`}
                                 >
-                                    {tab === 'api' && 'API Keys'}
+                                    {tab === 'general' && 'General'}
                                     {tab === 'performance' && 'Performance'}
-                                    {tab === 'transcription' && 'Transcription'}
-                                    {tab === 'prompts' && 'Prompts'}
+                                    {tab === 'glossary' && 'Glossary'}
                                 </button>
                             ))}
                         </div>
 
                         <div className="space-y-6 min-h-[400px]">
-                            {settingsTab === 'api' && (
-                                <div className="space-y-3 animate-fade-in">
+                            {settingsTab === 'general' && (
+                                <div className="space-y-6 animate-fade-in">
+                                    {/* API Settings */}
+                                    <div className="space-y-3">
+                                        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">API Configuration</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {/* Gemini */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini API Key</label>
+                                                <div className="relative"><input type="password" value={settings.geminiKey} onChange={(e) => updateSetting('geminiKey', e.target.value.trim())} placeholder="Enter Gemini API Key" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
+                                                <p className="text-xs text-slate-500 mt-1">Required. Uses <strong>Gemini 2.5 Flash</strong> for translation and <strong>Gemini 3 Pro</strong> for glossary extraction and deep proofreading.</p>
+                                                {ENV_GEMINI_KEY && !settings.geminiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> Using API Key from environment</p>)}
+                                                {ENV_GEMINI_KEY && settings.geminiKey && (<p className="text-xs text-amber-400 mt-1">Overriding environment API Key</p>)}
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini Endpoint (Optional)</label>
+                                                <div className="relative flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={settings.geminiEndpoint || ''}
+                                                        onChange={(e) => updateSetting('geminiEndpoint', e.target.value.trim())}
+                                                        placeholder="https://generativelanguage.googleapis.com"
+                                                        className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
+                                                    />
+                                                    <button
+                                                        onClick={() => updateSetting('geminiEndpoint', undefined)}
+                                                        className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-700 transition-colors whitespace-nowrap"
+                                                        title="Reset to Default"
+                                                    >
+                                                        Reset
+                                                    </button>
+                                                </div>
+                                                <p className="text-xs text-slate-500 mt-1">Custom base URL for Gemini API (e.g., for proxies).</p>
+                                            </div>
+                                            {/* OpenAI */}
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI API Key</label>
+                                                <div className="relative"><input type="password" value={settings.openaiKey} onChange={(e) => updateSetting('openaiKey', e.target.value.trim())} placeholder="Enter OpenAI API Key" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
+                                                <p className="text-xs text-slate-500 mt-1">Required. Uses <strong>Whisper</strong> model for high-accuracy base transcription.</p>
+                                                {ENV_OPENAI_KEY && !settings.openaiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> Using API Key from environment</p>)}
+                                                {ENV_OPENAI_KEY && settings.openaiKey && (<p className="text-xs text-amber-400 mt-1">Overriding environment API Key</p>)}
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI Endpoint (Optional)</label>
+                                                <div className="relative flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={settings.openaiEndpoint || ''}
+                                                        onChange={(e) => updateSetting('openaiEndpoint', e.target.value.trim())}
+                                                        placeholder="https://api.openai.com/v1"
+                                                        className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
+                                                    />
+                                                    <button
+                                                        onClick={() => updateSetting('openaiEndpoint', undefined)}
+                                                        className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-700 transition-colors whitespace-nowrap"
+                                                        title="Reset to Default"
+                                                    >
+                                                        Reset
+                                                    </button>
+                                                </div>
+                                                <p className="text-xs text-slate-500 mt-1">Custom base URL for OpenAI API (e.g., for local LLMs or proxies).</p>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Output Settings */}
+                                    <div className="space-y-3 pt-4 border-t border-slate-800">
+                                        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Output Settings</h3>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini API Key</label>
-                                            <div className="relative"><input type="password" value={settings.geminiKey} onChange={(e) => updateSetting('geminiKey', e.target.value.trim())} placeholder="Enter Gemini API Key" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
-                                            <p className="text-xs text-slate-500 mt-1">Required. Uses <strong>Gemini 2.5 Flash</strong> for translation and <strong>Gemini 3 Pro</strong> for glossary extraction and deep proofreading.</p>
-                                            {ENV_GEMINI_KEY && !settings.geminiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> Using API Key from environment</p>)}
-                                            {ENV_GEMINI_KEY && settings.geminiKey && (<p className="text-xs text-amber-400 mt-1">Overriding environment API Key</p>)}
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini Endpoint (Optional)</label>
-                                            <div className="relative flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={settings.geminiEndpoint || ''}
-                                                    onChange={(e) => updateSetting('geminiEndpoint', e.target.value.trim())}
-                                                    placeholder="https://generativelanguage.googleapis.com"
-                                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
-                                                />
-                                                <button
-                                                    onClick={() => updateSetting('geminiEndpoint', undefined)}
-                                                    className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-700 transition-colors whitespace-nowrap"
-                                                    title="Reset to Default"
-                                                >
-                                                    Reset
-                                                </button>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Export Mode</label>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <button onClick={() => updateSetting('outputMode', 'bilingual')} className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'bilingual' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}><Languages className="w-4 h-4" /><span>Bilingual (Original + CN)</span></button>
+                                                <button onClick={() => updateSetting('outputMode', 'target_only')} className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'target_only' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}><Type className="w-4 h-4" /><span>Chinese Only</span></button>
                                             </div>
-                                            <p className="text-xs text-slate-500 mt-1">Custom base URL for Gemini API (e.g., for proxies).</p>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI API Key</label>
-                                            <div className="relative"><input type="password" value={settings.openaiKey} onChange={(e) => updateSetting('openaiKey', e.target.value.trim())} placeholder="Enter OpenAI API Key" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
-                                            <p className="text-xs text-slate-500 mt-1">Required. Uses <strong>Whisper</strong> model for high-accuracy base transcription.</p>
-                                            {ENV_OPENAI_KEY && !settings.openaiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> Using API Key from environment</p>)}
-                                            {ENV_OPENAI_KEY && settings.openaiKey && (<p className="text-xs text-amber-400 mt-1">Overriding environment API Key</p>)}
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI Endpoint (Optional)</label>
-                                            <div className="relative flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={settings.openaiEndpoint || ''}
-                                                    onChange={(e) => updateSetting('openaiEndpoint', e.target.value.trim())}
-                                                    placeholder="https://api.openai.com/v1"
-                                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
-                                                />
-                                                <button
-                                                    onClick={() => updateSetting('openaiEndpoint', undefined)}
-                                                    className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-700 transition-colors whitespace-nowrap"
-                                                    title="Reset to Default"
-                                                >
-                                                    Reset
-                                                </button>
-                                            </div>
-                                            <p className="text-xs text-slate-500 mt-1">Custom base URL for OpenAI API (e.g., for local LLMs or proxies).</p>
+                                            <p className="text-xs text-slate-500 mt-2">Choose whether to keep the original text alongside the translation in the final output.</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1675,13 +1692,9 @@ export default function App() {
                                             <p className="text-xs text-slate-500 mt-1">For <strong>Gemini 3 Pro</strong> (Glossary Extraction and and deep proofreading). Strict rate limits (keep &lt; 5).</p>
                                         </div>
                                     </div>
-                                </div>
-                            )}
 
-                            {settingsTab === 'transcription' && (
-                                <div className="space-y-3 animate-fade-in">
-                                    <div>
-                                        <div className="flex items-center justify-between mb-4">
+                                    <div className="pt-4 border-t border-slate-800">
+                                        <div className="flex items-center justify-between">
                                             <div>
                                                 <label className="block text-sm font-medium text-slate-300">Smart Split</label>
                                                 <p className="text-xs text-slate-500">Use VAD to split audio at natural pauses (Recommended)</p>
@@ -1693,22 +1706,28 @@ export default function App() {
                                                 <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-transform ${settings.useSmartSplit !== false ? 'left-6' : 'left-1'}`} />
                                             </button>
                                         </div>
+                                    </div>
+                                </div>
+                            )}
 
-                                        <div className="flex items-center justify-between mb-4">
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-300">Enable Auto-Glossary</label>
-                                                <p className="text-xs text-slate-500">Automatically extract terms from audio before translation</p>
-                                            </div>
-                                            <button
-                                                onClick={() => updateSetting('enableAutoGlossary', !settings.enableAutoGlossary)}
-                                                className={`w-10 h-5 rounded-full transition-colors relative ${settings.enableAutoGlossary !== false ? 'bg-indigo-500' : 'bg-slate-600'}`}
-                                            >
-                                                <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-transform ${settings.enableAutoGlossary !== false ? 'left-6' : 'left-1'}`} />
-                                            </button>
+                            {settingsTab === 'glossary' && (
+                                <div className="space-y-3 animate-fade-in">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300">Enable Auto-Glossary</label>
+                                            <p className="text-xs text-slate-500">Automatically extract terms from audio before translation</p>
                                         </div>
+                                        <button
+                                            onClick={() => updateSetting('enableAutoGlossary', !settings.enableAutoGlossary)}
+                                            className={`w-10 h-5 rounded-full transition-colors relative ${settings.enableAutoGlossary !== false ? 'bg-indigo-500' : 'bg-slate-600'}`}
+                                        >
+                                            <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-transform ${settings.enableAutoGlossary !== false ? 'left-6' : 'left-1'}`} />
+                                        </button>
+                                    </div>
 
-                                        {settings.enableAutoGlossary !== false && (
-                                            <div className="mb-4 animate-fade-in">
+                                    {settings.enableAutoGlossary !== false && (
+                                        <div className="space-y-4 animate-fade-in">
+                                            <div>
                                                 <label className="block text-sm font-medium text-slate-300 mb-1.5">Glossary Extraction Audio Length</label>
                                                 <CustomSelect
                                                     value={settings.glossarySampleMinutes === 'all' ? 'all' : settings.glossarySampleMinutes.toString()}
@@ -1728,26 +1747,34 @@ export default function App() {
                                                     Analyze the first X minutes to extract terms. "Full Audio" provides better coverage but takes longer.
                                                 </p>
                                             </div>
-                                        )}
 
-                                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Export Mode</label>
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <button onClick={() => updateSetting('outputMode', 'bilingual')} className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'bilingual' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}><Languages className="w-4 h-4" /><span>Bilingual (Original + CN)</span></button>
-                                            <button onClick={() => updateSetting('outputMode', 'target_only')} className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'target_only' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}><Type className="w-4 h-4" /><span>Chinese Only</span></button>
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-slate-300">Auto-Confirm Glossary</label>
+                                                    <p className="text-xs text-slate-500">Skip the confirmation dialog if terms are found</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => updateSetting('glossaryAutoConfirm', !settings.glossaryAutoConfirm)}
+                                                    className={`w-10 h-5 rounded-full transition-colors relative ${settings.glossaryAutoConfirm ? 'bg-indigo-500' : 'bg-slate-600'}`}
+                                                >
+                                                    <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-transform ${settings.glossaryAutoConfirm ? 'left-6' : 'left-1'}`} />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <p className="text-xs text-slate-500 mt-2">Choose whether to keep the original text alongside the translation in the final output.</p>
+                                    )}
+
+                                    <div className="pt-4 border-t border-slate-800">
+                                        <button
+                                            onClick={() => { setShowSettings(false); setShowGlossaryManager(true); }}
+                                            className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-white transition-colors flex items-center justify-center text-sm font-medium"
+                                        >
+                                            <Book className="w-4 h-4 mr-2" /> Manage Glossaries
+                                        </button>
                                     </div>
                                 </div>
                             )}
 
-                            {settingsTab === 'prompts' && (
-                                <div className="space-y-3 animate-fade-in">
-                                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center"><MessageSquareText className="w-4 h-4 mr-1.5" /> Custom Prompts (Optional)</h3>
-                                    <p className="text-xs text-slate-500 mb-2">Leave blank to use the default prompts for the selected genre.</p>
-                                    <div><label className="block text-xs font-medium text-slate-400 mb-1">Translation Prompt</label><textarea value={settings.customTranslationPrompt} onChange={(e) => updateSetting('customTranslationPrompt', e.target.value)} placeholder="Override system instruction for initial translation..." className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 h-20 resize-none" /></div>
-                                    <div><label className="block text-xs font-medium text-slate-400 mb-1">Proofreading Prompt</label><textarea value={settings.customProofreadingPrompt} onChange={(e) => updateSetting('customProofreadingPrompt', e.target.value)} placeholder="Override system instruction for proofreading..." className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 h-20 resize-none" /></div>
-                                </div>
-                            )}
+
 
 
                         </div>
