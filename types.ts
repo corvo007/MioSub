@@ -28,7 +28,7 @@ export interface ChunkStatus {
   id: number | string;
   total: number;
   status: 'pending' | 'processing' | 'completed' | 'error';
-  stage?: 'transcribing' | 'refining' | 'translating';
+  stage?: 'transcribing' | 'waiting_glossary' | 'refining' | 'translating';
   message?: string;
   toast?: {
     message: string;

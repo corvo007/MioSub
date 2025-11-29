@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Upload, FileVideo, Download, Trash2, Play, CheckCircle, AlertCircle, Languages, Loader2, Sparkles, Settings, X, Eye, EyeOff, MessageSquareText, AudioLines, Clapperboard, Monitor, CheckSquare, Square, RefreshCcw, Type, Clock, Wand2, FileText, RotateCcw, MessageCircle, GitCommit, ArrowLeft, Plus, Book, ShieldCheck, Scissors, Pencil, Cpu, Layout, Search, Globe, Zap, Volume2, ChevronDown, ChevronRight, Save, Edit2, Ban } from 'lucide-react';
 import { SubtitleItem, GenerationStatus, OutputFormat, AppSettings, Genre, BatchOperationMode, SubtitleSnapshot, ChunkStatus, GENRE_PRESETS, GlossaryItem, GlossaryExtractionResult, GlossaryExtractionMetadata } from './types';
 import { generateSrtContent, generateAssContent, downloadFile, parseSrt, parseAss, decodeAudio, logger, LogEntry } from './utils';
@@ -78,21 +78,10 @@ const TimeTracker = ({ startTime, completed, total, status }: { startTime: numbe
     if (!startTime) return null;
 
     const elapsed = Math.floor((now - startTime) / 1000);
-    let remaining: number | null = null;
-
-    if (completed > 0 && total > completed) {
-        const avgTime = (now - startTime) / completed;
-        remaining = Math.floor((avgTime * (total - completed)) / 1000);
-    }
 
     return (
         <div className="flex justify-between text-xs text-slate-400 mb-4 px-1">
             <span>Time Used: {elapsed}s</span>
-            {remaining !== null && status !== GenerationStatus.COMPLETED && (
-                <span>
-                    Est. Remaining: {remaining}s
-                </span>
-            )}
         </div>
     );
 };
@@ -493,7 +482,7 @@ export default function App() {
                                     <span className="text-slate-300 font-mono text-sm font-medium">{typeof chunk.id === 'number' ? `Chunk ${chunk.id}` : chunk.id}</span>
                                 </div>
                                 <div className="flex-1 flex items-center justify-end space-x-4">
-                                    <span className={`text-xs font-medium px-2 py-1 rounded-md ${chunk.stage === 'transcribing' ? 'bg-orange-500/10 text-orange-400' : chunk.stage === 'refining' ? 'bg-purple-500/10 text-purple-400' : chunk.stage === 'translating' ? 'bg-blue-500/10 text-blue-400' : 'text-slate-400'}`}>
+                                    <span className="text-xs font-medium text-slate-400">
                                         {chunk.message || chunk.status}
                                     </span>
                                     {chunk.status === 'processing' && <Loader2 className="w-3 h-3 animate-spin text-slate-500" />}
@@ -708,17 +697,25 @@ export default function App() {
         const [editingId, setEditingId] = useState<string | null>(null);
         const [editValue, setEditValue] = useState<GlossaryItem | null>(null);
         const [overrides, setOverrides] = useState<Record<string, GlossaryItem>>({});
-        const [autoConfirmTimer, setAutoConfirmTimer] = useState(60);
+
         const [conflictCustomValues, setConflictCustomValues] = useState<Record<string, GlossaryItem>>({});
+
+        // Track if state has been initialized to prevent resets during editing
+        const initialized = useRef(false);
 
         if (!glossaryConfirmCallback || pendingGlossaryResults.length === 0) {
             return null;
         }
 
-        const { unique, conflicts } = mergeGlossaryResults(pendingGlossaryResults, settings.glossary);
+        // Memoize mergeGlossaryResults to prevent re-computing on every render
+        const { unique, conflicts } = useMemo(() =>
+            mergeGlossaryResults(pendingGlossaryResults, settings.glossary),
+            [pendingGlossaryResults, settings.glossary]
+        );
 
+        // Initialize state ONLY on first mount, not on every render
         useEffect(() => {
-            if (pendingGlossaryResults.length > 0) {
+            if (!initialized.current && pendingGlossaryResults.length > 0) {
                 const newUnique = unique.filter(u => !settings.glossary?.some(g => g.term.toLowerCase() === u.term.toLowerCase()));
                 setSelectedTerms(new Set(newUnique.map(t => t.term)));
 
@@ -730,18 +727,12 @@ export default function App() {
                     }
                 });
                 setResolvedConflicts(initialResolved);
-                setAutoConfirmTimer(60);
-            }
-        }, [pendingGlossaryResults]);
 
-        useEffect(() => {
-            if (autoConfirmTimer > 0) {
-                const timer = setTimeout(() => setAutoConfirmTimer(prev => prev - 1), 1000);
-                return () => clearTimeout(timer);
-            } else {
-                handleConfirm();
+                initialized.current = true; // Mark as initialized
             }
-        }, [autoConfirmTimer]);
+        }, [pendingGlossaryResults, unique, conflicts, settings.glossary]);
+
+
 
         const handleConfirm = () => {
             if (!glossaryConfirmCallback) return;
@@ -781,7 +772,7 @@ export default function App() {
             if (newSelected.has(term)) newSelected.delete(term);
             else newSelected.add(term);
             setSelectedTerms(newSelected);
-            setAutoConfirmTimer(60);
+
         };
 
         const startEditing = (item: GlossaryItem, id: string) => {
@@ -801,7 +792,7 @@ export default function App() {
                 });
             }
 
-            setAutoConfirmTimer(60);
+
         };
 
         const saveEdit = (originalTerm: string) => {
@@ -817,14 +808,14 @@ export default function App() {
             }
             setEditingId(null);
             setEditValue(null);
-            setAutoConfirmTimer(60);
+
         };
 
         const addCustomTerm = () => {
             const newTerm: GlossaryItem = { term: 'New Term', translation: '', notes: '' };
             setCustomTerms([...customTerms, newTerm]);
             setTimeout(() => startEditing(newTerm, `custom-${Date.now()}`), 0);
-            setAutoConfirmTimer(60);
+
         };
 
         const totalToAdd = selectedTerms.size + Object.values(resolvedConflicts).filter(v => v !== null).length + customTerms.length;
@@ -843,10 +834,6 @@ export default function App() {
                             </p>
                         </div>
                         <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 text-slate-400 bg-slate-800/50 px-3 py-1 rounded-full text-xs">
-                                <Clock className="w-3 h-3" />
-                                <span>Auto-confirm in {autoConfirmTimer}s</span>
-                            </div>
                             <button onClick={handleDiscard} className="text-slate-400 hover:text-white transition-colors">
                                 <X className="w-6 h-6" />
                             </button>
@@ -880,7 +867,7 @@ export default function App() {
                                                             key={optIdx}
                                                             onClick={() => {
                                                                 setResolvedConflicts(prev => ({ ...prev, [conflict.term]: option }));
-                                                                setAutoConfirmTimer(60);
+
                                                             }}
                                                             className={`p-3 rounded-lg border cursor-pointer transition-all ${resolvedConflicts[conflict.term] === option
                                                                 ? 'bg-indigo-500/20 border-indigo-500 ring-1 ring-indigo-500'
@@ -904,7 +891,7 @@ export default function App() {
                                                         <div
                                                             onClick={() => {
                                                                 setResolvedConflicts(prev => ({ ...prev, [conflict.term]: existingOption }));
-                                                                setAutoConfirmTimer(60);
+
                                                             }}
                                                             className={`p-3 rounded-lg border cursor-pointer transition-all ${resolvedConflicts[conflict.term] === existingOption
                                                                 ? 'bg-indigo-500/20 border-indigo-500 ring-1 ring-indigo-500'
@@ -932,7 +919,7 @@ export default function App() {
                                                                     value={editValue?.translation || ''}
                                                                     onChange={e => {
                                                                         setEditValue(prev => prev ? { ...prev, translation: e.target.value } : null);
-                                                                        setAutoConfirmTimer(60);
+
                                                                     }}
                                                                     className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
                                                                     placeholder="Custom Translation"
@@ -943,7 +930,7 @@ export default function App() {
                                                                     value={editValue?.notes || ''}
                                                                     onChange={e => {
                                                                         setEditValue(prev => prev ? { ...prev, notes: e.target.value } : null);
-                                                                        setAutoConfirmTimer(60);
+
                                                                     }}
                                                                     className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-slate-400"
                                                                     placeholder="Notes (Optional)"
@@ -958,7 +945,7 @@ export default function App() {
                                                             <div onClick={() => {
                                                                 if (customValue) {
                                                                     setResolvedConflicts(prev => ({ ...prev, [conflict.term]: customValue }));
-                                                                    setAutoConfirmTimer(60);
+
                                                                 } else {
                                                                     startEditing({ term: conflict.term, translation: '', notes: '' }, customId);
                                                                 }
@@ -989,7 +976,7 @@ export default function App() {
                                                         <div
                                                             onClick={() => {
                                                                 setResolvedConflicts(prev => ({ ...prev, [conflict.term]: null }));
-                                                                setAutoConfirmTimer(60);
+
                                                             }}
                                                             className={`p-3 rounded-lg border cursor-pointer transition-all ${resolvedConflicts[conflict.term] === null
                                                                 ? 'bg-red-500/10 border-red-500/50 text-red-400'
@@ -1019,7 +1006,7 @@ export default function App() {
                                         onClick={() => {
                                             if (selectedTerms.size === unique.length) setSelectedTerms(new Set());
                                             else setSelectedTerms(new Set(unique.map(t => t.term)));
-                                            setAutoConfirmTimer(60);
+
                                         }}
                                         className="text-xs text-indigo-400 hover:text-indigo-300"
                                     >
@@ -1056,7 +1043,7 @@ export default function App() {
                                                                     value={editValue?.term}
                                                                     onChange={e => {
                                                                         setEditValue(prev => prev ? { ...prev, term: e.target.value } : null);
-                                                                        setAutoConfirmTimer(60);
+
                                                                     }}
                                                                     className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
                                                                     placeholder="Term"
@@ -1065,7 +1052,7 @@ export default function App() {
                                                                     value={editValue?.translation}
                                                                     onChange={e => {
                                                                         setEditValue(prev => prev ? { ...prev, translation: e.target.value } : null);
-                                                                        setAutoConfirmTimer(60);
+
                                                                     }}
                                                                     className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
                                                                     placeholder="Translation"
@@ -1074,7 +1061,7 @@ export default function App() {
                                                                     value={editValue?.notes}
                                                                     onChange={e => {
                                                                         setEditValue(prev => prev ? { ...prev, notes: e.target.value } : null);
-                                                                        setAutoConfirmTimer(60);
+
                                                                     }}
                                                                     className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-slate-400"
                                                                     placeholder="Notes"
@@ -1130,7 +1117,7 @@ export default function App() {
                                                             value={editValue?.term}
                                                             onChange={e => {
                                                                 setEditValue(prev => prev ? { ...prev, term: e.target.value } : null);
-                                                                setAutoConfirmTimer(60);
+
                                                             }}
                                                             className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
                                                             placeholder="Term"
@@ -1139,7 +1126,7 @@ export default function App() {
                                                             value={editValue?.translation}
                                                             onChange={e => {
                                                                 setEditValue(prev => prev ? { ...prev, translation: e.target.value } : null);
-                                                                setAutoConfirmTimer(60);
+
                                                             }}
                                                             className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
                                                             placeholder="Translation"
@@ -1148,7 +1135,7 @@ export default function App() {
                                                             value={editValue?.notes}
                                                             onChange={e => {
                                                                 setEditValue(prev => prev ? { ...prev, notes: e.target.value } : null);
-                                                                setAutoConfirmTimer(60);
+
                                                             }}
                                                             className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-slate-400"
                                                             placeholder="Notes"
@@ -1239,7 +1226,7 @@ export default function App() {
         );
     };
 
-    const SettingsModal = () => {
+    const renderSettingsModal = () => {
 
         if (!showSettings) return null;
 
@@ -1293,23 +1280,23 @@ export default function App() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium text-slate-300 mb-1.5">Proofread Batch Size</label>
-                                            <input type="number" value={settings.proofreadBatchSize} onChange={(e) => updateSetting('proofreadBatchSize', parseInt(e.target.value) || 20)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
+                                            <input type="number" value={settings.proofreadBatchSize} onChange={(e) => updateSetting('proofreadBatchSize', isNaN(parseInt(e.target.value)) ? 0 : parseInt(e.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-300 mb-1.5">Translation Batch Size</label>
-                                            <input type="number" value={settings.translationBatchSize} onChange={(e) => updateSetting('translationBatchSize', parseInt(e.target.value) || 20)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
+                                            <input type="number" value={settings.translationBatchSize} onChange={(e) => updateSetting('translationBatchSize', isNaN(parseInt(e.target.value)) ? 0 : parseInt(e.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-300 mb-1.5">Chunk Duration (s)</label>
-                                            <input type="number" value={settings.chunkDuration} onChange={(e) => updateSetting('chunkDuration', parseInt(e.target.value) || 300)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
+                                            <input type="number" value={settings.chunkDuration} onChange={(e) => updateSetting('chunkDuration', isNaN(parseInt(e.target.value)) ? 0 : parseInt(e.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-300 mb-1.5">Concurrency (Flash)</label>
-                                            <input type="number" value={settings.concurrencyFlash} onChange={(e) => updateSetting('concurrencyFlash', parseInt(e.target.value) || 5)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
+                                            <input type="number" value={settings.concurrencyFlash} onChange={(e) => updateSetting('concurrencyFlash', isNaN(parseInt(e.target.value)) ? 0 : parseInt(e.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-300 mb-1.5">Concurrency (Pro)</label>
-                                            <input type="number" value={settings.concurrencyPro} onChange={(e) => updateSetting('concurrencyPro', parseInt(e.target.value) || 2)} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
+                                            <input type="number" value={settings.concurrencyPro} onChange={(e) => updateSetting('concurrencyPro', isNaN(parseInt(e.target.value)) ? 0 : parseInt(e.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
                                         </div>
                                     </div>
                                 </div>
@@ -1364,7 +1351,7 @@ export default function App() {
                                 </div>
                             )}
 
-                            
+
                             {settingsTab === 'terminology' && (
                                 <div className="space-y-4 animate-fade-in">
                                     <div className="flex items-center justify-between">
@@ -1549,6 +1536,57 @@ export default function App() {
             </div>
         );
     };
+
+    const renderLogViewer = () => {
+        if (!showLogs) return null;
+
+        return (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl animate-fade-in relative">
+                    <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+                        <h2 className="text-xl font-bold text-white flex items-center">
+                            <FileText className="w-5 h-5 mr-2 text-blue-400" /> Application Logs
+                        </h2>
+                        <button onClick={() => setShowLogs(false)} className="text-slate-400 hover:text-white transition-colors">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                        {logs.length === 0 ? (
+                            <div className="text-center text-slate-500 py-12">
+                                <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                                <p>No logs available</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-2 font-mono text-sm">
+                                {logs.map((log, idx) => (
+                                    <div key={idx} className={`p-3 rounded-lg border ${log.level === 'ERROR' ? 'bg-red-500/10 border-red-500/30 text-red-300' :
+                                        log.level === 'WARN' ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' :
+                                            log.level === 'INFO' ? 'bg-blue-500/10 border-blue-500/30 text-blue-300' :
+                                                'bg-slate-800/50 border-slate-700 text-slate-400'
+                                        }`}>
+                                        <div className="flex items-start gap-3">
+                                            <span className="text-xs opacity-70 whitespace-nowrap">{log.timestamp}</span>
+                                            <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${log.level === 'ERROR' ? 'bg-red-500 text-white' :
+                                                log.level === 'WARN' ? 'bg-amber-500 text-white' :
+                                                    log.level === 'INFO' ? 'bg-blue-500 text-white' :
+                                                        'bg-slate-600 text-slate-200'
+                                                }`}>{log.level}</span>
+                                            <span className="flex-1">{log.message}</span>
+                                        </div>
+                                        {log.data && (
+                                            <pre className="mt-2 text-xs opacity-80 overflow-x-auto">{JSON.stringify(log.data, null, 2)}</pre>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
 
     const handleRetryGlossary = async () => {
         if (!glossaryMetadata?.glossaryChunks || !audioCacheRef.current) return;
@@ -1758,7 +1796,8 @@ export default function App() {
         <>
             <GlossaryConfirmationModal />
             <GlossaryExtractionFailedDialog />
-            {showSettings && <SettingsModal />}
+            {showSettings && renderSettingsModal()}
+            {showLogs && renderLogViewer()}
             {view === 'home' && renderHome()}
             {view === 'workspace' && renderWorkspace()}
             <ProgressOverlay />
