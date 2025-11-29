@@ -48,7 +48,7 @@ interface ToastMessage {
 
 const ToastContainer = ({ toasts, removeToast }: { toasts: ToastMessage[], removeToast: (id: string) => void }) => {
     return (
-        <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
+        <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
             {toasts.map(toast => (
                 <div key={toast.id} className={`
           pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg text-sm font-medium animate-fade-in
@@ -1570,7 +1570,7 @@ export default function App() {
                                         <div>
                                             <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini API Key</label>
                                             <div className="relative"><input type="password" value={settings.geminiKey} onChange={(e) => updateSetting('geminiKey', e.target.value.trim())} placeholder="Enter Gemini API Key" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
-                                            <p className="text-xs text-slate-500 mt-1">Required. Uses <strong>Gemini 2.5 Flash</strong> for translation and <strong>Gemini 3 Pro</strong> for glossary extraction.</p>
+                                            <p className="text-xs text-slate-500 mt-1">Required. Uses <strong>Gemini 2.5 Flash</strong> for translation and <strong>Gemini 3 Pro</strong> for glossary extraction and deep proofreading.</p>
                                             {ENV_GEMINI_KEY && !settings.geminiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> Using API Key from environment</p>)}
                                             {ENV_GEMINI_KEY && settings.geminiKey && (<p className="text-xs text-amber-400 mt-1">Overriding environment API Key</p>)}
                                         </div>
@@ -1632,7 +1632,7 @@ export default function App() {
                                                 if (val === '') updateSetting('concurrencyPro', 0);
                                                 else if (/^\d+$/.test(val)) updateSetting('concurrencyPro', parseInt(val));
                                             }} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                            <p className="text-xs text-slate-500 mt-1">For <strong>Gemini 3 Pro</strong> (Glossary Extraction). Strict rate limits (keep &lt; 5).</p>
+                                            <p className="text-xs text-slate-500 mt-1">For <strong>Gemini 3 Pro</strong> (Glossary Extraction and and deep proofreading). Strict rate limits (keep &lt; 5).</p>
                                         </div>
                                     </div>
                                 </div>
