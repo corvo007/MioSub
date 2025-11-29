@@ -595,13 +595,17 @@ const transcribeWithWhisper = async (audioBlob: Blob, apiKey: string, model: str
 
   while (attempt < maxRetries) {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minutes
+
       const response = await fetch(`${baseUrl}/audio/transcriptions`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
         },
         body: formData,
-      });
+        signal: controller.signal
+      }).finally(() => clearTimeout(timeoutId));
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -660,14 +664,18 @@ const transcribeWithOpenAIChat = async (audioBlob: Blob, apiKey: string, model: 
   const baseUrl = endpoint || 'https://api.openai.com/v1';
 
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minutes
+
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(requestBody)
-    });
+      body: JSON.stringify(requestBody),
+      signal: controller.signal
+    }).finally(() => clearTimeout(timeoutId));
 
     if (!response.ok) {
       const err = await response.json();

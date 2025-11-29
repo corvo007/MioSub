@@ -412,7 +412,10 @@ export const retryGlossaryExtraction = async (
 ): Promise<GlossaryExtractionMetadata> => {
   const ai = new GoogleGenAI({
     apiKey,
-    httpOptions: endpoint ? { baseUrl: endpoint } : undefined
+    httpOptions: {
+      ...(endpoint ? { baseUrl: endpoint } : {}),
+      timeout: 600000
+    }
   });
   const results = await extractGlossaryFromAudio(ai, audioBuffer, chunks, genre, concurrency);
 
@@ -490,15 +493,18 @@ export const generateSubtitles = async (
 
   const ai = new GoogleGenAI({
     apiKey: geminiKey,
-    httpOptions: settings.geminiEndpoint ? { baseUrl: settings.geminiEndpoint } : undefined
+    httpOptions: {
+      ...(settings.geminiEndpoint ? { baseUrl: settings.geminiEndpoint } : {}),
+      timeout: 600000 // 10 minutes timeout to prevent 30s default
+    }
   });
 
   // 1. Decode Audio
-  onProgress?.({ id: 'decoding', total: 1, status: 'processing', message: "Decoding audio track..." });
+  onProgress?.({ id: 'decoding', total: 1, status: 'processing', message: "正在解码音频..." });
   let audioBuffer: AudioBuffer;
   try {
     audioBuffer = await decodeAudioWithRetry(file);
-    onProgress?.({ id: 'decoding', total: 1, status: 'completed', message: `Audio decoded. Duration: ${formatTime(audioBuffer.duration)}` });
+    onProgress?.({ id: 'decoding', total: 1, status: 'completed', message: `音频解码完成。时长: ${formatTime(audioBuffer.duration)}` });
   } catch (e) {
     logger.error("Failed to decode audio", e);
     throw new Error("Failed to decode audio. Please ensure the file is a valid video/audio format.");
@@ -512,7 +518,7 @@ export const generateSubtitles = async (
   const chunksParams = [];
 
   if (settings.useSmartSplit) {
-    onProgress?.({ id: 'segmenting', total: 1, status: 'processing', message: "Analyzing audio for smart segmentation..." });
+    onProgress?.({ id: 'segmenting', total: 1, status: 'processing', message: "正在分析音频进行智能分割..." });
     const segmenter = new SmartSegmenter();
     const segments = await segmenter.segmentAudio(audioBuffer, chunkDuration);
     logger.info("Smart Segmentation Results", { count: segments.length, segments });
@@ -524,7 +530,7 @@ export const generateSubtitles = async (
         end: seg.end
       });
     });
-    onProgress?.({ id: 'segmenting', total: 1, status: 'completed', message: `Smart split created ${segments.length} chunks.` });
+    onProgress?.({ id: 'segmenting', total: 1, status: 'completed', message: `智能分割创建了 ${segments.length} 个片段。` });
   } else {
     // Standard fixed-size chunking
     let cursor = 0;
@@ -556,7 +562,7 @@ export const generateSubtitles = async (
     // Use Pro concurrency setting for glossary (Gemini 3 Pro)
     const glossaryConcurrency = settings.concurrencyPro || 2;
 
-    onProgress?.({ id: 'glossary', total: glossaryChunks.length, status: 'processing', message: `Extracting terms (0/${glossaryChunks.length})...` });
+    onProgress?.({ id: 'glossary', total: glossaryChunks.length, status: 'processing', message: `正在提取术语 (0/${glossaryChunks.length})...` });
 
     glossaryPromise = extractGlossaryFromAudio(
       ai,
@@ -569,7 +575,7 @@ export const generateSubtitles = async (
           id: 'glossary',
           total: total,
           status: completed === total ? 'completed' : 'processing',
-          message: completed === total ? 'Glossary extraction complete.' : `Extracting terms (${completed}/${total})...`
+          message: completed === total ? '术语提取完成。' : `正在提取术语 (${completed}/${total})...`
         });
       }
     );
@@ -586,7 +592,7 @@ export const generateSubtitles = async (
 
       try {
         logger.info("Waiting for glossary extraction...");
-        onProgress?.({ id: 'glossary', total: 1, status: 'processing', message: 'Finalizing glossary...' });
+        onProgress?.({ id: 'glossary', total: 1, status: 'processing', message: '正在提取术语表...' });
 
         extractedGlossaryResults = await glossaryPromise;
 
@@ -601,7 +607,7 @@ export const generateSubtitles = async (
             resultsCount: extractedGlossaryResults.length,
             results: extractedGlossaryResults.map(r => ({ idx: r.chunkIndex, terms: r.terms.length, conf: r.confidence }))
           });
-          onProgress?.({ id: 'glossary', total: 1, status: 'processing', message: 'Waiting for user review...' });
+          onProgress?.({ id: 'glossary', total: 1, status: 'processing', message: '等待用户审核...' });
 
           // BLOCKING CALL (User Interaction) - Pass metadata for UI
           logger.info("Calling onGlossaryReady with metadata...");
@@ -618,15 +624,15 @@ export const generateSubtitles = async (
           logger.info("onGlossaryReady returned.");
 
           logger.info("Glossary confirmed/updated.", { count: finalGlossary.length });
-          onProgress?.({ id: 'glossary', total: 1, status: 'completed', message: 'Glossary applied.' });
+          onProgress?.({ id: 'glossary', total: 1, status: 'completed', message: '术语表已应用。' });
         } else {
           // No callback or truly empty results (not even failures)
           logger.info("No glossary extraction needed", { totalTerms, hasFailures });
-          onProgress?.({ id: 'glossary', total: 1, status: 'completed', message: 'No terms found.' });
+          onProgress?.({ id: 'glossary', total: 1, status: 'completed', message: '未发现术语。' });
         }
       } catch (e) {
         logger.warn("Glossary extraction failed or timed out", e);
-        onProgress?.({ id: 'glossary', total: 1, status: 'error', message: 'Glossary failed' });
+        onProgress?.({ id: 'glossary', total: 1, status: 'error', message: '术语提取失败' });
       }
 
       return finalGlossary; // Return only the glossary, not a complex object
@@ -651,7 +657,7 @@ export const generateSubtitles = async (
 
     try {
       // ===== STEP 1: TRANSCRIPTION =====
-      onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'transcribing', message: 'Transcribing...' });
+      onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'transcribing', message: '正在转录...' });
       logger.debug(`[Chunk ${index}] Starting transcription...`);
 
       const wavBlob = await sliceAudioBuffer(audioBuffer, start, end);
@@ -663,12 +669,12 @@ export const generateSubtitles = async (
       if (rawSegments.length === 0) {
         logger.warn(`[Chunk ${index}] No speech detected, skipping`);
         chunkResults[i] = [];
-        onProgress?.({ id: index, total: totalChunks, status: 'completed', message: 'Done (Empty)' });
+        onProgress?.({ id: index, total: totalChunks, status: 'completed', message: '完成 (空)' });
         return;
       }
 
       // ===== STEP 2: WAIT FOR GLOSSARY (Non-blocking for other chunks) =====
-      onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'waiting_glossary', message: 'Waiting for glossary...' });
+      onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'waiting_glossary', message: '等待术语表...' });
       logger.debug(`[Chunk ${index}] Waiting for glossary confirmation...`);
 
       const finalGlossary = await glossaryState.get();
@@ -682,7 +688,7 @@ export const generateSubtitles = async (
       const base64Audio = await blobToBase64(refineWavBlob);
 
       let refinedSegments: SubtitleItem[] = [];
-      onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'refining', message: 'Refining...' });
+      onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'refining', message: '正在优化...' });
 
       const refineSystemInstruction = getSystemInstruction(chunkSettings.genre, undefined, 'refinement', chunkSettings.glossary);
       const glossaryInfo = chunkSettings.glossary && chunkSettings.glossary.length > 0
@@ -760,7 +766,7 @@ export const generateSubtitles = async (
       // ===== STEP 4: TRANSLATION =====
       let finalChunkSubs: SubtitleItem[] = [];
       if (refinedSegments.length > 0) {
-        onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'translating', message: 'Translating...' });
+        onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'translating', message: '正在翻译...' });
 
         const toTranslate = refinedSegments.map((seg, idx) => ({
           id: idx + 1,
@@ -796,7 +802,7 @@ export const generateSubtitles = async (
       const currentAll = chunkResults.flat().map((s, idx) => ({ ...s, id: idx + 1 }));
       onIntermediateResult?.(currentAll);
 
-      onProgress?.({ id: index, total: totalChunks, status: 'completed', message: 'Done' });
+      onProgress?.({ id: index, total: totalChunks, status: 'completed', message: '完成' });
 
     } catch (e: any) {
       logger.error(`Phase 3 failed for chunk ${index}`, e);
@@ -1179,7 +1185,13 @@ export const runBatchOperation = async (
 ): Promise<SubtitleItem[]> => {
   const geminiKey = (typeof window !== 'undefined' ? (window as any).env?.GEMINI_API_KEY : undefined) || settings.geminiKey?.trim() || process.env.API_KEY || process.env.GEMINI_API_KEY;
   if (!geminiKey) throw new Error("API Key is missing.");
-  const ai = new GoogleGenAI({ apiKey: geminiKey });
+  const ai = new GoogleGenAI({
+    apiKey: geminiKey,
+    httpOptions: {
+      ...(settings.geminiEndpoint ? { baseUrl: settings.geminiEndpoint } : {}),
+      timeout: 600000
+    }
+  });
 
   let audioBuffer: AudioBuffer | null = null;
   // Both Proofread and Fix Timestamps need audio context.
@@ -1328,7 +1340,10 @@ export const generateGlossary = async (
   genre: string
 ): Promise<GlossaryItem[]> => {
   if (!apiKey) throw new Error("Gemini API Key is missing.");
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({
+    apiKey,
+    httpOptions: { timeout: 600000 }
+  });
 
   // Prepare a sample of the text to avoid context limit issues if the file is huge.
   // We'll take the first 200 lines, middle 100, and last 100 to get a good spread.

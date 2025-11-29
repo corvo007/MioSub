@@ -38,7 +38,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
     const selectedGlossary = glossaries.find(g => g.id === selectedGlossaryId);
 
     const handleAddGlossary = () => {
-        const newGlossary = createGlossary(`New Glossary ${glossaries.length + 1}`);
+        const newGlossary = createGlossary(`新术语表 ${glossaries.length + 1}`);
         onUpdateGlossaries([...glossaries, newGlossary]);
         setSelectedGlossaryId(newGlossary.id);
         // Auto-start editing name
@@ -133,7 +133,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                 <div className="w-64 bg-slate-950 border-r border-slate-800 flex flex-col">
                     <div className="p-4 border-b border-slate-800">
                         <h2 className="text-lg font-bold text-white flex items-center">
-                            <Book className="w-5 h-5 mr-2 text-indigo-400" /> Glossaries
+                            <Book className="w-5 h-5 mr-2 text-indigo-400" /> 术语表
                         </h2>
                     </div>
                     <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
@@ -145,19 +145,19 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                             >
                                 {showDeleteConfirm === glossary.id ? (
                                     <div className="absolute inset-0 bg-slate-900 flex items-center justify-between px-3 rounded-lg z-10 border border-red-500/30">
-                                        <span className="text-xs text-red-400 font-medium flex items-center"><AlertCircle className="w-3 h-3 mr-1" /> Delete?</span>
+                                        <span className="text-xs text-red-400 font-medium flex items-center"><AlertCircle className="w-3 h-3 mr-1" /> 删除？</span>
                                         <div className="flex items-center space-x-2">
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); handleDelete(glossary.id); }}
                                                 className="px-2 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs rounded border border-red-500/30 transition-colors"
                                             >
-                                                Yes
+                                                是
                                             </button>
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(null); }}
                                                 className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs rounded border border-slate-700 transition-colors"
                                             >
-                                                No
+                                                否
                                             </button>
                                         </div>
                                     </div>
@@ -181,13 +181,13 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                             </span>
                                             {activeGlossaryId === glossary.id && (
                                                 <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/20">
-                                                    ACTIVE
+                                                    当前使用
                                                 </span>
                                             )}
                                         </div>
                                     )}
                                     <div className="text-[10px] text-slate-500 mt-0.5">
-                                        {glossary.terms.length} terms
+                                        {glossary.terms.length} 个术语
                                     </div>
                                 </div>
 
@@ -195,7 +195,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                     <button
                                         onClick={(e) => { e.stopPropagation(); setEditingNameId(glossary.id); setEditNameValue(glossary.name); }}
                                         className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white"
-                                        title="Rename"
+                                        title="重命名"
                                     >
                                         <Edit2 className="w-3 h-3" />
                                     </button>
@@ -210,14 +210,21 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                             </div>
                         ))}
                     </div>
-                    <div className="p-4 border-t border-slate-800">
+                    <div className="p-4 border-t border-slate-800 space-y-2">
                         <button
                             onClick={handleAddGlossary}
                             className="w-full flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white py-2 rounded-lg transition-colors border border-slate-700"
                         >
                             <Plus className="w-4 h-4" />
-                            <span className="text-sm font-medium">New Glossary</span>
+                            <span className="text-sm font-medium">新建术语表</span>
                         </button>
+                        {glossaries.length === 0 && (
+                            <label className="w-full flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white py-2 rounded-lg transition-colors border border-slate-700 cursor-pointer">
+                                <Upload className="w-4 h-4" />
+                                <span className="text-sm font-medium">导入术语表</span>
+                                <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+                            </label>
+                        )}
                     </div>
                 </div>
 
@@ -231,12 +238,12 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                         {selectedGlossary.name}
                                         {activeGlossaryId === selectedGlossary.id && (
                                             <span className="ml-3 px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 flex items-center">
-                                                <CheckCircle className="w-3 h-3 mr-1" /> ACTIVE
+                                                <CheckCircle className="w-3 h-3 mr-1" /> 当前使用
                                             </span>
                                         )}
                                     </h2>
                                     <p className="text-slate-500 text-sm mt-1">
-                                        Last updated: {new Date(selectedGlossary.updatedAt).toLocaleDateString()}
+                                        最后更新: {new Date(selectedGlossary.updatedAt).toLocaleDateString()}
                                     </p>
                                 </div>
                                 <div className="flex items-center space-x-2">
@@ -245,18 +252,18 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                             onClick={() => onSetActiveGlossary(selectedGlossary.id)}
                                             className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors flex items-center"
                                         >
-                                            <CheckCircle className="w-4 h-4 mr-2" /> Set Active
+                                            <CheckCircle className="w-4 h-4 mr-2" /> 设为当前
                                         </button>
                                     )}
                                     <div className="h-6 w-px bg-slate-700 mx-2" />
                                     <button
                                         onClick={handleExport}
                                         className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
-                                        title="Export JSON"
+                                        title="导出 JSON"
                                     >
                                         <Download className="w-5 h-5" />
                                     </button>
-                                    <label className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer" title="Import JSON">
+                                    <label className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer" title="导入 JSON">
                                         <Upload className="w-5 h-5" />
                                         <input type="file" accept=".json" onChange={handleImport} className="hidden" />
                                     </label>
@@ -270,7 +277,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                         <input
                                             type="text"
-                                            placeholder="Search terms..."
+                                            placeholder="搜索术语..."
                                             value={searchTerm}
                                             onChange={e => setSearchTerm(e.target.value)}
                                             className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
@@ -286,7 +293,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                             <div className="flex-1 space-y-2">
                                                 <div className="flex space-x-2">
                                                     <input
-                                                        placeholder="Term"
+                                                        placeholder="术语"
                                                         className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
                                                         onKeyDown={(e) => {
                                                             if (e.key === 'Enter') {
@@ -303,12 +310,12 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                                         }}
                                                     />
                                                     <input
-                                                        placeholder="Translation"
+                                                        placeholder="翻译"
                                                         className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
                                                     />
                                                 </div>
                                                 <input
-                                                    placeholder="Notes (optional)"
+                                                    placeholder="备注 (可选)"
                                                     className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-400 focus:outline-none focus:border-indigo-500"
                                                 />
                                             </div>
@@ -349,21 +356,21 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                                                         value={editTermData.term}
                                                                         onChange={e => setEditTermData({ ...editTermData, term: e.target.value })}
                                                                         className="flex-1 bg-slate-900 border border-indigo-500 rounded px-2 py-1 text-sm text-white focus:outline-none"
-                                                                        placeholder="Term"
+                                                                        placeholder="术语"
                                                                         autoFocus
                                                                     />
                                                                     <input
                                                                         value={editTermData.translation}
                                                                         onChange={e => setEditTermData({ ...editTermData, translation: e.target.value })}
                                                                         className="flex-1 bg-slate-900 border border-indigo-500 rounded px-2 py-1 text-sm text-white focus:outline-none"
-                                                                        placeholder="Translation"
+                                                                        placeholder="翻译"
                                                                     />
                                                                 </div>
                                                                 <input
                                                                     value={editTermData.notes || ''}
                                                                     onChange={e => setEditTermData({ ...editTermData, notes: e.target.value })}
                                                                     className="w-full bg-slate-900 border border-indigo-500 rounded px-2 py-1 text-xs text-slate-300 focus:outline-none"
-                                                                    placeholder="Notes (optional)"
+                                                                    placeholder="备注 (可选)"
                                                                     onKeyDown={e => e.key === 'Enter' && handleSaveEdit()}
                                                                 />
                                                             </div>
@@ -371,14 +378,14 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                                                 <button
                                                                     onClick={handleSaveEdit}
                                                                     className="p-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded transition-colors"
-                                                                    title="Save"
+                                                                    title="保存"
                                                                 >
                                                                     <CheckCircle className="w-4 h-4" />
                                                                 </button>
                                                                 <button
                                                                     onClick={handleCancelEdit}
                                                                     className="p-1.5 bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-white rounded transition-colors"
-                                                                    title="Cancel"
+                                                                    title="取消"
                                                                 >
                                                                     <X className="w-4 h-4" />
                                                                 </button>
@@ -403,7 +410,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                                                         setEditTermData({ ...item });
                                                                     }}
                                                                     className="p-1.5 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded transition-colors"
-                                                                    title="Edit"
+                                                                    title="编辑"
                                                                 >
                                                                     <Edit2 className="w-4 h-4" />
                                                                 </button>
@@ -414,7 +421,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                                                         handleUpdateTerms(newItems);
                                                                     }}
                                                                     className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
-                                                                    title="Delete"
+                                                                    title="删除"
                                                                 >
                                                                     <Trash2 className="w-4 h-4" />
                                                                 </button>
@@ -430,7 +437,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                     ) : (
                         <div className="flex-1 flex flex-col items-center justify-center text-slate-500">
                             <Book className="w-16 h-16 mb-4 opacity-20" />
-                            <p>Select a glossary to manage terms</p>
+                            <p>选择一个术语表以管理术语</p>
                         </div>
                     )}
                     <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white">

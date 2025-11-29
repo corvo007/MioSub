@@ -84,7 +84,7 @@ const TimeTracker = ({ startTime, completed, total, status }: { startTime: numbe
 
     return (
         <div className="flex justify-between text-xs text-slate-400 mb-4 px-1">
-            <span>Time Used: {elapsed}s</span>
+            <span>用时: {elapsed}s</span>
         </div>
     );
 };
@@ -106,8 +106,8 @@ const SimpleConfirmationModal: React.FC<SimpleConfirmationModalProps> = ({
     onConfirm,
     title,
     message,
-    confirmText = 'Confirm',
-    cancelText = 'Cancel',
+    confirmText = '确认',
+    cancelText = '取消',
     type = 'info'
 }) => {
     if (!isOpen) return null;
@@ -180,28 +180,28 @@ const GenreSettingsDialog: React.FC<GenreSettingsDialogProps> = ({ isOpen, onClo
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
             <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-md w-full shadow-2xl">
                 <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-bold text-white flex items-center"><Clapperboard className="w-5 h-5 mr-2 text-indigo-400" /> Genre / Context Settings</h3>
+                    <h3 className="text-lg font-bold text-white flex items-center"><Clapperboard className="w-5 h-5 mr-2 text-indigo-400" /> 类型 / 上下文设置</h3>
                     <button onClick={onClose} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
                 </div>
                 <div className="space-y-4 mb-6">
                     <div>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Select Preset</label>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">选择预设</label>
                         <div className="grid grid-cols-2 gap-2">
                             {GENRE_PRESETS.map(g => (
-                                <button key={g} onClick={() => setTempGenre(g)} className={`px-3 py-2 rounded-lg text-sm border transition-all ${tempGenre === g ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}>{g.charAt(0).toUpperCase() + g.slice(1)}</button>
+                                <button key={g} onClick={() => setTempGenre(g)} className={`px-3 py-2 rounded-lg text-sm border transition-all ${tempGenre === g ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}>{g === 'general' ? '通用' : g === 'anime' ? '动漫' : g === 'movie' ? '电影/剧集' : g === 'news' ? '新闻' : g === 'tech' ? '科技' : g}</button>
                             ))}
-                            <button onClick={() => setTempGenre('custom')} className={`px-3 py-2 rounded-lg text-sm border transition-all ${tempGenre === 'custom' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}>Custom...</button>
+                            <button onClick={() => setTempGenre('custom')} className={`px-3 py-2 rounded-lg text-sm border transition-all ${tempGenre === 'custom' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'}`}>自定义...</button>
                         </div>
                     </div>
                     {tempGenre === 'custom' && (
                         <div className="animate-fade-in">
-                            <label className="block text-sm font-medium text-slate-300 mb-2">Custom Context</label>
-                            <input type="text" value={customInput} onChange={(e) => setCustomInput(e.target.value)} placeholder="E.g. Minecraft Gameplay, Medical Lecture..." className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" autoFocus />
+                            <label className="block text-sm font-medium text-slate-300 mb-2">自定义上下文</label>
+                            <input type="text" value={customInput} onChange={(e) => setCustomInput(e.target.value)} placeholder="例如：Minecraft 游戏视频，医学讲座..." className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" autoFocus />
                         </div>
                     )}
                 </div>
                 <div className="flex justify-end">
-                    <button onClick={handleSave} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium shadow-lg shadow-indigo-500/20 transition-colors">Save Changes</button>
+                    <button onClick={handleSave} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium shadow-lg shadow-indigo-500/20 transition-colors">保存更改</button>
                 </div>
             </div>
         </div>
@@ -425,7 +425,7 @@ export default function App() {
     };
 
     const restoreSnapshot = (snapshot: SubtitleSnapshot) => {
-        if (!confirm(`Restore to version from ${snapshot.timestamp}? Current progress will be lost if not saved.`)) return;
+        if (!confirm(`恢复到 ${snapshot.timestamp} 的版本？如果未保存，当前进度将丢失。`)) return;
         setSubtitles(JSON.parse(JSON.stringify(snapshot.subtitles)));
         setBatchComments({ ...snapshot.batchComments });
         setShowSnapshots(false);
@@ -464,7 +464,7 @@ export default function App() {
             audioCacheRef.current = null;
             setError(null);
             if (activeTab === 'new' && subtitles.length > 0 && status === GenerationStatus.COMPLETED) {
-                if (!confirm("This will replace the current file and may require re-generation. Continue?")) return;
+                if (!confirm("这将替换当前文件，可能需要重新生成。继续吗？")) return;
                 setSubtitles([]); setStatus(GenerationStatus.IDLE); setSnapshots([]); setBatchComments({});
             }
             try { const d = await getFileDuration(selectedFile); setDuration(d); } catch (e) { setDuration(0); }
@@ -485,16 +485,16 @@ export default function App() {
                 setStatus(GenerationStatus.COMPLETED);
                 if (subtitles.length === 0) { setSnapshots([]); setBatchComments({}); }
                 else { setSnapshots([]); setBatchComments({}); }
-                createSnapshot("Initial Import", parsed);
+                createSnapshot("初始导入", parsed);
             };
             reader.readAsText(subFile);
         }
     };
 
     const handleGenerate = async () => {
-        if (!file) { setError("Please upload a media file first."); return; }
+        if (!file) { setError("请先上传媒体文件。"); return; }
         if ((!settings.geminiKey && !ENV_GEMINI_KEY) || (!settings.openaiKey && !ENV_OPENAI_KEY)) {
-            setError("API Keys are missing. Please configure them in Settings."); setShowSettings(true); return;
+            setError("缺少 API 密钥。请在设置中配置。"); setShowSettings(true); return;
         }
         setStatus(GenerationStatus.UPLOADING); setError(null); setSubtitles([]); setSnapshots([]); setBatchComments({}); setSelectedBatches(new Set()); setChunkProgress({}); setStartTime(Date.now());
         logger.info("Starting subtitle generation", { file: file.name, duration, settings: { ...settings, geminiKey: '***', openaiKey: '***' } });
@@ -598,23 +598,23 @@ export default function App() {
 
             setSubtitles(result);
             setStatus(GenerationStatus.COMPLETED);
-            createSnapshot("Initial Generation", result);
+            createSnapshot("初始生成", result);
 
             logger.info("Subtitle generation completed", { count: result.length });
-            addToast("Subtitle generation completed successfully!", "success");
+            addToast("字幕生成成功！", "success");
         } catch (err: any) {
             setStatus(GenerationStatus.ERROR);
             setError(err.message);
             logger.error("Subtitle generation failed", err);
-            addToast(`Generation failed: ${err.message}`, "error");
+            addToast(`生成失败: ${err.message}`, "error");
         }
     };
 
     const handleBatchAction = async (mode: BatchOperationMode, singleIndex?: number) => {
         const indices: number[] = singleIndex !== undefined ? [singleIndex] : Array.from(selectedBatches) as number[];
         if (indices.length === 0) return;
-        if (!settings.geminiKey && !ENV_GEMINI_KEY) { setError("Missing API Key."); return; }
-        if (mode === 'fix_timestamps' && !file) { setError("Cannot fix timestamps without source media file."); return; }
+        if (!settings.geminiKey && !ENV_GEMINI_KEY) { setError("缺少 API 密钥。"); return; }
+        if (mode === 'fix_timestamps' && !file) { setError("没有源媒体文件无法修复时间轴。"); return; }
         setStatus(GenerationStatus.PROOFREADING); setError(null); setChunkProgress({}); setStartTime(Date.now());
         logger.info(`Starting batch action: ${mode}`, { indices, mode });
         try {
@@ -622,15 +622,15 @@ export default function App() {
             setSubtitles(refined); setStatus(GenerationStatus.COMPLETED);
             setBatchComments(prev => { const next = { ...prev }; indices.forEach(idx => delete next[idx]); return next; });
             if (singleIndex === undefined) setSelectedBatches(new Set());
-            const actionName = mode === 'fix_timestamps' ? 'Fix Time' : 'Proofread';
-            createSnapshot(`${actionName} (${indices.length} segments)`, refined);
+            const actionName = mode === 'fix_timestamps' ? '修复时间轴' : '校对';
+            createSnapshot(`${actionName} (${indices.length} 个片段)`, refined);
             logger.info(`Batch action ${mode} completed`);
-            addToast(`Batch action '${actionName}' completed successfully!`, "success");
+            addToast(`批量操作 '${actionName}' 成功完成！`, "success");
         } catch (err: any) {
             setStatus(GenerationStatus.ERROR);
-            setError(`Action failed: ${err.message}`);
+            setError(`操作失败: ${err.message}`);
             logger.error(`Batch action ${mode} failed`, err);
-            addToast(`Batch action failed: ${err.message}`, "error");
+            addToast(`批量操作失败: ${err.message}`, "error");
         }
     };
 
@@ -663,7 +663,7 @@ export default function App() {
     };
 
     const goBackHome = () => {
-        if (subtitles.length > 0 && !confirm("Go back to home? Unsaved progress will be lost.")) return;
+        if (subtitles.length > 0 && !confirm("返回主页？未保存的进度将丢失。")) return;
         setView('home'); setSubtitles([]); setFile(null); setDuration(0); setStatus(GenerationStatus.IDLE); setSnapshots([]); setBatchComments({}); setSelectedBatches(new Set()); setError(null);
     };
     const startNewProject = () => { setActiveTab('new'); setView('workspace'); setSubtitles([]); setFile(null); setDuration(0); setStatus(GenerationStatus.IDLE); setSnapshots([]); setBatchComments({}); setSelectedBatches(new Set()); setError(null); };
@@ -707,7 +707,7 @@ export default function App() {
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-xl font-bold text-white flex items-center">
                             {status === GenerationStatus.PROOFREADING ? <Sparkles className="w-5 h-5 mr-2 text-purple-400 animate-pulse" /> : <Loader2 className="w-5 h-5 mr-2 text-blue-400 animate-spin" />}
-                            {status === GenerationStatus.PROOFREADING ? 'Batch Processing...' : 'Generating Subtitles...'}
+                            {status === GenerationStatus.PROOFREADING ? '批量处理中...' : '正在生成字幕...'}
                         </h3>
                         <span className="text-2xl font-mono font-bold text-slate-200">{percent}%</span>
                     </div>
@@ -722,12 +722,19 @@ export default function App() {
                     )}
 
                     <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar bg-slate-950/50 p-4 rounded-lg border border-slate-800">
-                        {chunks.length === 0 && <div className="text-center text-slate-500 py-8">Initializing...</div>}
+                        {chunks.length === 0 && <div className="text-center text-slate-500 py-8">正在初始化...</div>}
                         {chunks.map(chunk => (
                             <div key={chunk.id} className="flex items-center justify-between bg-slate-800/80 p-3 rounded-lg border border-slate-700/50 hover:border-slate-600 transition-colors">
                                 <div className="flex items-center space-x-3 min-w-[120px]">
                                     <div className={`w-2 h-2 rounded-full ${chunk.status === 'completed' ? 'bg-emerald-500' : chunk.status === 'error' ? 'bg-red-500' : 'bg-blue-500 animate-pulse'}`} />
-                                    <span className="text-slate-300 font-mono text-sm font-medium">{typeof chunk.id === 'number' ? `Chunk ${chunk.id}` : chunk.id}</span>
+                                    <span className="text-slate-300 font-mono text-sm font-medium">
+                                        {typeof chunk.id === 'number'
+                                            ? `片段 ${chunk.id}`
+                                            : chunk.id === 'decoding' ? '解码'
+                                                : chunk.id === 'segmenting' ? '分割'
+                                                    : chunk.id === 'glossary' ? '术语表'
+                                                        : chunk.id}
+                                    </span>
                                 </div>
                                 <div className="flex-1 flex items-center justify-end space-x-4">
                                     <span className="text-xs font-medium text-slate-400">
@@ -742,8 +749,8 @@ export default function App() {
 
                     <div className="mt-6">
                         <div className="flex justify-between text-xs text-slate-400 mb-2 font-medium">
-                            <span>Progress</span>
-                            <span>{completed}/{total} Completed</span>
+                            <span>进度</span>
+                            <span>{completed}/{total} 已完成</span>
                         </div>
                         <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700/50">
                             <div className={`h-full transition-all duration-500 ease-out ${status === GenerationStatus.PROOFREADING ? 'bg-purple-500' : 'bg-blue-500'}`} style={{ width: `${percent}%` }}></div>
@@ -756,8 +763,8 @@ export default function App() {
 
     const StatusBadge = () => {
         switch (status) {
-            case GenerationStatus.COMPLETED: return (<div className="flex items-center space-x-2 text-emerald-400 bg-emerald-400/10 px-4 py-2 rounded-full border border-emerald-500/20"><CheckCircle className="w-4 h-4" /><span className="text-sm font-medium">Complete</span></div>);
-            case GenerationStatus.ERROR: return (<div className="flex items-center space-x-2 text-red-400 bg-red-400/10 px-4 py-2 rounded-full border border-red-500/20"><AlertCircle className="w-4 h-4" /><span className="text-sm font-medium">Error</span></div>);
+            case GenerationStatus.COMPLETED: return (<div className="flex items-center space-x-2 text-emerald-400 bg-emerald-400/10 px-4 py-2 rounded-full border border-emerald-500/20"><CheckCircle className="w-4 h-4" /><span className="text-sm font-medium">完成</span></div>);
+            case GenerationStatus.ERROR: return (<div className="flex items-center space-x-2 text-red-400 bg-red-400/10 px-4 py-2 rounded-full border border-red-500/20"><AlertCircle className="w-4 h-4" /><span className="text-sm font-medium">错误</span></div>);
             default: return null;
         }
     };
@@ -773,8 +780,8 @@ export default function App() {
             return (
                 <div className="h-full flex flex-col items-center justify-center text-slate-600 p-8 min-h-[300px]">
                     <div className="w-16 h-16 border-2 border-slate-700 border-dashed rounded-full flex items-center justify-center mb-4"><Languages className="w-6 h-6" /></div>
-                    <p className="font-medium">No subtitles generated yet</p>
-                    <p className="text-sm mt-2 max-w-xs text-center opacity-70">{activeTab === 'new' ? 'Upload a media file to start.' : 'Import an SRT/ASS file to begin editing.'}</p>
+                    <p className="font-medium">暂无生成字幕</p>
+                    <p className="text-sm mt-2 max-w-xs text-center opacity-70">{activeTab === 'new' ? '上传媒体文件以开始。' : '导入 SRT/ASS 文件以开始编辑。'}</p>
                 </div>
             );
         }
@@ -786,25 +793,25 @@ export default function App() {
                         <div className="flex items-center space-x-4">
                             <button onClick={() => toggleAllBatches(chunks.length)} className="flex items-center space-x-2 text-sm text-slate-300 hover:text-white transition-colors">
                                 {selectedBatches.size === chunks.length ? <CheckSquare className="w-4 h-4 text-indigo-400" /> : <Square className="w-4 h-4 text-slate-500" />}
-                                <span>{selectedBatches.size === chunks.length ? 'Deselect All' : 'Select All'}</span>
+                                <span>{selectedBatches.size === chunks.length ? '取消全选' : '全选'}</span>
                             </button>
-                            <button onClick={() => selectBatchesWithComments(chunks)} className="flex items-center space-x-2 text-sm text-slate-300 hover:text-white transition-colors" title="Select segments with active comments">
-                                <MessageCircle className="w-4 h-4 text-amber-400" /><span className="hidden sm:inline">Select Commented</span>
+                            <button onClick={() => selectBatchesWithComments(chunks)} className="flex items-center space-x-2 text-sm text-slate-300 hover:text-white transition-colors" title="选择有评论的行">
+                                <MessageCircle className="w-4 h-4 text-amber-400" /><span className="hidden sm:inline">选择有评论的行</span>
                             </button>
                             <button onClick={() => setShowSourceText(!showSourceText)} className="flex items-center space-x-2 text-sm text-slate-400 hover:text-white transition-colors">
-                                {showSourceText ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}<span className="hidden sm:inline">{showSourceText ? "Hide Original" : "Show Original"}</span>
+                                {showSourceText ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}<span className="hidden sm:inline">{showSourceText ? "隐藏原文" : "显示原文"}</span>
                             </button>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <div className="text-xs text-slate-500 font-mono mr-2 hidden sm:block">{selectedBatches.size} Selected</div>
+                            <div className="text-xs text-slate-500 font-mono mr-2 hidden sm:block">{selectedBatches.size} 已选择</div>
                             {file && (
-                                <button onClick={() => handleBatchAction('fix_timestamps')} disabled={selectedBatches.size === 0} title="Fix Timestamps (Preserves Translation)" className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-slate-700 border-slate-600 text-emerald-400 hover:bg-slate-600 hover:border-emerald-400/50' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}>
-                                    <Clock className="w-3 h-3" /><span className="hidden sm:inline">Fix Time</span>
+                                <button onClick={() => handleBatchAction('fix_timestamps')} disabled={selectedBatches.size === 0} title="修复时间轴 (保留翻译)" className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-slate-700 border-slate-600 text-emerald-400 hover:bg-slate-600 hover:border-emerald-400/50' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}>
+                                    <Clock className="w-3 h-3" /><span className="hidden sm:inline">修复时间</span>
                                 </button>
                             )}
 
-                            <button onClick={() => handleBatchAction('proofread')} disabled={selectedBatches.size === 0} title="Proofread Translation (Preserves Timestamps)" className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}>
-                                <Sparkles className="w-3 h-3" /><span className="hidden sm:inline">Proofread</span>
+                            <button onClick={() => handleBatchAction('proofread')} disabled={selectedBatches.size === 0} title="校对翻译 (保留时间轴)" className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}>
+                                <Sparkles className="w-3 h-3" /><span className="hidden sm:inline">校对</span>
                             </button>
                         </div>
                     </div>
@@ -826,16 +833,16 @@ export default function App() {
                                         </button>
                                     )}
                                     <div>
-                                        <h3 className={`text-sm font-semibold ${isSelected ? 'text-indigo-300' : 'text-slate-300'}`}>Segment {chunkIdx + 1}</h3>
+                                        <h3 className={`text-sm font-semibold ${isSelected ? 'text-indigo-300' : 'text-slate-300'}`}>片段 {chunkIdx + 1}</h3>
                                         <p className="text-xs text-slate-500 font-mono mt-0.5">{startTime} - {endTime}</p>
                                     </div>
                                 </div>
                                 <div className="flex-1 px-2">
-                                    <input type="text" value={chunkComment} onChange={(e) => updateBatchComment(chunkIdx, e.target.value)} placeholder="Add instruction for this whole segment..." className="w-full bg-slate-900/50 border border-slate-700/50 rounded px-2 py-1 text-xs text-amber-200 placeholder-slate-600 focus:border-amber-500/50 focus:outline-none" />
+                                    <input type="text" value={chunkComment} onChange={(e) => updateBatchComment(chunkIdx, e.target.value)} placeholder="添加针对此片段的说明..." className="w-full bg-slate-900/50 border border-slate-700/50 rounded px-2 py-1 text-xs text-amber-200 placeholder-slate-600 focus:border-amber-500/50 focus:outline-none" />
                                 </div>
                                 {status === GenerationStatus.COMPLETED && (
                                     <div className="flex items-center space-x-1">
-                                        <button onClick={() => handleBatchAction('proofread', chunkIdx)} title="Deep Proofread" className="p-2 text-slate-500 hover:text-indigo-400 hover:bg-slate-700 rounded-lg transition-colors"><Wand2 className="w-4 h-4" /></button>
+                                        <button onClick={() => handleBatchAction('proofread', chunkIdx)} title="深度校对" className="p-2 text-slate-500 hover:text-indigo-400 hover:bg-slate-700 rounded-lg transition-colors"><Wand2 className="w-4 h-4" /></button>
                                     </div>
                                 )}
                             </div>
@@ -852,11 +859,11 @@ export default function App() {
                                             {(editingCommentId === sub.id || sub.comment) && (
                                                 <div className="mt-2 flex items-start animate-fade-in">
                                                     <MessageCircle className="w-3 h-3 text-amber-500 mt-1 mr-2 flex-shrink-0" />
-                                                    <input type="text" value={sub.comment || ''} onChange={(e) => updateLineComment(sub.id, e.target.value)} placeholder="Add specific correction instruction..." autoFocus={editingCommentId === sub.id} onBlur={() => setEditingCommentId(null)} className="w-full bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1 text-sm text-amber-200 placeholder-amber-500/50 focus:outline-none focus:border-amber-500/50" />
+                                                    <input type="text" value={sub.comment || ''} onChange={(e) => updateLineComment(sub.id, e.target.value)} placeholder="添加具体修改说明..." autoFocus={editingCommentId === sub.id} onBlur={() => setEditingCommentId(null)} className="w-full bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1 text-sm text-amber-200 placeholder-amber-500/50 focus:outline-none focus:border-amber-500/50" />
                                                 </div>
                                             )}
                                         </div>
-                                        <button onClick={() => setEditingCommentId(sub.id)} className={`p-1.5 rounded hover:bg-slate-700 transition-colors ${sub.comment ? 'text-amber-400' : 'text-slate-600 opacity-0 group-hover/row:opacity-100'}`} title="Add Comment/Correction"><MessageCircle className="w-4 h-4" /></button>
+                                        <button onClick={() => setEditingCommentId(sub.id)} className={`p-1.5 rounded hover:bg-slate-700 transition-colors ${sub.comment ? 'text-amber-400' : 'text-slate-600 opacity-0 group-hover/row:opacity-100'}`} title="添加评论/修改"><MessageCircle className="w-4 h-4" /></button>
                                     </div>
                                 ))}
                             </div>
@@ -869,7 +876,7 @@ export default function App() {
 
     const handleGenerateGlossary = async () => {
         if (subtitles.length === 0) {
-            setError("No subtitles available to analyze.");
+            setError("没有可用的字幕进行分析。");
             return;
         }
         setIsGeneratingGlossary(true);
@@ -885,7 +892,7 @@ export default function App() {
             updateSetting('glossary', updatedGlossary);
 
             if (newTerms.length === 0) {
-                logger.info("No new terms found.");
+                logger.info("未发现新术语。");
             }
         } catch (e: any) {
             logger.error("Glossary generation failed", e);
@@ -934,26 +941,26 @@ export default function App() {
                         if (validItems.length > 0) {
                             setConfirmationModal({
                                 isOpen: true,
-                                title: 'Import Glossary',
-                                message: `Import ${validItems.length} terms? This will merge with your existing glossary.`,
+                                title: '导入术语表',
+                                message: `导入 ${validItems.length} 个术语？这将合并到现有术语表中。`,
                                 type: 'info',
                                 onConfirm: () => {
                                     const existingTerms = new Set(settings.glossary?.map(g => g.term.toLowerCase()) || []);
                                     const newTerms = validItems.filter((t: GlossaryItem) => !existingTerms.has(t.term.toLowerCase()));
                                     const updatedGlossary = [...(settings.glossary || []), ...newTerms];
                                     updateSetting('glossary', updatedGlossary);
-                                    addToast(`Imported ${newTerms.length} new terms.`, 'success');
+                                    addToast(`已导入 ${newTerms.length} 个新术语。`, 'success');
                                 }
                             });
                         } else {
-                            addToast("No valid glossary items found in file.", 'warning');
+                            addToast("文件中未找到有效的术语表项。", 'warning');
                         }
                     } else {
-                        addToast("Invalid glossary file format.", 'error');
+                        addToast("无效的术语表文件格式。", 'error');
                     }
                 } catch (err) {
                     console.error("Failed to parse glossary file", err);
-                    addToast("Failed to parse glossary file.", 'error');
+                    addToast("解析术语表文件失败。", 'error');
                 }
             };
             reader.readAsText(file);
@@ -1123,10 +1130,10 @@ export default function App() {
                         <div>
                             <h3 className="text-xl font-bold text-white flex items-center gap-2">
                                 <Book className="w-5 h-5 text-indigo-400" />
-                                Confirm Glossary Terms
+                                确认术语表
                             </h3>
                             <p className="text-slate-400 text-sm mt-1">
-                                Review extracted terms before they are used for translation.
+                                在翻译前检查提取的术语。
                             </p>
                         </div>
                         <div className="flex items-center gap-4">
@@ -1140,7 +1147,7 @@ export default function App() {
                         {/* Conflicts Section */}
                         {conflicts.length > 0 && (
                             <div className="space-y-4">
-                                <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center"><AlertCircle className="w-4 h-4 mr-2" /> Conflicts ({conflicts.length})</h3>
+                                <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center"><AlertCircle className="w-4 h-4 mr-2" /> 冲突 ({conflicts.length})</h3>
                                 <div className="grid gap-4">
                                     {conflicts.map((conflict, idx) => {
                                         const existingOption = conflict.options.find(o => settings.glossary?.some(g => g.term === o.term && g.translation === o.translation));
@@ -1154,7 +1161,7 @@ export default function App() {
                                             <div key={idx} className="bg-slate-800/50 border border-amber-500/20 rounded-xl p-4">
                                                 <div className="flex items-center justify-between mb-3">
                                                     <span className="font-bold text-white text-lg">{conflict.term}</span>
-                                                    <span className="text-xs text-amber-500 bg-amber-500/10 px-2 py-1 rounded-full border border-amber-500/20">Multiple Translations</span>
+                                                    <span className="text-xs text-amber-500 bg-amber-500/10 px-2 py-1 rounded-full border border-amber-500/20">多个翻译</span>
                                                 </div>
                                                 <div className="space-y-2">
                                                     {/* N: New Options */}
@@ -1198,7 +1205,7 @@ export default function App() {
                                                                 <div>
                                                                     <div className="font-medium text-white flex items-center gap-2">
                                                                         {existingOption.translation}
-                                                                        <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded">Keep Current</span>
+                                                                        <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded">保留当前</span>
                                                                     </div>
                                                                     {existingOption.notes && <div className="text-sm text-slate-400 mt-1">{existingOption.notes}</div>}
                                                                 </div>
@@ -1218,7 +1225,7 @@ export default function App() {
 
                                                                     }}
                                                                     className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
-                                                                    placeholder="Custom Translation"
+                                                                    placeholder="自定义翻译"
                                                                     autoFocus
                                                                     onClick={e => e.stopPropagation()}
                                                                 />
@@ -1229,12 +1236,12 @@ export default function App() {
 
                                                                     }}
                                                                     className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-slate-400"
-                                                                    placeholder="Notes (Optional)"
+                                                                    placeholder="备注 (可选)"
                                                                     onClick={e => e.stopPropagation()}
                                                                 />
                                                                 <div className="flex justify-end gap-2">
-                                                                    <button onClick={(e) => { e.stopPropagation(); setEditingId(null); }} className="text-xs text-slate-400 hover:text-white">Cancel</button>
-                                                                    <button onClick={(e) => { e.stopPropagation(); saveEdit(conflict.term); }} className="text-xs text-indigo-400 hover:text-indigo-300">Save</button>
+                                                                    <button onClick={(e) => { e.stopPropagation(); setEditingId(null); }} className="text-xs text-slate-400 hover:text-white">取消</button>
+                                                                    <button onClick={(e) => { e.stopPropagation(); saveEdit(conflict.term); }} className="text-xs text-indigo-400 hover:text-indigo-300">保存</button>
                                                                 </div>
                                                             </div>
                                                         ) : (
@@ -1249,7 +1256,7 @@ export default function App() {
                                                                 <div className="flex items-center gap-2">
                                                                     <Edit2 className="w-4 h-4 text-emerald-400" />
                                                                     <span className={customValue ? "text-white font-medium" : "text-slate-400 italic text-sm"}>
-                                                                        {customValue ? customValue.translation : "Write Custom Translation..."}
+                                                                        {customValue ? customValue.translation : "编写自定义翻译..."}
                                                                     </span>
                                                                 </div>
                                                                 {customValue && (
@@ -1281,7 +1288,7 @@ export default function App() {
                                                         >
                                                             <div className="flex items-center gap-2">
                                                                 <X className="w-4 h-4" />
-                                                                <span>Discard Term</span>
+                                                                <span>丢弃术语</span>
                                                             </div>
                                                         </div>
                                                     )}
@@ -1297,7 +1304,7 @@ export default function App() {
                         {unique.length > 0 && (
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider flex items-center"><Sparkles className="w-4 h-4 mr-2" /> New Terms ({unique.length})</h3>
+                                    <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider flex items-center"><Sparkles className="w-4 h-4 mr-2" /> 新术语 ({unique.length})</h3>
                                     <button
                                         onClick={() => {
                                             if (selectedTerms.size === unique.length) setSelectedTerms(new Set());
@@ -1306,7 +1313,7 @@ export default function App() {
                                         }}
                                         className="text-xs text-indigo-400 hover:text-indigo-300"
                                     >
-                                        {selectedTerms.size === unique.length ? 'Deselect All' : 'Select All'}
+                                        {selectedTerms.size === unique.length ? '取消全选' : '全选'}
                                     </button>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1342,7 +1349,7 @@ export default function App() {
 
                                                                     }}
                                                                     className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
-                                                                    placeholder="Term"
+                                                                    placeholder="术语"
                                                                 />
                                                                 <input
                                                                     value={editValue?.translation}
@@ -1351,7 +1358,7 @@ export default function App() {
 
                                                                     }}
                                                                     className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
-                                                                    placeholder="Translation"
+                                                                    placeholder="翻译"
                                                                 />
                                                                 <input
                                                                     value={editValue?.notes}
@@ -1360,11 +1367,11 @@ export default function App() {
 
                                                                     }}
                                                                     className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-slate-400"
-                                                                    placeholder="Notes"
+                                                                    placeholder="备注"
                                                                 />
                                                                 <div className="flex justify-end gap-2">
-                                                                    <button onClick={() => setEditingId(null)} className="text-xs text-slate-400 hover:text-white">Cancel</button>
-                                                                    <button onClick={() => saveEdit(term.term)} className="text-xs text-indigo-400 hover:text-indigo-300">Save</button>
+                                                                    <button onClick={() => setEditingId(null)} className="text-xs text-slate-400 hover:text-white">取消</button>
+                                                                    <button onClick={() => saveEdit(term.term)} className="text-xs text-indigo-400 hover:text-indigo-300">保存</button>
                                                                 </div>
                                                             </div>
                                                         ) : (
@@ -1394,9 +1401,9 @@ export default function App() {
                         {/* Custom Terms Section */}
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center"><Plus className="w-4 h-4 mr-2" /> Custom Terms ({customTerms.length})</h3>
+                                <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center"><Plus className="w-4 h-4 mr-2" /> 自定义术语 ({customTerms.length})</h3>
                                 <button onClick={addCustomTerm} className="text-xs bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 px-2 py-1 rounded border border-emerald-500/20 transition-colors">
-                                    + Add Term
+                                    + 添加术语
                                 </button>
                             </div>
                             {customTerms.length > 0 && (
@@ -1416,7 +1423,7 @@ export default function App() {
 
                                                             }}
                                                             className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
-                                                            placeholder="Term"
+                                                            placeholder="术语"
                                                         />
                                                         <input
                                                             value={editValue?.translation}
@@ -1425,7 +1432,7 @@ export default function App() {
 
                                                             }}
                                                             className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
-                                                            placeholder="Translation"
+                                                            placeholder="翻译"
                                                         />
                                                         <input
                                                             value={editValue?.notes}
@@ -1434,7 +1441,7 @@ export default function App() {
 
                                                             }}
                                                             className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-slate-400"
-                                                            placeholder="Notes"
+                                                            placeholder="备注"
                                                         />
                                                         <div className="flex justify-end gap-2">
                                                             <button
@@ -1444,9 +1451,9 @@ export default function App() {
                                                                 }}
                                                                 className="text-xs text-red-400 hover:text-red-300"
                                                             >
-                                                                Delete
+                                                                删除
                                                             </button>
-                                                            <button onClick={() => saveEdit(term.term)} className="text-xs text-emerald-400 hover:text-emerald-300">Save</button>
+                                                            <button onClick={() => saveEdit(term.term)} className="text-xs text-emerald-400 hover:text-emerald-300">保存</button>
                                                         </div>
                                                     </div>
                                                 ) : (
@@ -1475,23 +1482,23 @@ export default function App() {
                     <div className="p-6 border-t border-slate-800 bg-slate-900/50 flex justify-between items-center">
                         <div className="flex items-center space-x-2">
                             <button onClick={handleDiscard} className="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors">
-                                Discard All
+                                全部丢弃
                             </button>
                         </div>
                         <div className="flex items-center space-x-4">
                             <div className="flex items-center space-x-2">
-                                <span className="text-sm text-slate-400">Add to:</span>
+                                <span className="text-sm text-slate-400">添加到:</span>
                                 <CustomSelect
                                     value={settings.activeGlossaryId || ''}
                                     onChange={(val) => updateSetting('activeGlossaryId', val || null)}
                                     options={settings.glossaries?.map(g => ({ value: g.id, label: g.name })) || []}
                                     className="w-48"
-                                    placeholder="Select Glossary"
+                                    placeholder="选择术语表"
                                 />
                             </div>
                             <button onClick={handleConfirm} className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-medium shadow-lg shadow-indigo-500/25 transition-all flex items-center">
                                 <CheckCircle className="w-4 h-4 mr-2" />
-                                Add {totalToAdd} Terms
+                                添加 {totalToAdd} 个术语
                             </button>
                         </div>
                     </div>
@@ -1545,7 +1552,7 @@ export default function App() {
                 <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl animate-fade-in relative overflow-hidden">
                     <div className="p-6 overflow-y-auto custom-scrollbar">
                         <button onClick={() => setShowSettings(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
-                        <h2 className="text-xl font-bold text-white mb-6 flex items-center"><Settings className="w-5 h-5 mr-2 text-indigo-400" /> Settings</h2>
+                        <h2 className="text-xl font-bold text-white mb-6 flex items-center"><Settings className="w-5 h-5 mr-2 text-indigo-400" /> 设置</h2>
 
                         <div className="flex space-x-1 border-b border-slate-700 mb-6 overflow-x-auto">
                             {['general', 'performance', 'glossary'].map((tab) => (
@@ -1554,9 +1561,9 @@ export default function App() {
                                     onClick={() => setSettingsTab(tab)}
                                     className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${settingsTab === tab ? 'bg-slate-800 text-indigo-400 border-t border-x border-slate-700' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}`}
                                 >
-                                    {tab === 'general' && 'General'}
-                                    {tab === 'performance' && 'Performance'}
-                                    {tab === 'glossary' && 'Glossary'}
+                                    {tab === 'general' && '常规'}
+                                    {tab === 'performance' && '性能'}
+                                    {tab === 'glossary' && '术语表'}
                                 </button>
                             ))}
                         </div>
@@ -1566,18 +1573,18 @@ export default function App() {
                                 <div className="space-y-6 animate-fade-in">
                                     {/* API Settings */}
                                     <div className="space-y-3">
-                                        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">API Configuration</h3>
+                                        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">API 配置</h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {/* Gemini */}
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini API Key</label>
-                                                <div className="relative"><input type="password" value={settings.geminiKey} onChange={(e) => updateSetting('geminiKey', e.target.value.trim())} placeholder="Enter Gemini API Key" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
-                                                <p className="text-xs text-slate-500 mt-1">Required. Uses <strong>Gemini 2.5 Flash</strong> for translation and <strong>Gemini 3 Pro</strong> for glossary extraction and deep proofreading.</p>
-                                                {ENV_GEMINI_KEY && !settings.geminiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> Using API Key from environment</p>)}
-                                                {ENV_GEMINI_KEY && settings.geminiKey && (<p className="text-xs text-amber-400 mt-1">Overriding environment API Key</p>)}
+                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini API 密钥</label>
+                                                <div className="relative"><input type="password" value={settings.geminiKey} onChange={(e) => updateSetting('geminiKey', e.target.value.trim())} placeholder="输入 Gemini API 密钥" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
+                                                <p className="text-xs text-slate-500 mt-1">必填。使用 <strong>Gemini 2.5 Flash</strong> 进行翻译，使用 <strong>Gemini 3 Pro</strong> 进行术语提取和深度校对。</p>
+                                                {ENV_GEMINI_KEY && !settings.geminiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> 使用环境变量中的 API 密钥</p>)}
+                                                {ENV_GEMINI_KEY && settings.geminiKey && (<p className="text-xs text-amber-400 mt-1">覆盖环境变量中的 API 密钥</p>)}
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini Endpoint (Optional)</label>
+                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini 端点 (可选)</label>
                                                 <div className="relative flex gap-2">
                                                     <input
                                                         type="text"
@@ -1589,23 +1596,23 @@ export default function App() {
                                                     <button
                                                         onClick={() => updateSetting('geminiEndpoint', undefined)}
                                                         className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-700 transition-colors whitespace-nowrap"
-                                                        title="Reset to Default"
+                                                        title="恢复默认"
                                                     >
-                                                        Reset
+                                                        重置
                                                     </button>
                                                 </div>
-                                                <p className="text-xs text-slate-500 mt-1">Custom base URL for Gemini API (e.g., for proxies).</p>
+                                                <p className="text-xs text-slate-500 mt-1">Gemini API 的自定义基础 URL (例如用于代理)。</p>
                                             </div>
                                             {/* OpenAI */}
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI API Key</label>
-                                                <div className="relative"><input type="password" value={settings.openaiKey} onChange={(e) => updateSetting('openaiKey', e.target.value.trim())} placeholder="Enter OpenAI API Key" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
-                                                <p className="text-xs text-slate-500 mt-1">Required. Uses <strong>Whisper</strong> model for high-accuracy base transcription.</p>
-                                                {ENV_OPENAI_KEY && !settings.openaiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> Using API Key from environment</p>)}
-                                                {ENV_OPENAI_KEY && settings.openaiKey && (<p className="text-xs text-amber-400 mt-1">Overriding environment API Key</p>)}
+                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI API 密钥</label>
+                                                <div className="relative"><input type="password" value={settings.openaiKey} onChange={(e) => updateSetting('openaiKey', e.target.value.trim())} placeholder="输入 OpenAI API 密钥" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
+                                                <p className="text-xs text-slate-500 mt-1">必填。使用 <strong>Whisper</strong> 模型进行高精度基础转录。</p>
+                                                {ENV_OPENAI_KEY && !settings.openaiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> 使用环境变量中的 API 密钥</p>)}
+                                                {ENV_OPENAI_KEY && settings.openaiKey && (<p className="text-xs text-amber-400 mt-1">覆盖环境变量中的 API 密钥</p>)}
                                             </div>
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI Endpoint (Optional)</label>
+                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI 端点 (可选)</label>
                                                 <div className="relative flex gap-2">
                                                     <input
                                                         type="text"
@@ -1617,26 +1624,26 @@ export default function App() {
                                                     <button
                                                         onClick={() => updateSetting('openaiEndpoint', undefined)}
                                                         className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-700 transition-colors whitespace-nowrap"
-                                                        title="Reset to Default"
+                                                        title="恢复默认"
                                                     >
-                                                        Reset
+                                                        重置
                                                     </button>
                                                 </div>
-                                                <p className="text-xs text-slate-500 mt-1">Custom base URL for OpenAI API (e.g., for local LLMs or proxies).</p>
+                                                <p className="text-xs text-slate-500 mt-1">OpenAI API 的自定义基础 URL (例如用于本地 LLM 或代理)。</p>
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Output Settings */}
                                     <div className="space-y-3 pt-4 border-t border-slate-800">
-                                        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Output Settings</h3>
+                                        <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">输出设置</h3>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Export Mode</label>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">导出模式</label>
                                             <div className="grid grid-cols-2 gap-3">
-                                                <button onClick={() => updateSetting('outputMode', 'bilingual')} className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'bilingual' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}><Languages className="w-4 h-4" /><span>Bilingual (Original + CN)</span></button>
-                                                <button onClick={() => updateSetting('outputMode', 'target_only')} className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'target_only' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}><Type className="w-4 h-4" /><span>Chinese Only</span></button>
+                                                <button onClick={() => updateSetting('outputMode', 'bilingual')} className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'bilingual' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}><Languages className="w-4 h-4" /><span>双语 (原文 + 中文)</span></button>
+                                                <button onClick={() => updateSetting('outputMode', 'target_only')} className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'target_only' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}><Type className="w-4 h-4" /><span>仅中文</span></button>
                                             </div>
-                                            <p className="text-xs text-slate-500 mt-2">Choose whether to keep the original text alongside the translation in the final output.</p>
+                                            <p className="text-xs text-slate-500 mt-2">选择是否在最终输出中保留原文。</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1647,57 +1654,57 @@ export default function App() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Proofread Batch Size</label>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">校对批次大小</label>
                                             <input type="text" value={settings.proofreadBatchSize === 0 ? '' : settings.proofreadBatchSize} onChange={(e) => {
                                                 const val = e.target.value;
                                                 if (val === '') updateSetting('proofreadBatchSize', 0);
                                                 else if (/^\d+$/.test(val)) updateSetting('proofreadBatchSize', parseInt(val));
                                             }} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                            <p className="text-xs text-slate-500 mt-1">Number of lines to proofread in a single API call. Higher values save tokens but may reduce quality.</p>
+                                            <p className="text-xs text-slate-500 mt-1">单次 API 调用校对的行数。数值越高越节省 token，但可能会降低质量。</p>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Translation Batch Size</label>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">翻译批次大小</label>
                                             <input type="text" value={settings.translationBatchSize === 0 ? '' : settings.translationBatchSize} onChange={(e) => {
                                                 const val = e.target.value;
                                                 if (val === '') updateSetting('translationBatchSize', 0);
                                                 else if (/^\d+$/.test(val)) updateSetting('translationBatchSize', parseInt(val));
                                             }} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                            <p className="text-xs text-slate-500 mt-1">Number of lines to translate in a single API call. Adjust based on context requirements.</p>
+                                            <p className="text-xs text-slate-500 mt-1">单次 API 调用翻译的行数。根据上下文需求进行调整。</p>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Chunk Duration (s)</label>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">分块时长 (秒)</label>
                                             <input type="text" value={settings.chunkDuration === 0 ? '' : settings.chunkDuration} onChange={(e) => {
                                                 const val = e.target.value;
                                                 if (val === '') updateSetting('chunkDuration', 0);
                                                 else if (/^\d+$/.test(val)) updateSetting('chunkDuration', parseInt(val));
                                             }} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                            <p className="text-xs text-slate-500 mt-1">Target duration (in seconds) for splitting audio files during processing.</p>
+                                            <p className="text-xs text-slate-500 mt-1">处理过程中分割音频文件的目标时长 (秒)。</p>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Concurrency (Flash)</label>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">并发数 (Flash)</label>
                                             <input type="text" value={settings.concurrencyFlash === 0 ? '' : settings.concurrencyFlash} onChange={(e) => {
                                                 const val = e.target.value;
                                                 if (val === '') updateSetting('concurrencyFlash', 0);
                                                 else if (/^\d+$/.test(val)) updateSetting('concurrencyFlash', parseInt(val));
                                             }} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                            <p className="text-xs text-slate-500 mt-1">For <strong>Gemini 2.5 Flash</strong> (Refinement & Translation). Higher limits (e.g. 10-20) supported.</p>
+                                            <p className="text-xs text-slate-500 mt-1">用于 <strong>Gemini 2.5 Flash</strong> (优化和翻译)。支持较高限制 (如 10-20)。</p>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Concurrency (Pro)</label>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">并发数 (Pro)</label>
                                             <input type="text" value={settings.concurrencyPro === 0 ? '' : settings.concurrencyPro} onChange={(e) => {
                                                 const val = e.target.value;
                                                 if (val === '') updateSetting('concurrencyPro', 0);
                                                 else if (/^\d+$/.test(val)) updateSetting('concurrencyPro', parseInt(val));
                                             }} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                            <p className="text-xs text-slate-500 mt-1">For <strong>Gemini 3 Pro</strong> (Glossary Extraction and and deep proofreading). Strict rate limits (keep &lt; 5).</p>
+                                            <p className="text-xs text-slate-500 mt-1">用于 <strong>Gemini 3 Pro</strong> (术语提取和深度校对)。严格的速率限制 (保持 &lt; 5)。</p>
                                         </div>
                                     </div>
 
                                     <div className="pt-4 border-t border-slate-800">
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-300">Smart Split</label>
-                                                <p className="text-xs text-slate-500">Use VAD to split audio at natural pauses (Recommended)</p>
+                                                <label className="block text-sm font-medium text-slate-300">智能分段</label>
+                                                <p className="text-xs text-slate-500">使用 VAD 在自然停顿处分割音频 (推荐)</p>
                                             </div>
                                             <button
                                                 onClick={() => updateSetting('useSmartSplit', !settings.useSmartSplit)}
@@ -1714,8 +1721,8 @@ export default function App() {
                                 <div className="space-y-3 animate-fade-in">
                                     <div className="flex items-center justify-between mb-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-slate-300">Enable Auto-Glossary</label>
-                                            <p className="text-xs text-slate-500">Automatically extract terms from audio before translation</p>
+                                            <label className="block text-sm font-medium text-slate-300">启用自动术语表</label>
+                                            <p className="text-xs text-slate-500">在翻译前自动从音频中提取术语</p>
                                         </div>
                                         <button
                                             onClick={() => updateSetting('enableAutoGlossary', !settings.enableAutoGlossary)}
@@ -1728,7 +1735,7 @@ export default function App() {
                                     {settings.enableAutoGlossary !== false && (
                                         <div className="space-y-4 animate-fade-in">
                                             <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">Glossary Extraction Audio Length</label>
+                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">术语提取音频长度</label>
                                                 <CustomSelect
                                                     value={settings.glossarySampleMinutes === 'all' ? 'all' : settings.glossarySampleMinutes.toString()}
                                                     onChange={(val) => {
@@ -1736,22 +1743,22 @@ export default function App() {
                                                         else updateSetting('glossarySampleMinutes', parseInt(val));
                                                     }}
                                                     options={[
-                                                        { value: '5', label: 'First 5 Minutes' },
-                                                        { value: '15', label: 'First 15 Minutes' },
-                                                        { value: '30', label: 'First 30 Minutes' },
-                                                        { value: 'all', label: 'Full Audio (Slower)' }
+                                                        { value: '5', label: '前 5 分钟' },
+                                                        { value: '15', label: '前 15 分钟' },
+                                                        { value: '30', label: '前 30 分钟' },
+                                                        { value: 'all', label: '完整音频 (较慢)' }
                                                     ]}
                                                     icon={<Clock className="w-4 h-4" />}
                                                 />
                                                 <p className="text-xs text-slate-500 mt-1">
-                                                    Analyze the first X minutes to extract terms. "Full Audio" provides better coverage but takes longer.
+                                                    分析前 X 分钟以提取术语。“完整音频”覆盖面更广，但耗时更长。
                                                 </p>
                                             </div>
 
                                             <div className="flex items-center justify-between">
                                                 <div>
-                                                    <label className="block text-sm font-medium text-slate-300">Auto-Confirm Glossary</label>
-                                                    <p className="text-xs text-slate-500">Skip the confirmation dialog if terms are found</p>
+                                                    <label className="block text-sm font-medium text-slate-300">自动确认术语表</label>
+                                                    <p className="text-xs text-slate-500">如果发现术语，跳过确认对话框</p>
                                                 </div>
                                                 <button
                                                     onClick={() => updateSetting('glossaryAutoConfirm', !settings.glossaryAutoConfirm)}
@@ -1768,7 +1775,7 @@ export default function App() {
                                             onClick={() => { setShowSettings(false); setShowGlossaryManager(true); }}
                                             className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-white transition-colors flex items-center justify-center text-sm font-medium"
                                         >
-                                            <Book className="w-4 h-4 mr-2" /> Manage Glossaries
+                                            <Book className="w-4 h-4 mr-2" /> 管理术语表
                                         </button>
                                     </div>
                                 </div>
@@ -1792,7 +1799,7 @@ export default function App() {
                 <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl animate-fade-in relative">
                     <div className="p-6 border-b border-slate-800 flex items-center justify-between">
                         <h2 className="text-xl font-bold text-white flex items-center">
-                            <FileText className="w-5 h-5 mr-2 text-blue-400" /> Application Logs
+                            <FileText className="w-5 h-5 mr-2 text-blue-400" /> 应用日志
                         </h2>
                         <button onClick={() => setShowLogs(false)} className="text-slate-400 hover:text-white transition-colors">
                             <X className="w-5 h-5" />
@@ -1802,7 +1809,7 @@ export default function App() {
                         {logs.length === 0 ? (
                             <div className="text-center text-slate-500 py-12">
                                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                                <p>No logs available</p>
+                                <p>暂无日志</p>
                             </div>
                         ) : (
                             <div className="space-y-2 font-mono text-sm">
@@ -1896,17 +1903,17 @@ export default function App() {
                         <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto">
                             <AlertCircle className="w-8 h-8 text-red-500" />
                         </div>
-                        <h3 className="text-xl font-bold text-white">Glossary Extraction Failed</h3>
+                        <h3 className="text-xl font-bold text-white">术语提取失败</h3>
                         <p className="text-slate-400 text-sm">
-                            We couldn't extract glossary terms from the audio. This might be due to API errors or unclear audio.
+                            无法从音频中提取术语。这可能是由于 API 错误或音频不清晰。
                         </p>
                         <div className="flex flex-col space-y-2 pt-4">
                             <button onClick={handleRetryGlossary} disabled={isGeneratingGlossary} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center">
                                 {isGeneratingGlossary ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCcw className="w-4 h-4 mr-2" />}
-                                {isGeneratingGlossary ? 'Retrying...' : 'Retry Extraction'}
+                                {isGeneratingGlossary ? '正在重试...' : '重试提取'}
                             </button>
                             <button onClick={handleContinue} disabled={isGeneratingGlossary} className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-2 rounded-lg transition-colors">
-                                Skip (Continue without new terms)
+                                跳过 (继续而不使用新术语)
                             </button>
                         </div>
                     </div>
@@ -1921,24 +1928,24 @@ export default function App() {
                 <header className="flex justify-between items-center mb-12">
                     <div className="flex items-center space-x-3">
                         <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg shadow-indigo-500/20"><Languages className="w-6 h-6 text-white" /></div>
-                        <div><h1 className="text-2xl font-bold text-white tracking-tight"><span className="text-indigo-400">Gemini</span> Subtitle Pro</h1><p className="text-sm text-slate-400">AI-Powered Subtitle Creation & Localization</p></div>
+                        <div><h1 className="text-2xl font-bold text-white tracking-tight"><span className="text-indigo-400">Gemini</span> Subtitle Pro</h1><p className="text-sm text-slate-400">AI 驱动的字幕创建与本地化</p></div>
                     </div>
                     <div className="flex space-x-2">
-                        <button onClick={() => setShowLogs(true)} className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm font-medium group" title="View Logs"><FileText className="w-4 h-4 text-slate-400 group-hover:text-blue-400 transition-colors" /><span className="hidden sm:inline text-slate-300 group-hover:text-white">Logs</span></button>
-                        <button onClick={() => setShowGlossaryManager(true)} className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm font-medium group" title="Glossary Manager"><Book className="w-4 h-4 text-slate-400 group-hover:text-indigo-400 transition-colors" /><span className="hidden sm:inline text-slate-300 group-hover:text-white">Glossary</span></button>
-                        <button onClick={() => setShowSettings(true)} className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm font-medium group"><Settings className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" /><span className="hidden sm:inline text-slate-300 group-hover:text-white">Settings</span></button>
+                        <button onClick={() => setShowLogs(true)} className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm font-medium group" title="查看日志"><FileText className="w-4 h-4 text-slate-400 group-hover:text-blue-400 transition-colors" /><span className="hidden sm:inline text-slate-300 group-hover:text-white">日志</span></button>
+                        <button onClick={() => setShowGlossaryManager(true)} className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm font-medium group" title="术语表管理"><Book className="w-4 h-4 text-slate-400 group-hover:text-indigo-400 transition-colors" /><span className="hidden sm:inline text-slate-300 group-hover:text-white">术语表</span></button>
+                        <button onClick={() => setShowSettings(true)} className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm font-medium group"><Settings className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" /><span className="hidden sm:inline text-slate-300 group-hover:text-white">设置</span></button>
                     </div>
                 </header>
                 <main className="flex-1 flex flex-col items-center justify-center max-w-4xl mx-auto w-full">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
                         <button onClick={startNewProject} className="group relative bg-slate-900 border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-800/50 rounded-3xl p-8 transition-all duration-300 shadow-2xl flex flex-col items-center text-center cursor-pointer">
                             <div className="w-20 h-20 bg-slate-800 group-hover:bg-indigo-500/20 rounded-2xl flex items-center justify-center mb-6 transition-colors"><FileVideo className="w-10 h-10 text-indigo-400 group-hover:scale-110 transition-transform" /></div>
-                            <h2 className="text-2xl font-bold text-white mb-3">New Project</h2><p className="text-slate-400 leading-relaxed">Transcribe & Translate from Video/Audio using Whisper & Gemini.</p>
+                            <h2 className="text-2xl font-bold text-white mb-3">新建项目</h2><p className="text-slate-400 leading-relaxed">使用 Whisper 和 Gemini 从视频/音频转录并翻译。</p>
                         </button>
                         <button onClick={startImportProject} className="group relative bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-800/50 rounded-3xl p-8 transition-all duration-300 shadow-2xl flex flex-col items-center text-center cursor-pointer">
                             <div className="w-20 h-20 bg-slate-800 group-hover:bg-emerald-500/20 rounded-2xl flex items-center justify-center mb-6 transition-colors"><FileText className="w-10 h-10 text-emerald-400 group-hover:scale-110 transition-transform" /></div>
-                            <h2 className="text-2xl font-bold text-white mb-3">Open Subtitles</h2><p className="text-slate-400 leading-relaxed mb-4">Import existing .SRT or .ASS files to fix timing, proofread, or re-translate.</p>
-                            <div className="flex flex-wrap gap-2 justify-center mt-2"><span className="text-xs px-2 py-1 bg-slate-800 rounded border border-slate-700 text-slate-500">Edit Text</span><span className="text-xs px-2 py-1 bg-slate-800 rounded border border-slate-700 text-slate-500">+ Video Ref</span></div>
+                            <h2 className="text-2xl font-bold text-white mb-3">打开字幕</h2><p className="text-slate-400 leading-relaxed mb-4">导入现有的 .SRT 或 .ASS 文件以修复时间轴、校对或重新翻译。</p>
+                            <div className="flex flex-wrap gap-2 justify-center mt-2"><span className="text-xs px-2 py-1 bg-slate-800 rounded border border-slate-700 text-slate-500">编辑文本</span><span className="text-xs px-2 py-1 bg-slate-800 rounded border border-slate-700 text-slate-500">+ 视频参考</span></div>
                         </button>
                     </div>
                 </main>
@@ -1954,46 +1961,46 @@ export default function App() {
                     <div className="flex items-center space-x-4">
                         <button onClick={goBackHome} className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white"><ArrowLeft className="w-5 h-5" /></button>
                         <div>
-                            <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">{activeTab === 'new' ? 'New Project' : 'Subtitle Editor'}<span className="text-xs font-normal text-slate-500 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">{activeTab === 'new' ? 'Generation' : 'Import Mode'}</span></h1>
-                            <p className="text-xs text-slate-400 truncate max-w-[300px]">{file ? file.name : (subtitles.length > 0 ? `${subtitles.length} lines loaded` : 'No file selected')}</p>
+                            <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">{activeTab === 'new' ? '新建项目' : '字幕编辑器'}<span className="text-xs font-normal text-slate-500 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded">{activeTab === 'new' ? '生成模式' : '导入模式'}</span></h1>
+                            <p className="text-xs text-slate-400 truncate max-w-[300px]">{file ? file.name : (subtitles.length > 0 ? `${subtitles.length} 行已加载` : '未选择文件')}</p>
                         </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <button onClick={() => setShowSnapshots(!showSnapshots)} disabled={snapshots.length === 0} className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors text-sm font-medium ${snapshots.length > 0 ? 'bg-indigo-900/30 border-indigo-500/50 text-indigo-200' : 'bg-slate-900 border-slate-800 text-slate-600'}`}><GitCommit className="w-4 h-4" /><span className="hidden sm:inline">Versions</span></button>
+                        <button onClick={() => setShowSnapshots(!showSnapshots)} disabled={snapshots.length === 0} className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors text-sm font-medium ${snapshots.length > 0 ? 'bg-indigo-900/30 border-indigo-500/50 text-indigo-200' : 'bg-slate-900 border-slate-800 text-slate-600'}`}><GitCommit className="w-4 h-4" /><span className="hidden sm:inline">版本</span></button>
                         {/* <button onClick={() => setView('quality_control')} className="flex items-center space-x-2 px-4 py-2 border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 rounded-lg transition-colors text-sm font-medium"><Sparkles className="w-4 h-4" /><span className="hidden sm:inline">Quality Control</span></button> */}
-                        <button onClick={() => setShowLogs(true)} className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm font-medium group" title="View Logs"><FileText className="w-4 h-4 text-slate-400 group-hover:text-blue-400 transition-colors" /><span className="hidden sm:inline text-slate-300 group-hover:text-white">Logs</span></button>
-                        <button onClick={() => setShowGlossaryManager(true)} className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm font-medium group" title="Glossary Manager"><Book className="w-4 h-4 text-slate-400 group-hover:text-indigo-400 transition-colors" /><span className="hidden sm:inline text-slate-300 group-hover:text-white">Glossary</span></button>
-                        <button onClick={() => setShowSettings(true)} className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm font-medium group"><Settings className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" /><span className="hidden sm:inline text-slate-300 group-hover:text-white">Settings</span></button>
+                        <button onClick={() => setShowLogs(true)} className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm font-medium group" title="查看日志"><FileText className="w-4 h-4 text-slate-400 group-hover:text-blue-400 transition-colors" /><span className="hidden sm:inline text-slate-300 group-hover:text-white">日志</span></button>
+                        <button onClick={() => setShowGlossaryManager(true)} className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm font-medium group" title="术语表管理"><Book className="w-4 h-4 text-slate-400 group-hover:text-indigo-400 transition-colors" /><span className="hidden sm:inline text-slate-300 group-hover:text-white">术语表</span></button>
+                        <button onClick={() => setShowSettings(true)} className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm font-medium group"><Settings className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" /><span className="hidden sm:inline text-slate-300 group-hover:text-white">设置</span></button>
                     </div>
                 </header>
                 <div className="flex-1 flex flex-col lg:grid lg:grid-cols-12 gap-6 min-h-0">
                     <div className="lg:col-span-3 lg:h-full overflow-y-auto custom-scrollbar space-y-4">
                         <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 shadow-sm space-y-4">
-                            <div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-slate-300">Project Files</h3></div>
+                            <div className="flex items-center justify-between"><h3 className="text-sm font-semibold text-slate-300">项目文件</h3></div>
                             {file ? (
                                 <div className="flex items-center p-3 bg-slate-800 rounded-lg border border-slate-700/50">
                                     <FileVideo className="w-8 h-8 text-indigo-400 mr-3 flex-shrink-0" />
                                     <div className="overflow-hidden flex-1 min-w-0"><p className="text-xs font-medium text-white truncate" title={file.name}>{file.name}</p><p className="text-[10px] text-slate-500">{Math.floor(duration / 60)}:{Math.floor(duration % 60).toString().padStart(2, '0')} · {(file.size / (1024 * 1024)).toFixed(1)}MB</p></div>
-                                    <label className="cursor-pointer p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors ml-1" title="Change Source File"><RefreshCcw className="w-3 h-3" /><input type="file" accept="video/*,audio/*" onChange={handleFileChange} className="hidden" disabled={isProcessing} /></label>
+                                    <label className="cursor-pointer p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors ml-1" title="更改源文件"><RefreshCcw className="w-3 h-3" /><input type="file" accept="video/*,audio/*" onChange={handleFileChange} className="hidden" disabled={isProcessing} /></label>
                                 </div>
                             ) : (
                                 <label className={`flex flex-col items-center justify-center w-full border-2 border-dashed border-slate-700 rounded-lg bg-slate-800/30 hover:bg-slate-800/50 hover:border-indigo-500/50 cursor-pointer transition-all group ${activeTab === 'new' ? 'h-32' : 'h-20'}`}>
                                     <div className="flex flex-col items-center justify-center py-4">
-                                        {activeTab === 'new' ? (<><Upload className="w-8 h-8 text-indigo-400 mb-2 group-hover:scale-110 transition-transform" /><p className="text-xs font-bold text-slate-300">Upload Video / Audio</p><p className="text-[10px] text-slate-500 mt-1">To start transcription</p></>) : (<><Plus className="w-5 h-5 text-slate-500 group-hover:text-indigo-400 mb-1" /><p className="text-xs text-slate-500">Attach Media (Optional)</p></>)}
+                                        {activeTab === 'new' ? (<><Upload className="w-8 h-8 text-indigo-400 mb-2 group-hover:scale-110 transition-transform" /><p className="text-xs font-bold text-slate-300">上传视频 / 音频</p><p className="text-[10px] text-slate-500 mt-1">开始转录</p></>) : (<><Plus className="w-5 h-5 text-slate-500 group-hover:text-indigo-400 mb-1" /><p className="text-xs text-slate-500">附加媒体 (可选)</p></>)}
                                     </div>
                                     <input type="file" accept="video/*,audio/*" onChange={handleFileChange} className="hidden" />
                                 </label>
                             )}
                             {activeTab === 'import' && (
                                 <div className="pt-2 border-t border-slate-800">
-                                    <div className="flex items-center justify-between mb-2"><h3 className="text-xs font-semibold text-slate-400">Subtitle File</h3>{subtitles.length > 0 && (<span className="text-[10px] text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">{subtitles.length} lines</span>)}</div>
+                                    <div className="flex items-center justify-between mb-2"><h3 className="text-xs font-semibold text-slate-400">字幕文件</h3>{subtitles.length > 0 && (<span className="text-[10px] text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">{subtitles.length} 行</span>)}</div>
                                     {subtitles.length === 0 ? (
                                         <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-slate-700 rounded-lg bg-slate-800/30 hover:bg-slate-800/50 hover:border-emerald-500/50 cursor-pointer transition-all group">
-                                            <div className="flex flex-col items-center justify-center pt-5 pb-6"><FileText className="w-6 h-6 text-emerald-500 group-hover:text-emerald-400 mb-1 group-hover:scale-110 transition-transform" /><p className="text-xs font-bold text-slate-300">Import .SRT / .ASS</p></div>
+                                            <div className="flex flex-col items-center justify-center pt-5 pb-6"><FileText className="w-6 h-6 text-emerald-500 group-hover:text-emerald-400 mb-1 group-hover:scale-110 transition-transform" /><p className="text-xs font-bold text-slate-300">导入 .SRT / .ASS</p></div>
                                             <input type="file" accept=".srt,.ass" onChange={handleSubtitleImport} className="hidden" />
                                         </label>
                                     ) : (
-                                        <div className="flex items-center p-2 bg-slate-800 rounded border border-slate-700/50"><FileText className="w-4 h-4 text-emerald-500 mr-2" /><p className="text-xs text-slate-300 flex-1">Subtitles Loaded</p><label className="cursor-pointer p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="Replace Subtitles"><RefreshCcw className="w-3 h-3" /><input type="file" accept=".srt,.ass" onChange={handleSubtitleImport} className="hidden" /></label></div>
+                                        <div className="flex items-center p-2 bg-slate-800 rounded border border-slate-700/50"><FileText className="w-4 h-4 text-emerald-500 mr-2" /><p className="text-xs text-slate-300 flex-1">字幕已加载</p><label className="cursor-pointer p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white" title="替换字幕"><RefreshCcw className="w-3 h-3" /><input type="file" accept=".srt,.ass" onChange={handleSubtitleImport} className="hidden" /></label></div>
                                     )}
                                 </div>
                             )}
@@ -2001,26 +2008,26 @@ export default function App() {
 
 
                                 <div className="flex items-center justify-between">
-                                    <span className="flex items-center text-slate-500"><Clapperboard className="w-3 h-3 mr-2" /> Genre</span>
-                                    <button onClick={() => setShowGenreSettings(true)} className="flex items-center space-x-1.5 px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs font-medium text-slate-300 hover:text-white transition-colors group" title="Edit Genre / Context">
+                                    <span className="flex items-center text-slate-500"><Clapperboard className="w-3 h-3 mr-2" /> 类型</span>
+                                    <button onClick={() => setShowGenreSettings(true)} className="flex items-center space-x-1.5 px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs font-medium text-slate-300 hover:text-white transition-colors group" title="编辑类型 / 上下文">
                                         <span className="truncate max-w-[100px]">
-                                            {settings.genre === 'general' ? 'General' :
-                                                settings.genre === 'anime' ? 'Anime' :
-                                                    settings.genre === 'movie' ? 'Movie' :
-                                                        settings.genre === 'news' ? 'News' :
-                                                            settings.genre === 'tech' ? 'Tech' : settings.genre}
+                                            {settings.genre === 'general' ? '通用' :
+                                                settings.genre === 'anime' ? '动漫' :
+                                                    settings.genre === 'movie' ? '电影' :
+                                                        settings.genre === 'news' ? '新闻' :
+                                                            settings.genre === 'tech' ? '科技' : settings.genre}
                                         </span>
                                         <Edit2 className="w-3 h-3 text-slate-500 group-hover:text-indigo-400 transition-colors" />
                                     </button>
                                 </div>
 
                                 <div className="flex flex-col space-y-1 pt-2 border-t border-slate-700/50">
-                                    <span className="flex items-center text-slate-500 mb-1"><Book className="w-3 h-3 mr-2" /> Glossary</span>
+                                    <span className="flex items-center text-slate-500 mb-1"><Book className="w-3 h-3 mr-2" /> 术语表</span>
                                     <CustomSelect
                                         value={settings.activeGlossaryId || ''}
                                         onChange={(val) => updateSetting('activeGlossaryId', val || null)}
                                         options={[
-                                            { value: '', label: '(None)' },
+                                            { value: '', label: '(无)' },
                                             ...(settings.glossaries?.map(g => ({
                                                 value: g.id,
                                                 label: (
@@ -2032,7 +2039,7 @@ export default function App() {
                                             })) || [])
                                         ]}
                                         className="w-full"
-                                        placeholder="(None)"
+                                        placeholder="(无)"
                                     />
                                 </div>
                             </div>
@@ -2040,18 +2047,18 @@ export default function App() {
                         {activeTab === 'new' && (
                             <button onClick={handleGenerate} disabled={isProcessing || !file} className={`w-full py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all flex items-center justify-center space-x-2 ${isProcessing || !file ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-indigo-500/25 hover:shadow-indigo-500/40 cursor-pointer'}`}>
                                 {isProcessing ? (<Loader2 className="w-5 h-5 animate-spin" />) : (<Play className="w-5 h-5 fill-current" />)}
-                                <span>{status === GenerationStatus.IDLE || status === GenerationStatus.COMPLETED || status === GenerationStatus.ERROR ? 'Start Processing' : 'Processing...'}</span>
+                                <span>{status === GenerationStatus.IDLE || status === GenerationStatus.COMPLETED || status === GenerationStatus.ERROR ? '开始处理' : '处理中...'}</span>
                             </button>
                         )}
                         {error && (<div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400 flex items-start space-x-2 animate-fade-in"><AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /><span className="break-words w-full">{error}</span></div>)}
                         {(status === GenerationStatus.COMPLETED || status === GenerationStatus.PROOFREADING) && subtitles.length > 0 && (
                             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 shadow-sm animate-fade-in">
-                                <h3 className="text-sm font-semibold text-white mb-3 flex items-center"><Download className="w-4 h-4 mr-2 text-emerald-400" /> Export</h3>
+                                <h3 className="text-sm font-semibold text-white mb-3 flex items-center"><Download className="w-4 h-4 mr-2 text-emerald-400" /> 导出</h3>
                                 <div className="grid grid-cols-2 gap-2">
                                     <button onClick={() => handleDownload('srt')} className="flex flex-col items-center justify-center p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-lg transition-all"><span className="font-bold text-slate-200 text-sm">.SRT</span></button>
                                     <button onClick={() => handleDownload('ass')} className="flex flex-col items-center justify-center p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-lg transition-all"><span className="font-bold text-slate-200 text-sm">.ASS</span></button>
                                 </div>
-                                <div className="mt-3 text-[10px] text-center text-slate-500">Mode: {settings.outputMode === 'bilingual' ? 'Bilingual' : 'Translated Only'}</div>
+                                <div className="mt-3 text-[12px] text-center text-slate-500">模式: {settings.outputMode === 'bilingual' ? '双语' : '仅翻译'}</div>
                             </div>
                         )}
                     </div>
@@ -2067,7 +2074,7 @@ export default function App() {
                             {showSnapshots ? (
                                 <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar w-full relative">
                                     <button onClick={() => setShowSnapshots(false)} className="absolute top-2 right-4 text-slate-400 hover:text-white"><X className="w-4 h-4" /></button>
-                                    {snapshots.length === 0 ? (<div className="h-full flex flex-col items-center justify-center text-slate-500 opacity-50"><GitCommit className="w-12 h-12 mb-2" /><p>No versions available for this session</p></div>) : (snapshots.map((snap) => (<div key={snap.id} className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl flex justify-between items-center"><div><h4 className="font-medium text-slate-200">{snap.description}</h4><p className="text-xs text-slate-500 mt-1">{snap.timestamp}</p></div><button onClick={() => restoreSnapshot(snap)} className="px-3 py-1.5 bg-slate-700 hover:bg-indigo-600 rounded text-xs text-white transition-colors flex items-center"><RotateCcw className="w-3 h-3 mr-1" /> Restore</button></div>)))}
+                                    {snapshots.length === 0 ? (<div className="h-full flex flex-col items-center justify-center text-slate-500 opacity-50"><GitCommit className="w-12 h-12 mb-2" /><p>本次会话无可用版本</p></div>) : (snapshots.map((snap) => (<div key={snap.id} className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl flex justify-between items-center"><div><h4 className="font-medium text-slate-200">{snap.description}</h4><p className="text-xs text-slate-500 mt-1">{snap.timestamp}</p></div><button onClick={() => restoreSnapshot(snap)} className="px-3 py-1.5 bg-slate-700 hover:bg-indigo-600 rounded text-xs text-white transition-colors flex items-center"><RotateCcw className="w-3 h-3 mr-1" /> 恢复</button></div>)))}
                                 </div>
                             ) : (
                                 <div className="flex-1 overflow-y-auto custom-scrollbar relative w-full h-full max-h-[calc(100vh-220px)]" ref={subtitleListRef}>{renderSubtitleList()}</div>
