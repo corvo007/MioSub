@@ -81,6 +81,8 @@ export interface GlossaryExtractionMetadata {
 export interface AppSettings {
   geminiKey: string;
   openaiKey: string;
+  openaiEndpoint?: string;
+  geminiEndpoint?: string;
   transcriptionModel: string; // 'whisper-1' | 'gpt-4o-audio-preview'
   genre: string; // Changed from Genre to string to support custom input
   customTranslationPrompt: string;

@@ -407,9 +407,13 @@ export const retryGlossaryExtraction = async (
   audioBuffer: AudioBuffer,
   chunks: { index: number; start: number; end: number }[],
   genre: string,
-  concurrency: number
+  concurrency: number,
+  endpoint?: string
 ): Promise<GlossaryExtractionMetadata> => {
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({
+    apiKey,
+    httpOptions: endpoint ? { baseUrl: endpoint } : undefined
+  });
   const results = await extractGlossaryFromAudio(ai, audioBuffer, chunks, genre, concurrency);
 
   const totalTerms = results.reduce((sum, r) => sum + r.terms.length, 0);
@@ -484,7 +488,10 @@ export const generateSubtitles = async (
   if (!geminiKey) throw new Error("Gemini API Key is missing.");
   if (!openaiKey) throw new Error("OpenAI API Key is missing.");
 
-  const ai = new GoogleGenAI({ apiKey: geminiKey });
+  const ai = new GoogleGenAI({
+    apiKey: geminiKey,
+    httpOptions: settings.geminiEndpoint ? { baseUrl: settings.geminiEndpoint } : undefined
+  });
 
   // 1. Decode Audio
   onProgress?.({ id: 'decoding', total: 1, status: 'processing', message: "Decoding audio track..." });

@@ -1575,11 +1575,51 @@ export default function App() {
                                             {ENV_GEMINI_KEY && settings.geminiKey && (<p className="text-xs text-amber-400 mt-1">Overriding environment API Key</p>)}
                                         </div>
                                         <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini Endpoint (Optional)</label>
+                                            <div className="relative flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={settings.geminiEndpoint || ''}
+                                                    onChange={(e) => updateSetting('geminiEndpoint', e.target.value.trim())}
+                                                    placeholder="https://generativelanguage.googleapis.com"
+                                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
+                                                />
+                                                <button
+                                                    onClick={() => updateSetting('geminiEndpoint', undefined)}
+                                                    className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-700 transition-colors whitespace-nowrap"
+                                                    title="Reset to Default"
+                                                >
+                                                    Reset
+                                                </button>
+                                            </div>
+                                            <p className="text-xs text-slate-500 mt-1">Custom base URL for Gemini API (e.g., for proxies).</p>
+                                        </div>
+                                        <div>
                                             <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI API Key</label>
                                             <div className="relative"><input type="password" value={settings.openaiKey} onChange={(e) => updateSetting('openaiKey', e.target.value.trim())} placeholder="Enter OpenAI API Key" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
                                             <p className="text-xs text-slate-500 mt-1">Required. Uses <strong>Whisper</strong> model for high-accuracy base transcription.</p>
                                             {ENV_OPENAI_KEY && !settings.openaiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> Using API Key from environment</p>)}
                                             {ENV_OPENAI_KEY && settings.openaiKey && (<p className="text-xs text-amber-400 mt-1">Overriding environment API Key</p>)}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI Endpoint (Optional)</label>
+                                            <div className="relative flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={settings.openaiEndpoint || ''}
+                                                    onChange={(e) => updateSetting('openaiEndpoint', e.target.value.trim())}
+                                                    placeholder="https://api.openai.com/v1"
+                                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
+                                                />
+                                                <button
+                                                    onClick={() => updateSetting('openaiEndpoint', undefined)}
+                                                    className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-700 transition-colors whitespace-nowrap"
+                                                    title="Reset to Default"
+                                                >
+                                                    Reset
+                                                </button>
+                                            </div>
+                                            <p className="text-xs text-slate-500 mt-1">Custom base URL for OpenAI API (e.g., for local LLMs or proxies).</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1779,7 +1819,8 @@ export default function App() {
                 audioCacheRef.current.buffer,
                 glossaryMetadata.glossaryChunks,
                 settings.genre,
-                settings.concurrencyPro
+                settings.concurrencyPro,
+                settings.geminiEndpoint
             );
 
             setGlossaryMetadata(newMetadata);

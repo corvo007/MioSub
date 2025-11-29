@@ -572,16 +572,16 @@ export function audioBufferToWav(buffer: AudioBuffer): Blob {
 
 // --- OpenAI API (Whisper & GPT-4o Audio) ---
 
-export const transcribeAudio = async (audioBlob: Blob, apiKey: string, model: string = 'whisper-1'): Promise<SubtitleItem[]> => {
-  logger.debug(`Starting transcription with model: ${model}`);
+export const transcribeAudio = async (audioBlob: Blob, apiKey: string, model: string = 'whisper-1', endpoint?: string): Promise<SubtitleItem[]> => {
+  logger.debug(`Starting transcription with model: ${model} on endpoint: ${endpoint || 'default'}`);
   if (model.includes('gpt-4o')) {
-    return transcribeWithOpenAIChat(audioBlob, apiKey, model);
+    return transcribeWithOpenAIChat(audioBlob, apiKey, model, endpoint);
   } else {
-    return transcribeWithWhisper(audioBlob, apiKey, model);
+    return transcribeWithWhisper(audioBlob, apiKey, model, endpoint);
   }
 };
 
-const transcribeWithWhisper = async (audioBlob: Blob, apiKey: string, model: string): Promise<SubtitleItem[]> => {
+const transcribeWithWhisper = async (audioBlob: Blob, apiKey: string, model: string, endpoint?: string): Promise<SubtitleItem[]> => {
   const formData = new FormData();
   formData.append('file', audioBlob, 'audio.wav');
   formData.append('model', model); // usually 'whisper-1'
@@ -591,9 +591,11 @@ const transcribeWithWhisper = async (audioBlob: Blob, apiKey: string, model: str
   const maxRetries = 3;
   let lastError: any;
 
+  const baseUrl = endpoint || 'https://api.openai.com/v1';
+
   while (attempt < maxRetries) {
     try {
-      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      const response = await fetch(`${baseUrl}/audio/transcriptions`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${apiKey}`,
@@ -628,7 +630,7 @@ const transcribeWithWhisper = async (audioBlob: Blob, apiKey: string, model: str
   throw lastError || new Error("Failed to connect to Whisper API.");
 };
 
-const transcribeWithOpenAIChat = async (audioBlob: Blob, apiKey: string, model: string): Promise<SubtitleItem[]> => {
+const transcribeWithOpenAIChat = async (audioBlob: Blob, apiKey: string, model: string, endpoint?: string): Promise<SubtitleItem[]> => {
   logger.debug(`Starting OpenAI Chat transcription with model: ${model}`);
   const base64Audio = await blobToBase64(audioBlob);
 
@@ -655,8 +657,10 @@ const transcribeWithOpenAIChat = async (audioBlob: Blob, apiKey: string, model: 
     ]
   };
 
+  const baseUrl = endpoint || 'https://api.openai.com/v1';
+
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
