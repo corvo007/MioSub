@@ -8,6 +8,8 @@ on:
 jobs:
   release:
     runs-on: windows-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Check out git repository
