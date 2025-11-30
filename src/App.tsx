@@ -22,6 +22,7 @@ import { GlossaryManager } from './GlossaryManager';
 import { Header } from '@/components/layout/Header';
 import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
 import { FileUploader } from '@/components/upload/FileUploader';
+import { SubtitleEditor } from '@/components/editor/SubtitleEditor';
 
 
 const SETTINGS_KEY = 'gemini_subtitle_settings';
@@ -784,110 +785,7 @@ export default function App() {
         }
     };
 
-    const renderSubtitleList = () => {
-        const chunks: SubtitleItem[][] = [];
-        const batchSize = settings.proofreadBatchSize || 20;
-        for (let i = 0; i < subtitles.length; i += batchSize) {
-            chunks.push(subtitles.slice(i, i + batchSize));
-        }
 
-        if (chunks.length === 0) {
-            return (
-                <div className="h-full flex flex-col items-center justify-center text-slate-600 p-8 min-h-[300px]">
-                    <div className="w-16 h-16 border-2 border-slate-700 border-dashed rounded-full flex items-center justify-center mb-4"><Languages className="w-6 h-6" /></div>
-                    <p className="font-medium">暂无生成字幕</p>
-                    <p className="text-sm mt-2 max-w-xs text-center opacity-70">{activeTab === 'new' ? '上传媒体文件以开始。' : '导入 SRT/ASS 文件以开始编辑。'}</p>
-                </div>
-            );
-        }
-
-        return (
-            <div className="p-4 space-y-6 pb-20">
-                {status === GenerationStatus.COMPLETED && (
-                    <div className="flex flex-wrap items-center gap-3 bg-slate-800/90 p-3 rounded-lg border border-slate-700 sticky top-0 z-20 backdrop-blur-md shadow-md justify-between">
-                        <div className="flex items-center space-x-4">
-                            <button onClick={() => toggleAllBatches(chunks.length)} className="flex items-center space-x-2 text-sm text-slate-300 hover:text-white transition-colors">
-                                {selectedBatches.size === chunks.length ? <CheckSquare className="w-4 h-4 text-indigo-400" /> : <Square className="w-4 h-4 text-slate-500" />}
-                                <span>{selectedBatches.size === chunks.length ? '取消全选' : '全选'}</span>
-                            </button>
-                            <button onClick={() => selectBatchesWithComments(chunks)} className="flex items-center space-x-2 text-sm text-slate-300 hover:text-white transition-colors" title="选择有评论的行">
-                                <MessageCircle className="w-4 h-4 text-amber-400" /><span className="hidden sm:inline">选择有评论的行</span>
-                            </button>
-                            <button onClick={() => setShowSourceText(!showSourceText)} className="flex items-center space-x-2 text-sm text-slate-400 hover:text-white transition-colors">
-                                {showSourceText ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}<span className="hidden sm:inline">{showSourceText ? "隐藏原文" : "显示原文"}</span>
-                            </button>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="text-xs text-slate-500 font-mono mr-2 hidden sm:block">{selectedBatches.size} 已选择</div>
-                            {file && (
-                                <button onClick={() => handleBatchAction('fix_timestamps')} disabled={selectedBatches.size === 0} title="修复时间轴 (保留翻译)" className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-slate-700 border-slate-600 text-emerald-400 hover:bg-slate-600 hover:border-emerald-400/50' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}>
-                                    <Clock className="w-3 h-3" /><span className="hidden sm:inline">修复时间</span>
-                                </button>
-                            )}
-
-                            <button onClick={() => handleBatchAction('proofread')} disabled={selectedBatches.size === 0} title="校对翻译 (保留时间轴)" className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}>
-                                <Sparkles className="w-3 h-3" /><span className="hidden sm:inline">校对</span>
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {chunks.map((chunk, chunkIdx) => {
-                    const isSelected = selectedBatches.has(chunkIdx);
-                    const startTime = chunk[0].startTime.split(',')[0];
-                    const endTime = chunk[chunk.length - 1].endTime.split(',')[0];
-                    const chunkComment = batchComments[chunkIdx] || '';
-
-                    return (
-                        <div key={chunkIdx} className={`border rounded-xl overflow-hidden transition-all ${isSelected ? 'border-indigo-500/50 bg-indigo-500/5' : 'border-slate-700/50 bg-slate-900/40'}`}>
-                            <div className={`px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isSelected ? 'bg-indigo-900/20' : 'bg-slate-800/50'}`}>
-                                <div className="flex items-center space-x-3">
-                                    {status === GenerationStatus.COMPLETED && (
-                                        <button onClick={() => toggleBatch(chunkIdx)} className="text-slate-400 hover:text-indigo-400 focus:outline-none">
-                                            {isSelected ? <CheckSquare className="w-5 h-5 text-indigo-400" /> : <Square className="w-5 h-5" />}
-                                        </button>
-                                    )}
-                                    <div>
-                                        <h3 className={`text-sm font-semibold ${isSelected ? 'text-indigo-300' : 'text-slate-300'}`}>片段 {chunkIdx + 1}</h3>
-                                        <p className="text-xs text-slate-500 font-mono mt-0.5">{startTime} - {endTime}</p>
-                                    </div>
-                                </div>
-                                <div className="flex-1 px-2">
-                                    <input type="text" value={chunkComment} onChange={(e) => updateBatchComment(chunkIdx, e.target.value)} placeholder="添加针对此片段的说明..." className="w-full bg-slate-900/50 border border-slate-700/50 rounded px-2 py-1 text-xs text-amber-200 placeholder-slate-600 focus:border-amber-500/50 focus:outline-none" />
-                                </div>
-                                {status === GenerationStatus.COMPLETED && (
-                                    <div className="flex items-center space-x-1">
-                                        <button onClick={() => handleBatchAction('proofread', chunkIdx)} title="深度校对" className="p-2 text-slate-500 hover:text-indigo-400 hover:bg-slate-700 rounded-lg transition-colors"><Wand2 className="w-4 h-4" /></button>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="divide-y divide-slate-800/50">
-                                {chunk.map((sub) => (
-                                    <div key={sub.id} className="p-3 hover:bg-slate-800/30 transition-colors flex items-start space-x-4 group/row">
-                                        <div className="flex flex-col text-sm font-mono text-slate-400 min-w-[85px] pt-1">
-                                            <span className="leading-tight">{(sub.startTime || '').split(',')[0]}</span>
-                                            <span className="leading-tight opacity-70">{(sub.endTime || '').split(',')[0]}</span>
-                                        </div>
-                                        <div className="flex-1 space-y-1">
-                                            {showSourceText && <p className="text-sm text-slate-400 leading-relaxed opacity-70 mb-1">{sub.original}</p>}
-                                            <p className="text-lg text-indigo-300 leading-relaxed font-medium">{sub.translated}</p>
-                                            {(editingCommentId === sub.id || sub.comment) && (
-                                                <div className="mt-2 flex items-start animate-fade-in">
-                                                    <MessageCircle className="w-3 h-3 text-amber-500 mt-1 mr-2 flex-shrink-0" />
-                                                    <input type="text" value={sub.comment || ''} onChange={(e) => updateLineComment(sub.id, e.target.value)} placeholder="添加具体修改说明..." autoFocus={editingCommentId === sub.id} onBlur={() => setEditingCommentId(null)} className="w-full bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1 text-sm text-amber-200 placeholder-amber-500/50 focus:outline-none focus:border-amber-500/50" />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <button onClick={() => setEditingCommentId(sub.id)} className={`p-1.5 rounded hover:bg-slate-700 transition-colors ${sub.comment ? 'text-amber-400' : 'text-slate-600 opacity-0 group-hover/row:opacity-100'}`} title="添加评论/修改"><MessageCircle className="w-4 h-4" /></button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        );
-    };
 
     const handleGenerateGlossary = async () => {
         if (subtitles.length === 0) {
@@ -2112,7 +2010,27 @@ export default function App() {
                                     {snapshots.length === 0 ? (<div className="h-full flex flex-col items-center justify-center text-slate-500 opacity-50"><GitCommit className="w-12 h-12 mb-2" /><p>本次会话无可用版本</p></div>) : (snapshots.map((snap) => (<div key={snap.id} className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl flex justify-between items-center"><div><h4 className="font-medium text-slate-200">{snap.description}</h4><p className="text-xs text-slate-500 mt-1">{snap.timestamp}</p></div><button onClick={() => restoreSnapshot(snap)} className="px-3 py-1.5 bg-slate-700 hover:bg-indigo-600 rounded text-xs text-white transition-colors flex items-center"><RotateCcw className="w-3 h-3 mr-1" /> 恢复</button></div>)))}
                                 </div>
                             ) : (
-                                <div className="flex-1 overflow-y-auto custom-scrollbar relative w-full h-full max-h-[calc(100vh-220px)]" ref={subtitleListRef}>{renderSubtitleList()}</div>
+                                <div className="flex-1 overflow-y-auto custom-scrollbar relative w-full h-full max-h-[calc(100vh-220px)]" ref={subtitleListRef}>
+                                    <SubtitleEditor
+                                        subtitles={subtitles}
+                                        settings={settings}
+                                        status={status}
+                                        activeTab={activeTab}
+                                        selectedBatches={selectedBatches}
+                                        toggleAllBatches={toggleAllBatches}
+                                        selectBatchesWithComments={selectBatchesWithComments}
+                                        showSourceText={showSourceText}
+                                        setShowSourceText={setShowSourceText}
+                                        file={file}
+                                        handleBatchAction={handleBatchAction}
+                                        batchComments={batchComments}
+                                        toggleBatch={toggleBatch}
+                                        updateBatchComment={updateBatchComment}
+                                        editingCommentId={editingCommentId}
+                                        setEditingCommentId={setEditingCommentId}
+                                        updateLineComment={updateLineComment}
+                                    />
+                                </div>
                             )}
                         </div>
                     </div>
