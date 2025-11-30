@@ -24,7 +24,7 @@ import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
 import { FileUploader } from '@/components/upload/FileUploader';
 import { SubtitleEditor } from '@/components/editor/SubtitleEditor';
 import { SettingsModal, GenreSettingsDialog, CustomSelect } from '@/components/settings';
-import { GlossaryExtractionFailedDialog, GlossaryConfirmationModal } from '@/components/modals';
+import { GlossaryExtractionFailedDialog, GlossaryConfirmationModal, SimpleConfirmationModal } from '@/components/modals';
 import { ToastContainer, TimeTracker, StatusBadge, ProgressOverlay } from '@/components/ui';
 import type { ToastMessage } from '@/components/ui';
 
@@ -138,6 +138,25 @@ export default function App() {
     const [showGlossaryFailure, setShowGlossaryFailure] = useState(false);
     const [glossaryConfirmCallback, setGlossaryConfirmCallback] = useState<((glossary: GlossaryItem[]) => void) | null>(null);
 
+    // Confirmation Modal State
+    const [confirmation, setConfirmation] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        type?: 'info' | 'warning' | 'danger';
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        type: 'warning'
+    });
+
+    const showConfirm = (title: string, message: string, onConfirm: () => void, type: 'info' | 'warning' | 'danger' = 'warning') => {
+        setConfirmation({ isOpen: true, title, message, onConfirm, type });
+    };
+
     // Logs State
     const [showLogs, setShowLogs] = useState(false);
     const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -226,10 +245,16 @@ export default function App() {
     };
 
     const restoreSnapshot = (snapshot: SubtitleSnapshot) => {
-        if (!confirm(`恢复到 ${snapshot.timestamp} 的版本？如果未保存，当前进度将丢失。`)) return;
-        setSubtitles(JSON.parse(JSON.stringify(snapshot.subtitles)));
-        setBatchComments({ ...snapshot.batchComments });
-        setShowSnapshots(false);
+        showConfirm(
+            "恢复快照",
+            `确定要恢复到 ${snapshot.timestamp} 的版本吗？当前未保存的进度将丢失。`,
+            () => {
+                setSubtitles(JSON.parse(JSON.stringify(snapshot.subtitles)));
+                setBatchComments({ ...snapshot.batchComments });
+                setShowSnapshots(false);
+            },
+            'warning'
+        );
     };
 
     const toggleBatch = (index: number) => {
@@ -260,15 +285,28 @@ export default function App() {
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const selectedFile = e.target.files[0];
-            logger.info("File selected", { name: selectedFile.name, size: selectedFile.size, type: selectedFile.type });
-            setFile(selectedFile);
-            audioCacheRef.current = null;
-            setError(null);
+
+            const processFile = async () => {
+                logger.info("File selected", { name: selectedFile.name, size: selectedFile.size, type: selectedFile.type });
+                setFile(selectedFile);
+                audioCacheRef.current = null;
+                setError(null);
+                try { const d = await getFileDuration(selectedFile); setDuration(d); } catch (e) { setDuration(0); }
+            };
+
             if (activeTab === 'new' && subtitles.length > 0 && status === GenerationStatus.COMPLETED) {
-                if (!confirm("这将替换当前文件，可能需要重新生成。继续吗？")) return;
-                setSubtitles([]); setStatus(GenerationStatus.IDLE); setSnapshots([]); setBatchComments({});
+                showConfirm(
+                    "替换文件",
+                    "这将替换当前文件，可能需要重新生成。继续吗？",
+                    () => {
+                        setSubtitles([]); setStatus(GenerationStatus.IDLE); setSnapshots([]); setBatchComments({});
+                        processFile();
+                    },
+                    'warning'
+                );
+            } else {
+                processFile();
             }
-            try { const d = await getFileDuration(selectedFile); setDuration(d); } catch (e) { setDuration(0); }
         }
     };
 
@@ -464,8 +502,20 @@ export default function App() {
     };
 
     const goBackHome = () => {
-        if (subtitles.length > 0 && !confirm("返回主页？未保存的进度将丢失。")) return;
-        setView('home'); setSubtitles([]); setFile(null); setDuration(0); setStatus(GenerationStatus.IDLE); setSnapshots([]); setBatchComments({}); setSelectedBatches(new Set()); setError(null);
+        const doGoBack = () => {
+            setView('home'); setSubtitles([]); setFile(null); setDuration(0); setStatus(GenerationStatus.IDLE); setSnapshots([]); setBatchComments({}); setSelectedBatches(new Set()); setError(null);
+        };
+
+        if (subtitles.length > 0) {
+            showConfirm(
+                "返回主页",
+                "返回主页？未保存的进度将丢失。",
+                doGoBack,
+                'warning'
+            );
+        } else {
+            doGoBack();
+        }
     };
     const startNewProject = () => { setActiveTab('new'); setView('workspace'); setSubtitles([]); setFile(null); setDuration(0); setStatus(GenerationStatus.IDLE); setSnapshots([]); setBatchComments({}); setSelectedBatches(new Set()); setError(null); };
     const startImportProject = () => { setActiveTab('import'); setView('workspace'); setSubtitles([]); setFile(null); setDuration(0); setStatus(GenerationStatus.IDLE); setSnapshots([]); setBatchComments({}); setSelectedBatches(new Set()); setError(null); };
@@ -733,7 +783,7 @@ export default function App() {
                             <div className="flex items-center space-x-2">
 
                             </div>
-                            <StatusBadge />
+                            <StatusBadge status={status} />
                         </div>
                         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col shadow-2xl relative flex-1 min-h-0">
                             {showSnapshots ? (
@@ -826,8 +876,21 @@ export default function App() {
                 currentGenre={settings.genre}
                 onSave={(genre) => updateSetting('genre', genre)}
             />
-            <ProgressOverlay />
+            <ProgressOverlay
+                isProcessing={isProcessing}
+                chunkProgress={chunkProgress}
+                status={status}
+                startTime={startTime || 0}
+            />
             <ToastContainer toasts={toasts} removeToast={removeToast} />
+            <SimpleConfirmationModal
+                isOpen={confirmation.isOpen}
+                onClose={() => setConfirmation(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmation.onConfirm}
+                title={confirmation.title}
+                message={confirmation.message}
+                type={confirmation.type}
+            />
         </>
     );
 }

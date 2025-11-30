@@ -30,10 +30,17 @@ export const getSystemInstruction = (
     glossary?: GlossaryItem[]
 ): string => {
 
-    // Helper to format glossary
-    const glossaryText = glossary && glossary.length > 0
-        ? `\n\nTERMINOLOGY GLOSSARY (STRICTLY FOLLOW):\n${glossary.map(g => `- ${g.term}: ${g.translation} ${g.notes ? `(${g.notes})` : ''}`).join('\n')}`
-        : '';
+    // Helper to format glossary for different modes
+    let glossaryText = '';
+    if (glossary && glossary.length > 0) {
+        if (mode === 'refinement') {
+            // For refinement: Only show original terms (no translations) to prevent language mixing
+            glossaryText = `\n\nKEY TERMINOLOGY (Listen for these terms and transcribe them accurately in the ORIGINAL LANGUAGE):\n${glossary.map(g => `- ${g.term}${g.notes ? ` (${g.notes})` : ''}`).join('\n')}`;
+        } else {
+            // For translation/proofread: Show full glossary with translations
+            glossaryText = `\n\nTERMINOLOGY GLOSSARY (STRICTLY FOLLOW):\n${glossary.map(g => `- ${g.term}: ${g.translation} ${g.notes ? `(${g.notes})` : ''}`).join('\n')}`;
+        }
+    }
 
     // If custom prompt is provided, usually we prepend/mix it, but for simplicity if a user overrides "Proofreading Prompt", we use it for "Deep Proofread" mode.
     if (mode === 'proofread' && customPrompt && customPrompt.trim().length > 0) {
@@ -56,8 +63,9 @@ export const getSystemInstruction = (
     4. FIX TRANSCRIPTION: Correct mishearings, typos, and proper nouns (names, terminology).
     5. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (uh, um, ah, eto, ano, 呃, 那个).
     6. SPLIT LINES: STRICT RULE. If a segment is longer than 4 seconds or > 25 characters, YOU MUST SPLIT IT into shorter, natural segments.
-    7. FORMAT: Return a valid JSON array.
-    8. FINAL CHECK: Before outputting, strictly verify that ALL previous rules (1-7) have been perfectly followed. Correct any remaining errors.
+    7. **LANGUAGE RULE**: Keep the transcription in the ORIGINAL LANGUAGE spoken in the audio. DO NOT translate to any other language.
+    8. FORMAT: Return a valid JSON array.
+    9. FINAL CHECK: Before outputting, strictly verify that ALL previous rules (1-8) have been perfectly followed. Correct any remaining errors.
     
     Genre Context: ${genre}${glossaryText}`;
     }

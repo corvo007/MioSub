@@ -232,11 +232,12 @@ export const generateSubtitles = async (
             const base64Audio = await blobToBase64(refineWavBlob);
 
             let refinedSegments: SubtitleItem[] = [];
-            onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'refining', message: '正在优化...' });
+            onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'refining', message: '正在校对时间轴...' });
 
             const refineSystemInstruction = getSystemInstruction(chunkSettings.genre, undefined, 'refinement', chunkSettings.glossary);
+            // For refinement, only show original terms (without translations) to prevent language mixing
             const glossaryInfo = chunkSettings.glossary && chunkSettings.glossary.length > 0
-                ? `\n\nKEY TERMINOLOGY (Ensure these terms are spelled correctly in the transcription if heard):\n${chunkSettings.glossary.map(g => `- ${g.term}${g.notes ? ` (${g.notes})` : ''}`).join('\n')}`
+                ? `\n\nKEY TERMINOLOGY (Listen for these terms in the audio and transcribe them accurately in the ORIGINAL LANGUAGE):\n${chunkSettings.glossary.map(g => `- ${g.term}${g.notes ? ` (${g.notes})` : ''}`).join('\n')}`
                 : '';
 
             const refinePrompt = `

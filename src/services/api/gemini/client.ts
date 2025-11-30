@@ -39,15 +39,54 @@ export function isRetryableError(error: any): boolean {
 export async function generateContentWithRetry(ai: GoogleGenAI, params: any, retries = 3) {
     for (let i = 0; i < retries; i++) {
         try {
+
+
             const result = await ai.models.generateContent(params);
 
-            // Log token usage
+            const candidates = (result as any).candidates;
+
+            // Log token usage and response content
             if ((result as any).usageMetadata) {
-                logger.debug("Gemini Token Usage", (result as any).usageMetadata);
+                // Sanitize prompt for logging (remove base64 audio data)
+                const sanitizeValue = (value: any): any => {
+                    if (!value) return value;
+                    if (Array.isArray(value)) return value.map(sanitizeValue);
+                    if (typeof value === 'object') {
+                        // Check for inlineData structure
+                        if ('inlineData' in value && value.inlineData?.data) {
+                            return {
+                                ...value,
+                                inlineData: {
+                                    ...value.inlineData,
+                                    data: '<base64_audio_data_omitted>'
+                                }
+                            };
+                        }
+                        // Generic object traversal
+                        const newObj: any = {};
+                        for (const key in value) {
+                            newObj[key] = sanitizeValue(value[key]);
+                        }
+                        return newObj;
+                    }
+                    return value;
+                };
+
+                const sanitizedPrompt = sanitizeValue(params.contents);
+
+                logger.debug("Gemini API Interaction", {
+                    request: {
+                        generationConfig: params.config,
+                        prompt: sanitizedPrompt
+                    },
+                    response: {
+                        usage: (result as any).usageMetadata,
+                        content: candidates?.[0]?.content?.parts?.[0]?.text
+                    }
+                });
             }
 
             // Log grounding metadata (Search Grounding verification)
-            const candidates = (result as any).candidates;
             if (candidates && candidates[0]?.groundingMetadata) {
                 const groundingMeta = candidates[0].groundingMetadata;
                 logger.info("🔍 Search Grounding Used", {

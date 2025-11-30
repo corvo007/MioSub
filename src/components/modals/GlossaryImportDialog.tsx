@@ -146,23 +146,15 @@ export const GlossaryImportDialog: React.FC<GlossaryImportDialogProps> = ({
                                             <label className="block text-xs text-slate-400 mb-2">冲突处理 (当术语已存在时)</label>
                                             <div className="flex space-x-4">
                                                 <label className="flex items-center space-x-2 cursor-pointer">
-                                                    <input
-                                                        type="radio"
-                                                        name="conflict"
-                                                        checked={conflictMode === 'skip'}
-                                                        onChange={() => setConflictMode('skip')}
-                                                        className="text-indigo-500 focus:ring-indigo-500 bg-slate-900 border-slate-700"
-                                                    />
+                                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${conflictMode === 'skip' ? 'border-indigo-500' : 'border-slate-500'}`}>
+                                                        {conflictMode === 'skip' && <div className="w-2 h-2 rounded-full bg-indigo-500" />}
+                                                    </div>
                                                     <span className="text-sm text-slate-300">跳过 (保留旧值)</span>
                                                 </label>
                                                 <label className="flex items-center space-x-2 cursor-pointer">
-                                                    <input
-                                                        type="radio"
-                                                        name="conflict"
-                                                        checked={conflictMode === 'overwrite'}
-                                                        onChange={() => setConflictMode('overwrite')}
-                                                        className="text-indigo-500 focus:ring-indigo-500 bg-slate-900 border-slate-700"
-                                                    />
+                                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${conflictMode === 'overwrite' ? 'border-indigo-500' : 'border-slate-500'}`}>
+                                                        {conflictMode === 'overwrite' && <div className="w-2 h-2 rounded-full bg-indigo-500" />}
+                                                    </div>
                                                     <span className="text-sm text-slate-300">覆盖 (使用新值)</span>
                                                 </label>
                                             </div>

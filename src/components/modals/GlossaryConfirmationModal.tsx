@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Book, X, AlertCircle, CheckCircle, Sparkles, Edit2, Plus } from 'lucide-react';
+import { Book, X, AlertCircle, CheckCircle, Sparkles, Edit2, Plus, Check } from 'lucide-react';
 import { GlossaryItem, GlossaryExtractionResult, AppSettings } from '@/types';
 import { mergeGlossaryResults } from '@/services/glossary/merger';
 import { CustomSelect } from '@/components/settings';
@@ -30,13 +30,23 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
     // Track if state has been initialized to prevent resets during editing
     const initialized = useRef(false);
 
-    if (!isOpen || pendingResults.length === 0) {
-        return null;
-    }
+
+
+    const [targetGlossaryId, setTargetGlossaryId] = useState<string | null>(settings.activeGlossaryId || null);
+
+    const handleGlossaryChange = (val: string | null) => {
+        setTargetGlossaryId(val);
+        initialized.current = false;
+    };
 
     // Get active glossary terms
-    const activeGlossary = settings.glossaries?.find(g => g.id === settings.activeGlossaryId);
-    const activeTerms = activeGlossary?.terms || (activeGlossary as any)?.items || settings.glossary || [];
+    const activeGlossary = targetGlossaryId === 'temporary'
+        ? null
+        : settings.glossaries?.find(g => g.id === targetGlossaryId);
+
+    const activeTerms = targetGlossaryId === 'temporary'
+        ? []
+        : (activeGlossary?.terms || (activeGlossary as any)?.items || settings.glossary || []);
 
     // Memoize mergeGlossaryResults to prevent re-computing on every render
     const { unique, conflicts } = useMemo(() =>
@@ -63,14 +73,20 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
         }
     }, [pendingResults, unique, conflicts, activeTerms]);
 
+    if (!isOpen || pendingResults.length === 0) {
+        return null;
+    }
+
     const handleConfirm = () => {
         const termsToAdd = unique.filter(t => selectedTerms.has(t.term)).map(t => overrides[t.term] || t);
         const resolvedToAdd = Object.values(resolvedConflicts).filter((t): t is GlossaryItem => t !== null);
         const newTerms = [...termsToAdd, ...resolvedToAdd, ...customTerms];
 
-        if (settings.activeGlossaryId && settings.glossaries) {
+        if (targetGlossaryId === 'temporary') {
+            onConfirm(newTerms);
+        } else if (targetGlossaryId && settings.glossaries) {
             const updatedGlossaries = settings.glossaries.map(g => {
-                if (g.id === settings.activeGlossaryId) {
+                if (g.id === targetGlossaryId) {
                     const uniqueMap = new Map<string, GlossaryItem>();
                     (g.terms || (g as any).items || []).forEach((item: GlossaryItem) => uniqueMap.set(item.term.toLowerCase(), item));
                     newTerms.forEach(item => uniqueMap.set(item.term.toLowerCase(), item));
@@ -79,7 +95,8 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                 return g;
             });
             onUpdateSetting('glossaries', updatedGlossaries);
-            const updatedActive = updatedGlossaries.find(g => g.id === settings.activeGlossaryId);
+            onUpdateSetting('activeGlossaryId', targetGlossaryId);
+            const updatedActive = updatedGlossaries.find(g => g.id === targetGlossaryId);
             onConfirm(updatedActive?.terms || []);
         } else {
             const finalGlossary = [...(settings.glossary || []), ...newTerms];
@@ -359,12 +376,15 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                         >
                                             <div className="flex items-start gap-3">
                                                 <div className="pt-1">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isSelected}
-                                                        onChange={() => toggleTerm(term.term)}
-                                                        className="rounded border-slate-600 bg-slate-700 text-indigo-500 focus:ring-indigo-500/50"
-                                                    />
+                                                    <div
+                                                        onClick={() => toggleTerm(term.term)}
+                                                        className={`w-5 h-5 rounded border flex items-center justify-center cursor-pointer transition-colors ${isSelected
+                                                            ? 'bg-indigo-500 border-indigo-500'
+                                                            : 'border-slate-600 bg-slate-700/50 hover:border-slate-500'
+                                                            }`}
+                                                    >
+                                                        {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
+                                                    </div>
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     {isEditing ? (
@@ -510,9 +530,12 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                         <div className="flex items-center space-x-2">
                             <span className="text-sm text-slate-400">添加到:</span>
                             <CustomSelect
-                                value={settings.activeGlossaryId || ''}
-                                onChange={(val) => onUpdateSetting('activeGlossaryId', val || null)}
-                                options={settings.glossaries?.map(g => ({ value: g.id, label: g.name })) || []}
+                                value={targetGlossaryId || ''}
+                                onChange={handleGlossaryChange}
+                                options={[
+                                    ...(settings.glossaries?.map(g => ({ value: g.id, label: g.name })) || []),
+                                    { value: 'temporary', label: '临时 (仅本次会话)' }
+                                ]}
                                 className="w-48"
                                 placeholder="选择术语表"
                             />

@@ -310,17 +310,17 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                         </button>
                                     )}
                                     <div className="h-6 w-px bg-slate-700 mx-2" />
+                                    <label className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer" title="导入 JSON">
+                                        <Download className="w-5 h-5" />
+                                        <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+                                    </label>
                                     <button
                                         onClick={handleExport}
                                         className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
                                         title="导出 JSON"
                                     >
-                                        <Download className="w-5 h-5" />
-                                    </button>
-                                    <label className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer" title="导入 JSON">
                                         <Upload className="w-5 h-5" />
-                                        <input type="file" accept=".json" onChange={handleImport} className="hidden" />
-                                    </label>
+                                    </button>
                                 </div>
                             </div>
 
