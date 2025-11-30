@@ -2,6 +2,7 @@ import { SubtitleItem } from '@/types/subtitle';
 import { formatTime } from '@/services/subtitle/time';
 import { blobToBase64 } from '@/services/audio/converter';
 import { logger } from '@/services/utils/logger';
+import { extractJsonArray } from '@/services/subtitle/parser';
 
 export const transcribeWithOpenAIChat = async (
     audioBlob: Blob,
@@ -64,7 +65,10 @@ export const transcribeWithOpenAIChat = async (
         let segments: any[] = [];
         try {
             const cleanJson = content.replace(/```json/g, '').replace(/```/g, '').trim();
-            const parsed = JSON.parse(cleanJson);
+            const extracted = extractJsonArray(cleanJson);
+            const textToParse = extracted || cleanJson;
+
+            const parsed = JSON.parse(textToParse);
             segments = parsed.segments || parsed.items || parsed;
         } catch (e) {
             console.warn("Failed to parse GPT-4o JSON response", content);

@@ -1,8 +1,9 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { SubtitleItem } from "@/types/subtitle";
-import { ConsistencyIssue } from "@/consistencyValidation"; // Assuming path alias works or relative path
+import { ConsistencyIssue } from "@/consistencyValidation";
 import { generateContentWithRetry } from "./client";
 import { logger } from "@/services/utils/logger";
+import { extractJsonArray } from "@/services/subtitle/parser";
 
 export const checkGlobalConsistency = async (
     subtitles: SubtitleItem[],
@@ -82,7 +83,12 @@ export const checkGlobalConsistency = async (
 
         const text = response.text;
         if (!text) return [];
-        return JSON.parse(text) as ConsistencyIssue[];
+
+        const clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const extracted = extractJsonArray(clean);
+        const textToParse = extracted || clean;
+
+        return JSON.parse(textToParse) as ConsistencyIssue[];
     } catch (e) {
         logger.error("Failed to check consistency:", e);
         return [];

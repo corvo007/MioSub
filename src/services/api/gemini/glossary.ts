@@ -8,6 +8,7 @@ import { logger } from "@/services/utils/logger";
 import { GLOSSARY_SCHEMA, SAFETY_SETTINGS } from "./schemas";
 import { generateContentWithRetry, isRetryableError } from "./client";
 import { GLOSSARY_EXTRACTION_PROMPT } from "@/prompts";
+import { extractJsonArray } from "@/services/subtitle/parser";
 
 export const extractGlossaryFromAudio = async (
     ai: GoogleGenAI,
@@ -54,7 +55,9 @@ export const extractGlossaryFromAudio = async (
 
             const text = response.text || "[]";
             const clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
-            const terms = JSON.parse(clean);
+            const extracted = extractJsonArray(clean);
+            const textToParse = extracted || clean;
+            const terms = JSON.parse(textToParse);
 
             const termCount = Array.isArray(terms) ? terms.length : 0;
             logger.info(`[Chunk ${index}] Extracted ${termCount} terms (Attempt ${attemptNumber})`);
@@ -243,7 +246,12 @@ export const generateGlossary = async (
 
         const text = response.text;
         if (!text) return [];
-        return JSON.parse(text) as GlossaryItem[];
+
+        const clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const extracted = extractJsonArray(clean);
+        const textToParse = extracted || clean;
+
+        return JSON.parse(textToParse) as GlossaryItem[];
     } catch (e) {
         logger.error("Failed to generate glossary:", e);
         throw new Error("Failed to generate glossary. Please try again.");

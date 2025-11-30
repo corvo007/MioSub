@@ -2,7 +2,7 @@ import { GoogleGenAI, Part } from "@google/genai";
 import { SubtitleItem, BatchOperationMode } from "@/types/subtitle";
 import { AppSettings } from "@/types/settings";
 import { ChunkStatus } from "@/types/api";
-import { parseGeminiResponse } from "@/services/subtitle/parser";
+import { parseGeminiResponse, extractJsonArray } from "@/services/subtitle/parser";
 import { formatTime, timeToSeconds } from "@/services/subtitle/time";
 import { decodeAudio } from "@/services/audio/decoder";
 import { sliceAudioBuffer } from "@/services/audio/processor";
@@ -82,7 +82,10 @@ export async function processTranslationBatchWithRetry(
             let translatedData: any[] = [];
             try {
                 const clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
-                translatedData = JSON.parse(clean);
+                const extracted = extractJsonArray(clean);
+                const textToParse = extracted || clean;
+
+                translatedData = JSON.parse(textToParse);
                 if (!Array.isArray(translatedData) && (translatedData as any).items) translatedData = (translatedData as any).items;
             } catch (e) {
                 logger.warn(`Translation JSON parse error (Attempt ${attempt + 1}/${maxRetries})`);

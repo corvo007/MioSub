@@ -1,6 +1,7 @@
 import { GoogleGenAI, Part, Content } from "@google/genai";
 import { logger } from "@/services/utils/logger";
 import { SAFETY_SETTINGS } from "./schemas";
+import { extractJsonArray } from "@/services/subtitle/parser";
 
 /**
  * Determines if an error should trigger a retry attempt.
@@ -111,12 +112,58 @@ export async function generateContentWithLongOutput(
         let text = response.text || "";
         fullText += text;
 
-        // Check if truncated (finishReason)
-        // Note: The Google Gen AI SDK might handle pagination or we might need to loop.
-        // For now, we assume the model output fits or we need to implement continuation if truncated.
-        // The original code didn't have explicit continuation logic visible in the snippet, 
-        // but if it did, it should be here. 
-        // Based on the snippet, it just returns fullText.
+        // Check for truncation (finishReason or JSON parse failure)
+        let attempts = 0;
+        while (attempts < 3) {
+            const candidate = (response as any).candidates?.[0];
+            const finishReason = candidate?.finishReason;
+
+            if (finishReason === 'MAX_TOKENS') {
+                logger.warn(`Gemini response truncated (MAX_TOKENS). Attempt ${attempts + 1}. Fetching continuation...`);
+            } else {
+                try {
+                    // Try to parse the current full text
+                    // We remove markdown code blocks first just in case
+                    const clean = fullText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+                    // Use robust extractor to handle extra brackets/garbage
+                    const extracted = extractJsonArray(clean);
+                    const textToParse = extracted || clean;
+
+                    JSON.parse(textToParse);
+
+                    // If parse succeeds, we are done!
+                    return fullText;
+                } catch (e) {
+                    // Parse failed, likely truncated
+                    logger.warn(`JSON parse failed (attempt ${attempts + 1}). FinishReason: ${finishReason}. Assuming truncation. Fetching more...`);
+                }
+            }
+
+            // Generate continuation
+            // We append the current text to the history (simulated) or just ask for "continue"
+            // But since we are in a single-turn or few-shot, we might need to append the response so far 
+            // and ask to continue.
+
+            messages.push({ role: 'model', parts: [{ text: text }] });
+            messages.push({ role: 'user', parts: [{ text: "The response was truncated. Please continue exactly where you left off." }] });
+
+            response = await generateContentWithRetry(ai, {
+                model: modelName,
+                contents: messages,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: schema,
+                    systemInstruction: systemInstruction,
+                    safetySettings: SAFETY_SETTINGS,
+                    maxOutputTokens: 65536,
+                }
+            });
+
+            text = response.text || "";
+            fullText += text;
+            attempts++;
+        }
 
         return fullText;
 
