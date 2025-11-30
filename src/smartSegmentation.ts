@@ -167,7 +167,7 @@ export class SmartSegmenter {
 
             if (!this.worker) {
                 // Initialize worker
-                this.worker = new Worker(new URL('./vad.worker.ts', import.meta.url), {
+                this.worker = new Worker(new URL('./workers/vad.worker.ts', import.meta.url), {
                     type: 'classic' // Use classic to allow importScripts
                 });
 
