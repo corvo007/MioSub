@@ -17,19 +17,32 @@
 - [x] Delete `src/types.ts`
 
 ## Phase 3: Service Layer Extraction
-- [ ] Create `src/services/` files:
-    - [ ] `gemini.ts` (API interaction)
-    - [ ] `storage.ts` (Local storage)
-    - [ ] `audio.ts` (Audio processing)
-    - [ ] `subtitle.ts` (Subtitle parsing/formatting)
-- [ ] Refactor `src/gemini.ts` into services
-- [ ] Refactor `src/utils.ts` into services/utils
-- [ ] Update consumers to use new services
-
-## Phase 4: Component Extraction
-- [ ] Extract components from `App.tsx`:
-    - [ ] `Header.tsx`
-    - [ ] `Footer.tsx`
+- [x] **Step 1: Create Service Directory Structure**
+    - [x] Create `src/services/` and subdirectories: `api`, `audio`, `subtitle`, `glossary`, `utils`.
+- [x] **Step 2: Extract Logger Utility**
+    - [x] Move `Logger`, `LogLevel`, `LogEntry` to `src/services/utils/logger.ts`.
+    - [x] Update `src/utils.ts` to re-export.
+- [x] **Step 3: Extract Concurrency Utility**
+    - [x] Move `mapInParallel` to `src/services/utils/concurrency.ts`.
+    - [x] Update `src/utils.ts` to re-export.
+- [x] **Step 4: Extract Time Utilities**
+    - [x] Move `formatTime`, `timeToSeconds`, `normalizeTimestamp`, `toAssTime` to `src/services/subtitle/time.ts`.
+    - [x] Update `src/utils.ts` to re-export.
+- [x] **Step 5: Extract Audio Decoder**
+    - [x] Move `decodeAudio` (and `decodeAudioWithRetry` from gemini.ts) to `src/services/audio/decoder.ts`.
+    - [x] Update `src/utils.ts` and `src/gemini.ts`.
+- [x] **Step 6: Extract Audio Converter**
+    - [x] Move `fileToBase64`, `blobToBase64` to `src/services/audio/converter.ts`.
+    - [x] Update `src/utils.ts` to re-export.
+- [ ] **Step 7: Move Audio Segmenter**
+    - [ ] Move `src/smartSegmentation.ts` to `src/services/audio/segmenter.ts`.
+    - [ ] Update imports in `src/gemini.ts`.
+- [x] **Step 8: Extract Subtitle Parser**
+    - [x] Move `parseSrt`, `parseAss`, `extractJsonArray`, `parseGeminiResponse` to `src/services/subtitle/parser.ts`.
+    - [x] Update `src/utils.ts` to re-export.
+- [x] **Step 9: Extract Subtitle Generator**
+    - [x] Move `generateSrtContent`, `generateAssContent` to `src/services/subtitle/generator.ts`.
+    - [x] Update `src/utils.ts` to re-export.
     - [ ] `FileUploader.tsx`
     - [ ] `SubtitleEditor.tsx`
     - [ ] `SettingsPanel.tsx`

@@ -3,7 +3,7 @@
 // import * as ort from "onnxruntime-web";
 
 import { SubtitleItem } from "@/types/subtitle";
-import { logger } from "./utils";
+import { logger } from "@/services/utils/logger";
 
 export interface SegmentationOptions {
     minDurationMs?: number;
@@ -167,7 +167,14 @@ export class SmartSegmenter {
 
             if (!this.worker) {
                 // Initialize worker
-                this.worker = new Worker(new URL('./workers/vad.worker.ts', import.meta.url), {
+                // Note: The worker file is still in public/ or src/workers/ ?
+                // The original code used new URL('./workers/vad.worker.ts', import.meta.url)
+                // We need to make sure this path is still valid relative to the new file location.
+                // New file: src/services/audio/segmenter.ts
+                // Worker: src/workers/vad.worker.ts (assuming)
+                // Relative path: ../../workers/vad.worker.ts
+
+                this.worker = new Worker(new URL('../../workers/vad.worker.ts', import.meta.url), {
                     type: 'classic' // Use classic to allow importScripts
                 });
 

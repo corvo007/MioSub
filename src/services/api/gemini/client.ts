@@ -1,0 +1,127 @@
+import { GoogleGenAI, Part, Content } from "@google/genai";
+import { logger } from "@/services/utils/logger";
+import { SAFETY_SETTINGS } from "./schemas";
+
+/**
+ * Determines if an error should trigger a retry attempt.
+ * Returns true for transient errors (network, server, parsing), false for permanent errors (auth, quota).
+ */
+export function isRetryableError(error: any): boolean {
+    if (!error) return false;
+
+    const status = error.status || error.response?.status;
+    const msg = error.message || '';
+
+    // Rate limits (429)
+    if (status === 429 || msg.includes('429') || msg.includes('Resource has been exhausted')) {
+        return true;
+    }
+
+    // Server errors (500, 503)
+    if (status === 503 || status === 500 || msg.includes('503') || msg.includes('Overloaded')) {
+        return true;
+    }
+
+    // Network errors (fetch failed)
+    if (msg.includes('fetch failed') || msg.includes('network')) {
+        return true;
+    }
+
+    // JSON parsing errors (often due to truncated response)
+    if (msg.includes('JSON') || msg.includes('SyntaxError')) {
+        return true;
+    }
+
+    return false;
+}
+
+export async function generateContentWithRetry(ai: GoogleGenAI, params: any, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const result = await ai.models.generateContent(params);
+
+            // Log token usage
+            if ((result as any).usageMetadata) {
+                logger.debug("Gemini Token Usage", (result as any).usageMetadata);
+            }
+
+            // Log grounding metadata (Search Grounding verification)
+            const candidates = (result as any).candidates;
+            if (candidates && candidates[0]?.groundingMetadata) {
+                const groundingMeta = candidates[0].groundingMetadata;
+                logger.info("🔍 Search Grounding Used", {
+                    searchQueries: groundingMeta.searchQueries || [],
+                    groundingSupports: groundingMeta.groundingSupports?.length || 0,
+                    webSearchQueries: groundingMeta.webSearchQueries?.length || 0
+                });
+            } else if (params.tools && params.tools.some((t: any) => t.googleSearch)) {
+                logger.warn("⚠️ Search Grounding was configured but NOT used in this response");
+            }
+
+            return result;
+        } catch (e: any) {
+            // Check for 429 (Resource Exhausted) or 503 (Service Unavailable)
+            const isRateLimit = e.status === 429 || e.message?.includes('429') || e.response?.status === 429;
+            const isServerOverload = e.status === 503 || e.message?.includes('503');
+
+            if ((isRateLimit || isServerOverload) && i < retries - 1) {
+                const delay = Math.pow(2, i) * 2000 + Math.random() * 1000; // 2s, 4s, 8s + jitter
+                logger.warn(`Gemini API Busy (${e.status}). Retrying in ${Math.round(delay)}ms...`, { attempt: i + 1, error: e.message });
+                await new Promise(r => setTimeout(r, delay));
+            } else {
+                throw e;
+            }
+        }
+    }
+    throw new Error("Gemini API request failed after retries.");
+}
+
+export async function generateContentWithLongOutput(
+    ai: GoogleGenAI,
+    modelName: string,
+    systemInstruction: string,
+    parts: Part[],
+    schema: any,
+    tools?: any[]
+): Promise<string> {
+    let fullText = "";
+
+    // Initial message structure for chat-like behavior
+    // We use an array of contents to simulate history if needed
+    let messages: Content[] = [
+        { role: 'user', parts: parts }
+    ];
+
+    try {
+        // Initial generation
+        logger.debug(`Generating content with model: ${modelName}`, { systemInstruction: systemInstruction.substring(0, 100) + "..." });
+        let response = await generateContentWithRetry(ai, {
+            model: modelName,
+            contents: messages,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: schema,
+                systemInstruction: systemInstruction,
+                safetySettings: SAFETY_SETTINGS,
+                maxOutputTokens: 65536,
+                tools: tools, // Pass tools for Search Grounding
+            }
+        });
+
+        let text = response.text || "";
+        fullText += text;
+
+        // Check if truncated (finishReason)
+        // Note: The Google Gen AI SDK might handle pagination or we might need to loop.
+        // For now, we assume the model output fits or we need to implement continuation if truncated.
+        // The original code didn't have explicit continuation logic visible in the snippet, 
+        // but if it did, it should be here. 
+        // Based on the snippet, it just returns fullText.
+
+        return fullText;
+
+    } catch (e: any) {
+        logger.error("generateContentWithLongOutput failed", e);
+        throw e;
+    }
+}

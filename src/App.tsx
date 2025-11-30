@@ -4,11 +4,19 @@ import { SubtitleItem, SubtitleSnapshot, OutputFormat, BatchOperationMode } from
 import { AppSettings, Genre, GENRE_PRESETS } from '@/types/settings';
 import { GlossaryItem, GlossaryExtractionResult, GlossaryExtractionMetadata } from '@/types/glossary';
 import { GenerationStatus, ChunkStatus } from '@/types/api';
-import { generateSrtContent, generateAssContent, downloadFile, parseSrt, parseAss, decodeAudio, logger, LogEntry } from './utils';
-import { mergeGlossaryResults, createGlossary, migrateFromLegacyGlossary } from './glossaryUtils';
-import { generateSubtitles, runBatchOperation, generateGlossary, retryGlossaryExtraction } from './gemini';
+import { generateSrtContent, generateAssContent } from '@/services/subtitle/generator';
+import { downloadFile } from '@/services/subtitle/downloader';
+import { parseSrt, parseAss } from '@/services/subtitle/parser';
+import { decodeAudio } from '@/services/audio/decoder';
+import { logger, LogEntry } from '@/services/utils/logger';
+import { mergeGlossaryResults } from '@/services/glossary/merger';
+import { createGlossary } from '@/services/glossary/manager';
+import { migrateFromLegacyGlossary } from '@/services/glossary/migrator';
+import { generateSubtitles } from '@/services/api/gemini/subtitle';
+import { runBatchOperation } from '@/services/api/gemini/batch';
+import { generateGlossary, retryGlossaryExtraction } from '@/services/api/gemini/glossary';
 
-import { SmartSegmenter } from './smartSegmentation';
+import { SmartSegmenter } from '@/services/audio/segmenter';
 import { TerminologyChecker, TerminologyIssue } from './terminologyChecker';
 import { GlossaryManager } from './GlossaryManager';
 
