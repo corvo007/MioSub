@@ -1,1 +1,1 @@
-// Modal components will be exported here
+export { SimpleConfirmationModal } from './SimpleConfirmationModal';
