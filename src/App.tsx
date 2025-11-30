@@ -10,11 +10,11 @@ import { parseSrt, parseAss } from '@/services/subtitle/parser';
 import { decodeAudio } from '@/services/audio/decoder';
 import { logger, LogEntry } from '@/services/utils/logger';
 import { mergeGlossaryResults } from '@/services/glossary/merger';
-import { createGlossary } from '@/services/glossary/manager';
+
 import { migrateFromLegacyGlossary } from '@/services/glossary/migrator';
 import { generateSubtitles } from '@/services/api/gemini/subtitle';
 import { runBatchOperation } from '@/services/api/gemini/batch';
-import { generateGlossary, retryGlossaryExtraction } from '@/services/api/gemini/glossary';
+import { retryGlossaryExtraction } from '@/services/api/gemini/glossary';
 
 import { SmartSegmenter } from '@/services/audio/segmenter';
 import { TerminologyChecker, TerminologyIssue } from './terminologyChecker';
@@ -24,7 +24,7 @@ import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
 import { FileUploader } from '@/components/upload/FileUploader';
 import { SubtitleEditor } from '@/components/editor/SubtitleEditor';
 import { SettingsModal, GenreSettingsDialog, CustomSelect } from '@/components/settings';
-import { SimpleConfirmationModal, GlossaryExtractionFailedDialog, GlossaryConfirmationModal } from '@/components/modals';
+import { GlossaryExtractionFailedDialog, GlossaryConfirmationModal } from '@/components/modals';
 import { ToastContainer, TimeTracker, StatusBadge, ProgressOverlay } from '@/components/ui';
 import type { ToastMessage } from '@/components/ui';
 
@@ -473,137 +473,12 @@ export default function App() {
     // --- Render Components ---
 
 
-    const handleGenerateGlossary = async () => {
-        if (subtitles.length === 0) {
-            setError("没有可用的字幕进行分析。");
-            return;
-        }
-        setIsGeneratingGlossary(true);
-        try {
-            const apiKey = settings.geminiKey || ENV_GEMINI_KEY;
-            const terms = await generateGlossary(subtitles, apiKey, settings.genre, (settings.requestTimeout || 600) * 1000);
-
-            // Merge with existing glossary to avoid duplicates
-            const existingTerms = new Set(settings.glossary?.map(g => g.term.toLowerCase()) || []);
-            const newTerms = terms.filter(t => !existingTerms.has(t.term.toLowerCase()));
-
-            const updatedGlossary = [...(settings.glossary || []), ...newTerms];
-            updateSetting('glossary', updatedGlossary);
-
-            if (newTerms.length === 0) {
-                logger.info("未发现新术语。");
-            }
-        } catch (e: any) {
-            logger.error("Glossary generation failed", e);
-            setError(e.message);
-        } finally {
-            setIsGeneratingGlossary(false);
-        }
-    };
-
-    const handleExportGlossary = () => {
-        if (!settings.glossary || settings.glossary.length === 0) return;
-        const content = JSON.stringify(settings.glossary, null, 2);
-        downloadFile('glossary.json', content, 'json');
-    };
-
-    // Confirmation Modal State
-    const [confirmationModal, setConfirmationModal] = useState<{
-        isOpen: boolean;
-        title: string;
-        message: string;
-        onConfirm: () => void;
-        type?: 'info' | 'warning' | 'danger';
-    }>({
-        isOpen: false,
-        title: '',
-        message: '',
-        onConfirm: () => { },
-        type: 'info'
-    });
-
-    const closeConfirmationModal = () => {
-        setConfirmationModal(prev => ({ ...prev, isOpen: false }));
-    };
-
-    const handleImportGlossary = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                try {
-                    const content = ev.target?.result as string;
-                    const parsed = JSON.parse(content);
-                    if (Array.isArray(parsed)) {
-                        // Basic validation
-                        const validItems = parsed.filter(item => item.term && item.translation);
-                        if (validItems.length > 0) {
-                            setConfirmationModal({
-                                isOpen: true,
-                                title: '导入术语表',
-                                message: `导入 ${validItems.length} 个术语？这将合并到现有术语表中。`,
-                                type: 'info',
-                                onConfirm: () => {
-                                    const existingTerms = new Set(settings.glossary?.map(g => g.term.toLowerCase()) || []);
-                                    const newTerms = validItems.filter((t: GlossaryItem) => !existingTerms.has(t.term.toLowerCase()));
-                                    const updatedGlossary = [...(settings.glossary || []), ...newTerms];
-                                    updateSetting('glossary', updatedGlossary);
-                                    addToast(`已导入 ${newTerms.length} 个新术语。`, 'success');
-                                }
-                            });
-                        } else {
-                            addToast("文件中未找到有效的术语表项。", 'warning');
-                        }
-                    } else {
-                        addToast("无效的术语表文件格式。", 'error');
-                    }
-                } catch (err) {
-                    console.error("Failed to parse glossary file", err);
-                    addToast("解析术语表文件失败。", 'error');
-                }
-            };
-            reader.readAsText(file);
-            e.target.value = '';
-        }
-    };
 
 
 
 
-    const LogViewer = () => {
-        if (!showLogs) return null;
-        const logsEndRef = useRef<HTMLDivElement>(null);
 
-        useEffect(() => {
-            logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
-        }, [logs]);
 
-        return (
-            <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl h-[80vh] flex flex-col shadow-2xl animate-fade-in relative overflow-hidden">
-                    <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900/95 backdrop-blur">
-                        <h2 className="text-lg font-bold text-white flex items-center"><FileText className="w-5 h-5 mr-2 text-slate-400" /> Application Logs</h2>
-                        <button onClick={() => setShowLogs(false)} className="text-slate-400 hover:text-white transition-colors"><X className="w-5 h-5" /></button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4 space-y-1 font-mono text-xs custom-scrollbar bg-slate-950">
-                        {logs.map((log, idx) => (
-                            <div key={idx} className={`flex gap-2 ${log.level === 'ERROR' ? 'text-red-400' : log.level === 'WARN' ? 'text-amber-400' : log.level === 'DEBUG' ? 'text-slate-500' : 'text-slate-300'}`}>
-                                <span className="text-slate-600 shrink-0">[{log.timestamp}]</span>
-                                <span className={`font-bold w-12 shrink-0 ${log.level === 'ERROR' ? 'bg-red-500/10' : log.level === 'WARN' ? 'bg-amber-500/10' : ''} text-center rounded`}>{log.level}</span>
-                                <span className="break-all whitespace-pre-wrap">{log.message}</span>
-                                {log.data && <pre className="text-[10px] text-slate-500 overflow-x-auto mt-1 ml-14">{JSON.stringify(log.data, null, 2)}</pre>}
-                            </div>
-                        ))}
-                        <div ref={logsEndRef} />
-                    </div>
-                    <div className="p-3 border-t border-slate-800 bg-slate-900 flex justify-between items-center">
-                        <span className="text-xs text-slate-500">{logs.length} entries</span>
-                        <button onClick={() => { navigator.clipboard.writeText(JSON.stringify(logs, null, 2)); addToast("Logs copied to clipboard", "success"); }} className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded border border-slate-700 transition-colors">Copy to Clipboard</button>
-                    </div>
-                </div>
-            </div>
-        );
-    };
 
 
 
