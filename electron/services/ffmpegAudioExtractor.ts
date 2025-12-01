@@ -28,7 +28,8 @@ export interface AudioExtractionProgress {
 export async function extractAudioFromVideo(
   videoPath: string,
   options: AudioExtractionOptions = {},
-  onProgress?: (progress: AudioExtractionProgress) => void
+  onProgress?: (progress: AudioExtractionProgress) => void,
+  onLog?: (message: string) => void
 ): Promise<string> {
   const {
     format = 'wav',
@@ -53,6 +54,16 @@ export async function extractAudioFromVideo(
     // 根据格式设置比特率
     if (format === 'mp3') {
       command = command.audioBitrate(bitrate);
+    }
+
+    // 监听日志
+    if (onLog) {
+      command.on('start', (commandLine) => {
+        onLog(`FFmpeg Start: ${commandLine}`);
+      });
+      command.on('stderr', (stderrLine) => {
+        onLog(`FFmpeg: ${stderrLine}`);
+      });
     }
 
     // 监听进度

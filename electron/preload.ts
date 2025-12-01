@@ -12,8 +12,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     // New: Local Whisper APIs
     selectWhisperModel: () => ipcRenderer.invoke('select-whisper-model'),
-    updateWhisperConfig: (config: any) => ipcRenderer.invoke('update-whisper-config', config),
-    getWhisperStatus: () => ipcRenderer.invoke('get-whisper-status'),
+    transcribeLocal: (data: { audioData: ArrayBuffer, modelPath: string, language?: string, threads?: number }) =>
+        ipcRenderer.invoke('transcribe-local', data),
 
     // FFmpeg APIs
     extractAudioFFmpeg: (videoPath: string, options?: any) =>
@@ -26,6 +26,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
         ipcRenderer.invoke('get-audio-info', videoPath),
     onAudioExtractionProgress: (callback: (progress: any) => void) => {
         ipcRenderer.on('audio-extraction-progress', (_event, progress) => callback(progress));
+    },
+    onNewLog: (callback: (log: string) => void) => {
+        const subscription = (_event: any, log: string) => callback(log);
+        ipcRenderer.on('new-log', subscription);
+        return () => {
+            ipcRenderer.removeListener('new-log', subscription);
+        };
     },
 
     // Storage

@@ -32,4 +32,6 @@ export interface AppSettings {
     // Local Whisper Settings
     useLocalWhisper?: boolean;      // Whether to use local Whisper
     whisperModelPath?: string;      // Model file path (.bin)
+    whisperThreads?: number;        // Number of threads (default: 4)
+    whisperConcurrency?: number;    // Max concurrent processes (default: 1)
 }

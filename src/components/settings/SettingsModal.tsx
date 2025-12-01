@@ -100,12 +100,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 <button
                                                     onClick={() => {
                                                         updateSetting('useLocalWhisper', false);
-                                                        if (window.electronAPI) {
-                                                            window.electronAPI.updateWhisperConfig({
-                                                                enabled: false,
-                                                                modelPath: settings.whisperModelPath || ''
-                                                            });
-                                                        }
                                                     }}
                                                     className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${!settings.useLocalWhisper ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}
                                                 >
@@ -114,12 +108,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 <button
                                                     onClick={() => {
                                                         updateSetting('useLocalWhisper', true);
-                                                        if (window.electronAPI) {
-                                                            window.electronAPI.updateWhisperConfig({
-                                                                enabled: true,
-                                                                modelPath: settings.whisperModelPath || ''
-                                                            });
-                                                        }
                                                     }}
                                                     className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.useLocalWhisper ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}
                                                 >
@@ -133,21 +121,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                     whisperModelPath={settings.whisperModelPath}
                                                     onToggle={(enabled) => {
                                                         updateSetting('useLocalWhisper', enabled);
-                                                        if (window.electronAPI) {
-                                                            window.electronAPI.updateWhisperConfig({
-                                                                enabled,
-                                                                modelPath: settings.whisperModelPath || ''
-                                                            });
-                                                        }
                                                     }}
                                                     onModelPathChange={(path) => {
                                                         updateSetting('whisperModelPath', path);
-                                                        if (window.electronAPI) {
-                                                            window.electronAPI.updateWhisperConfig({
-                                                                enabled: settings.useLocalWhisper || false,
-                                                                modelPath: path
-                                                            });
-                                                        }
                                                     }}
                                                 />
                                             ) : (
@@ -232,7 +208,66 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                         {activeTab === 'performance' && (
                             <div className="space-y-3 animate-fade-in">
-                                {/* Electron Exclusive: Local Whisper - Moved to General Tab */}
+                                {/* Local Whisper Performance Settings */}
+                                {settings.useLocalWhisper && (
+                                    <div className="bg-indigo-900/20 border border-indigo-500/30 rounded-lg p-4 mb-4">
+                                        <h3 className="text-sm font-semibold text-indigo-300 mb-3 flex items-center">
+                                            <span className="w-2 h-2 rounded-full bg-indigo-400 mr-2"></span>
+                                            本地 Whisper 性能设置
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">CPU 线程数</label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.whisperThreads || ''}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        if (val === '') updateSetting('whisperThreads', undefined); // Set to undefined to trigger defaults
+                                                        else if (/^\d+$/.test(val)) {
+                                                            const num = parseInt(val);
+                                                            if (num > 16) updateSetting('whisperThreads', 16);
+                                                            else updateSetting('whisperThreads', num);
+                                                        }
+                                                    }}
+                                                    onBlur={() => {
+                                                        // Ensure min value on blur if user leaves it empty or invalid
+                                                        if (!settings.whisperThreads || settings.whisperThreads < 1) {
+                                                            updateSetting('whisperThreads', 4);
+                                                        }
+                                                    }}
+                                                    placeholder="4"
+                                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm"
+                                                />
+                                                <p className="text-xs text-slate-500 mt-1">单个任务使用的 CPU 核心数 (1-16)</p>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-1.5">最大并发数</label>
+                                                <input
+                                                    type="text"
+                                                    value={settings.whisperConcurrency || ''}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value;
+                                                        if (val === '') updateSetting('whisperConcurrency', undefined);
+                                                        else if (/^\d+$/.test(val)) {
+                                                            const num = parseInt(val);
+                                                            if (num > 4) updateSetting('whisperConcurrency', 4);
+                                                            else updateSetting('whisperConcurrency', num);
+                                                        }
+                                                    }}
+                                                    onBlur={() => {
+                                                        if (!settings.whisperConcurrency || settings.whisperConcurrency < 1) {
+                                                            updateSetting('whisperConcurrency', 1);
+                                                        }
+                                                    }}
+                                                    placeholder="1"
+                                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm"
+                                                />
+                                                <p className="text-xs text-slate-500 mt-1">同时运行的任务数量 (1-4)</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     <div>
@@ -269,7 +304,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             if (val === '') updateSetting('concurrencyFlash', 0);
                                             else if (/^\d+$/.test(val)) updateSetting('concurrencyFlash', parseInt(val));
                                         }} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                        <p className="text-xs text-slate-500 mt-1">用于 <strong>Gemini 2.5 Flash</strong> (优化和翻译)。支持较高限制 (如 10-20)。</p>
+                                        <p className="text-xs text-slate-500 mt-1">用于 <strong>Gemini 2.5 Flash</strong> (优化和翻译) 和 <strong> Whisper API</strong>。支持较高限制 (如 10-20)。</p>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-slate-300 mb-1.5">并发数 (Pro)</label>
@@ -278,7 +313,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             if (val === '') updateSetting('concurrencyPro', 0);
                                             else if (/^\d+$/.test(val)) updateSetting('concurrencyPro', parseInt(val));
                                         }} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                        <p className="text-xs text-slate-500 mt-1">用于 <strong>Gemini 3 Pro</strong> (术语提取和深度校对)。严格的速率限制 (保持 &lt; 5)。</p>
+                                        <p className="text-xs text-slate-500 mt-1">用于 <strong>Gemini 3 Pro</strong> (术语提取和深度校对)。严格的速率限制。</p>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-slate-300 mb-1.5">请求超时 (秒)</label>

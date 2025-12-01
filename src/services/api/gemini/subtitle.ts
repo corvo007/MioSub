@@ -93,7 +93,9 @@ export const generateSubtitles = async (
     }
 
 
-    const concurrency = settings.concurrencyFlash || 5;
+    const concurrency = settings.useLocalWhisper
+        ? (settings.whisperConcurrency || 1)
+        : (settings.concurrencyFlash || 5);
 
     // --- GLOSSARY EXTRACTION (Parallel) ---
     let glossaryPromise: Promise<GlossaryExtractionResult[]> | null = null;
@@ -207,7 +209,16 @@ export const generateSubtitles = async (
             logger.debug(`[Chunk ${index}] Starting transcription...`);
 
             const wavBlob = await sliceAudioBuffer(audioBuffer, start, end);
-            const rawSegments = await transcribeAudio(wavBlob, openaiKey, settings.transcriptionModel, settings.openaiEndpoint, (settings.requestTimeout || 600) * 1000, settings.useLocalWhisper);
+            const rawSegments = await transcribeAudio(
+                wavBlob,
+                openaiKey,
+                settings.transcriptionModel,
+                settings.openaiEndpoint,
+                (settings.requestTimeout || 600) * 1000,
+                settings.useLocalWhisper,
+                settings.whisperModelPath,
+                settings.whisperThreads
+            );
 
             logger.debug(`[Chunk ${index}] Transcription complete. Segments: ${rawSegments.length}`);
 

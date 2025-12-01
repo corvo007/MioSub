@@ -10,13 +10,18 @@ export const transcribeAudio = async (
     model: string = 'whisper-1',
     endpoint?: string,
     timeout?: number,
-    useLocalWhisper?: boolean
+    useLocalWhisper?: boolean,
+    localModelPath?: string,
+    localThreads?: number
 ): Promise<SubtitleItem[]> => {
     // Try local Whisper
     if (useLocalWhisper && window.electronAPI) {
+        if (!localModelPath) {
+            throw new Error('Local Whisper enabled but no model path provided');
+        }
         try {
             logger.debug('Attempting local whisper');
-            return await transcribeWithLocalWhisper(audioBlob, undefined, timeout);
+            return await transcribeWithLocalWhisper(audioBlob, localModelPath, 'auto', localThreads);
         } catch (error: any) {
             logger.warn('Local failed, fallback to API:', error.message);
 

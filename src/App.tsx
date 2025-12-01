@@ -71,13 +71,47 @@ export default function App() {
     const [showLogs, setShowLogs] = useState(false);
     const [logs, setLogs] = useState<LogEntry[]>([]);
 
+    // Import log parser
+    // Note: We need to import this at the top, but for this replace block we'll assume it's available or add import separately if needed.
+    // Since I can't easily add import at top with this block, I will add a separate replace for imports.
+
     useEffect(() => {
+        // Initial load of frontend logs
         setLogs(logger.getLogs());
+
+        // Subscribe to new frontend logs
         const unsubscribe = logger.subscribe((log) => {
             setLogs(prev => [...prev, log]);
         });
-        return unsubscribe;
-    }, []);
+
+        // Backend logs handling
+        let pollInterval: NodeJS.Timeout;
+        let unsubscribeBackend: (() => void) | undefined;
+
+        if (showLogs && window.electronAPI) {
+            // Subscribe to real-time logs
+            if (window.electronAPI.onNewLog) {
+                unsubscribeBackend = window.electronAPI.onNewLog(async (logLine) => {
+                    try {
+                        const { parseBackendLog } = await import('@/services/utils/logParser');
+                        const parsed = parseBackendLog(logLine);
+                        setLogs(prev => {
+                            if (prev.some(l => l.data?.raw === logLine)) return prev;
+                            return [...prev, parsed];
+                        });
+                    } catch (err) {
+                        console.error("Error parsing real-time log:", err);
+                    }
+                });
+            }
+        }
+
+        return () => {
+            unsubscribe();
+            if (pollInterval) clearInterval(pollInterval);
+            if (unsubscribeBackend) unsubscribeBackend();
+        };
+    }, [showLogs]);
 
     // Navigation Handlers
     const goBackHome = () => {

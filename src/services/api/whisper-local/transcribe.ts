@@ -11,72 +11,54 @@ class WhisperLocalError extends Error {
 
 export const transcribeWithLocalWhisper = async (
     audioBlob: Blob,
-    port: number = 8080,
-    timeout: number = 300000
+    modelPath: string,
+    language: string = 'auto',
+    threads: number = 4,
+    _port: number = 8080, // Deprecated
+    _timeout: number = 300000, // Deprecated (handled by main process if needed)
+    _maxRetries: number = 2 // Deprecated
 ): Promise<SubtitleItem[]> => {
-    logger.info(`Starting local whisper on port ${port}`);
-
-    // Environment check
-    if (!window.electronAPI) {
-        throw new WhisperLocalError('NOT_ELECTRON', '本地 Whisper 仅在桌面应用中可用');
-    }
-
-    // Status check
-    const status = await window.electronAPI.getWhisperStatus();
-    if (status.status !== 'running') {
-        throw new WhisperLocalError('SERVER_NOT_RUNNING', '服务器未运行');
-    }
-
-    // Size check
-    if (audioBlob.size > 100 * 1024 * 1024) {
-        throw new WhisperLocalError('FILE_TOO_LARGE', '文件过大');
-    }
-
-    // Prepare request
-    const formData = new FormData();
-    formData.append('file', audioBlob, 'audio.wav');
-    formData.append('response-format', 'json');
-
-    // Timeout control
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
+    logger.info(`[LocalWhisper] Processing request - blob size: ${(audioBlob.size / 1024 / 1024).toFixed(2)}MB, Threads: ${threads}`);
 
     try {
-        const response = await fetch(`http://localhost:${port}/inference`, {
-            method: 'POST',
-            body: formData,
-            signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-            if (response.status === 400) {
-                throw new WhisperLocalError('INVALID_AUDIO', '音频格式不支持');
-            } else {
-                throw new WhisperLocalError('SERVER_ERROR', `服务器错误 (${response.status})`);
-            }
+        // Environment check
+        if (!window.electronAPI) {
+            throw new WhisperLocalError('NOT_ELECTRON', '本地 Whisper 仅在桌面应用中可用');
         }
 
-        const result = await response.json();
-        logger.debug(`Received ${result.segments?.length || 0} segments`);
+        // Convert Blob to ArrayBuffer
+        const arrayBuffer = await audioBlob.arrayBuffer();
+
+        // Call Electron IPC
+        logger.info(`[LocalWhisper] Sending request to main process. Model: ${modelPath}`);
+        const result = await window.electronAPI.transcribeLocal({
+            audioData: arrayBuffer,
+            modelPath,
+            language,
+            threads
+        });
+
+        if (!result.success) {
+            throw new WhisperLocalError('TRANSCRIPTION_FAILED', result.error || '转录失败');
+        }
+
+        logger.info(`[Success] Received ${result.segments?.length || 0} segments`);
 
         if (!result.segments) return [];
 
-        return result.segments.map((seg: any) => ({
-            start: seg.start,
-            end: seg.end,
-            text: seg.text.trim()
+        return result.segments.map((seg: any, index: number) => ({
+            id: index + 1,
+            startTime: seg.start,
+            endTime: seg.end,
+            original: seg.text.trim(),
+            translated: ''
         }));
 
     } catch (error: any) {
-        clearTimeout(timeoutId);
-
-        if (error.name === 'AbortError') {
-            throw new WhisperLocalError('TIMEOUT', '转录超时');
+        logger.error(`[LocalWhisper] Error: ${error.message}`);
+        if (error instanceof WhisperLocalError) {
+            throw error;
         }
-        if (error instanceof WhisperLocalError) throw error;
-
         throw new WhisperLocalError('UNKNOWN_ERROR', error.message);
     }
 };

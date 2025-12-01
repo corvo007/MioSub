@@ -3,7 +3,7 @@
   "description": "AI-powered subtitle generation tool",
   "author": "Corvo007",
   "private": true,
-  "version": "2.1.1",
+  "version": "2.2.0",
   "type": "module",
   "main": "dist-electron/main.cjs",
   "scripts": {
@@ -11,9 +11,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"cross-env BROWSER=none yarn dev\" \"wait-on http://localhost:3000 && electron -r ts-node/register electron/main.ts\"",
-    "electron:build": "yarn download:whisper && yarn build:main && vite build && electron-builder",
-    "build:main": "vite build -c vite.config.electron.ts",
-    "download:whisper": "node scripts/download-whisper.cjs"
+    "electron:build": "yarn build:main && vite build && electron-builder",
+    "build:main": "vite build -c vite.config.electron.ts"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
@@ -26,17 +25,23 @@
     "onnxruntime-web": "^1.23.2",
     "openai": "^6.9.1",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.17",
     "@types/fluent-ffmpeg": "^2.1.28",
     "@types/node": "^22.14.0",
+    "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^5.0.0",
     "adm-zip": "^0.5.16",
+    "autoprefixer": "^10.4.22",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "electron": "^39.2.4",
     "electron-builder": "^26.0.12",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.17",
     "ts-node": "^10.9.2",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
@@ -61,22 +66,7 @@
       "node_modules/@ffmpeg-installer/**/*",
       "node_modules/@ffprobe-installer/**/*"
     ],
-    "extraResources": [
-      {
-        "from": "resources/whisper-server.exe",
-        "to": "whisper-server.exe",
-        "filter": [
-          "**/*"
-        ]
-      },
-      {
-        "from": "resources/whisper-server",
-        "to": "whisper-server",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ],
+    "extraResources": [],
     "nsis": {
       "artifactName": "Gemini-Subtitle-Pro-Setup-${version}.${ext}",
       "oneClick": false,
@@ -86,16 +76,43 @@
       "artifactName": "Gemini-Subtitle-Pro-${version}.${ext}"
     },
     "mac": {
-      "target": "dmg"
+      "target": "dmg",
+      "extraResources": [
+        {
+          "from": "resources/whisper-cli",
+          "to": "whisper-cli",
+          "filter": [
+            "**/*"
+          ]
+        }
+      ]
     },
     "win": {
       "target": [
         "nsis",
         "portable"
+      ],
+      "extraResources": [
+        {
+          "from": "resources/whisper-cli.exe",
+          "to": "whisper-cli.exe",
+          "filter": [
+            "**/*"
+          ]
+        }
       ]
     },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
+      "extraResources": [
+        {
+          "from": "resources/whisper-cli",
+          "to": "whisper-cli",
+          "filter": [
+            "**/*"
+          ]
+        }
+      ]
     }
   }
 }

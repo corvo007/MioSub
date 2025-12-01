@@ -27,8 +27,11 @@ export interface ElectronAPI {
         path?: string;
     }>;
     selectWhisperModel: () => Promise<string | null>;
-    updateWhisperConfig: (config: { enabled: boolean; modelPath: string }) => Promise<{ status: string }>;
-    getWhisperStatus: () => Promise<{ status: string; port?: number; message?: string }>;
+    transcribeLocal: (data: { audioData: ArrayBuffer, modelPath: string, language?: string, threads?: number }) => Promise<{
+        success: boolean;
+        segments?: { start: string; end: string; text: string }[];
+        error?: string;
+    }>;
 
     // FFmpeg 新增方法
     extractAudioFFmpeg: (videoPath: string, options?: AudioExtractionOptions) => Promise<{
@@ -44,6 +47,7 @@ export interface ElectronAPI {
         error?: string;
     }>;
     onAudioExtractionProgress: (callback: (progress: AudioExtractionProgress) => void) => void;
+    onNewLog: (callback: (log: string) => void) => () => void;
 
     // Storage
     storage: {
