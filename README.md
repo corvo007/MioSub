@@ -9,7 +9,7 @@
 ## ✨ 功能特性
 
 ### 核心 AI 功能
-- **🤖 AI 转写**: 使用 OpenAI Whisper (通过 API) 转写视频/音频
+- **🤖 AI 转写**: 支持 **OpenAI Whisper API** (在线) 或 **Local Whisper** (离线，基于 whisper.cpp) 转写视频/音频
 - **🌍 智能翻译**: 使用 Gemini 2.5 Flash 将字幕翻译为简体中文
 - **🧐 深度校对**: 使用 Gemini 2.5 Flash 或 Gemini 3.0 Pro 润色和校正字幕，确保措辞自然准确
 - **🎯 智能分割**: 使用 Silero VAD 进行智能音频分割，优化字幕时间轴
@@ -88,6 +88,30 @@
    npm run electron:build
    ```
    打包完成后，您可以在 `release` 目录下找到安装程序 (`Setup.exe`) 和单文件便携版 (`.exe`)。
+
+## 🎙️ 本地 Whisper 配置 (可选)
+
+本项目支持使用 [whisper.cpp](https://github.com/ggerganov/whisper.cpp) 在本地进行离线转录，无需消耗 API 额度，且保护隐私。
+
+### 自动配置 (默认)
+
+运行 `npm run electron:build` 时，构建脚本会自动下载 `whisper.cpp` (v1.7.1 CPU版) 的核心组件并配置到应用中。您无需进行任何额外操作。
+
+### 手动配置 (GPU 加速 / 自定义版本)
+
+如果您希望使用 **GPU 加速** (如 NVIDIA CUDA) 或其他特定版本的 `whisper.cpp`，请按照以下步骤手动配置：
+
+1.  访问 [whisper.cpp Releases](https://github.com/ggerganov/whisper.cpp/releases)。
+2.  下载适合您硬件的 Windows 版本压缩包 (例如 `whisper-cublas-bin-x64.zip` 用于 NVIDIA 显卡加速)。
+3.  解压压缩包中的**所有文件** (包括 `.dll` 动态链接库)。
+4.  找到 `server.exe`，将其重命名为 `whisper-server.exe`。
+5.  将所有解压出的文件 (含重命名后的 `whisper-server.exe` 和所有 `.dll`) 放入项目的 `resources` 文件夹中，覆盖已有文件。
+
+> **注意**: GPU 加速版本必须包含对应的 `.dll` 文件 (如 `cublas64_12.dll` 等)，否则将无法启动或回退到 CPU 模式。
+
+### 模型下载
+
+请从 [Hugging Face](https://huggingface.co/ggerganov/whisper.cpp) 下载 **GGML 格式** (`.bin`) 的模型文件。推荐使用 `base` 或 `small` 模型以获得速度与精度的平衡。
 
 ## ⚙️ 配置说明
 

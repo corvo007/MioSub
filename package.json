@@ -13,7 +13,7 @@
     "electron:dev": "concurrently -k \"cross-env BROWSER=none yarn dev\" \"wait-on http://localhost:3000 && electron -r ts-node/register electron/main.ts\"",
     "electron:build": "yarn download:whisper && yarn build:main && vite build && electron-builder",
     "build:main": "vite build -c vite.config.electron.ts",
-    "download:whisper": "node scripts/download-whisper.js"
+    "download:whisper": "node scripts/download-whisper.cjs"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
