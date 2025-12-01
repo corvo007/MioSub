@@ -51,7 +51,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
                 onClick={() => setEditingCommentId(sub.id)}
                 className={`p-1.5 rounded hover:bg-slate-700 transition-colors ${sub.comment ? 'text-amber-400' : 'text-slate-600 opacity-0 group-hover/row:opacity-100'
                     }`}
-                title="添加评论/修改"
+                title="添加评论"
             >
                 <MessageCircle className="w-4 h-4" />
             </button>

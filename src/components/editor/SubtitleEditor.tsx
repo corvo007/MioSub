@@ -58,7 +58,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(({
                 </div>
                 <p className="font-medium">暂无生成字幕</p>
                 <p className="text-sm mt-2 max-w-xs text-center opacity-70">
-                    {activeTab === 'new' ? '上传媒体文件以开始。' : '导入 SRT/ASS 文件以开始编辑。'}
+                    {activeTab === 'new' ? '上传媒体文件开始生成。' : '导入 SRT/ASS 文件开始编辑。'}
                 </p>
             </div>
         );

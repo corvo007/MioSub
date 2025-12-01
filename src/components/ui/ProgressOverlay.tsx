@@ -52,7 +52,7 @@ export const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xl font-bold text-white flex items-center">
                         {status === GenerationStatus.PROOFREADING ? <Sparkles className="w-5 h-5 mr-2 text-purple-400 animate-pulse" /> : <Loader2 className="w-5 h-5 mr-2 text-blue-400 animate-spin" />}
-                        {status === GenerationStatus.PROOFREADING ? '批量处理中...' : '正在生成字幕...'}
+                        {status === GenerationStatus.PROOFREADING ? '批量校对中...' : '正在生成字幕...'}
                     </h3>
                     <span className="text-2xl font-mono font-bold text-slate-200">{percent}%</span>
                 </div>
@@ -67,7 +67,7 @@ export const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
                 )}
 
                 <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar bg-slate-950/50 p-4 rounded-lg border border-slate-800">
-                    {chunks.length === 0 && <div className="text-center text-slate-500 py-8">正在初始化...</div>}
+                    {chunks.length === 0 && <div className="text-center text-slate-500 py-8">准备中...</div>}
                     {chunks.map(chunk => (
                         <div key={chunk.id} className="flex items-center justify-between bg-slate-800/80 p-3 rounded-lg border border-slate-700/50 hover:border-slate-600 transition-colors">
                             <div className="flex items-center space-x-3 min-w-[120px]">
@@ -75,9 +75,9 @@ export const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
                                 <span className="text-slate-300 text-sm font-medium">
                                     {typeof chunk.id === 'number'
                                         ? `片段 ${chunk.id}`
-                                        : chunk.id === 'decoding' ? '解码'
-                                            : chunk.id === 'segmenting' ? '分割'
-                                                : chunk.id === 'glossary' ? '术语表'
+                                        : chunk.id === 'decoding' ? '解码音频'
+                                            : chunk.id === 'segmenting' ? '分段处理'
+                                                : chunk.id === 'glossary' ? '提取术语'
                                                     : chunk.id}
                                 </span>
                             </div>

@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     readAudioFile: (filePath: string) => ipcRenderer.invoke('read-audio-file', filePath),
     saveSubtitleDialog: (defaultName: string, content: string, format: 'srt' | 'ass') =>
         ipcRenderer.invoke('save-subtitle-dialog', defaultName, content, format),
+    saveLogsDialog: (content: string) =>
+        ipcRenderer.invoke('save-logs-dialog', content),
 
     // New: Local Whisper APIs
     selectWhisperModel: () => ipcRenderer.invoke('select-whisper-model'),

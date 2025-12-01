@@ -29,13 +29,13 @@ export const transcribeAudio = async (
                 // Show fallback toast
                 if (typeof window !== 'undefined' && (window as any).showToast) {
                     (window as any).showToast(
-                        `本地转录失败，切换到在线 API`,
+                        `本地转录失败，已切换到在线 API`,
                         'warning'
                     );
                 }
                 logger.info('Falling back to API');
             } else {
-                throw new Error(`本地转录失败: ${error.message}`);
+                throw new Error(`本地转录失败：${error.message}`);
             }
         }
     }

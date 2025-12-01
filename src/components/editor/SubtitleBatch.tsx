@@ -55,7 +55,7 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(({
                         type="text"
                         value={batchComment}
                         onChange={(e) => updateBatchComment(chunkIdx, e.target.value)}
-                        placeholder="添加针对此片段的说明..."
+                        placeholder="添加说明或注释..."
                         className="w-full bg-slate-900/50 border border-slate-700/50 rounded px-2 py-1 text-xs text-amber-200 placeholder-slate-600 focus:border-amber-500/50 focus:outline-none"
                     />
                 </div>

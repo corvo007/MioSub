@@ -120,8 +120,8 @@ export const useWorkspaceLogic = ({
 
             if (activeTab === 'new' && subtitles.length > 0 && status === GenerationStatus.COMPLETED) {
                 showConfirm(
-                    "替换文件",
-                    "这将替换当前文件，可能需要重新生成。继续吗？",
+                    "确认替换文件",
+                    "替换文件后将清空当前字幕，需重新生成。是否继续？",
                     () => {
                         setSubtitles([]); setStatus(GenerationStatus.IDLE); snapshotsValues.setSnapshots([]); setBatchComments({});
                         processFile();
@@ -154,7 +154,7 @@ export const useWorkspaceLogic = ({
                 snapshotsValues.createSnapshot("初始导入", parsed, {});
             } catch (error: any) {
                 logger.error("Failed to parse subtitle", error);
-                setError(`解析字幕失败: ${error.message}`);
+                setError(`字幕解析失败: ${error.message}`);
                 setStatus(GenerationStatus.ERROR);
             }
         }
@@ -163,7 +163,7 @@ export const useWorkspaceLogic = ({
     const handleGenerate = React.useCallback(async () => {
         if (!file) { setError("请先上传媒体文件。"); return; }
         if ((!settings.geminiKey && !ENV_GEMINI_KEY) || (!settings.openaiKey && !ENV_OPENAI_KEY)) {
-            setError("缺少 API 密钥。请在设置中配置。"); setShowSettings(true); return;
+            setError("API 密钥未配置，请在设置中添加。"); setShowSettings(true); return;
         }
         setStatus(GenerationStatus.UPLOADING); setError(null); setSubtitles([]); snapshotsValues.setSnapshots([]); setBatchComments({}); setSelectedBatches(new Set()); setChunkProgress({}); setStartTime(Date.now());
         logger.info("Starting subtitle generation", { file: file.name, duration, settings: { ...settings, geminiKey: '***', openaiKey: '***' } });
@@ -275,7 +275,7 @@ export const useWorkspaceLogic = ({
             setStatus(GenerationStatus.ERROR);
             setError(err.message);
             logger.error("Subtitle generation failed", err);
-            addToast(`生成失败: ${err.message}`, "error");
+            addToast(`生成失败：${err.message}`, "error");
         }
     }, [file, settings, duration, glossaryFlow, snapshotsValues, updateSetting, addToast, setShowSettings]);
 
@@ -283,7 +283,7 @@ export const useWorkspaceLogic = ({
         const indices: number[] = singleIndex !== undefined ? [singleIndex] : Array.from(selectedBatches) as number[];
         if (indices.length === 0) return;
         if (!settings.geminiKey && !ENV_GEMINI_KEY) { setError("缺少 API 密钥。"); return; }
-        if (mode === 'fix_timestamps' && !file) { setError("没有源媒体文件无法修复时间轴。"); return; }
+        if (mode === 'fix_timestamps' && !file) { setError("修复时间轴需要源视频或音频文件。"); return; }
         setStatus(GenerationStatus.PROOFREADING); setError(null); setChunkProgress({}); setStartTime(Date.now());
         logger.info(`Starting batch action: ${mode}`, { indices, mode });
         try {
@@ -294,12 +294,12 @@ export const useWorkspaceLogic = ({
             const actionName = mode === 'fix_timestamps' ? '修复时间轴' : '校对';
             snapshotsValues.createSnapshot(`${actionName} (${indices.length} 个片段)`, refined);
             logger.info(`Batch action ${mode} completed`);
-            addToast(`批量操作 '${actionName}' 成功完成！`, "success");
+            addToast(`批量操作 '${actionName}' 完成！`, "success");
         } catch (err: any) {
             setStatus(GenerationStatus.ERROR);
             setError(`操作失败: ${err.message}`);
             logger.error(`Batch action ${mode} failed`, err);
-            addToast(`批量操作失败: ${err.message}`, "error");
+            addToast(`操作失败：${err.message}`, "error");
         }
     }, [file, subtitles, selectedBatches, settings, batchComments, snapshotsValues, addToast]);
 

@@ -82,6 +82,13 @@ export default function App() {
         // Subscribe to new frontend logs
         const unsubscribe = logger.subscribe((log) => {
             setLogs(prev => [...prev, log]);
+
+            // Auto-toast for errors
+            if (log.level === 'ERROR') {
+                // Avoid duplicate toasts if the error message is already in a toast
+                // This is a simple heuristic; might need refinement
+                addToast(log.message, 'error', 5000);
+            }
         });
 
         // Backend logs handling

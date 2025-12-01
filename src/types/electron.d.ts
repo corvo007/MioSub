@@ -26,6 +26,12 @@ export interface ElectronAPI {
         success: boolean;
         path?: string;
     }>;
+    saveLogsDialog: (content: string) => Promise<{
+        success: boolean;
+        filePath?: string;
+        error?: string;
+        canceled?: boolean;
+    }>;
     selectWhisperModel: () => Promise<string | null>;
     transcribeLocal: (data: { audioData: ArrayBuffer, modelPath: string, language?: string, threads?: number }) => Promise<{
         success: boolean;

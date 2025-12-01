@@ -12,7 +12,8 @@ interface FileUploaderProps {
     uploadTitle: React.ReactNode;
     uploadDescription?: React.ReactNode;
     heightClass?: string;
-    activeTab?: string; // Used for specific styling logic if needed, or we can pass heightClass
+    activeTab?: string;
+    error?: boolean;
 }
 
 export const FileUploader: React.FC<FileUploaderProps> = ({
@@ -25,7 +26,8 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
     icon,
     uploadTitle,
     uploadDescription,
-    heightClass = 'h-32'
+    heightClass = 'h-32',
+    error = false
 }) => {
     if (hasFile) {
         return (
@@ -62,7 +64,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
 
     return (
         <label
-            className={`flex flex-col items-center justify-center w-full border-2 border-dashed border-slate-700 rounded-lg bg-slate-800/30 hover:bg-slate-800/50 hover:border-indigo-500/50 cursor-pointer transition-all group ${heightClass} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg bg-slate-800/30 hover:bg-slate-800/50 cursor-pointer transition-all group ${heightClass} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${error ? 'border-red-500/50 hover:border-red-500' : 'border-slate-700 hover:border-indigo-500/50'}`}
         >
             <div className="flex flex-col items-center justify-center py-4">
                 <div className="mb-2 group-hover:scale-110 transition-transform">

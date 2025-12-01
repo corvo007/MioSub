@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, FileText } from 'lucide-react';
+import { X, FileText, Download } from 'lucide-react';
 import type { LogEntry } from '@/services/utils/logger';
 
 interface LogViewerModalProps {
@@ -18,6 +18,46 @@ export const LogViewerModal: React.FC<LogViewerModalProps> = ({
 }) => {
     if (!isOpen) return null;
 
+    const handleExportLogs = async () => {
+        if (logs.length === 0) {
+            return;
+        }
+
+        // Format logs as text
+        const logText = logs.map(log => {
+            let line = `[${log.timestamp}] [${log.level}] ${log.message}`;
+            if (log.data) {
+                line += `\nData: ${JSON.stringify(log.data, null, 2)}`;
+            }
+            return line;
+        }).join('\n\n');
+
+        // Use Electron IPC if available (Desktop App)
+        if (window.electronAPI?.saveLogsDialog) {
+            try {
+                const result = await window.electronAPI.saveLogsDialog(logText);
+                if (result.success) {
+                    console.log('Logs exported to:', result.filePath);
+                } else if (!result.canceled) {
+                    console.error('Failed to export logs:', result.error);
+                }
+            } catch (error) {
+                console.error('Export logs error:', error);
+            }
+        } else {
+            // Fallback to browser download (Web App)
+            const blob = new Blob([logText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `gemini-subtitle-pro-logs-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+    };
+
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl animate-fade-in relative">
@@ -25,9 +65,20 @@ export const LogViewerModal: React.FC<LogViewerModalProps> = ({
                     <h2 className="text-xl font-bold text-white flex items-center">
                         <FileText className="w-5 h-5 mr-2 text-blue-400" /> 应用日志
                     </h2>
-                    <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
-                        <X className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleExportLogs}
+                            disabled={logs.length === 0}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 hover:text-blue-300 border border-blue-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="导出日志"
+                        >
+                            <Download className="w-4 h-4" />
+                            <span className="text-sm font-medium">导出</span>
+                        </button>
+                        <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
                     {logs.length === 0 ? (

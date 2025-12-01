@@ -184,7 +184,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                             确认术语表
                         </h3>
                         <p className="text-slate-400 text-sm mt-1">
-                            在翻译前检查提取的术语。
+                            提取完成，请选择要应用的术语。
                         </p>
                     </div>
                     <div className="flex items-center gap-4">
@@ -212,7 +212,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                         <div key={idx} className="bg-slate-800/50 border border-amber-500/20 rounded-xl p-4">
                                             <div className="flex items-center justify-between mb-3">
                                                 <span className="font-bold text-white text-lg">{conflict.term}</span>
-                                                <span className="text-xs text-amber-500 bg-amber-500/10 px-2 py-1 rounded-full border border-amber-500/20">多个翻译</span>
+                                                <span className="text-xs text-amber-500 bg-amber-500/10 px-2 py-1 rounded-full border border-amber-500/20">存在多个版本</span>
                                             </div>
                                             <div className="space-y-2">
                                                 {/* N: New Options */}
@@ -302,7 +302,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                                             <div className="flex items-center gap-2">
                                                                 <Edit2 className="w-4 h-4 text-emerald-400" />
                                                                 <span className={customValue ? "text-white font-medium" : "text-slate-400 italic text-sm"}>
-                                                                    {customValue ? customValue.translation : "编写自定义翻译..."}
+                                                                    {customValue ? customValue.translation : "自定义翻译..."}
                                                                 </span>
                                                             </div>
                                                             {customValue && (
@@ -333,7 +333,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                                     >
                                                         <div className="flex items-center gap-2">
                                                             <X className="w-4 h-4" />
-                                                            <span>丢弃术语</span>
+                                                            <span>不使用此术语</span>
                                                         </div>
                                                     </div>
                                                 )}

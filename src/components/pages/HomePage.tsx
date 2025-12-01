@@ -32,11 +32,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
                         <button onClick={onStartNew} className="group relative bg-slate-900 border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-800/50 rounded-3xl p-8 transition-all duration-300 shadow-2xl flex flex-col items-center text-center cursor-pointer">
                             <div className="w-20 h-20 bg-slate-800 group-hover:bg-indigo-500/20 rounded-2xl flex items-center justify-center mb-6 transition-colors"><FileVideo className="w-10 h-10 text-indigo-400 group-hover:scale-110 transition-transform" /></div>
-                            <h2 className="text-2xl font-bold text-white mb-3">新建项目</h2><p className="text-slate-400 leading-relaxed">使用 Whisper 和 Gemini 从视频/音频转录并翻译。</p>
+                            <h2 className="text-2xl font-bold text-white mb-3">新建项目</h2><p className="text-slate-400 leading-relaxed">使用 Whisper 识别语音，通过 Gemini AI 翻译字幕。</p>
                         </button>
                         <button onClick={onStartImport} className="group relative bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-800/50 rounded-3xl p-8 transition-all duration-300 shadow-2xl flex flex-col items-center text-center cursor-pointer">
                             <div className="w-20 h-20 bg-slate-800 group-hover:bg-emerald-500/20 rounded-2xl flex items-center justify-center mb-6 transition-colors"><FileText className="w-10 h-10 text-emerald-400 group-hover:scale-110 transition-transform" /></div>
-                            <h2 className="text-2xl font-bold text-white mb-3">打开字幕</h2><p className="text-slate-400 leading-relaxed mb-4">导入现有的 .SRT 或 .ASS 文件以修复时间轴、校对或重新翻译。</p>
+                            <h2 className="text-2xl font-bold text-white mb-3">打开字幕</h2><p className="text-slate-400 leading-relaxed mb-4">导入现有字幕文件，优化时间轴、校对译文或重新翻译。</p>
                             <div className="flex flex-wrap gap-2 justify-center mt-2"><span className="text-xs px-2 py-1 bg-slate-800 rounded border border-slate-700 text-slate-500">编辑文本</span><span className="text-xs px-2 py-1 bg-slate-800 rounded border border-slate-700 text-slate-500">+ 视频参考</span></div>
                         </button>
                     </div>

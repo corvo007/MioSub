@@ -133,6 +133,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                                     uploadTitle={activeTab === 'new' ? "上传视频 / 音频" : "附加媒体 (可选)"}
                                     uploadDescription={activeTab === 'new' ? "开始转录" : undefined}
                                     heightClass={activeTab === 'new' ? 'h-32' : 'h-20'}
+                                    error={!!error && !file}
                                 />
                             )}
                             {activeTab === 'import' && (
@@ -146,6 +147,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                                             icon={<FileText className="text-emerald-500 group-hover:text-emerald-400" />}
                                             uploadTitle="导入 .SRT / .ASS"
                                             heightClass="h-24"
+                                            error={!!error && activeTab === 'import'}
                                         />
                                     ) : (
                                         <FileUploader
@@ -157,6 +159,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                                             uploadTitle=""
                                         />
                                     )}
+                                    <div className="mt-2 text-xs text-amber-300 bg-amber-500/10 px-3 py-2 rounded-lg border border-amber-500/30">
+                                        <span className="font-medium">💡 提示：</span>仅完全支持本程序生成的字幕格式，外部字幕可能无法正确识别其结构
+                                    </div>
                                 </div>
                             )}
                             <div className="flex flex-col space-y-3 text-xs text-slate-400 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
@@ -211,7 +216,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                                     <button onClick={() => onDownload('srt')} className="flex flex-col items-center justify-center p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-lg transition-all"><span className="font-bold text-slate-200 text-sm">.SRT</span></button>
                                     <button onClick={() => onDownload('ass')} className="flex flex-col items-center justify-center p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-lg transition-all"><span className="font-bold text-slate-200 text-sm">.ASS</span></button>
                                 </div>
-                                <div className="mt-3 text-[12px] text-center text-slate-500">模式: {settings.outputMode === 'bilingual' ? '双语' : '仅翻译'}</div>
+                                <div className="mt-3 text-[12px] text-center text-slate-500">输出模式: {settings.outputMode === 'bilingual' ? '双语字幕' : '仅译文'}</div>
                             </div>
                         )}
                     </div>

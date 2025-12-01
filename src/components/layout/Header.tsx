@@ -22,7 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <h1 className="text-2xl font-bold text-white tracking-tight">
                         <span className="text-indigo-400">Gemini</span> Subtitle Pro
                     </h1>
-                    <p className="text-sm text-slate-400">AI 驱动的字幕创建与本地化</p>
+                    <p className="text-sm text-slate-400">AI 字幕生成与翻译工具</p>
                 </div>
             </div>
             <div className="flex space-x-2">

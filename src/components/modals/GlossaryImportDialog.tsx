@@ -143,7 +143,7 @@ export const GlossaryImportDialog: React.FC<GlossaryImportDialogProps> = ({
                                         </div>
 
                                         <div className="bg-slate-950/50 rounded-lg p-3 border border-slate-800">
-                                            <label className="block text-xs text-slate-400 mb-2">冲突处理 (当术语已存在时)</label>
+                                            <label className="block text-xs text-slate-400 mb-2">冲突处理（当术语已存在）</label>
                                             <div className="flex space-x-4">
                                                 <label className="flex items-center space-x-2 cursor-pointer">
                                                     <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${conflictMode === 'skip' ? 'border-indigo-500' : 'border-slate-500'}`}>
@@ -155,7 +155,7 @@ export const GlossaryImportDialog: React.FC<GlossaryImportDialogProps> = ({
                                                     <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${conflictMode === 'overwrite' ? 'border-indigo-500' : 'border-slate-500'}`}>
                                                         {conflictMode === 'overwrite' && <div className="w-2 h-2 rounded-full bg-indigo-500" />}
                                                     </div>
-                                                    <span className="text-sm text-slate-300">覆盖 (使用新值)</span>
+                                                    <span className="text-sm text-slate-300">覆盖（使用新值）</span>
                                                 </label>
                                             </div>
                                         </div>

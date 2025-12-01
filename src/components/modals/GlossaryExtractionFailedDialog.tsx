@@ -30,7 +30,7 @@ export const GlossaryExtractionFailedDialog: React.FC<GlossaryExtractionFailedDi
                     </div>
                     <h3 className="text-xl font-bold text-white">术语提取失败</h3>
                     <p className="text-slate-400 text-sm">
-                        无法从音频中提取术语。这可能是由于 API 错误或音频不清晰。
+                        无法从音频中提取术语，可能是网络问题或音频质量不佳。
                     </p>
                     <div className="flex flex-col space-y-2 pt-4">
                         <button onClick={onRetry} disabled={isGeneratingGlossary} className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center">

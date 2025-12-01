@@ -62,10 +62,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         {/* Gemini */}
                                         <div>
                                             <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini API 密钥</label>
-                                            <div className="relative"><input type="password" value={settings.geminiKey} onChange={(e) => updateSetting('geminiKey', e.target.value.trim())} placeholder="输入 Gemini API 密钥" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
-                                            <p className="text-xs text-slate-500 mt-1">必填。使用 <strong>Gemini 2.5 Flash</strong> 进行翻译，使用 <strong>Gemini 3 Pro</strong> 进行术语提取和深度校对。</p>
-                                            {envGeminiKey && !settings.geminiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> 使用环境变量中的 API 密钥</p>)}
-                                            {envGeminiKey && settings.geminiKey && (<p className="text-xs text-amber-400 mt-1">覆盖环境变量中的 API 密钥</p>)}
+                                            <div className="relative"><input type="password" value={settings.geminiKey} onChange={(e) => updateSetting('geminiKey', e.target.value.trim())} placeholder="请输入 Gemini API 密钥" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
+                                            <p className="text-xs text-slate-500 mt-1">翻译使用 <strong>Gemini 2.5 Flash</strong>，术语提取和深度校对使用 <strong>Gemini 3 Pro</strong>。</p>
+                                            {envGeminiKey && !settings.geminiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> 正在使用环境变量配置的密钥</p>)}
+                                            {envGeminiKey && settings.geminiKey && (<p className="text-xs text-amber-400 mt-1">已覆盖环境变量中的默认密钥</p>)}
                                         </div>
                                         <div>
                                             <label className="block text-sm font-medium text-slate-300 mb-1.5">Gemini 端点 (可选)</label>
@@ -85,14 +85,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                     重置
                                                 </button>
                                             </div>
-                                            <p className="text-xs text-slate-500 mt-1">Gemini API 的自定义基础 URL (例如用于代理)。</p>
+                                            <p className="text-xs text-slate-500 mt-1">自定义 API 端点，支持使用代理或第三方网关。</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Transcription Provider Settings */}
                                 <div className="space-y-3 pt-4 border-t border-slate-800">
-                                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">转录服务</h3>
+                                    <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">语音识别</h3>
 
                                     {isElectron ? (
                                         <div className="space-y-4">
@@ -131,9 +131,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                     <div>
                                                         <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI API 密钥</label>
                                                         <div className="relative"><input type="password" value={settings.openaiKey} onChange={(e) => updateSetting('openaiKey', e.target.value.trim())} placeholder="输入 OpenAI API 密钥" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
-                                                        <p className="text-xs text-slate-500 mt-1">必填。使用 <strong>Whisper</strong> 模型进行高精度基础转录。</p>
-                                                        {envOpenaiKey && !settings.openaiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> 使用环境变量中的 API 密钥</p>)}
-                                                        {envOpenaiKey && settings.openaiKey && (<p className="text-xs text-amber-400 mt-1">覆盖环境变量中的 API 密钥</p>)}
+                                                        <p className="text-xs text-slate-500 mt-1">使用 OpenAI 的 <strong>Whisper</strong> 模型进行高精度语音转文字。</p>
+                                                        {envOpenaiKey && !settings.openaiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> 正在使用环境变量配置的密钥</p>)}
+                                                        {envOpenaiKey && settings.openaiKey && (<p className="text-xs text-amber-400 mt-1">已覆盖环境变量中的默认密钥</p>)}
                                                     </div>
                                                     <div>
                                                         <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI 端点 (可选)</label>
@@ -153,7 +153,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                                 重置
                                                             </button>
                                                         </div>
-                                                        <p className="text-xs text-slate-500 mt-1">OpenAI API 的自定义基础 URL (例如用于本地 LLM 或代理)。</p>
+                                                        <p className="text-xs text-slate-500 mt-1">自定义 API 端点，支持使用本地模型、代理或第三方网关。</p>
                                                     </div>
                                                 </div>
                                             )}
@@ -163,9 +163,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             <div>
                                                 <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI API 密钥</label>
                                                 <div className="relative"><input type="password" value={settings.openaiKey} onChange={(e) => updateSetting('openaiKey', e.target.value.trim())} placeholder="输入 OpenAI API 密钥" className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm" /></div>
-                                                <p className="text-xs text-slate-500 mt-1">必填。使用 <strong>Whisper</strong> 模型进行高精度基础转录。</p>
-                                                {envOpenaiKey && !settings.openaiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> 使用环境变量中的 API 密钥</p>)}
-                                                {envOpenaiKey && settings.openaiKey && (<p className="text-xs text-amber-400 mt-1">覆盖环境变量中的 API 密钥</p>)}
+                                                <p className="text-xs text-slate-500 mt-1">使用 OpenAI 的 <strong>Whisper</strong> 模型进行高精度语音转文字。</p>
+                                                {envOpenaiKey && !settings.openaiKey && (<p className="text-xs text-emerald-400 mt-1 flex items-center"><CheckCircle className="w-3 h-3 mr-1" /> 正在使用环境变量配置的密钥</p>)}
+                                                {envOpenaiKey && settings.openaiKey && (<p className="text-xs text-amber-400 mt-1">已覆盖环境变量中的默认密钥</p>)}
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-slate-300 mb-1.5">OpenAI 端点 (可选)</label>
@@ -185,7 +185,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                         重置
                                                     </button>
                                                 </div>
-                                                <p className="text-xs text-slate-500 mt-1">OpenAI API 的自定义基础 URL (例如用于本地 LLM 或代理)。</p>
+                                                <p className="text-xs text-slate-500 mt-1">自定义 API 端点，支持使用本地模型、代理或第三方网关。</p>
                                             </div>
                                         </div>
                                     )}
@@ -197,10 +197,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     <div>
                                         <label className="block text-sm font-medium text-slate-300 mb-1.5">导出模式</label>
                                         <div className="grid grid-cols-2 gap-3">
-                                            <button onClick={() => updateSetting('outputMode', 'bilingual')} className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'bilingual' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}><Languages className="w-4 h-4" /><span>双语 (原文 + 中文)</span></button>
-                                            <button onClick={() => updateSetting('outputMode', 'target_only')} className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'target_only' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}><Type className="w-4 h-4" /><span>仅中文</span></button>
+                                            <button onClick={() => updateSetting('outputMode', 'bilingual')} className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'bilingual' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}><Languages className="w-4 h-4" /><span>双语字幕</span></button>
+                                            <button onClick={() => updateSetting('outputMode', 'target_only')} className={`p-3 rounded-lg border text-sm flex items-center justify-center space-x-2 transition-all ${settings.outputMode === 'target_only' ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-750'}`}><Type className="w-4 h-4" /><span>仅译文</span></button>
                                         </div>
-                                        <p className="text-xs text-slate-500 mt-2">选择是否在最终输出中保留原文。</p>
+                                        <p className="text-xs text-slate-500 mt-2">双语模式会在字幕中同时显示原文和译文。</p>
                                     </div>
                                 </div>
                             </div>
@@ -213,7 +213,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     <div className="bg-indigo-900/20 border border-indigo-500/30 rounded-lg p-4 mb-4">
                                         <h3 className="text-sm font-semibold text-indigo-300 mb-3 flex items-center">
                                             <span className="w-2 h-2 rounded-full bg-indigo-400 mr-2"></span>
-                                            本地 Whisper 性能设置
+                                            本地 Whisper 设置
                                         </h3>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div>
@@ -239,7 +239,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                     placeholder="4"
                                                     className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm"
                                                 />
-                                                <p className="text-xs text-slate-500 mt-1">单个任务使用的 CPU 核心数 (1-16)</p>
+                                                <p className="text-xs text-slate-500 mt-1">每个转录任务使用的 CPU 线程数，范围 1-16</p>
                                             </div>
                                             <div>
                                                 <label className="block text-sm font-medium text-slate-300 mb-1.5">最大并发数</label>
@@ -263,7 +263,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                     placeholder="1"
                                                     className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm"
                                                 />
-                                                <p className="text-xs text-slate-500 mt-1">同时运行的任务数量 (1-4)</p>
+                                                <p className="text-xs text-slate-500 mt-1">同时处理的转录任务数，范围 1-4</p>
                                             </div>
                                         </div>
                                     </div>
@@ -277,7 +277,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             if (val === '') updateSetting('proofreadBatchSize', 0);
                                             else if (/^\d+$/.test(val)) updateSetting('proofreadBatchSize', parseInt(val));
                                         }} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                        <p className="text-xs text-slate-500 mt-1">单次 API 调用校对的行数。数值越高越节省 token，但可能会降低质量。</p>
+                                        <p className="text-xs text-slate-500 mt-1">每次校对的字幕条数。数值越大上下文越完整、质量越高，但会消耗更多 Token。</p>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-slate-300 mb-1.5">翻译批次大小</label>
@@ -286,7 +286,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             if (val === '') updateSetting('translationBatchSize', 0);
                                             else if (/^\d+$/.test(val)) updateSetting('translationBatchSize', parseInt(val));
                                         }} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                        <p className="text-xs text-slate-500 mt-1">单次 API 调用翻译的行数。根据上下文需求进行调整。</p>
+                                        <p className="text-xs text-slate-500 mt-1">每次翻译的字幕条数。数值越大上下文越完整、质量越高，但会消耗更多 Token。</p>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-slate-300 mb-1.5">分块时长 (秒)</label>
@@ -295,7 +295,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             if (val === '') updateSetting('chunkDuration', 0);
                                             else if (/^\d+$/.test(val)) updateSetting('chunkDuration', parseInt(val));
                                         }} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                        <p className="text-xs text-slate-500 mt-1">处理过程中分割音频文件的目标时长 (秒)。</p>
+                                        <p className="text-xs text-slate-500 mt-1">音频分段的目标长度（秒），影响转录的并行处理效率。</p>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-slate-300 mb-1.5">并发数 (Flash)</label>
@@ -304,7 +304,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             if (val === '') updateSetting('concurrencyFlash', 0);
                                             else if (/^\d+$/.test(val)) updateSetting('concurrencyFlash', parseInt(val));
                                         }} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                        <p className="text-xs text-slate-500 mt-1">用于 <strong>Gemini 2.5 Flash</strong> (优化和翻译) 和 <strong> Whisper API</strong>。支持较高限制 (如 10-20)。</p>
+                                        <p className="text-xs text-slate-500 mt-1">应用于 <strong>Gemini 2.5 Flash</strong> 翻译、优化和 <strong>Whisper API</strong> 转录。请根据账户限额调整。</p>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-slate-300 mb-1.5">并发数 (Pro)</label>
@@ -313,7 +313,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             if (val === '') updateSetting('concurrencyPro', 0);
                                             else if (/^\d+$/.test(val)) updateSetting('concurrencyPro', parseInt(val));
                                         }} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                        <p className="text-xs text-slate-500 mt-1">用于 <strong>Gemini 3 Pro</strong> (术语提取和深度校对)。严格的速率限制。</p>
+                                        <p className="text-xs text-slate-500 mt-1">应用于 <strong>Gemini 3 Pro</strong> 术语提取和深度校对。请根据账户限额调整。</p>
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-slate-300 mb-1.5">请求超时 (秒)</label>
@@ -322,7 +322,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                             if (val === '') updateSetting('requestTimeout', 0);
                                             else if (/^\d+$/.test(val)) updateSetting('requestTimeout', parseInt(val));
                                         }} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm" />
-                                        <p className="text-xs text-slate-500 mt-1">API 请求的超时时间。如果经常遇到超时错误，请增加此值。</p>
+                                        <p className="text-xs text-slate-500 mt-1">单个 API 请求的最长等待时间。网络较慢或处理大批量时可适当增加。</p>
                                     </div>
                                 </div>
 
@@ -330,7 +330,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <label className="block text-sm font-medium text-slate-300">智能分段</label>
-                                            <p className="text-xs text-slate-500">使用 VAD 在自然停顿处分割音频 (推荐)</p>
+                                            <p className="text-xs text-slate-500">使用 AI 语音检测在自然停顿处切分音频，提升转录准确度（推荐）</p>
                                         </div>
                                         <button
                                             onClick={() => updateSetting('useSmartSplit', !settings.useSmartSplit)}
@@ -348,7 +348,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                 <div className="flex items-center justify-between mb-4">
                                     <div>
                                         <label className="block text-sm font-medium text-slate-300">启用自动术语表</label>
-                                        <p className="text-xs text-slate-500">在翻译前自动从音频中提取术语</p>
+                                        <p className="text-xs text-slate-500">自动识别并提取专业术语，提升翻译准确性和一致性</p>
                                     </div>
                                     <button
                                         onClick={() => updateSetting('enableAutoGlossary', !settings.enableAutoGlossary)}
@@ -377,7 +377,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                                 icon={<Clock className="w-4 h-4" />}
                                             />
                                             <p className="text-xs text-slate-500 mt-1">
-                                                分析前 X 分钟以提取术语。“完整音频”覆盖面更广，但耗时更长。
+                                                使用音频的前 N 分钟提取术语。选择“完整音频”可获得更全面的术语，但处理时间更长。
                                             </p>
                                         </div>
 
@@ -385,7 +385,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         <div className="flex items-center justify-between">
                                             <div>
                                                 <label className="block text-sm font-medium text-slate-300">自动确认术语表</label>
-                                                <p className="text-xs text-slate-500">如果发现术语，跳过确认对话框</p>
+                                                <p className="text-xs text-slate-500">提取术语后直接应用，无需人工确认</p>
                                             </div>
                                             <button
                                                 onClick={() => updateSetting('glossaryAutoConfirm', !settings.glossaryAutoConfirm)}

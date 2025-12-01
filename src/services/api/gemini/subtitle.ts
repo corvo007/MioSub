@@ -50,7 +50,7 @@ export const generateSubtitles = async (
     let audioBuffer: AudioBuffer;
     try {
         audioBuffer = await decodeAudioWithRetry(file);
-        onProgress?.({ id: 'decoding', total: 1, status: 'completed', message: `音频解码完成。时长: ${formatTime(audioBuffer.duration)}` });
+        onProgress?.({ id: 'decoding', total: 1, status: 'completed', message: `解码完成，时长: ${formatTime(audioBuffer.duration)}` });
     } catch (e) {
         logger.error("Failed to decode audio", e);
         throw new Error("Failed to decode audio. Please ensure the file is a valid video/audio format.");
@@ -64,7 +64,7 @@ export const generateSubtitles = async (
     const chunksParams: { index: number; start: number; end: number }[] = [];
 
     if (settings.useSmartSplit) {
-        onProgress?.({ id: 'segmenting', total: 1, status: 'processing', message: "正在分析音频进行智能分割..." });
+        onProgress?.({ id: 'segmenting', total: 1, status: 'processing', message: "正在智能分段..." });
         const segmenter = new SmartSegmenter();
         const segments = await segmenter.segmentAudio(audioBuffer, chunkDuration);
         logger.info("Smart Segmentation Results", { count: segments.length, segments });
@@ -76,7 +76,7 @@ export const generateSubtitles = async (
                 end: seg.end
             });
         });
-        onProgress?.({ id: 'segmenting', total: 1, status: 'completed', message: `智能分割创建了 ${segments.length} 个片段。` });
+        onProgress?.({ id: 'segmenting', total: 1, status: 'completed', message: `智能分段完成，共 ${segments.length} 个片段。` });
     } else {
         // Standard fixed-size chunking
         let cursor = 0;
@@ -140,7 +140,7 @@ export const generateSubtitles = async (
 
             try {
                 logger.info("Waiting for glossary extraction...");
-                onProgress?.({ id: 'glossary', total: 1, status: 'processing', message: '正在提取术语表...' });
+                onProgress?.({ id: 'glossary', total: 1, status: 'processing', message: '正在提取术语...' });
 
                 extractedGlossaryResults = await glossaryPromise;
 
@@ -155,7 +155,7 @@ export const generateSubtitles = async (
                         resultsCount: extractedGlossaryResults.length,
                         results: extractedGlossaryResults.map(r => ({ idx: r.chunkIndex, terms: r.terms.length, conf: r.confidence }))
                     });
-                    onProgress?.({ id: 'glossary', total: 1, status: 'processing', message: '等待用户审核...' });
+                    onProgress?.({ id: 'glossary', total: 1, status: 'processing', message: '等待用户确认...' });
 
                     // BLOCKING CALL (User Interaction) - Pass metadata for UI
                     logger.info("Calling onGlossaryReady with metadata...");
@@ -226,7 +226,7 @@ export const generateSubtitles = async (
             if (rawSegments.length === 0) {
                 logger.warn(`[Chunk ${index}] No speech detected, skipping`);
                 chunkResults[i] = [];
-                onProgress?.({ id: index, total: totalChunks, status: 'completed', message: '完成 (空)' });
+                onProgress?.({ id: index, total: totalChunks, status: 'completed', message: '完成（无内容）' });
                 return;
             }
 

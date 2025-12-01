@@ -41,27 +41,56 @@ ipcMain.handle('transcribe-local', async (_event, { audioData, modelPath, langua
 
 // IPC Handler: Select Whisper Model
 ipcMain.handle('select-whisper-model', async () => {
-    const result = await dialog.showOpenDialog({
-        title: '选择 Whisper 模型文件',
-        message: '请选择 GGML 格式的 .bin 模型文件',
-        filters: [
-            { name: 'Whisper 模型', extensions: ['bin'] },
-            { name: '所有文件', extensions: ['*'] }
-        ],
-        properties: ['openFile']
-    });
+    try {
+        const result = await dialog.showOpenDialog({
+            title: '选择 Whisper 模型文件',
+            message: '请选择 GGML 格式的 .bin 模型文件',
+            filters: [
+                { name: 'Whisper 模型', extensions: ['bin'] },
+                { name: '所有文件', extensions: ['*'] }
+            ],
+            properties: ['openFile']
+        });
 
-    if (!result.canceled && result.filePaths.length > 0) {
-        const filePath = result.filePaths[0];
-        const validation = localWhisperService.validateModel(filePath);
+        if (!result.canceled && result.filePaths.length > 0) {
+            const filePath = result.filePaths[0];
+            const validation = localWhisperService.validateModel(filePath);
 
-        if (!validation.valid) {
-            dialog.showErrorBox('无效的模型文件', validation.error || '未知错误');
-            return null;
+            if (!validation.valid) {
+                dialog.showErrorBox('无效的模型文件', validation.error || '未知错误');
+                return null;
+            }
+            return filePath;
         }
-        return filePath;
+        return null;
+    } catch (error: any) {
+        console.error('[Main] Model selection failed:', error);
+        dialog.showErrorBox('模型选择失败', error.message || '未知错误');
+        return null;
     }
-    return null;
+});
+
+// IPC Handler: Save Logs Dialog
+ipcMain.handle('save-logs-dialog', async (_event, content: string) => {
+    try {
+        const result = await dialog.showSaveDialog({
+            title: '导出日志',
+            defaultPath: `gemini-subtitle-pro-logs-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`,
+            filters: [
+                { name: '文本文件', extensions: ['txt'] },
+                { name: '所有文件', extensions: ['*'] }
+            ]
+        });
+
+        if (!result.canceled && result.filePath) {
+            await fs.promises.writeFile(result.filePath, content, 'utf-8');
+            return { success: true, filePath: result.filePath };
+        }
+        return { success: false, canceled: true };
+    } catch (error: any) {
+        console.error('[Main] Save logs failed:', error);
+        return { success: false, error: error.message };
+    }
 });
 
 // IPC Handler: 提取音频（带进度回调）
@@ -94,15 +123,21 @@ ipcMain.handle('read-extracted-audio', async (_event, audioPath: string) => {
     try {
         const buffer = await readAudioBuffer(audioPath);
         return buffer.buffer;
-    } catch (error) {
-        console.error('Failed to read extracted audio:', error);
-        throw error;
+    } catch (error: any) {
+        console.error('[Main] Failed to read extracted audio:', error);
+        return { success: false, error: error.message };
     }
 });
 
 // IPC Handler: 清理临时音频文件
 ipcMain.handle('cleanup-temp-audio', async (_event, audioPath: string) => {
-    await cleanupTempAudio(audioPath);
+    try {
+        await cleanupTempAudio(audioPath);
+        return { success: true };
+    } catch (error: any) {
+        console.error('[Main] Failed to cleanup temp audio:', error);
+        return { success: false, error: error.message };
+    }
 });
 
 // IPC Handler: Get Audio Info
@@ -118,11 +153,21 @@ ipcMain.handle('get-audio-info', async (_event, videoPath: string) => {
 
 // IPC Handler: Storage
 ipcMain.handle('storage-get', async () => {
-    return await storageService.readSettings();
+    try {
+        return await storageService.readSettings();
+    } catch (error: any) {
+        console.error('[Main] Failed to read settings:', error);
+        return {}; // Return empty object as fallback
+    }
 });
 
 ipcMain.handle('storage-set', async (_event, data: any) => {
-    return await storageService.saveSettings(data);
+    try {
+        return await storageService.saveSettings(data);
+    } catch (error: any) {
+        console.error('[Main] Failed to save settings:', error);
+        throw error; // Let renderer handle this critical failure
+    }
 });
 
 // Logging
