@@ -47,6 +47,8 @@ interface WorkspacePageProps {
     updateBatchComment: (index: number, comment: string) => void;
     setEditingCommentId: (id: number | null) => void;
     updateLineComment: (index: number, comment: string) => void;
+    updateSubtitleText: (id: number, translated: string) => void;
+    updateSubtitleOriginal: (id: number, original: string) => void;
 }
 
 export const WorkspacePage: React.FC<WorkspacePageProps> = ({
@@ -82,7 +84,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     toggleBatch,
     updateBatchComment,
     setEditingCommentId,
-    updateLineComment
+    updateLineComment,
+    updateSubtitleText,
+    updateSubtitleOriginal
 }) => {
     const subtitleListRef = useRef<HTMLDivElement>(null);
     const isProcessing = status === GenerationStatus.UPLOADING || status === GenerationStatus.PROCESSING || status === GenerationStatus.PROOFREADING;
@@ -254,6 +258,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                                         editingCommentId={editingCommentId}
                                         setEditingCommentId={setEditingCommentId}
                                         updateLineComment={updateLineComment}
+                                        updateSubtitleText={updateSubtitleText}
+                                        updateSubtitleOriginal={updateSubtitleOriginal}
                                     />
                                 </div>
                             )}

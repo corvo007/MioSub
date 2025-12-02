@@ -451,6 +451,14 @@ export const useWorkspaceLogic = ({
         setSubtitles(prev => prev.map(s => s.id === id ? { ...s, comment } : s));
     }, []);
 
+    const updateSubtitleText = React.useCallback((id: number, translated: string) => {
+        setSubtitles(prev => prev.map(s => s.id === id ? { ...s, translated } : s));
+    }, []);
+
+    const updateSubtitleOriginal = React.useCallback((id: number, original: string) => {
+        setSubtitles(prev => prev.map(s => s.id === id ? { ...s, original } : s));
+    }, []);
+
     const resetWorkspace = React.useCallback(() => {
         setSubtitles([]);
         setFile(null);
@@ -499,6 +507,8 @@ export const useWorkspaceLogic = ({
         selectBatchesWithComments,
         updateBatchComment,
         updateLineComment,
+        updateSubtitleText,
+        updateSubtitleOriginal,
         resetWorkspace,
         cancelOperation
     }), [
@@ -525,6 +535,8 @@ export const useWorkspaceLogic = ({
         selectBatchesWithComments,
         updateBatchComment,
         updateLineComment,
+        updateSubtitleText,
+        updateSubtitleOriginal,
         resetWorkspace,
         cancelOperation
     ]);

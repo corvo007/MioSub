@@ -17,6 +17,8 @@ interface SubtitleBatchProps {
     editingCommentId: number | null;
     setEditingCommentId: (id: number | null) => void;
     updateLineComment: (id: number, comment: string) => void;
+    updateSubtitleText: (id: number, translated: string) => void;
+    updateSubtitleOriginal: (id: number, original: string) => void;
 }
 
 export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(({
@@ -31,7 +33,9 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(({
     showSourceText,
     editingCommentId,
     setEditingCommentId,
-    updateLineComment
+    updateLineComment,
+    updateSubtitleText,
+    updateSubtitleOriginal
 }) => {
     const startTime = chunk[0].startTime.split(',')[0];
     const endTime = chunk[chunk.length - 1].endTime.split(',')[0];
@@ -76,6 +80,8 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(({
                         editingCommentId={editingCommentId}
                         setEditingCommentId={setEditingCommentId}
                         updateLineComment={updateLineComment}
+                        updateSubtitleText={updateSubtitleText}
+                        updateSubtitleOriginal={updateSubtitleOriginal}
                     />
                 ))}
             </div>

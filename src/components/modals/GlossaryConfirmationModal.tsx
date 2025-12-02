@@ -561,7 +561,11 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                 placeholder="选择术语表"
                             />
                         </div>
-                        <button onClick={handleConfirm} className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-medium shadow-lg shadow-indigo-500/25 transition-all flex items-center">
+                        <button
+                            onClick={handleConfirm}
+                            disabled={!targetGlossaryId}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-medium shadow-lg shadow-indigo-500/25 transition-all flex items-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
+                        >
                             <CheckCircle className="w-4 h-4 mr-2" />
                             添加 {totalToAdd} 个术语
                         </button>

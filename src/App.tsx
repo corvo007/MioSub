@@ -253,6 +253,8 @@ export default function App() {
                     updateBatchComment={workspace.updateBatchComment}
                     setEditingCommentId={workspace.setEditingCommentId}
                     updateLineComment={workspace.updateLineComment}
+                    updateSubtitleText={workspace.updateSubtitleText}
+                    updateSubtitleOriginal={workspace.updateSubtitleOriginal}
                 />
             )}
             <GenreSettingsDialog
