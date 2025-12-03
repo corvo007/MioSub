@@ -203,6 +203,37 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         </div>
                                         <p className="text-xs text-slate-500 mt-2">双语模式会在字幕中同时显示原文和译文。</p>
                                     </div>
+
+                                    {/* Speaker Diarization Settings */}
+                                    <div className="space-y-4 mt-4 pt-4 border-t border-slate-700/50">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300">启用说话人区分</label>
+                                                <p className="text-xs text-slate-500">在校对时间轴阶段识别不同说话人</p>
+                                            </div>
+                                            <button
+                                                onClick={() => updateSetting('enableDiarization', !settings.enableDiarization)}
+                                                className={`w-10 h-5 rounded-full transition-colors relative ${settings.enableDiarization ? 'bg-indigo-500' : 'bg-slate-600'}`}
+                                            >
+                                                <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-transform ${settings.enableDiarization ? 'left-6' : 'left-1'}`} />
+                                            </button>
+                                        </div>
+
+                                        {settings.enableDiarization && (
+                                            <div className="flex items-center justify-between pl-4 animate-fade-in">
+                                                <div>
+                                                    <label className="block text-sm font-medium text-slate-300">导出时包含说话人名称</label>
+                                                    <p className="text-xs text-slate-500">在字幕文件中显示说话人（如：Speaker 1：对话内容）</p>
+                                                </div>
+                                                <button
+                                                    onClick={() => updateSetting('includeSpeakerInExport', !settings.includeSpeakerInExport)}
+                                                    className={`w-10 h-5 rounded-full transition-colors relative ${settings.includeSpeakerInExport ? 'bg-indigo-500' : 'bg-slate-600'}`}
+                                                >
+                                                    <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-transform ${settings.includeSpeakerInExport ? 'left-6' : 'left-1'}`} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         )}

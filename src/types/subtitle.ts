@@ -5,6 +5,7 @@ export interface SubtitleItem {
     original: string;
     translated: string;
     comment?: string; // User comment for specific correction
+    speaker?: string; // Speaker identifier (e.g., "Speaker 1", "Speaker 2")
 }
 
 export interface SubtitleSnapshot {
@@ -26,6 +27,7 @@ export interface GeminiSubtitleSchema {
     text_original?: string;
     text_translated?: string;
     text?: string; // For transcription-only phase
+    speaker?: string; // Speaker identifier from diarization
 }
 
 export interface OpenAIWhisperSegment {

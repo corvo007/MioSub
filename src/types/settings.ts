@@ -44,4 +44,8 @@ export interface AppSettings {
     whisperModelPath?: string;      // Model file path (.bin)
     whisperThreads?: number;        // Number of threads (default: 4)
     whisperConcurrency?: number;    // Max concurrent processes (default: 1)
+
+    // Speaker Diarization Settings
+    enableDiarization?: boolean;        // Enable speaker identification (default: false)
+    includeSpeakerInExport?: boolean;   // Include speaker names in exported subtitles (default: false)
 }

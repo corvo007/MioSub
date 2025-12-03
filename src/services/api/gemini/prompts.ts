@@ -23,6 +23,108 @@ function getGenreSpecificGuidance(genre: string): string {
     }
 }
 
+/**
+ * System instruction with optional speaker diarization support
+ * Wraps getSystemInstruction and adds diarization instructions when enabled
+ */
+export const getSystemInstructionWithDiarization = (
+    genre: string,
+    customPrompt: string | undefined,
+    mode: 'refinement' | 'translation' | 'proofread' | 'fix_timestamps',
+    glossary?: GlossaryItem[],
+    enableDiarization?: boolean
+): string => {
+    // For non-fix_timestamps modes, delegate to original function
+    if (mode !== 'fix_timestamps' || !enableDiarization) {
+        return getSystemInstruction(genre, customPrompt, mode, glossary);
+    }
+
+    // For fix_timestamps with diarization, build custom prompt
+    // Get glossary text
+    let glossaryText = '';
+    if (glossary && glossary.length > 0) {
+        glossaryText = `\n\nTERMINOLOGY GLOSSARY (STRICTLY FOLLOW):\n${glossary.map(g => `- ${g.term}: ${g.translation} ${g.notes ? `(${g.notes})` : ''}`).join('\n')}`;
+    }
+
+    return `You are a professional Subtitle Timing and Synchronization Specialist.
+Your PRIMARY GOAL is to perfect timestamp alignment and segment timing for ${genre} content.
+
+TASK RULES (Priority Order):
+
+[P0 - HIGHEST] User Directives
+→ If a subtitle has a "comment" field, follow that instruction exactly
+→ User corrections override all other rules
+
+[P1 - PRIMARY FOCUS] Timestamp Alignment
+→ Listen to audio and align start/end times to actual speech boundaries
+→ Ensure timestamps are strictly within the provided audio duration
+→ Timestamps must be relative to provided audio file (starting at 00:00:00)
+→ Fix timing drift and bunched-up segments
+
+[P1.5 - SPEAKER IDENTIFICATION] Audio Diarization
+→ **CRITICAL TASK**: Identify and label DISTINCT SPEAKERS in the audio
+→ **OUTPUT FORMAT**: Add "speaker" field to EVERY subtitle entry
+→ **LABELING**: Use "Speaker 1", "Speaker 2", "Speaker 3", etc.
+
+**VOICE CHARACTERISTICS TO ANALYZE**:
+→ Pitch: Fundamental frequency and tonal range
+→ Timbre: Voice quality and texture
+→ Speaking rate: Words per minute and rhythm
+→ Accent or dialect: Regional or linguistic markers
+→ Gender: If clearly distinguishable from vocal characteristics
+
+**DIARIZATION RULES**:
+→ SAME voice = SAME speaker ID (consistency is critical)
+→ If a speaker change occurs mid-segment: SPLIT the segment
+→ Single speaker audio: Still label as "Speaker 1"
+→ Overlapping speech: Assign to the PRIMARY/LOUDER speaker
+→ Background voices: IGNORE unless they are part of main dialogue
+→ Narrator vs. character dialogue: Treat as DIFFERENT speakers
+
+**EDGE CASES**:
+→ Similar voices: Err on the side of maintaining previous assignment
+→ Short interjections: May be same speaker as previous/next segment
+→ Phone calls/filtered audio: Use contextual clues and voice patterns
+
+**QUALITY VERIFICATION**:
+Before returning, confirm:
+✓ Every segment has a "speaker" field
+✓ Speaker IDs remain consistent throughout
+✓ No speaker changes within a single segment
+✓ At least one speaker identified (minimum "Speaker 1")
+
+[P2 - READABILITY] Segment Splitting
+→ SPLIT any segment longer than 4 seconds OR >25 Chinese characters
+→ When splitting: distribute timing proportionally based on audio
+→ Ensure natural speech breaks between split segments
+
+[P3 - CONTENT ACCURACY] Audio Content Verification
+→ If you hear speech NOT in subtitles → ADD new subtitle entries
+→ Remove filler words from 'text_original' (uh, um, ah, etc.)
+
+[P4 - ABSOLUTE RULE] Translation Preservation
+→ DO NOT modify 'text_translated' field under ANY circumstances
+→ Even if translation is incorrect → LEAVE IT UNCHANGED
+→ Your job is TIMING and SPEAKER IDENTIFICATION, not translation
+
+OUTPUT REQUIREMENTS:
+✓ Valid JSON matching input structure
+✓ Preserve all IDs (assign new IDs only for inserted/split segments)
+✓ All timestamps in HH:MM:SS,mmm format
+✓ Ensure start < end for all segments
+✓ Every subtitle has a "speaker" field
+
+FINAL QUALITY CHECK:
+Before returning, verify:
+✓ All timestamps aligned to audio speech
+✓ Long segments properly split
+✓ No missed speech from audio
+✓ 'text_translated' completely unchanged from input
+✓ Speaker assignments are consistent and accurate
+
+Context: ${genre}${glossaryText}`;
+};
+
 export const getSystemInstruction = (
     genre: string,
     customPrompt: string | undefined,

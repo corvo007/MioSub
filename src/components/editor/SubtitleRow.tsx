@@ -1,6 +1,7 @@
 import React from 'react';
 import { MessageCircle, Pencil } from 'lucide-react';
 import { SubtitleItem } from '@/types';
+import { getSpeakerColor } from '@/utils/colors';
 
 interface SubtitleRowProps {
     sub: SubtitleItem;
@@ -10,6 +11,7 @@ interface SubtitleRowProps {
     updateLineComment: (id: number, comment: string) => void;
     updateSubtitleText: (id: number, translated: string) => void;
     updateSubtitleOriginal: (id: number, original: string) => void;
+    updateSpeaker?: (id: number, speaker: string) => void;
 }
 
 export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
@@ -19,11 +21,14 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
     setEditingCommentId,
     updateLineComment,
     updateSubtitleText,
-    updateSubtitleOriginal
+    updateSubtitleOriginal,
+    updateSpeaker
 }) => {
     const [editing, setEditing] = React.useState(false);
     const [tempText, setTempText] = React.useState('');
     const [tempOriginal, setTempOriginal] = React.useState('');
+    const [editingSpeaker, setEditingSpeaker] = React.useState(false);
+    const [tempSpeaker, setTempSpeaker] = React.useState('');
 
     const handleStartEdit = () => {
         setTempText(sub.translated);
@@ -57,6 +62,23 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
         }
     };
 
+    const handleSpeakerSave = () => {
+        if (updateSpeaker && tempSpeaker.trim() !== (sub.speaker || '')) {
+            updateSpeaker(sub.id, tempSpeaker.trim());
+        }
+        setEditingSpeaker(false);
+    };
+
+    const handleSpeakerEdit = () => {
+        setTempSpeaker(sub.speaker || '');
+        setEditingSpeaker(true);
+    };
+
+    const handleSpeakerCancel = () => {
+        setTempSpeaker('');
+        setEditingSpeaker(false);
+    };
+
     return (
         <div className="p-3 hover:bg-slate-800/30 transition-colors flex items-start space-x-4 group/row">
             <div className="flex flex-col text-sm font-mono text-slate-400 min-w-[85px] pt-1">
@@ -64,6 +86,41 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
                 <span className="leading-tight opacity-70">{(sub.endTime || '').split(',')[0]}</span>
             </div>
             <div className="flex-1 space-y-1">
+                {/* Speaker Badge */}
+                {sub.speaker && updateSpeaker && (
+                    <div className="mb-2 flex items-center gap-2">
+                        {editingSpeaker ? (
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    value={tempSpeaker}
+                                    onChange={(e) => setTempSpeaker(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleSpeakerSave();
+                                        if (e.key === 'Escape') handleSpeakerCancel();
+                                    }}
+                                    onBlur={handleSpeakerSave}
+                                    autoFocus
+                                    placeholder="Speaker name..."
+                                    className="px-2 py-1 rounded text-xs font-medium bg-slate-800 border border-slate-600 text-slate-200 focus:outline-none focus:border-indigo-500"
+                                />
+                            </div>
+                        ) : (
+                            <span
+                                onClick={handleSpeakerEdit}
+                                className="px-2 py-1 rounded text-xs font-medium cursor-pointer hover:opacity-80 transition-opacity"
+                                style={{
+                                    backgroundColor: getSpeakerColor(sub.speaker) + '20',
+                                    color: getSpeakerColor(sub.speaker),
+                                    border: `1px solid ${getSpeakerColor(sub.speaker)}`
+                                }}
+                                title="Click to edit speaker name"
+                            >
+                                {sub.speaker}
+                            </span>
+                        )}
+                    </div>
+                )}
                 {editing ? (
                     <div
                         className="space-y-1"

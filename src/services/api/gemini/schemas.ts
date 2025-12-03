@@ -38,6 +38,11 @@ export const BATCH_SCHEMA = {
             end: { type: Type.STRING, description: "HH:MM:SS,mmm" },
             text_original: { type: Type.STRING },
             text_translated: { type: Type.STRING, description: "Simplified Chinese translation" },
+            speaker: {
+                type: Type.STRING,
+                description: "Speaker identifier (e.g., 'Speaker 1', 'Speaker 2'). Required when diarization is enabled.",
+                nullable: true
+            },
         },
         required: ["id", "start", "end", "text_original", "text_translated"],
     },

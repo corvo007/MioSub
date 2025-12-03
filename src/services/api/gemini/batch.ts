@@ -9,7 +9,7 @@ import { sliceAudioBuffer } from "@/services/audio/processor";
 import { blobToBase64 } from "@/services/audio/converter";
 import { mapInParallel } from "@/services/utils/concurrency";
 import { logger } from "@/services/utils/logger";
-import { getSystemInstruction } from "@/services/api/gemini/prompts";
+import { getSystemInstructionWithDiarization } from "@/services/api/gemini/prompts";
 import {
     TRANSLATION_SCHEMA,
     BATCH_SCHEMA,
@@ -418,11 +418,12 @@ export const runBatchOperation = async (
         logger.info("No media file provided, running in text-only context.");
     }
 
-    const systemInstruction = getSystemInstruction(
+    const systemInstruction = getSystemInstructionWithDiarization(
         settings.genre,
         mode === 'proofread' ? settings.customProofreadingPrompt : settings.customTranslationPrompt,
         mode,
-        settings.glossary
+        settings.glossary,
+        settings.enableDiarization  // Pass diarization flag
     );
 
     const currentSubtitles = [...allSubtitles];
@@ -532,6 +533,10 @@ export const runBatchOperation = async (
                             // Find index in main array
                             const mainIndex = currentSubtitles.findIndex(s => s.id === item.id);
                             if (mainIndex !== -1) {
+                                // Preserve speaker if not present in updated (e.g. proofread mode)
+                                if (!updated.speaker && currentSubtitles[mainIndex].speaker) {
+                                    updated.speaker = currentSubtitles[mainIndex].speaker;
+                                }
                                 currentSubtitles[mainIndex] = updated;
                             }
                         }

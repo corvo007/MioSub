@@ -1,11 +1,17 @@
 import { SubtitleItem } from '@/types/subtitle';
 import { toAssTime } from './time';
 
-export const generateSrtContent = (subtitles: SubtitleItem[], bilingual: boolean = true): string => {
+export const generateSrtContent = (subtitles: SubtitleItem[], bilingual: boolean = true, includeSpeaker: boolean = false): string => {
     return subtitles
         .map((sub, index) => {
+            // Conditionally prepend speaker name
+            const speakerPrefix = (includeSpeaker && sub.speaker) ? `${sub.speaker}: ` : '';
+
             // If bilingual is true, show original then translated. If false, only translated.
-            const text = bilingual ? `${sub.original}\n${sub.translated}` : sub.translated;
+            const originalLine = speakerPrefix + sub.original;
+            const translatedLine = speakerPrefix + sub.translated;
+            const text = bilingual ? `${originalLine}\n${translatedLine}` : translatedLine;
+
             return `${index + 1}
 ${sub.startTime} --> ${sub.endTime}
 ${text}
@@ -14,7 +20,7 @@ ${text}
         .join('\n');
 };
 
-export const generateAssContent = (subtitles: SubtitleItem[], title: string, bilingual: boolean = true): string => {
+export const generateAssContent = (subtitles: SubtitleItem[], title: string, bilingual: boolean = true, includeSpeaker: boolean = false): string => {
     // Updated Styles: 
     // Default: Fontsize 75 (Large), White (Primary) -> Used for Translation
     // Secondary: Fontsize 48 (Small), Yellow (Original) -> Used for Original Text
@@ -42,8 +48,12 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         .map((sub) => {
             const start = toAssTime(sub.startTime);
             const end = toAssTime(sub.endTime);
-            const originalText = sub.original || "";
-            const translatedText = sub.translated || "";
+
+            // Conditionally prepend speaker name
+            const speakerPrefix = (includeSpeaker && sub.speaker) ? `${sub.speaker}: ` : '';
+
+            const originalText = speakerPrefix + (sub.original || "");
+            const translatedText = speakerPrefix + (sub.translated || "");
 
             const cleanOriginal = originalText.replace(/\n/g, '\\N').replace(/\r/g, '');
             const cleanTranslated = translatedText.replace(/\n/g, '\\N').replace(/\r/g, '');

@@ -407,13 +407,14 @@ export const useWorkspaceLogic = ({
     const handleDownload = React.useCallback((format: 'srt' | 'ass') => {
         if (subtitles.length === 0) return;
         const isBilingual = settings.outputMode === 'bilingual';
+        const includeSpeaker = settings.includeSpeakerInExport || false;
         const content = format === 'srt'
-            ? generateSrtContent(subtitles, isBilingual)
-            : generateAssContent(subtitles, file ? file.name : "video", isBilingual);
+            ? generateSrtContent(subtitles, isBilingual, includeSpeaker)
+            : generateAssContent(subtitles, file ? file.name : "video", isBilingual, includeSpeaker);
         const filename = file ? file.name.replace(/\.[^/.]+$/, "") : "subtitles";
         logger.info(`Downloading subtitles: ${filename}.${format}`);
         downloadFile(`${filename}.${format}`, content, format);
-    }, [subtitles, settings.outputMode, file]);
+    }, [subtitles, settings.outputMode, settings.includeSpeakerInExport, file]);
 
     const handleRetryGlossary = React.useCallback(async () => {
         if (!glossaryFlow.glossaryMetadata?.glossaryChunks || !audioCacheRef.current) return;
@@ -496,6 +497,10 @@ export const useWorkspaceLogic = ({
         setSubtitles(prev => prev.map(s => s.id === id ? { ...s, original } : s));
     }, []);
 
+    const updateSpeaker = React.useCallback((id: number, speaker: string) => {
+        setSubtitles(prev => prev.map(s => s.id === id ? { ...s, speaker } : s));
+    }, []);
+
     const resetWorkspace = React.useCallback(() => {
         setSubtitles([]);
         setFile(null);
@@ -546,6 +551,7 @@ export const useWorkspaceLogic = ({
         updateLineComment,
         updateSubtitleText,
         updateSubtitleOriginal,
+        updateSpeaker,
         resetWorkspace,
         cancelOperation
     }), [
@@ -574,6 +580,7 @@ export const useWorkspaceLogic = ({
         updateLineComment,
         updateSubtitleText,
         updateSubtitleOriginal,
+        updateSpeaker,
         resetWorkspace,
         cancelOperation
     ]);
