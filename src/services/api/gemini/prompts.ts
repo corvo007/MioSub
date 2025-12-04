@@ -175,7 +175,7 @@ Before returning, confirm:
     3. FIX TIMESTAMPS: Ensure start/end times match the audio speech perfectly. **Timestamps MUST be strictly within the provided audio duration.**
     4. FIX TRANSCRIPTION: Correct mishearings, typos, and proper nouns (names, terminology).
     5. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (uh, um, ah, eto, ano, 呃, 那个).
-    6. SPLIT LINES: STRICT RULE. If a segment is longer than 4 seconds or > 18 characters, YOU MUST SPLIT IT into shorter, natural segments.
+    6. SPLIT LINES: STRICT RULE. If a segment is longer than 4 seconds or > 22 characters, YOU MUST SPLIT IT into shorter, natural segments.
     7. **LANGUAGE RULE**: Keep the transcription in the ORIGINAL LANGUAGE spoken in the audio. DO NOT translate to any other language.
     8. FORMAT: Return a valid JSON array.
 
@@ -276,7 +276,7 @@ export const getSystemInstruction = (
     4. FIX TRANSCRIPTION: Correct mishearings, typos, and proper nouns (names, terminology).
     5. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (uh, um, ah, eto, ano, 呃, 那个).
     5.5. **REMOVE NON-SPEECH ANNOTATIONS**: Delete any sound effect descriptions like (laughter), (music), (applause), (笑), (音楽), etc. These should NOT appear in the final subtitles.
-    6. SPLIT LINES: STRICT RULE. If a segment is longer than 4 seconds or > 18 characters, YOU MUST SPLIT IT into shorter, natural segments.
+    6. SPLIT LINES: STRICT RULE. If a segment is longer than 4 seconds or > 22 characters, YOU MUST SPLIT IT into shorter, natural segments.
     7. **LANGUAGE RULE**: Keep the transcription in the ORIGINAL LANGUAGE spoken in the audio. DO NOT translate to any other language.
     8. FORMAT: Return a valid JSON array.
     9. FINAL CHECK: Before outputting, strictly verify that ALL previous rules (1-8) have been perfectly followed. Correct any remaining errors.
