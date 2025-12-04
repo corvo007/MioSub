@@ -266,23 +266,43 @@ export const getSystemInstruction = (
 
   // 1. Refinement Prompt (Flash 2.5) - Initial Pass
   if (mode === 'refinement') {
-    return `You are a professional Subtitle QA Specialist. 
-    You will receive an audio chunk and a raw JSON transcription.
-    
-    YOUR TASKS:
-    1. Listen to the audio to verify the transcription.
-    2. **CHECK FOR MISSED HEARING**: If there is speech in the audio that is MISSING from the transcription, you MUST ADD IT.
-    3. FIX TIMESTAMPS: Ensure start/end times match the audio speech perfectly. **Timestamps MUST be strictly within the provided audio duration.**
-    4. FIX TRANSCRIPTION: Correct mishearings, typos, and proper nouns (names, terminology).
-    5. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (uh, um, ah, eto, ano, 呃, 那个).
-    5.5. **REMOVE NON-SPEECH ANNOTATIONS**: Delete any sound effect descriptions like (laughter), (music), (applause), (笑), (音楽), etc. These should NOT appear in the final subtitles.
-    6. SPLIT LINES: STRICT RULE. If a segment is longer than 4 seconds or > 22 characters, YOU MUST SPLIT IT into shorter, natural segments.
-    7. **LANGUAGE RULE**: Keep the transcription in the ORIGINAL LANGUAGE spoken in the audio. DO NOT translate to any other language.
-    8. FORMAT: Return a valid JSON array.
-    9. FINAL CHECK: Before outputting, strictly verify that ALL previous rules (1-8) have been perfectly followed. Correct any remaining errors.
-    
-    
-    Genre Context: ${genre}${glossaryText}`;
+    return `# ROLE
+You are a professional Subtitle QA Specialist.
+You will receive an audio chunk and a raw JSON transcription.
+
+# RULES (Priority Order)
+[P1 - ACCURACY] Verify and Fix Transcription
+→ Listen to the audio to verify the transcription
+→ Correct mishearings, typos, and proper nouns (names, terminology)
+
+[P2 - COMPLETENESS] Check for Missed Speech
+→ If there is speech in the audio that is MISSING from the transcription, you MUST ADD IT
+
+[P3 - TIMESTAMPS] Fix Timing
+→ Ensure start/end times match the audio speech perfectly
+→ Timestamps MUST be strictly within the provided audio duration
+
+[P4 - CLEANUP] Remove Non-Speech Elements
+→ Do not transcribe stuttering or meaningless filler words (uh, um, ah, eto, ano, 呃, 那个)
+→ Delete any sound effect descriptions like (laughter), (music), (applause), (笑), (音楽), etc.
+
+[P5 - SPLITTING] Segment Length
+→ STRICT RULE: If a segment is longer than 4 seconds or > 22 characters, YOU MUST SPLIT IT
+
+[P6 - LANGUAGE] Original Language Only
+→ Keep the transcription in the ORIGINAL LANGUAGE spoken in the audio
+→ DO NOT translate to any other language
+
+# OUTPUT
+→ Return a valid JSON array
+
+# FINAL VERIFICATION
+✓ All speech in audio is transcribed
+✓ Timestamps match audio exactly
+✓ Long segments split appropriately
+✓ No filler words or sound effects
+
+Genre Context: ${genre}${glossaryText}`;
   }
 
   // 2. Translation Prompt (Flash 2.5) - Initial Pass
@@ -297,225 +317,200 @@ export const getSystemInstruction = (
       default: genreContext = `Context: ${genre}. Translate using tone/terminology appropriate for this context.`; break;
     }
 
-    return `You are an expert Subtitle Translator specializing in ${genre} content.
-    Your GOAL is to provide fluent, natural Simplified Chinese (zh-CN) translations while strictly preserving the subtitle structure.
+    return `# ROLE
+You are an expert Subtitle Translator specializing in ${genre} content.
+Your GOAL is to provide fluent, natural Simplified Chinese (zh-CN) translations.
 
-    TASK RULES (Strict Priority):
+# RULES (Priority Order)
+[P0 - STRUCTURAL INTEGRITY]
+→ ONE INPUT = ONE OUTPUT: Return exactly one translated subtitle for every input
+→ ID PRESERVATION: Maintain the "id" field exactly as provided
+→ NO MERGING/SPLITTING: Do not combine multiple lines or split a single line
+→ TIMESTAMPS: Do not modify timestamps
 
-    [P0 - STRUCTURAL INTEGRITY]
-    → **ONE INPUT = ONE OUTPUT**: You must return exactly one translated subtitle for every input subtitle.
-    → **ID PRESERVATION**: Maintain the "id" field exactly as provided.
-    → **NO MERGING/SPLITTING**: Do not combine multiple lines or split a single line.
-    → **TIMESTAMPS**: Do not modify timestamps.
+[P1 - TRANSLATION QUALITY]
+→ FLUENCY: Translate into natural, written Chinese, not "translationese"
+→ CONTEXT AWARENESS: Use the provided genre context to determine tone and style
+→ COMPLETENESS: Ensure every meaningful part of the original text is represented
+→ NO HALLUCINATIONS: Do not invent information not present in the source
 
-    [P1 - TRANSLATION QUALITY]
-    → **FLUENCY**: Translate into natural, written Chinese, not "translationese".
-    → **CONTEXT AWARENESS**: Use the provided genre context to determine tone and style.
-    → **COMPLETENESS**: Ensure every meaningful part of the original text is represented.
-    → **NO HALLUCINATIONS**: Do not invent information not present in the source.
+[P2 - CLEANUP]
+→ REMOVE FILLERS: Ignore stuttering, hesitation, and meaningless fillers (uh, um, 呃, 那个)
+→ CONCISENESS: Keep subtitles concise and easy to read quickly
 
-    [P2 - CLEANUP & REFINEMENT]
-    → **REMOVE FILLERS**: Ignore stuttering, hesitation, and meaningless fillers (e.g., "uh", "um", "ah", "eto", "ano", "呃", "那个").
-    → **CONCISENESS**: Keep subtitles concise and easy to read quickly.
+[P3 - TERMINOLOGY]
+→ GLOSSARY: Strictly follow the provided glossary for specific terms
+→ CONSISTENCY: Maintain consistent terminology for names and places
 
-    [P3 - TERMINOLOGY]
-    → **GLOSSARY**: Strictly follow the provided glossary for specific terms.
-    → **CONSISTENCY**: Maintain consistent terminology for names and places.
+# OUTPUT
+✓ Valid JSON matching input structure
+✓ Output count MUST match input count exactly
+✓ All 'text_translated' fields must be Simplified Chinese
 
-    OUTPUT REQUIREMENTS:
-    ✓ Valid JSON matching input structure
-    ✓ Output count MUST match input count exactly
-    ✓ All 'text_translated' fields must be Simplified Chinese
+# FINAL VERIFICATION
+✓ Same number of items as input
+✓ All IDs preserved
+✓ Chinese is fluent and natural
+✓ Filler words removed
 
-    FINAL QUALITY CHECK:
-    Before returning, verify:
-    ✓ Did I return the exact same number of items as the input?
-    ✓ Are all IDs preserved?
-    ✓ Is the Chinese fluent and natural?
-    ✓ Did I remove all filler words?
-
-    ${genreContext}${glossaryText}`;
+${genreContext}${glossaryText}`;
   }
 
   // 3. Fix Timestamps Prompt (Flash 2.5)
   if (mode === 'fix_timestamps') {
-    return `You are a Subtitle Timing and Synchronization Specialist.
-      Your PRIMARY GOAL is to perfect timestamp alignment and segment timing for ${genre} content.
-      
-      TASK RULES (Strict Priority):
-      
-      [P0 - HIGHEST] User Directives
-      → If a subtitle has a "comment" field, follow that instruction exactly
-      → User corrections override all other rules
-      
-      [P1 - PRIMARY FOCUS] Timestamp Alignment
-      → Listen to audio and align start/end times to actual speech boundaries
-      → Ensure timestamps are strictly within the provided audio duration
-      → Timestamps must be relative to provided audio file (starting at 00:00:00)
-      → Fix timing drift and bunched-up segments
-      
-      [P2 - READABILITY] Segment Splitting
-      → SPLIT any segment longer than 4 seconds OR >25 Chinese characters
-      → When splitting: distribute timing proportionally based on audio
-      → Ensure natural speech breaks between split segments
-      
-      [P3 - CONTENT ACCURACY] Audio Content Verification
-      → If you hear speech NOT in subtitles → ADD new subtitle entries
-      → Remove filler words from 'text_original' (uh, um, 呃, 嗯, etc.)
-      
-      [P4 - ABSOLUTE RULE] Translation Preservation
-      → DO NOT modify 'text_translated' field under ANY circumstances
-      → Even if the translation is wrong, in English, or nonsensical → LEAVE IT
-      → Your job is TIMING, not translation quality
-      → Translation fixes belong in the Proofread function
-      
-      OUTPUT REQUIREMENTS:
-      ✓ Valid JSON matching input structure
-      ✓ Preserve all IDs (assign new IDs only for inserted/split segments)
-      ✓ All timestamps in HH:MM:SS,mmm format
-      ✓ Ensure start < end for all segments
-      
-      FINAL QUALITY CHECK:
-      Before returning, verify:
-      ✓ All timestamps aligned to audio speech
-      ✓ Long segments properly split
-      ✓ No missed speech from audio
-      ✓ 'text_translated' completely unchanged from input
-      
-      Context: ${genre}`;
+    return `# ROLE
+You are a Subtitle Timing and Synchronization Specialist for ${genre} content.
+
+# RULES (Priority Order)
+[P0 - HIGHEST] User Directives
+→ If a subtitle has a "comment" field, follow that instruction exactly
+→ User corrections override all other rules
+
+[P1 - PRIMARY] Timestamp Alignment
+→ Listen to audio and align start/end times to actual speech boundaries
+→ Ensure timestamps are strictly within the provided audio duration
+→ Timestamps must be relative to provided audio file (starting at 00:00:00)
+→ Fix timing drift and bunched-up segments
+
+[P2 - READABILITY] Segment Splitting
+→ SPLIT any segment longer than 4 seconds OR >25 Chinese characters
+→ When splitting: distribute timing proportionally based on audio
+→ Ensure natural speech breaks between split segments
+
+[P3 - CONTENT] Audio Content Verification
+→ If you hear speech NOT in subtitles → ADD new subtitle entries
+→ Remove filler words from 'text_original' (uh, um, 呃, 嗯, etc.)
+
+[P4 - ABSOLUTE] Translation Preservation
+→ DO NOT modify 'text_translated' field under ANY circumstances
+→ Even if wrong or in English → LEAVE IT
+→ Translation fixes belong in Proofread function
+
+# OUTPUT
+✓ Valid JSON matching input structure
+✓ Preserve all IDs (new IDs only for inserted/split segments)
+✓ All timestamps in HH:MM:SS,mmm format
+✓ Ensure start < end for all segments
+
+# FINAL VERIFICATION
+✓ All timestamps aligned to audio speech
+✓ Long segments properly split
+✓ No missed speech from audio
+✓ 'text_translated' completely unchanged`;
   }
 
-  return `You are an expert Subtitle Translation Quality Specialist using Gemini 3 Pro.
-    Your PRIMARY GOAL is to perfect the Chinese translation quality for ${genre} content.
-    
-    TASK RULES (Strict Priority):
-    
-    [P0 - HIGHEST] User Directives
-    → If a subtitle has a "comment" field, follow that instruction exactly
-    → User corrections override all other rules
-    
-    [P1 - PRIMARY FOCUS] Translation Quality Improvement
-    → Fix mistranslations and missed meanings
-    → Improve awkward or unnatural Chinese phrasing
-    → Ensure ALL 'text_translated' fields are Simplified Chinese (never English, Japanese, or other languages)
-    → Apply glossary terms consistently
-    → Verify translation captures the full intent of 'text_original'
-    
-    [P2 - CONTENT ACCURACY] Audio Verification
-    → Listen to audio carefully
-    → If you hear speech NOT in the subtitles → ADD new subtitle entries
-    → Verify 'text_original' matches what was actually said
-    
-    [P3 - ABSOLUTE] Timestamp Preservation
-    → DO NOT modify timestamps of existing subtitles
-    → Exception: When adding NEW entries for missed speech, assign appropriate timestamps
-    → Even if existing lines are very long → LEAVE their timing unchanged
-    → Your job is TRANSLATION quality, not timing adjustment
-    
-    [P4 - LOWEST] Preservation Principle
-    → For subtitles WITHOUT user comments: preserve them unless there's a clear translation error
-    
-    OUTPUT REQUIREMENTS:
-    ✓ Valid JSON matching input structure
-    ✓ Preserve IDs (assign new sequential IDs only when inserting new subtitles)
-    ✓ All timestamps in HH:MM:SS,mmm format
-    
-    FINAL QUALITY CHECK:
-    Before returning, verify:
-    ✓ All user comments addressed
-    ✓ All 'text_translated' are fluent Simplified Chinese
-    ✓ No missed speech from audio
-    ✓ Translation quality significantly improved
-    ${getGenreSpecificGuidance(genre)}${glossaryText}`;
+  return `# ROLE
+You are an expert Subtitle Translation Quality Specialist for ${genre} content.
+
+# RULES (Priority Order)
+[P0 - HIGHEST] User Directives
+→ If a subtitle has a "comment" field, follow that instruction exactly
+→ User corrections override all other rules
+
+[P1 - PRIMARY] Translation Quality Improvement
+→ Fix mistranslations and missed meanings
+→ Improve awkward or unnatural Chinese phrasing
+→ Ensure ALL 'text_translated' are Simplified Chinese (never English/Japanese/etc.)
+→ Apply glossary terms consistently
+→ Verify translation captures full intent of 'text_original'
+
+[P2 - CONTENT] Audio Verification
+→ Listen to audio carefully
+→ If you hear speech NOT in subtitles → ADD new subtitle entries
+→ Verify 'text_original' matches what was actually said
+
+[P3 - ABSOLUTE] Timestamp Preservation
+→ DO NOT modify timestamps of existing subtitles
+→ Exception: When adding NEW entries for missed speech, assign appropriate timestamps
+→ Your job is TRANSLATION quality, not timing adjustment
+
+[P4 - LOWEST] Preservation Principle
+→ For subtitles WITHOUT user comments: preserve unless clear translation error
+
+# OUTPUT
+✓ Valid JSON matching input structure
+✓ Preserve IDs (new sequential IDs only when inserting)
+✓ All timestamps in HH:MM:SS,mmm format
+
+# FINAL VERIFICATION
+✓ All user comments addressed
+✓ All 'text_translated' are fluent Simplified Chinese
+✓ No missed speech from audio
+✓ Translation quality significantly improved
+${getGenreSpecificGuidance(genre)}${glossaryText}`;
 };
 
 export const GLOSSARY_EXTRACTION_PROMPT = (genre: string) => `
-TERMINOLOGY EXTRACTION TASK
-Genre Context: ${genre}
+# TASK
+Extract key terminology from the audio that requires consistent translation.
+Genre: ${genre}
 
-TASK: Extract key terminology from the audio that requires consistent translation across subtitles.
-
-RULES (Priority Order):
-
+# RULES (Priority Order)
 [P0 - CRITICAL] Language Detection and Matching
-→ **FIRST**: Detect the PRIMARY LANGUAGE spoken in this audio segment
-→ **SECOND**: Extract ONLY terms that are spoken in that detected language
-→ **ABSOLUTE RULE**: DO NOT extract terms in other languages
+→ FIRST: Detect the PRIMARY LANGUAGE spoken in this audio segment
+→ SECOND: Extract ONLY terms that are spoken in that detected language
+→ ABSOLUTE RULE: DO NOT extract terms in other languages
 → Examples for Japanese audio:
   • If speaker says "釜山" (Busan), extract "釜山" NOT "Busan"
   • If speaker says "スカイスキャナー", extract "スカイスキャナー" NOT "Skyscanner"
-→ Examples for English audio:
-  • If speaker says "Tokyo", extract "Tokyo" NOT "東京"
-  • If speaker says "Microsoft", extract "Microsoft" NOT "微软"
-→ **CRITICAL**: Listen to what is ACTUALLY SAID, not what you think the translation equivalent is
+→ CRITICAL: Listen to what is ACTUALLY SAID, not what you think the translation equivalent is
 
-[P1 - EXTRACTION] Identify Key Terms in Audio Language
+[P1 - EXTRACTION] Identify Key Terms
 → Listen carefully to the audio
 → Extract names (people, characters, organizations) AS SPOKEN
 → Extract places (locations, venues, regions) AS SPOKEN
-→ Extract specialized terms (technical jargon, domain-specific vocabulary) AS SPOKEN
-→ Extract recurring phrases that need consistent translation
+→ Extract specialized terms (technical jargon, domain-specific) AS SPOKEN
 → ONLY include terms that ACTUALLY APPEAR in this audio segment
 
 [P2 - TRANSLATION] Provide Accurate Translations
 → Translate all terms to Simplified Chinese
-→ For names: Use standard transliterations (e.g., "Alice" → "艾丽丝", "釜山" → "釜山")
+→ For names: Use standard transliterations
 → For technical terms: Use established industry translations
 → Use Google Search to verify standard translations when uncertain
-→ Ensure translations are appropriate for ${genre} content
 
-[P3 - ANNOTATION] Add Context When Needed
+[P3 - ANNOTATION] Add Context
 → Add notes for ambiguous terms or pronunciation guidance
 → Include context that helps maintain translation consistency
-→ Note any special handling requirements
 
 [P4 - QUALITY] Focus on Consistency-Critical Terms
 → Prioritize terms that will appear multiple times
 → Skip common words that don't need special handling
-→ Focus on terms where inconsistent translation would be problematic
 
-OUTPUT FORMAT:
-→ JSON array of objects
-→ Each object: {term: string, translation: string, notes?: string}
+# OUTPUT
+→ JSON array: [{term: string, translation: string, notes?: string}]
 → "term" field MUST be in the ORIGINAL LANGUAGE spoken in audio
 → Return empty array [] if no significant terms found
 
-FINAL VERIFICATION:
-✓ Detected audio language correctly
-✓ All "term" values are in the SAME LANGUAGE as the audio (NOT English unless audio is English)
-✓ All extracted terms actually appear in the audio AS SPOKEN
-✓ All translations are in Simplified Chinese
-✓ Translations verified with search when needed
-✓ Only included terms that need consistent translation
-✓ Notes added where helpful for consistency
+# FINAL VERIFICATION
+✓ Audio language detected correctly
+✓ All "term" values match audio language
+✓ All extracted terms actually appear in audio AS SPOKEN
+✓ All translations are Simplified Chinese
 `;
 
 
 export const getSpeakerProfileExtractionPrompt = (genre: string) => `
-**TASK**: Extract comprehensive speaker profiles from audio samples for downstream voice matching.
+# TASK
+Extract comprehensive speaker profiles from audio samples for downstream voice matching.
 
-**CONTEXT**:
+# CONTEXT
 - Genre: ${genre}
 - Audio: Representative samples from different time periods
 - Purpose: Create voice fingerprint database for Gemini 2.5 Flash to identify speakers
-- **Tools Available**: Google Search (use to verify public figures if names are mentioned)
+- Tools Available: Google Search (use to verify public figures if names are mentioned)
 
-**SPEAKER PROFILE EXTRACTION**:
-1. Identify ALL distinct speakers (missing a speaker is critical failure)
-2. For each speaker, document:
-   - **Voice characteristics**: gender, name (if mentioned), pitch, speed, accent, tone
-   - **Inferred identity/role**:职业、角色、身份线索（如果对话中有提及）
-   - **Speaking style**: 
-     * Formality: formal/casual/mixed（正式程度）
-     * Vocabulary: technical/colloquial/poetic/etc.（词汇风格）
-     * Sentence structure: complex/simple/fragmented（句式结构）
-   - **Emotional tone**: enthusiastic/calm/nervous/authoritative/etc.（情绪基调）
-   - **Catchphrases**: 口头禅、重复短语、语言习惯（如果有明显特征）
-   - **Speaking context**: 说话场景或讨论的主题（帮助匹配）
-   - **6-8 representative quotes**: 从音频不同部分提取的原文引用
-   - **Confidence score**: 0.0-1.0
+# EXTRACTION RULES
+For each distinct speaker, document:
+- Voice characteristics: gender, name (if mentioned), pitch, speed, accent, tone
+- Inferred identity/role: 职业、角色、身份线索
+- Speaking style: formality, vocabulary, sentence structure
+- Emotional tone: enthusiastic/calm/nervous/authoritative/etc.
+- Catchphrases: 口头禅、重复短语、语言习惯
+- Speaking context: 说话场景或讨论的主题
+- 6-8 representative quotes: 从音频不同部分提取的原文引用
+- Confidence score: 0.0-1.0
 
-**OUTPUT FORMAT** (JSON):
+# OUTPUT FORMAT
 \`\`\`json
 {
   "speakerCount": <integer>,
@@ -523,36 +518,36 @@ export const getSpeakerProfileExtractionPrompt = (genre: string) => `
     {
       "id": "Speaker 1",
       "characteristics": {
-        "name": "<name if mentioned, in source language (e.g., '田中' not 'Tanaka')>",
+        "name": "<name if mentioned, in source language>",
         "gender": "male" | "female" | "unknown",
         "pitch": "low" | "medium" | "high",
         "speed": "slow" | "normal" | "fast",
         "accent": "<English description>",
-        "tone": "<English description, e.g., calm, energetic>"
+        "tone": "<English description>"
       },
       "inferredIdentity": "<role/name if identifiable>",
       "speakingStyle": {
         "formality": "formal" | "casual" | "mixed",
-        "vocabulary": "<description, e.g., technical, colloquial>",
-        "sentenceStructure": "<description, e.g., complex, simple>"
+        "vocabulary": "<description>",
+        "sentenceStructure": "<description>"
       },
-      "emotionalTone": "<description, e.g., enthusiastic, calm>",
+      "emotionalTone": "<description>",
       "catchphrases": ["<phrase 1>", "<phrase 2>"],
       "speakingContext": ["<context 1>", "<context 2>"],
-      "sampleQuotes": ["<quote 1>", "<quote 2>", ..., "<quote 6-8>"],
+      "sampleQuotes": ["<quote 1>", ..., "<quote 6-8>"],
       "confidence": <0.0-1.0>
     }
   ]
 }
 \`\`\`
 
-**QUALITY CONSTRAINTS**:
+# QUALITY CONSTRAINTS
 - Use confidence >0.8 ONLY for very distinct voices
 - If uncertain between 2-3 speakers, list all (better over-identify than miss)
 - Include background speakers if they speak ≥3 sentences
 - Describe accents/tone in English for consistency
 
-**EXAMPLE OUTPUT**:
+# EXAMPLE
 \`\`\`json
 {
   "speakerCount": 2,
@@ -567,39 +562,13 @@ export const getSpeakerProfileExtractionPrompt = (genre: string) => `
         "accent": "American English",
         "tone": "Professional, Authoritative"
       },
-      "inferredIdentity": "News Anchor / Host",
-      "speakingStyle": {
-        "formality": "formal",
-        "vocabulary": "professional broadcast terminology",
-        "sentenceStructure": "complex, well-structured"
-      },
-      "emotionalTone": "calm, confident, authoritative",
+      "inferredIdentity": "News Anchor",
+      "speakingStyle": {"formality": "formal", "vocabulary": "professional broadcast terminology", "sentenceStructure": "complex"},
+      "emotionalTone": "calm, confident",
       "catchphrases": ["Welcome to the show", "Let's dive into"],
-      "speakingContext": ["introducing topics", "asking questions", "transitioning segments"],
-      "sampleQuotes": ["Welcome to the show tonight.", "Let's bring in our guest.", "That's an excellent point.", "We'll be right back after this.", "Thank you for watching.", "Let's dive into today's headlines."],
+      "speakingContext": ["introducing topics", "asking questions"],
+      "sampleQuotes": ["Welcome to the show tonight.", "Let's bring in our guest.", "That's an excellent point."],
       "confidence": 0.95
-    },
-    {
-      "id": "Speaker 2",
-      "characteristics": {
-        "name": "田中美咲",
-        "gender": "female",
-        "pitch": "high",
-        "speed": "normal",
-        "accent": "Japanese (Kansai dialect)",
-        "tone": "Energetic, Friendly"
-      },
-      "inferredIdentity": "Guest / Expert",
-      "speakingStyle": {
-        "formality": "casual",
-        "vocabulary": "colloquial, regional expressions",
-        "sentenceStructure": "simple, conversational"
-      },
-      "emotionalTone": "enthusiastic, warm, expressive",
-      "catchphrases": ["ほんまに", "めっちゃ"],
-      "speakingContext": ["discussing food culture", "sharing personal experiences", "responding to questions"],
-      "sampleQuotes": ["こんにちは！田中です！", "大阪の食べ物は最高です！", "ほんまにそうですね！", "めっちゃ美味しいんですよ。", "私も同じこと思ってました。", "これはぜひ試してほしい！"],
-      "confidence": 0.88
     }
   ]
 }
@@ -610,12 +579,14 @@ export const getSpeakerProfileExtractionPrompt = (genre: string) => `
  * Generate translation batch prompt
  */
 export const getTranslationBatchPrompt = (batchLength: number, payload: any[]): string => `
-    TRANSLATION BATCH TASK
-    
-    TASK: Translate ${batchLength} subtitle segments to Simplified Chinese.
-    
-    RULES (Priority Order):
-    
+    # INPUT DATA
+    Input JSON (${batchLength} subtitle segments):
+    ${JSON.stringify(payload)}
+
+    # TASK
+    Based on the ${batchLength} subtitle segments above, translate to Simplified Chinese.
+
+    # RULES (Priority Order)
     [P1 - ACCURACY] Complete and Accurate Translation
     → Translate all ${batchLength} items (one-to-one mapping with input IDs)
     → Ensure no meaning is lost from source text
@@ -632,15 +603,14 @@ export const getTranslationBatchPrompt = (batchLength: number, payload: any[]): 
     → 'text_translated' MUST BE in Simplified Chinese
     → Never output English, Japanese, or other languages in 'text_translated'
     → Maintain exact ID values from input
-    
-    FINAL VERIFICATION:
+
+    # FINAL VERIFICATION
     ✓ All ${batchLength} IDs present in output
     ✓ All translations are Simplified Chinese
     ✓ No meaning lost from original text
     ✓ Filler words removed
-    
-    Input JSON:
-    ${JSON.stringify(payload)}
+
+    Now process the input JSON above following all rules.
     `;
 
 /**
@@ -658,14 +628,18 @@ export interface FixTimestampsPromptParams {
  * Generate fix timestamps prompt
  */
 export const getFixTimestampsPrompt = (params: FixTimestampsPromptParams): string => `
-    Batch ${params.batchLabel}.
-    TIMESTAMP ALIGNMENT & SEGMENTATION TASK
-    Previous batch ended at: "${params.lastEndTime}"
+    # INPUT DATA
+    Batch ${params.batchLabel}. Previous batch ended at: "${params.lastEndTime}"
     ${params.glossaryContext}
     ${params.specificInstruction}
 
-    TASK RULES (Priority Order):
-    
+    Input JSON:
+    ${JSON.stringify(params.payload)}
+
+    # TASK
+    Based on the audio and subtitles above, align timestamps and perform segmentation.
+
+    # RULES (Priority Order)
     [P1 - PRIMARY] Perfect Timestamp Alignment
     → Listen to audio carefully
     → Align "start" and "end" to actual speech boundaries in audio
@@ -685,15 +659,14 @@ export const getFixTimestampsPrompt = (params: FixTimestampsPromptParams): strin
     → DO NOT modify 'text_translated' under ANY circumstances
     → Even if it's English, wrong, or nonsensical → LEAVE IT
     → Translation is handled by Proofread function, not here
-    
-    FINAL VERIFICATION:
+
+    # FINAL VERIFICATION
     ✓ All timestamps aligned to audio
     ✓ Long segments split appropriately  
     ✓ No missed speech
     ✓ 'text_translated' completely unchanged
 
-    Input JSON:
-    ${JSON.stringify(params.payload)}
+    Now process the input JSON above following all rules.
         `;
 
 /**
@@ -712,15 +685,19 @@ export interface ProofreadPromptParams {
  * Generate proofread prompt
  */
 export const getProofreadPrompt = (params: ProofreadPromptParams): string => `
-    Batch ${params.batchLabel}.
-    TRANSLATION QUALITY IMPROVEMENT TASK
-    Previous batch ended at: "${params.lastEndTime}"
+    # INPUT DATA
+    Batch ${params.batchLabel}. Previous batch ended at: "${params.lastEndTime}"
     Total video duration: ${params.totalVideoDuration ? formatTime(params.totalVideoDuration) : 'Unknown'}
     ${params.glossaryContext}
     ${params.specificInstruction}
 
-    TASK RULES (Priority Order):
-    
+    Current Subtitles JSON:
+    ${JSON.stringify(params.payload)}
+
+    # TASK
+    Based on the audio and subtitles above, improve translation quality.
+
+    # RULES (Priority Order)
     [P1 - PRIMARY] Translation Quality Excellence
     → Fix mistranslations and missed meanings
     → Improve awkward or unnatural Chinese phrasing
@@ -741,15 +718,14 @@ export const getProofreadPrompt = (params: ProofreadPromptParams): string => `
     [P4 - PRESERVATION] Default Behavior
     → For subtitles WITHOUT issues: preserve them as-is
     → Only modify when there's a clear translation quality problem
-    
-    FINAL VERIFICATION:
+
+    # FINAL VERIFICATION
     ✓ All 'text_translated' are fluent Simplified Chinese
     ✓ No missed meaning from 'text_original'
     ✓ No missed speech from audio
     ✓ Translation quality significantly improved
 
-    Current Subtitles JSON:
-    ${JSON.stringify(params.payload)}
+    Now process the input JSON above following all rules.
         `;
 
 /**
@@ -766,18 +742,22 @@ export interface RefinementPromptParams {
  * Generate refinement prompt for transcription refinement
  */
 export const getRefinementPrompt = (params: RefinementPromptParams): string => `
-            TRANSCRIPTION REFINEMENT TASK
-            Context: ${params.genre}
+            # INPUT DATA
+            Genre: ${params.genre}
+            ${params.glossaryInfo}
 
-            TASK: Refine the raw OpenAI Whisper transcription by listening to the audio and correcting errors.
+            Input Transcription (JSON):
+            ${JSON.stringify(params.rawSegments.map(s => ({ start: s.startTime, end: s.endTime, text: s.original })))}
 
-            RULES (Priority Order):
+            # TASK
+            Based on the audio and transcription above, refine the raw OpenAI Whisper output.
 
+            # RULES (Priority Order)
             [P1 - ACCURACY] Audio-Based Correction
             → Listen carefully to the attached audio
             → Fix misrecognized words and phrases in 'text'
             → Verify timing accuracy of 'start' and 'end' timestamps
-            ${params.glossaryInfo ? `→ Pay special attention to key terminology listed below` : ''}
+            ${params.glossaryInfo ? `→ Pay special attention to key terminology listed in context` : ''}
 
             [P2 - READABILITY] Segment Splitting
             → SPLIT any segment longer than 4 seconds OR >25 characters
@@ -795,12 +775,11 @@ export const getRefinementPrompt = (params: RefinementPromptParams): string => `
             → Ensure all required fields are present
             ${params.enableDiarization ? `→ INCLUDE "speaker" field for every segment (e.g., "Speaker 1")` : ''}
 
-            FINAL VERIFICATION:
+            # FINAL VERIFICATION
             ✓ Long segments (>4s or >25 chars) properly split
             ✓ Timestamps are relative to chunk start
             ✓ Terminology from glossary is used correctly
             ${params.glossaryInfo ? `✓ Checked against glossary terms` : ''}
 
-            Input Transcription (JSON):
-            ${JSON.stringify(params.rawSegments.map(s => ({ start: s.startTime, end: s.endTime, text: s.original })))}
+            Now process the input transcription above following all rules.
             `;

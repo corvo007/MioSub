@@ -9,6 +9,7 @@ import { sliceAudioBuffer } from "@/services/audio/processor";
 import { blobToBase64 } from "@/services/audio/converter";
 import { mapInParallel } from "@/services/utils/concurrency";
 import { logger } from "@/services/utils/logger";
+import { calculateDetailedCost } from "@/services/api/gemini/pricing";
 import { getSystemInstructionWithDiarization, getTranslationBatchPrompt, getFixTimestampsPrompt, getProofreadPrompt } from "@/services/api/gemini/prompts";
 import { SpeakerProfile } from "./speakerProfile";
 import {
@@ -405,16 +406,22 @@ export const runBatchOperation = async (
     // Others use Gemini 2.5 Flash (High RPM) -> Concurrency FLASH
     const concurrency = mode === 'proofread' ? (settings.concurrencyPro || 2) : (settings.concurrencyFlash || 5);
 
-    // Token Usage Tracking
-    const usageReport: Record<string, { prompt: number, output: number, total: number }> = {};
+    // Token Usage Tracking with modality breakdown
+    const usageReport: Record<string, {
+        prompt: number, output: number, total: number,
+        textInput: number, audioInput: number, thoughts: number
+    }> = {};
     const trackUsage = (usage: TokenUsage) => {
         const model = usage.modelName;
         if (!usageReport[model]) {
-            usageReport[model] = { prompt: 0, output: 0, total: 0 };
+            usageReport[model] = { prompt: 0, output: 0, total: 0, textInput: 0, audioInput: 0, thoughts: 0 };
         }
         usageReport[model].prompt += usage.promptTokens;
         usageReport[model].output += usage.candidatesTokens;
         usageReport[model].total += usage.totalTokens;
+        usageReport[model].textInput += usage.textInputTokens || 0;
+        usageReport[model].audioInput += usage.audioInputTokens || 0;
+        usageReport[model].thoughts += usage.thoughtsTokens || 0;
     };
 
     await mapInParallel(groups, concurrency, async (group, i) => {
@@ -508,15 +515,30 @@ export const runBatchOperation = async (
     // Log Token Usage Report
     let reportLog = "\n📊 Token Usage Report (Batch Operation):\n----------------------------------------\n";
     let grandTotal = 0;
+    let totalCost = 0;
+
     for (const [model, usage] of Object.entries(usageReport)) {
+        const cost = calculateDetailedCost({
+            textInputTokens: usage.textInput,
+            audioInputTokens: usage.audioInput,
+            candidatesTokens: usage.output,
+            thoughtsTokens: usage.thoughts,
+            modelName: model
+        });
+        totalCost += cost;
+
         reportLog += `Model: ${model}\n`;
-        reportLog += `  - Prompt Tokens: ${usage.prompt.toLocaleString()}\n`;
-        reportLog += `  - Output Tokens: ${usage.output.toLocaleString()}\n`;
+        reportLog += `  - Text Input: ${usage.textInput.toLocaleString()}\n`;
+        reportLog += `  - Audio Input: ${usage.audioInput.toLocaleString()}\n`;
+        reportLog += `  - Output: ${usage.output.toLocaleString()}\n`;
+        reportLog += `  - Thoughts: ${usage.thoughts.toLocaleString()}\n`;
         reportLog += `  - Total: ${usage.total.toLocaleString()}\n`;
+        reportLog += `  - Est. Cost: $${cost.toFixed(6)}\n`;
         reportLog += `----------------------------------------\n`;
         grandTotal += usage.total;
     }
-    reportLog += `Grand Total: ${grandTotal.toLocaleString()}\n`;
+    reportLog += `Grand Total Tokens: ${grandTotal.toLocaleString()}\n`;
+    reportLog += `Total Est. Cost: $${totalCost.toFixed(6)}\n`;
     logger.info(reportLog);
 
     return currentSubtitles;

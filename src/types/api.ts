@@ -25,4 +25,9 @@ export interface TokenUsage {
     candidatesTokens: number;
     totalTokens: number;
     modelName: string;
+    // Detailed breakdown by modality
+    textInputTokens?: number;
+    audioInputTokens?: number;
+    thoughtsTokens?: number;
+    cachedTokens?: number;
 }

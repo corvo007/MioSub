@@ -137,11 +137,31 @@ export async function generateContentWithRetry(
 
                 // Track usage if callback provided
                 if (onUsage) {
+                    // Extract detailed token breakdown
+                    let textInputTokens = 0;
+                    let audioInputTokens = 0;
+                    let cachedTokens = usageMeta.cachedContentTokenCount || 0;
+                    const thoughtsTokens = usageMeta.thoughtsTokenCount || 0;
+
+                    if (usageMeta.promptTokensDetails && Array.isArray(usageMeta.promptTokensDetails)) {
+                        for (const detail of usageMeta.promptTokensDetails) {
+                            if (detail.modality === 'TEXT') {
+                                textInputTokens = detail.tokenCount || 0;
+                            } else if (detail.modality === 'AUDIO') {
+                                audioInputTokens = detail.tokenCount || 0;
+                            }
+                        }
+                    }
+
                     onUsage({
                         promptTokens: usageMeta.promptTokenCount || 0,
                         candidatesTokens: usageMeta.candidatesTokenCount || 0,
                         totalTokens: usageMeta.totalTokenCount || 0,
-                        modelName: params.model || 'unknown-model'
+                        modelName: params.model || 'unknown-model',
+                        textInputTokens,
+                        audioInputTokens,
+                        thoughtsTokens,
+                        cachedTokens
                     });
                 }
 
