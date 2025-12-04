@@ -1,5 +1,5 @@
 [build]
-  command = "npm run build"
+  command = "git config --global url.\"https://github.com/\".insteadOf ssh://git@github.com/ && npm run build"
   publish = "dist"
 
 [[redirects]]

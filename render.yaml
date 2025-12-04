@@ -2,7 +2,7 @@ services:
   - type: web
     name: gemini-subtitle-pro
     env: static
-    buildCommand: npm install && npm run build
+    buildCommand: git config --global url."https://github.com/".insteadOf ssh://git@github.com/ && npm install && npm run build
     staticPublishPath: ./dist
     envVars:
       - key: GEMINI_API_KEY
