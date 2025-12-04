@@ -5,20 +5,22 @@ export async function mapInParallel<T, R>(
     signal?: AbortSignal
 ): Promise<R[]> {
     const results: R[] = new Array(items.length);
-    let currentIndex = 0;
+
+    // Use queue to avoid race condition
+    const tasks = items.map((item, index) => ({ item, index }));
 
     const worker = async () => {
-        while (currentIndex < items.length) {
+        while (tasks.length > 0) {
             // Check cancellation BEFORE processing
             if (signal?.aborted) {
-                throw new Error('Operation cancelled');
+                throw new Error('操作已取消');
             }
 
-            const i = currentIndex++;
-            if (i >= items.length) break;
+            const task = tasks.shift(); // Atomic operation
+            if (!task) break;
 
             try {
-                results[i] = await fn(items[i], i);
+                results[task.index] = await fn(task.item, task.index);
             } catch (e) {
                 throw e;
             }

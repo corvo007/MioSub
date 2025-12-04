@@ -25,6 +25,7 @@ interface SubtitleEditorProps {
     updateLineComment: (id: number, comment: string) => void;
     updateSubtitleText: (id: number, translated: string) => void;
     updateSubtitleOriginal: (id: number, original: string) => void;
+    updateSpeaker: (id: number, speaker: string, applyToAll?: boolean) => void;
 }
 
 export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(({
@@ -46,7 +47,8 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(({
     setEditingCommentId,
     updateLineComment,
     updateSubtitleText,
-    updateSubtitleOriginal
+    updateSubtitleOriginal,
+    updateSpeaker
 }) => {
     const chunks: SubtitleItem[][] = [];
     const batchSize = settings.proofreadBatchSize || 20;
@@ -100,6 +102,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(({
                     updateLineComment={updateLineComment}
                     updateSubtitleText={updateSubtitleText}
                     updateSubtitleOriginal={updateSubtitleOriginal}
+                    updateSpeaker={updateSpeaker}
                 />
             ))}
         </div>

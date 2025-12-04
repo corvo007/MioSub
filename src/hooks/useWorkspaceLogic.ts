@@ -410,7 +410,7 @@ export const useWorkspaceLogic = ({
         const includeSpeaker = settings.includeSpeakerInExport || false;
         const content = format === 'srt'
             ? generateSrtContent(subtitles, isBilingual, includeSpeaker)
-            : generateAssContent(subtitles, file ? file.name : "video", isBilingual, includeSpeaker);
+            : generateAssContent(subtitles, file ? file.name : "video", isBilingual, includeSpeaker, settings.useSpeakerColors);
         const filename = file ? file.name.replace(/\.[^/.]+$/, "") : "subtitles";
         logger.info(`Downloading subtitles: ${filename}.${format}`);
         downloadFile(`${filename}.${format}`, content, format);
@@ -497,8 +497,17 @@ export const useWorkspaceLogic = ({
         setSubtitles(prev => prev.map(s => s.id === id ? { ...s, original } : s));
     }, []);
 
-    const updateSpeaker = React.useCallback((id: number, speaker: string) => {
-        setSubtitles(prev => prev.map(s => s.id === id ? { ...s, speaker } : s));
+    const updateSpeaker = React.useCallback((id: number, speaker: string, applyToAll: boolean = false) => {
+        setSubtitles(prev => {
+            if (applyToAll) {
+                const targetSub = prev.find(s => s.id === id);
+                const oldSpeaker = targetSub?.speaker;
+                if (oldSpeaker) {
+                    return prev.map(s => s.speaker === oldSpeaker ? { ...s, speaker } : s);
+                }
+            }
+            return prev.map(s => s.id === id ? { ...s, speaker } : s);
+        });
     }, []);
 
     const resetWorkspace = React.useCallback(() => {

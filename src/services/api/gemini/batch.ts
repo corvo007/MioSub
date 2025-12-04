@@ -1,7 +1,7 @@
 import { GoogleGenAI, Part } from "@google/genai";
 import { SubtitleItem, BatchOperationMode } from "@/types/subtitle";
 import { AppSettings } from "@/types/settings";
-import { ChunkStatus } from "@/types/api";
+import { ChunkStatus, TokenUsage } from "@/types/api";
 import { parseGeminiResponse, extractJsonArray } from "@/services/subtitle/parser";
 import { formatTime, timeToSeconds } from "@/services/subtitle/time";
 import { decodeAudio } from "@/services/audio/decoder";
@@ -14,6 +14,7 @@ import { SpeakerProfile } from "./speakerProfile";
 import {
     TRANSLATION_SCHEMA,
     BATCH_SCHEMA,
+    BATCH_WITH_DIARIZATION_SCHEMA,
     SAFETY_SETTINGS,
     PROOFREAD_BATCH_SIZE
 } from "./schemas";
@@ -29,9 +30,11 @@ export async function processTranslationBatchWithRetry(
     systemInstruction: string,
     maxRetries = 3,
     onStatusUpdate?: (update: { message?: string, toast?: { message: string, type: 'info' | 'warning' | 'error' | 'success' } }) => void,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onUsage?: (usage: TokenUsage) => void,
+    timeoutMs?: number // Custom timeout in milliseconds
 ): Promise<any[]> {
-    const payload = batch.map(item => ({ id: item.id, text: item.original }));
+    const payload = batch.map(item => ({ id: item.id, text: item.original, speaker: item.speaker }));
 
     const prompt = `
     TRANSLATION BATCH TASK
@@ -79,7 +82,7 @@ export async function processTranslationBatchWithRetry(
                     safetySettings: SAFETY_SETTINGS,
                     maxOutputTokens: 65536,
                 }
-            }, 3, signal);
+            }, 3, signal, onUsage, timeoutMs);
 
             const text = response.text || "[]";
             let translatedData: any[] = [];
@@ -97,13 +100,30 @@ export async function processTranslationBatchWithRetry(
 
             const transMap = new Map(translatedData.map((t: any) => [t.id, t.text_translated]));
 
-            return batch.map(item => {
+            let fallbackCount = 0;
+            const result = batch.map(item => {
                 const translatedText = transMap.get(item.id);
+
+                // Log missing translations
+                if (!translatedText || translatedText.trim().length === 0) {
+                    logger.warn(`Translation missing for ID ${item.id}, using original text`, {
+                        original: item.original.substring(0, 50)
+                    });
+                    fallbackCount++;
+                }
+
                 return {
                     ...item,
                     translated: (translatedText && translatedText.trim().length > 0) ? translatedText : item.original
                 };
             });
+
+            // Summary log
+            if (fallbackCount > 0) {
+                logger.warn(`Batch translation: ${fallbackCount}/${batch.length} items fallback to original text`);
+            }
+
+            return result;
 
         } catch (e) {
             if (attempt < maxRetries - 1) {
@@ -138,7 +158,9 @@ export async function translateBatch(
     concurrency: number,
     batchSize: number,
     onStatusUpdate?: (update: { message?: string, toast?: { message: string, type: 'info' | 'warning' | 'error' | 'success' } }) => void,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onUsage?: (usage: TokenUsage) => void,
+    timeoutMs?: number // Custom timeout in milliseconds
 ): Promise<any[]> {
     const batches: any[][] = [];
     for (let i = 0; i < items.length; i += batchSize) {
@@ -146,7 +168,7 @@ export async function translateBatch(
     }
 
     const batchResults = await mapInParallel(batches, concurrency, async (batch) => {
-        return await processTranslationBatchWithRetry(ai, batch, systemInstruction, 3, onStatusUpdate, signal);
+        return await processTranslationBatchWithRetry(ai, batch, systemInstruction, 3, onStatusUpdate, signal, onUsage, timeoutMs);
     }, signal);
 
     return batchResults.flat();
@@ -163,7 +185,8 @@ async function processBatch(
     totalVideoDuration?: number,
     mode: BatchOperationMode = 'proofread',
     batchComment?: string,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onUsage?: (usage: TokenUsage) => void
 ): Promise<SubtitleItem[]> {
     if (batch.length === 0) return [];
 
@@ -195,7 +218,8 @@ async function processBatch(
         end: s.endTime,
         text_original: s.original,
         text_translated: s.translated,
-        comment: s.comment // Include user comment
+        comment: s.comment, // Include user comment
+        speaker: s.speaker // Include speaker for context and consistency
     }));
 
     let prompt = "";
@@ -344,9 +368,11 @@ async function processBatch(
             model,
             systemInstruction,
             parts,
-            BATCH_SCHEMA, // Use the new schema
+            settings.enableDiarization ? BATCH_WITH_DIARIZATION_SCHEMA : BATCH_SCHEMA, // Use strict schema if diarization enabled
             tools, // Enable Search Grounding for proofread
-            signal
+            signal,
+            onUsage,
+            (settings.requestTimeout || 600) * 1000 // Custom timeout in milliseconds
         );
 
 
@@ -375,6 +401,10 @@ async function processBatch(
             }
 
             return processedBatch;
+        }
+
+        if (processedBatch.length > 0 && settings.enableDiarization) {
+            logger.debug(`[Batch ${batchLabel}] Processed first item speaker: ${processedBatch[0].speaker}`);
         }
     } catch (e) {
         logger.error(`Batch ${batchLabel} processing failed (${mode}).`, e);
@@ -469,6 +499,18 @@ export const runBatchOperation = async (
     // Others use Gemini 2.5 Flash (High RPM) -> Concurrency FLASH
     const concurrency = mode === 'proofread' ? (settings.concurrencyPro || 2) : (settings.concurrencyFlash || 5);
 
+    // Token Usage Tracking
+    const usageReport: Record<string, { prompt: number, output: number, total: number }> = {};
+    const trackUsage = (usage: TokenUsage) => {
+        const model = usage.modelName;
+        if (!usageReport[model]) {
+            usageReport[model] = { prompt: 0, output: 0, total: 0 };
+        }
+        usageReport[model].prompt += usage.promptTokens;
+        usageReport[model].output += usage.candidatesTokens;
+        usageReport[model].total += usage.totalTokens;
+    };
+
     await mapInParallel(groups, concurrency, async (group, i) => {
         const firstBatchIdx = group[0];
 
@@ -518,7 +560,8 @@ export const runBatchOperation = async (
                 audioBuffer?.duration,
                 mode,
                 mergedComment,
-                signal
+                signal,
+                trackUsage
             );
 
             // Update original subtitles with processed results
@@ -555,6 +598,20 @@ export const runBatchOperation = async (
             throw e; // Re-throw to stop mapInParallel if needed, or handle cancellation
         }
     }, signal);
+
+    // Log Token Usage Report
+    let reportLog = "\n📊 Token Usage Report (Batch Operation):\n----------------------------------------\n";
+    let grandTotal = 0;
+    for (const [model, usage] of Object.entries(usageReport)) {
+        reportLog += `Model: ${model}\n`;
+        reportLog += `  - Prompt Tokens: ${usage.prompt.toLocaleString()}\n`;
+        reportLog += `  - Output Tokens: ${usage.output.toLocaleString()}\n`;
+        reportLog += `  - Total: ${usage.total.toLocaleString()}\n`;
+        reportLog += `----------------------------------------\n`;
+        grandTotal += usage.total;
+    }
+    reportLog += `Grand Total: ${grandTotal.toLocaleString()}\n`;
+    logger.info(reportLog);
 
     return currentSubtitles;
 };

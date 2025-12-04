@@ -11,7 +11,7 @@ interface SubtitleRowProps {
     updateLineComment: (id: number, comment: string) => void;
     updateSubtitleText: (id: number, translated: string) => void;
     updateSubtitleOriginal: (id: number, original: string) => void;
-    updateSpeaker?: (id: number, speaker: string) => void;
+    updateSpeaker?: (id: number, speaker: string, applyToAll?: boolean) => void;
 }
 
 export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
@@ -99,11 +99,29 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
                                         if (e.key === 'Enter') handleSpeakerSave();
                                         if (e.key === 'Escape') handleSpeakerCancel();
                                     }}
-                                    onBlur={handleSpeakerSave}
+                                    onBlur={(e) => {
+                                        // Only save if focus is leaving the entire editing area (including the button)
+                                        if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node)) {
+                                            handleSpeakerSave();
+                                        }
+                                    }}
                                     autoFocus
                                     placeholder="Speaker name..."
                                     className="px-2 py-1 rounded text-xs font-medium bg-slate-800 border border-slate-600 text-slate-200 focus:outline-none focus:border-indigo-500"
                                 />
+                                <button
+                                    onMouseDown={(e) => {
+                                        e.preventDefault(); // Prevent blur
+                                        if (updateSpeaker && tempSpeaker.trim() !== (sub.speaker || '')) {
+                                            updateSpeaker(sub.id, tempSpeaker.trim(), true);
+                                        }
+                                        setEditingSpeaker(false);
+                                    }}
+                                    className="px-2 py-1 rounded text-[10px] bg-indigo-600 hover:bg-indigo-500 text-white transition-colors whitespace-nowrap"
+                                    title="Apply to all occurrences of this speaker"
+                                >
+                                    全部应用
+                                </button>
                             </div>
                         ) : (
                             <span

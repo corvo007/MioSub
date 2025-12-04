@@ -8,20 +8,20 @@ import { SpeakerProfile } from "./speakerProfile";
  * Get genre-specific guidance for prompts
  */
 function getGenreSpecificGuidance(genre: string): string {
-    switch (genre) {
-        case 'anime':
-            return `\nGENRE-SPECIFIC NOTES:\n- Preserve emotional nuances and character personality\n- Keep honorifics (-san, -kun, -chan) appropriately\n- Use casual, emotive tone in translation`;
-        case 'movie':
-            return `\nGENRE-SPECIFIC NOTES:\n- Natural dialogue flow is critical\n- Keep subtitles concise and easy to read\n- Match the tone and pacing of the scene`;
-        case 'news':
-            return `\nGENRE-SPECIFIC NOTES:\n- Maintain formal, objective tone\n- Use standard news terminology\n- Accuracy is paramount`;
-        case 'tech':
-            return `\nGENRE-SPECIFIC NOTES:\n- Keep technical terms precise\n- Preserve standard English acronyms (API, SDK, etc.)\n- Ensure terminology consistency`;
-        case 'general':
-            return `\nGENRE-SPECIFIC NOTES:\n- Neutral and accurate translation\n- Clear, accessible language`;
-        default:
-            return `\nGENRE-SPECIFIC NOTES:\n- Adapt tone and terminology for ${genre} content`;
-    }
+  switch (genre) {
+    case 'anime':
+      return `\nGENRE-SPECIFIC NOTES:\n- Preserve emotional nuances and character personality\n- Keep honorifics (-san, -kun, -chan) appropriately\n- Use casual, emotive tone in translation`;
+    case 'movie':
+      return `\nGENRE-SPECIFIC NOTES:\n- Natural dialogue flow is critical\n- Keep subtitles concise and easy to read\n- Match the tone and pacing of the scene`;
+    case 'news':
+      return `\nGENRE-SPECIFIC NOTES:\n- Maintain formal, objective tone\n- Use standard news terminology\n- Accuracy is paramount`;
+    case 'tech':
+      return `\nGENRE-SPECIFIC NOTES:\n- Keep technical terms precise\n- Preserve standard English acronyms (API, SDK, etc.)\n- Ensure terminology consistency`;
+    case 'general':
+      return `\nGENRE-SPECIFIC NOTES:\n- Neutral and accurate translation\n- Clear, accessible language`;
+    default:
+      return `\nGENRE-SPECIFIC NOTES:\n- Adapt tone and terminology for ${genre} content`;
+  }
 }
 
 /**
@@ -29,30 +29,35 @@ function getGenreSpecificGuidance(genre: string): string {
  * Wraps getSystemInstruction and adds diarization instructions when enabled
  */
 export const getSystemInstructionWithDiarization = (
-    genre: string,
-    customPrompt: string | undefined,
-    mode: 'refinement' | 'translation' | 'proofread' | 'fix_timestamps',
-    glossary?: GlossaryItem[],
-    enableDiarization?: boolean,
-    speakerProfiles?: SpeakerProfile[]
+  genre: string,
+  customPrompt: string | undefined,
+  mode: 'refinement' | 'translation' | 'proofread' | 'fix_timestamps',
+  glossary?: GlossaryItem[],
+  enableDiarization?: boolean,
+  speakerProfiles?: SpeakerProfile[]
 ): string => {
-    // For non-fix_timestamps modes, delegate to original function
-    if (mode !== 'fix_timestamps' || !enableDiarization) {
-        return getSystemInstruction(genre, customPrompt, mode, glossary);
-    }
+  // For non-supported modes or disabled diarization, delegate to original function
+  if ((mode !== 'fix_timestamps' && mode !== 'refinement') || !enableDiarization) {
+    return getSystemInstruction(genre, customPrompt, mode, glossary);
+  }
 
-    // For fix_timestamps with diarization, build custom prompt
-    // Get glossary text
-    let glossaryText = '';
-    if (glossary && glossary.length > 0) {
-        glossaryText = `\n\nTERMINOLOGY GLOSSARY (STRICTLY FOLLOW):\n${glossary.map(g => `- ${g.term}: ${g.translation} ${g.notes ? `(${g.notes})` : ''}`).join('\n')}`;
+  // For fix_timestamps with diarization, build custom prompt
+  // Get glossary text
+  // Get glossary text
+  let glossaryText = '';
+  if (glossary && glossary.length > 0) {
+    if (mode === 'refinement') {
+      glossaryText = `\n\nKEY TERMINOLOGY (Listen for these terms and transcribe them accurately in the ORIGINAL LANGUAGE):\n${glossary.map(g => `- ${g.term}${g.notes ? ` (${g.notes})` : ''}`).join('\n')}`;
+    } else {
+      glossaryText = `\n\nTERMINOLOGY GLOSSARY (STRICTLY FOLLOW):\n${glossary.map(g => `- ${g.term}: ${g.translation} ${g.notes ? `(${g.notes})` : ''}`).join('\n')}`;
     }
+  }
 
-    let diarizationSection = '';
-    if (enableDiarization) {
-        if (speakerProfiles && speakerProfiles.length > 0) {
-            // **SCENARIO A: WITH PRE-ANALYZED PROFILES**
-            diarizationSection = `
+  let diarizationSection = '';
+  if (enableDiarization) {
+    if (speakerProfiles && speakerProfiles.length > 0) {
+      // **SCENARIO A: WITH PRE-ANALYZED PROFILES**
+      diarizationSection = `
 [P1.5 - SPEAKER IDENTIFICATION] Diarization (ENABLED - WITH PROFILE DATABASE)
 
 **IMPORTANT**: A senior AI (Gemini 3.0 Pro) has pre-analyzed this audio and identified ${speakerProfiles.length} speakers.
@@ -68,15 +73,46 @@ ${i + 1}. **${p.id}**
    - Accent: ${p.characteristics.accent}
    - Tone: ${p.characteristics.tone}
    ${p.inferredIdentity ? `- Role: ${p.inferredIdentity}` : ''}
+   ${p.speakingStyle ? `- Speaking Style: ${p.speakingStyle.formality || ''} ${p.speakingStyle.vocabulary ? `(${p.speakingStyle.vocabulary})` : ''}` : ''}
+   ${p.emotionalTone ? `- Emotional Tone: ${p.emotionalTone}` : ''}
+   ${p.catchphrases && p.catchphrases.length > 0 ? `- Catchphrases: ${p.catchphrases.map(c => `"${c}"`).join(', ')}` : ''}
+   ${p.speakingContext && p.speakingContext.length > 0 ? `- Speaking Context: ${p.speakingContext.join(', ')}` : ''}
    - Sample Quotes: ${p.sampleQuotes.map(q => `"${q}"`).join(', ')}
    - Confidence: ${(p.confidence * 100).toFixed(0)}%
 `).join('\n')}
 
-**MATCHING RULES**:
-1. **Primary Task**: Match each subtitle to one of the ${speakerProfiles.length} profiles above
-2. **Voice Analysis**: Compare pitch, speed, accent, tone with the profile
-3. **Content Clues**: Use sample quotes and inferred identity for context
-4. **Consistency**: Same voice = same speaker ID throughout
+**MATCHING STRATEGY** (Priority Order):
+
+1. **PRIMARY: Content & Style Matching** (Most Reliable)
+   - **Catchphrase Detection**: If the speaker uses any catchphrase from a profile → VERY STRONG match
+   - **Sample Quote Similarity**: Compare what is SAID with sample quotes in each profile
+   - **Vocabulary Style**: Match vocabulary level (technical/colloquial/formal) with profile's speakingStyle
+   - **Topic Alignment**: If speaker discusses topics in a profile's speakingContext → Strong match
+   - **Identity Clues**: If content relates to inferredIdentity (e.g., medical terms → Doctor profile)
+
+2. **SECONDARY: Dialogue Context** (Very Helpful)
+   - **Conversation Flow**: If previous subtitle was Speaker A asking question → this might be Speaker B answering
+   - **Alternation Pattern**: Speakers usually alternate (A→B→A→B)
+   - **Continuity**: Multiple consecutive lines with same tone/topic → likely same speaker
+
+3. **TERTIARY: Voice & Emotion** (Use as Confirmation)
+   - **Emotional Consistency**: Match emotional tone (enthusiastic/calm) with profile
+   - **Gender**: Usually reliable if clearly male/female
+   - **Pitch/Speed/Accent**: HINTS only - don't rely heavily
+
+4. **CRITICAL RULE: Consistency**
+   - Once assigned, maintain same speaker ID for similar content/style
+   - Same voice + same topic + same catchphrases = same speaker
+
+**MATCHING PROCESS**:
+For each subtitle line:
+→ Step 1: Check for catchphrases from any profile (HIGHEST priority)
+→ Step 2: Compare content with sample quotes (exact or similar phrases)
+→ Step 3: Check if topic relates to any profile's speakingContext or inferredIdentity
+→ Step 4: Consider dialogue context (response pattern, continuity)
+→ Step 5: Verify emotional tone and speaking style consistency
+→ Step 6: Use voice characteristics as final confirmation
+→ Step 7: Assign the best match from the ${speakerProfiles.length} profiles
 
 **EDGE CASE - NEW SPEAKER DISCOVERY**:
 If you encounter a voice that does NOT match ANY profile AND you are >90% confident it's a NEW speaker:
@@ -90,9 +126,9 @@ If you encounter a voice that does NOT match ANY profile AND you are >90% confid
 ✓ Voice changes are detected and speaker switches occur appropriately
 ✓ Consistency maintained across the batch
 `;
-        } else {
-            // **SCENARIO B: NO PROFILES (REAL-TIME DETECTION)**
-            diarizationSection = `
+    } else {
+      // **SCENARIO B: NO PROFILES (REAL-TIME DETECTION)**
+      diarizationSection = `
 [P1.5 - SPEAKER IDENTIFICATION] Audio Diarization
 → **CRITICAL TASK**: Identify and label DISTINCT SPEAKERS in the audio
 → **OUTPUT FORMAT**: Add "speaker" field to EVERY subtitle entry
@@ -125,10 +161,31 @@ Before returning, confirm:
 ✓ No speaker changes within a single segment
 ✓ At least one speaker identified (minimum "Speaker 1")
 `;
-        }
     }
+  }
 
-    return `You are a professional Subtitle Timing and Synchronization Specialist.
+  if (mode === 'refinement') {
+    return `You are a professional Subtitle QA Specialist. 
+    You will receive an audio chunk and a raw JSON transcription.
+    
+    YOUR TASKS:
+    1. Listen to the audio to verify the transcription.
+    2. **CHECK FOR MISSED HEARING**: If there is speech in the audio that is MISSING from the transcription, you MUST ADD IT.
+    3. FIX TIMESTAMPS: Ensure start/end times match the audio speech perfectly. **Timestamps MUST be strictly within the provided audio duration.**
+    4. FIX TRANSCRIPTION: Correct mishearings, typos, and proper nouns (names, terminology).
+    5. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (uh, um, ah, eto, ano, 呃, 那个).
+    6. SPLIT LINES: STRICT RULE. If a segment is longer than 4 seconds or > 18 characters, YOU MUST SPLIT IT into shorter, natural segments.
+    7. **LANGUAGE RULE**: Keep the transcription in the ORIGINAL LANGUAGE spoken in the audio. DO NOT translate to any other language.
+    8. FORMAT: Return a valid JSON array.
+
+    ${diarizationSection}
+
+    9. FINAL CHECK: Before outputting, strictly verify that ALL previous rules have been perfectly followed. Correct any remaining errors.
+    
+    Genre Context: ${genre}${glossaryText}`;
+  }
+
+  return `You are a professional Subtitle Timing and Synchronization Specialist.
 Your PRIMARY GOAL is to perfect timestamp alignment and segment timing for ${genre} content.
 
 TASK RULES (Priority Order):
@@ -158,6 +215,7 @@ ${diarizationSection}
 → DO NOT modify 'text_translated' field under ANY circumstances
 → Even if translation is incorrect → LEAVE IT UNCHANGED
 → Your job is TIMING and SPEAKER IDENTIFICATION, not translation
+→ Translation fixes belong in the Proofread function
 
 OUTPUT REQUIREMENTS:
 ✓ Valid JSON matching input structure
@@ -178,36 +236,36 @@ Context: ${genre}${glossaryText}`;
 };
 
 export const getSystemInstruction = (
-    genre: string,
-    customPrompt: string | undefined,
-    mode: 'refinement' | 'translation' | 'proofread' | 'fix_timestamps' = 'translation',
-    glossary?: GlossaryItem[]
+  genre: string,
+  customPrompt: string | undefined,
+  mode: 'refinement' | 'translation' | 'proofread' | 'fix_timestamps' = 'translation',
+  glossary?: GlossaryItem[]
 ): string => {
 
-    // Helper to format glossary for different modes
-    let glossaryText = '';
-    if (glossary && glossary.length > 0) {
-        if (mode === 'refinement') {
-            // For refinement: Only show original terms (no translations) to prevent language mixing
-            glossaryText = `\n\nKEY TERMINOLOGY (Listen for these terms and transcribe them accurately in the ORIGINAL LANGUAGE):\n${glossary.map(g => `- ${g.term}${g.notes ? ` (${g.notes})` : ''}`).join('\n')}`;
-        } else {
-            // For translation/proofread: Show full glossary with translations
-            glossaryText = `\n\nTERMINOLOGY GLOSSARY (STRICTLY FOLLOW):\n${glossary.map(g => `- ${g.term}: ${g.translation} ${g.notes ? `(${g.notes})` : ''}`).join('\n')}`;
-        }
-    }
-
-    // If custom prompt is provided, usually we prepend/mix it, but for simplicity if a user overrides "Proofreading Prompt", we use it for "Deep Proofread" mode.
-    if (mode === 'proofread' && customPrompt && customPrompt.trim().length > 0) {
-        return customPrompt + glossaryText;
-    }
-    // We allow custom prompt override for translation phase too
-    if (mode === 'translation' && customPrompt && customPrompt.trim().length > 0) {
-        return customPrompt + glossaryText;
-    }
-
-    // 1. Refinement Prompt (Flash 2.5) - Initial Pass
+  // Helper to format glossary for different modes
+  let glossaryText = '';
+  if (glossary && glossary.length > 0) {
     if (mode === 'refinement') {
-        return `You are a professional Subtitle QA Specialist. 
+      // For refinement: Only show original terms (no translations) to prevent language mixing
+      glossaryText = `\n\nKEY TERMINOLOGY (Listen for these terms and transcribe them accurately in the ORIGINAL LANGUAGE):\n${glossary.map(g => `- ${g.term}${g.notes ? ` (${g.notes})` : ''}`).join('\n')}`;
+    } else {
+      // For translation/proofread: Show full glossary with translations
+      glossaryText = `\n\nTERMINOLOGY GLOSSARY (STRICTLY FOLLOW):\n${glossary.map(g => `- ${g.term}: ${g.translation} ${g.notes ? `(${g.notes})` : ''}`).join('\n')}`;
+    }
+  }
+
+  // If custom prompt is provided, usually we prepend/mix it, but for simplicity if a user overrides "Proofreading Prompt", we use it for "Deep Proofread" mode.
+  if (mode === 'proofread' && customPrompt && customPrompt.trim().length > 0) {
+    return customPrompt + glossaryText;
+  }
+  // We allow custom prompt override for translation phase too
+  if (mode === 'translation' && customPrompt && customPrompt.trim().length > 0) {
+    return customPrompt + glossaryText;
+  }
+
+  // 1. Refinement Prompt (Flash 2.5) - Initial Pass
+  if (mode === 'refinement') {
+    return `You are a professional Subtitle QA Specialist. 
     You will receive an audio chunk and a raw JSON transcription.
     
     YOUR TASKS:
@@ -216,40 +274,71 @@ export const getSystemInstruction = (
     3. FIX TIMESTAMPS: Ensure start/end times match the audio speech perfectly. **Timestamps MUST be strictly within the provided audio duration.**
     4. FIX TRANSCRIPTION: Correct mishearings, typos, and proper nouns (names, terminology).
     5. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (uh, um, ah, eto, ano, 呃, 那个).
-    6. SPLIT LINES: STRICT RULE. If a segment is longer than 4 seconds or > 25 characters, YOU MUST SPLIT IT into shorter, natural segments.
+    5.5. **REMOVE NON-SPEECH ANNOTATIONS**: Delete any sound effect descriptions like (laughter), (music), (applause), (笑), (音楽), etc. These should NOT appear in the final subtitles.
+    6. SPLIT LINES: STRICT RULE. If a segment is longer than 4 seconds or > 18 characters, YOU MUST SPLIT IT into shorter, natural segments.
     7. **LANGUAGE RULE**: Keep the transcription in the ORIGINAL LANGUAGE spoken in the audio. DO NOT translate to any other language.
     8. FORMAT: Return a valid JSON array.
     9. FINAL CHECK: Before outputting, strictly verify that ALL previous rules (1-8) have been perfectly followed. Correct any remaining errors.
     
+    
     Genre Context: ${genre}${glossaryText}`;
+  }
+
+  // 2. Translation Prompt (Flash 2.5) - Initial Pass
+  if (mode === 'translation') {
+    let genreContext = "";
+    switch (genre) {
+      case 'anime': genreContext = "Genre: Anime. Use casual, emotive tone. Preserve honorifics nuances."; break;
+      case 'movie': genreContext = "Genre: Movie/TV. Natural dialogue, concise, easy to read."; break;
+      case 'news': genreContext = "Genre: News. Formal, objective, standard terminology."; break;
+      case 'tech': genreContext = "Genre: Tech. Precise terminology. Keep standard English acronyms."; break;
+      case 'general': genreContext = "Genre: General. Neutral and accurate."; break;
+      default: genreContext = `Context: ${genre}. Translate using tone/terminology appropriate for this context.`; break;
     }
 
-    // 2. Translation Prompt (Flash 2.5) - Initial Pass
-    if (mode === 'translation') {
-        let genreContext = "";
-        switch (genre) {
-            case 'anime': genreContext = "Genre: Anime. Use casual, emotive tone. Preserve honorifics nuances."; break;
-            case 'movie': genreContext = "Genre: Movie/TV. Natural dialogue, concise, easy to read."; break;
-            case 'news': genreContext = "Genre: News. Formal, objective, standard terminology."; break;
-            case 'tech': genreContext = "Genre: Tech. Precise terminology. Keep standard English acronyms."; break;
-            case 'general': genreContext = "Genre: General. Neutral and accurate."; break;
-            default: genreContext = `Context: ${genre}. Translate using tone/terminology appropriate for this context.`; break;
-        }
+    return `You are an expert Subtitle Translator specializing in ${genre} content.
+    Your GOAL is to provide fluent, natural Simplified Chinese (zh-CN) translations while strictly preserving the subtitle structure.
 
-        return `You are a professional translator. Translate subtitles to Simplified Chinese (zh-CN).
-    RULES:
-    1. **CHECK FOR MISSED TRANSLATION**: Ensure every meaningful part of the original text is translated.
-    2. **REMOVE FILLER WORDS**: Completely ignore stuttering, hesitation, and filler words (e.g., "uh", "um", "ah", "eto", "ano", "呃", "这个", "那个").
-    3. The translation must be fluent written Chinese, not a literal transcription of broken speech.
-    4. Maintain the "id" exactly.
-    5. **TERMINOLOGY**: Use the provided glossary for specific terms.
-    6. FINAL CHECK: Before outputting, strictly verify that ALL previous rules (1-5) have been perfectly followed. Correct any remaining errors.
+    TASK RULES (Strict Priority):
+
+    [P0 - STRUCTURAL INTEGRITY]
+    → **ONE INPUT = ONE OUTPUT**: You must return exactly one translated subtitle for every input subtitle.
+    → **ID PRESERVATION**: Maintain the "id" field exactly as provided.
+    → **NO MERGING/SPLITTING**: Do not combine multiple lines or split a single line.
+    → **TIMESTAMPS**: Do not modify timestamps.
+
+    [P1 - TRANSLATION QUALITY]
+    → **FLUENCY**: Translate into natural, written Chinese, not "translationese".
+    → **CONTEXT AWARENESS**: Use the provided genre context to determine tone and style.
+    → **COMPLETENESS**: Ensure every meaningful part of the original text is represented.
+    → **NO HALLUCINATIONS**: Do not invent information not present in the source.
+
+    [P2 - CLEANUP & REFINEMENT]
+    → **REMOVE FILLERS**: Ignore stuttering, hesitation, and meaningless fillers (e.g., "uh", "um", "ah", "eto", "ano", "呃", "那个").
+    → **CONCISENESS**: Keep subtitles concise and easy to read quickly.
+
+    [P3 - TERMINOLOGY]
+    → **GLOSSARY**: Strictly follow the provided glossary for specific terms.
+    → **CONSISTENCY**: Maintain consistent terminology for names and places.
+
+    OUTPUT REQUIREMENTS:
+    ✓ Valid JSON matching input structure
+    ✓ Output count MUST match input count exactly
+    ✓ All 'text_translated' fields must be Simplified Chinese
+
+    FINAL QUALITY CHECK:
+    Before returning, verify:
+    ✓ Did I return the exact same number of items as the input?
+    ✓ Are all IDs preserved?
+    ✓ Is the Chinese fluent and natural?
+    ✓ Did I remove all filler words?
+
     ${genreContext}${glossaryText}`;
-    }
+  }
 
-    // 3. Fix Timestamps Prompt (Flash 2.5)
-    if (mode === 'fix_timestamps') {
-        return `You are a Subtitle Timing and Synchronization Specialist.
+  // 3. Fix Timestamps Prompt (Flash 2.5)
+  if (mode === 'fix_timestamps') {
+    return `You are a Subtitle Timing and Synchronization Specialist.
       Your PRIMARY GOAL is to perfect timestamp alignment and segment timing for ${genre} content.
       
       TASK RULES (Strict Priority):
@@ -293,9 +382,9 @@ export const getSystemInstruction = (
       ✓ 'text_translated' completely unchanged from input
       
       Context: ${genre}`;
-    }
+  }
 
-    return `You are an expert Subtitle Translation Quality Specialist using Gemini 3 Pro.
+  return `You are an expert Subtitle Translation Quality Specialist using Gemini 3 Pro.
     Your PRIMARY GOAL is to perfect the Chinese translation quality for ${genre} content.
     
     TASK RULES (Strict Priority):
@@ -400,3 +489,118 @@ FINAL VERIFICATION:
 ✓ Notes added where helpful for consistency
 `;
 
+
+export const getSpeakerProfileExtractionPrompt = (genre: string) => `
+**TASK**: Extract comprehensive speaker profiles from audio samples for downstream voice matching.
+
+**CONTEXT**:
+- Genre: ${genre}
+- Audio: Representative samples from different time periods
+- Purpose: Create voice fingerprint database for Gemini 2.5 Flash to identify speakers
+- **Tools Available**: Google Search (use to verify public figures if names are mentioned)
+
+**SPEAKER PROFILE EXTRACTION**:
+1. Identify ALL distinct speakers (missing a speaker is critical failure)
+2. For each speaker, document:
+   - **Voice characteristics**: gender, name (if mentioned), pitch, speed, accent, tone
+   - **Inferred identity/role**:职业、角色、身份线索（如果对话中有提及）
+   - **Speaking style**: 
+     * Formality: formal/casual/mixed（正式程度）
+     * Vocabulary: technical/colloquial/poetic/etc.（词汇风格）
+     * Sentence structure: complex/simple/fragmented（句式结构）
+   - **Emotional tone**: enthusiastic/calm/nervous/authoritative/etc.（情绪基调）
+   - **Catchphrases**: 口头禅、重复短语、语言习惯（如果有明显特征）
+   - **Speaking context**: 说话场景或讨论的主题（帮助匹配）
+   - **6-8 representative quotes**: 从音频不同部分提取的原文引用
+   - **Confidence score**: 0.0-1.0
+
+**OUTPUT FORMAT** (JSON):
+\`\`\`json
+{
+  "speakerCount": <integer>,
+  "profiles": [
+    {
+      "id": "Speaker 1",
+      "characteristics": {
+        "name": "<name if mentioned, in source language (e.g., '田中' not 'Tanaka')>",
+        "gender": "male" | "female" | "unknown",
+        "pitch": "low" | "medium" | "high",
+        "speed": "slow" | "normal" | "fast",
+        "accent": "<English description>",
+        "tone": "<English description, e.g., calm, energetic>"
+      },
+      "inferredIdentity": "<role/name if identifiable>",
+      "speakingStyle": {
+        "formality": "formal" | "casual" | "mixed",
+        "vocabulary": "<description, e.g., technical, colloquial>",
+        "sentenceStructure": "<description, e.g., complex, simple>"
+      },
+      "emotionalTone": "<description, e.g., enthusiastic, calm>",
+      "catchphrases": ["<phrase 1>", "<phrase 2>"],
+      "speakingContext": ["<context 1>", "<context 2>"],
+      "sampleQuotes": ["<quote 1>", "<quote 2>", ..., "<quote 6-8>"],
+      "confidence": <0.0-1.0>
+    }
+  ]
+}
+\`\`\`
+
+**QUALITY CONSTRAINTS**:
+- Use confidence >0.8 ONLY for very distinct voices
+- If uncertain between 2-3 speakers, list all (better over-identify than miss)
+- Include background speakers if they speak ≥3 sentences
+- Describe accents/tone in English for consistency
+
+**EXAMPLE OUTPUT**:
+\`\`\`json
+{
+  "speakerCount": 2,
+  "profiles": [
+    {
+      "id": "Speaker 1",
+      "characteristics": {
+        "name": "John",
+        "gender": "male",
+        "pitch": "low",
+        "speed": "fast",
+        "accent": "American English",
+        "tone": "Professional, Authoritative"
+      },
+      "inferredIdentity": "News Anchor / Host",
+      "speakingStyle": {
+        "formality": "formal",
+        "vocabulary": "professional broadcast terminology",
+        "sentenceStructure": "complex, well-structured"
+      },
+      "emotionalTone": "calm, confident, authoritative",
+      "catchphrases": ["Welcome to the show", "Let's dive into"],
+      "speakingContext": ["introducing topics", "asking questions", "transitioning segments"],
+      "sampleQuotes": ["Welcome to the show tonight.", "Let's bring in our guest.", "That's an excellent point.", "We'll be right back after this.", "Thank you for watching.", "Let's dive into today's headlines."],
+      "confidence": 0.95
+    },
+    {
+      "id": "Speaker 2",
+      "characteristics": {
+        "name": "田中美咲",
+        "gender": "female",
+        "pitch": "high",
+        "speed": "normal",
+        "accent": "Japanese (Kansai dialect)",
+        "tone": "Energetic, Friendly"
+      },
+      "inferredIdentity": "Guest / Expert",
+      "speakingStyle": {
+        "formality": "casual",
+        "vocabulary": "colloquial, regional expressions",
+        "sentenceStructure": "simple, conversational"
+      },
+      "emotionalTone": "enthusiastic, warm, expressive",
+      "catchphrases": ["ほんまに", "めっちゃ"],
+      "speakingContext": ["discussing food culture", "sharing personal experiences", "responding to questions"],
+      "sampleQuotes": ["こんにちは！田中です！", "大阪の食べ物は最高です！", "ほんまにそうですね！", "めっちゃ美味しいんですよ。", "私も同じこと思ってました。", "これはぜひ試してほしい！"],
+      "confidence": 0.88
+    }
+  ]
+}
+\`\`\`
+`;

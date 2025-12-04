@@ -18,7 +18,7 @@ export const transcribeAudio = async (
 ): Promise<SubtitleItem[]> => {
     // Check cancellation
     if (signal?.aborted) {
-        throw new Error('Operation cancelled');
+        throw new Error('操作已取消');
     }
 
     // Try local Whisper

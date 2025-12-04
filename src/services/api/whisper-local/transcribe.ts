@@ -31,15 +31,36 @@ export const transcribeWithLocalWhisper = async (
         // Convert Blob to ArrayBuffer
         const arrayBuffer = await audioBlob.arrayBuffer();
 
+        if (signal?.aborted) {
+            throw new Error('操作已取消');
+        }
+
+        if (signal?.aborted) {
+            throw new Error('操作已取消');
+        }
+
         // Call Electron IPC
         logger.info(`[LocalWhisper] Sending request to main process. Model: ${modelPath}`);
-        const result = await window.electronAPI.transcribeLocal({
+
+        // Wrap IPC call in a Promise.race to allow cancellation
+        const transcriptionPromise = window.electronAPI.transcribeLocal({
             audioData: arrayBuffer,
             modelPath,
             language,
             threads,
             customBinaryPath
         });
+
+        const cancelPromise = new Promise<never>((_, reject) => {
+            if (signal) {
+                signal.addEventListener('abort', () => {
+                    logger.info('[LocalWhisper] Transcription cancelled by user');
+                    reject(new Error('操作已取消'));
+                });
+            }
+        });
+
+        const result = await Promise.race([transcriptionPromise, cancelPromise]);
 
         if (!result.success) {
             throw new WhisperLocalError('TRANSCRIPTION_FAILED', result.error || '转录失败');

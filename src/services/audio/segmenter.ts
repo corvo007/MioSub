@@ -27,12 +27,17 @@ export class SmartSegmenter {
     /**
      * Segment audio into chunks of approximately targetDuration seconds,
      * trying to cut at silence/natural pauses.
+     * 
+     * @returns Object containing chunks and VAD segments (for caching/reuse)
      */
     public async segmentAudio(
         audioBuffer: AudioBuffer,
         targetDurationSec: number,
         signal?: AbortSignal
-    ): Promise<{ start: number; end: number }[]> {
+    ): Promise<{
+        chunks: { start: number; end: number }[],
+        vadSegments: { start: number; end: number }[]
+    }> {
         // 1. Get speech segments (where speech IS happening)
         // We use a smaller minDuration to detect even short pauses
         const speechSegments = await this.analyzeAudio(audioBuffer, { minDurationMs: 500, signal });
@@ -140,7 +145,12 @@ export class SmartSegmenter {
         }
 
         logger.debug(`Segmented audio into ${chunks.length} chunks.`);
-        return chunks;
+
+        // Return both chunks and VAD segments for caching
+        return {
+            chunks,
+            vadSegments: speechSegments
+        };
     }
 
     private worker: Worker | null = null;
@@ -252,7 +262,7 @@ export class SmartSegmenter {
             // Run VAD via worker
             return new Promise((resolve, reject) => {
                 if (!this.worker) return reject("Worker not available");
-                if (options.signal?.aborted) return reject(new Error('Operation cancelled'));
+                if (options.signal?.aborted) return reject(new Error('操作已取消'));
 
                 const handleProcessMessage = (e: MessageEvent) => {
                     const msg = e.data;
@@ -277,7 +287,7 @@ export class SmartSegmenter {
 
                 const onAbort = () => {
                     cleanup();
-                    reject(new Error('Operation cancelled'));
+                    reject(new Error('操作已取消'));
                 };
 
                 const cleanup = () => {

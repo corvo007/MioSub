@@ -24,7 +24,7 @@ export const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
 
     const chunks = (Object.values(chunkProgress) as ChunkStatus[]).sort((a, b) => {
         // Prioritize system tasks
-        const systemOrder = { 'decoding': 1, 'segmenting': 2, 'glossary': 3 };
+        const systemOrder = { 'decoding': 1, 'segmenting': 2, 'glossary': 3, 'diarization': 4 };
         const orderA = systemOrder[a.id as keyof typeof systemOrder] || 999;
         const orderB = systemOrder[b.id as keyof typeof systemOrder] || 999;
 
@@ -36,8 +36,8 @@ export const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
         return String(a.id).localeCompare(String(b.id));
     });
 
-    const systemChunks = chunks.filter(c => ['decoding', 'segmenting', 'glossary'].includes(String(c.id)));
-    const contentChunks = chunks.filter(c => !['init', 'decoding', 'segmenting', 'glossary'].includes(String(c.id)));
+    const systemChunks = chunks.filter(c => ['decoding', 'segmenting', 'glossary', 'diarization'].includes(String(c.id)));
+    const contentChunks = chunks.filter(c => !['init', 'decoding', 'segmenting', 'glossary', 'diarization'].includes(String(c.id)));
 
     const contentTotal = contentChunks.length > 0 ? contentChunks[0].total : 0;
     const contentCompleted = contentChunks.filter(c => c.status === 'completed').length;
@@ -118,7 +118,8 @@ export const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
                                         : chunk.id === 'decoding' ? '解码音频'
                                             : chunk.id === 'segmenting' ? '分段处理'
                                                 : chunk.id === 'glossary' ? '提取术语'
-                                                    : chunk.id}
+                                                    : chunk.id === 'diarization' ? '说话人分析'
+                                                        : chunk.id}
                                 </span>
                             </div>
                             <div className="flex-1 flex items-center justify-end space-x-4">
@@ -140,8 +141,8 @@ export const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
                     <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden border border-slate-700/50">
                         <div
                             className={`h-full transition-all duration-500 ease-out ${status === GenerationStatus.CANCELLED ? 'bg-orange-500' :
-                                    status === GenerationStatus.PROOFREADING ? 'bg-purple-500' :
-                                        'bg-blue-500'
+                                status === GenerationStatus.PROOFREADING ? 'bg-purple-500' :
+                                    'bg-blue-500'
                                 }`}
                             style={{ width: `${percent}%` }}
                         ></div>

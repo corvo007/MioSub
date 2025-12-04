@@ -3,16 +3,22 @@
  * WCAG AA compliant for text contrast on dark backgrounds
  */
 const SPEAKER_COLORS = [
-    '#3b82f6', // Blue
-    '#10b981', // Green
-    '#f59e0b', // Amber
-    '#ef4444', // Red
-    '#8b5cf6', // Violet
-    '#ec4899', // Pink
-    '#06b6d4', // Cyan
-    '#f97316', // Orange
-    '#14b8a6', // Teal
-    '#a855f7', // Purple
+    '#00FFFF', // Cyan (High vis)
+    '#FF3333', // Bright Red
+    '#00FF00', // Lime Green
+    '#FFFF00', // Yellow
+    '#FF00FF', // Magenta
+    '#FFA500', // Orange
+    '#00BFFF', // Deep Sky Blue
+    '#FF1493', // Deep Pink
+    '#7FFFD4', // Aquamarine
+    '#FFD700', // Gold
+    '#B088FF', // Light Purple
+    '#32CD32', // Lime
+    '#FF69B4', // Hot Pink
+    '#DDA0DD', // Plum
+    '#00FA9A', // Medium Spring Green
+    '#6495ED', // Cornflower Blue
 ];
 
 /**
@@ -21,7 +27,7 @@ const SPEAKER_COLORS = [
  * @returns Hex color code
  */
 export function getSpeakerColor(speaker: string): string {
-    if (!speaker) return '#6b7280'; // Gray for undefined
+    if (!speaker) return '#FFFFFF'; // White for undefined (same as before)
 
     // Extract number from "Speaker X" format
     const match = speaker.match(/\d+/);
@@ -30,11 +36,14 @@ export function getSpeakerColor(speaker: string): string {
         return SPEAKER_COLORS[index % SPEAKER_COLORS.length];
     }
 
-    // Fallback: hash the speaker string
-    let hash = 0;
+    // Fallback: hash the speaker string using djb2 algorithm (better distribution)
+    let hash = 5381;
     for (let i = 0; i < speaker.length; i++) {
-        hash = speaker.charCodeAt(i) + ((hash << 5) - hash);
+        // Use charCodeAt to handle Unicode characters properly
+        const char = speaker.charCodeAt(i);
+        hash = ((hash << 5) + hash) + char; // hash * 33 + char
     }
-    const index = Math.abs(hash) % SPEAKER_COLORS.length;
+    // Use unsigned 32-bit integer to avoid negative numbers
+    const index = (hash >>> 0) % SPEAKER_COLORS.length;
     return SPEAKER_COLORS[index];
 }

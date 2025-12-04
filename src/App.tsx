@@ -256,6 +256,7 @@ export default function App() {
                     updateLineComment={workspace.updateLineComment}
                     updateSubtitleText={workspace.updateSubtitleText}
                     updateSubtitleOriginal={workspace.updateSubtitleOriginal}
+                    updateSpeaker={workspace.updateSpeaker}
                 />
             )}
             <GenreSettingsDialog

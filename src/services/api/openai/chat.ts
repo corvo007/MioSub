@@ -43,7 +43,7 @@ export const transcribeWithOpenAIChat = async (
     try {
         // Check cancellation
         if (signal?.aborted) {
-            throw new Error('Operation cancelled');
+            throw new Error('操作已取消');
         }
 
         const controller = new AbortController();

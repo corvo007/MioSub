@@ -85,18 +85,32 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                                         </div>
 
                                         {settings.enableDiarization && (
-                                            <div className="flex items-center justify-between pl-4 animate-fade-in">
-                                                <div>
-                                                    <label className="block text-sm font-medium text-slate-300">导出时包含说话人名称</label>
-                                                    <p className="text-xs text-slate-500">在字幕文件中显示说话人（如：Speaker 1：对话内容）</p>
+                                            <>
+                                                <div className="flex items-center justify-between pl-4 animate-fade-in">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-300">导出时包含说话人名称</label>
+                                                        <p className="text-xs text-slate-500">在字幕文件中显示说话人（如：Speaker 1：对话内容）</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => updateSetting('includeSpeakerInExport', !settings.includeSpeakerInExport)}
+                                                        className={`w-10 h-5 rounded-full transition-colors relative ${settings.includeSpeakerInExport ? 'bg-indigo-500' : 'bg-slate-600'}`}
+                                                    >
+                                                        <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-transform ${settings.includeSpeakerInExport ? 'left-6' : 'left-1'}`} />
+                                                    </button>
                                                 </div>
-                                                <button
-                                                    onClick={() => updateSetting('includeSpeakerInExport', !settings.includeSpeakerInExport)}
-                                                    className={`w-10 h-5 rounded-full transition-colors relative ${settings.includeSpeakerInExport ? 'bg-indigo-500' : 'bg-slate-600'}`}
-                                                >
-                                                    <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-transform ${settings.includeSpeakerInExport ? 'left-6' : 'left-1'}`} />
-                                                </button>
-                                            </div>
+                                                <div className="flex items-center justify-between pl-4 animate-fade-in mt-3">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-slate-300">使用说话人颜色 (ASS)</label>
+                                                        <p className="text-xs text-slate-500">为不同说话人分配不同颜色（仅 ASS 格式有效）</p>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => updateSetting('useSpeakerColors', !settings.useSpeakerColors)}
+                                                        className={`w-10 h-5 rounded-full transition-colors relative ${settings.useSpeakerColors ? 'bg-indigo-500' : 'bg-slate-600'}`}
+                                                    >
+                                                        <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-transform ${settings.useSpeakerColors ? 'left-6' : 'left-1'}`} />
+                                                    </button>
+                                                </div>
+                                            </>
                                         )}
                                     </div>
                                 </div>

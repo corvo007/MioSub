@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { SubtitleItem } from "@/types/subtitle";
 import { AppSettings } from "@/types/settings";
-import { ChunkStatus } from "@/types/api";
+import { ChunkStatus, TokenUsage } from "@/types/api";
 import { GlossaryItem, GlossaryExtractionResult, GlossaryExtractionMetadata } from "@/types/glossary";
 import { decodeAudioWithRetry } from "@/services/audio/decoder";
 import { formatTime, timeToSeconds } from "@/services/subtitle/time";
@@ -18,7 +18,7 @@ import { getSystemInstruction, getSystemInstructionWithDiarization } from "@/ser
 import { parseGeminiResponse } from "@/services/subtitle/parser";
 import { mapInParallel, Semaphore } from "@/services/utils/concurrency";
 import { logger } from "@/services/utils/logger";
-import { REFINEMENT_SCHEMA, SAFETY_SETTINGS } from "./schemas";
+import { REFINEMENT_SCHEMA, REFINEMENT_WITH_DIARIZATION_SCHEMA, SAFETY_SETTINGS } from "./schemas";
 import { generateContentWithRetry, formatGeminiError } from "./client";
 import { translateBatch } from "./batch";
 
@@ -48,6 +48,18 @@ export const generateSubtitles = async (
         }
     });
 
+    // Token Usage Tracking
+    const usageReport: Record<string, { prompt: number, output: number, total: number }> = {};
+    const trackUsage = (usage: TokenUsage) => {
+        const model = usage.modelName;
+        if (!usageReport[model]) {
+            usageReport[model] = { prompt: 0, output: 0, total: 0 };
+        }
+        usageReport[model].prompt += usage.promptTokens;
+        usageReport[model].output += usage.candidatesTokens;
+        usageReport[model].total += usage.totalTokens;
+    };
+
     // 1. Decode Audio
     onProgress?.({ id: 'decoding', total: 1, status: 'processing', message: "正在解码音频..." });
     let audioBuffer: AudioBuffer;
@@ -70,21 +82,27 @@ export const generateSubtitles = async (
 
     // Prepare chunks
     const chunksParams: { index: number; start: number; end: number }[] = [];
+    let vadSegments: { start: number, end: number }[] | undefined; // Cache VAD segments
 
     if (settings.useSmartSplit) {
         onProgress?.({ id: 'segmenting', total: 1, status: 'processing', message: "正在智能分段..." });
         const segmenter = new SmartSegmenter();
-        const segments = await segmenter.segmentAudio(audioBuffer, chunkDuration, signal);
-        logger.info("Smart Segmentation Results", { count: segments.length, segments });
+        const result = await segmenter.segmentAudio(audioBuffer, chunkDuration, signal);
+        logger.info("Smart Segmentation Results", { count: result.chunks.length, chunks: result.chunks });
 
-        segments.forEach((seg, i) => {
+        result.chunks.forEach((seg, i) => {
             chunksParams.push({
                 index: i + 1,
                 start: seg.start,
                 end: seg.end
             });
         });
-        onProgress?.({ id: 'segmenting', total: 1, status: 'completed', message: `智能分段完成，共 ${segments.length} 个片段。` });
+
+        // Cache VAD segments for reuse in speaker sampling
+        vadSegments = result.vadSegments;
+        logger.info(`Cached ${vadSegments.length} VAD segments for speaker profile extraction`);
+
+        onProgress?.({ id: 'segmenting', total: 1, status: 'completed', message: `智能分段完成，共 ${result.chunks.length} 个片段。` });
     } else {
         // Standard fixed-size chunking
         let cursor = 0;
@@ -160,7 +178,9 @@ export const generateSubtitles = async (
                     message: completed === total ? '术语提取完成。' : `正在提取术语 (${completed}/${total})...`
                 });
             },
-            signal
+            signal,
+            trackUsage,
+            (settings.requestTimeout || 600) * 1000 // Custom timeout in milliseconds
         );
     }
 
@@ -214,7 +234,7 @@ export const generateSubtitles = async (
                     onProgress?.({ id: 'glossary', total: 1, status: 'completed', message: '未发现术语。' });
                 }
             } catch (e: any) {
-                if (e.message === 'Operation cancelled' || e.name === 'AbortError') {
+                if (e.message === '操作已取消' || e.name === 'AbortError') {
                     logger.info("Glossary extraction cancelled");
                     onProgress?.({ id: 'glossary', total: 1, status: 'completed', message: '已取消' });
                 } else {
@@ -243,7 +263,13 @@ export const generateSubtitles = async (
         speakerProfilePromise = (async () => {
             try {
                 // 1. Intelligent Sampling (returns blob and duration)
-                const { blob: sampledAudioBlob, duration } = await intelligentAudioSampling(audioBuffer, 300, 8);
+                const { blob: sampledAudioBlob, duration } = await intelligentAudioSampling(
+                    audioBuffer,
+                    480, // 8 minutes for comprehensive speaker coverage
+                    8,
+                    signal,
+                    vadSegments // Pass cached VAD segments to avoid re-running VAD
+                );
 
                 // 2. Extract Profiles
                 const profileSet = await extractSpeakerProfiles(
@@ -251,12 +277,19 @@ export const generateSubtitles = async (
                     sampledAudioBlob,
                     duration,
                     settings.genre,
-                    300000
+                    (settings.requestTimeout || 600) * 1000, // Use configured timeout
+                    trackUsage,
+                    signal
                 );
 
                 logger.info(`Extracted ${profileSet.profiles.length} speaker profiles`, profileSet.profiles);
                 onProgress?.({ id: 'diarization', total: 1, status: 'completed', message: `已识别 ${profileSet.profiles.length} 位说话人` });
-                return profileSet.profiles;
+
+                // Swap ID with Name if available, so the AI uses the name in the output
+                return profileSet.profiles.map(p => ({
+                    ...p,
+                    id: p.characteristics.name || p.id
+                }));
             } catch (e) {
                 logger.error("Speaker profile extraction failed", e);
                 onProgress?.({ id: 'diarization', total: 1, status: 'error', message: '说话人分析失败' });
@@ -289,7 +322,7 @@ export const generateSubtitles = async (
             // Acquire Transcription Semaphore
             await transcriptionSemaphore.acquire();
             try {
-                if (signal?.aborted) throw new Error('Operation cancelled');
+                if (signal?.aborted) throw new Error('操作已取消');
 
                 onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'transcribing', message: '正在转录...' });
                 logger.debug(`[Chunk ${index}] Starting transcription...`);
@@ -342,21 +375,32 @@ export const generateSubtitles = async (
             onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'waiting_glossary', message: '等待术语表...' });
             logger.debug(`[Chunk ${index}] Waiting for glossary confirmation...`);
 
-            if (signal?.aborted) throw new Error('Operation cancelled');
+            if (signal?.aborted) throw new Error('操作已取消');
 
             const finalGlossary = await glossaryState.get();
 
-            if (signal?.aborted) throw new Error('Operation cancelled');
+            if (signal?.aborted) throw new Error('操作已取消');
 
             const chunkSettings = { ...settings, glossary: finalGlossary };
 
             logger.debug(`[Chunk ${index}] Glossary ready (${finalGlossary.length} terms), proceeding to refinement`);
 
+            // Wait for speaker profiles if diarization is enabled (Before acquiring semaphore)
+            let speakerProfiles: SpeakerProfile[] | undefined;
+            if (speakerProfilePromise) {
+                onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'waiting_speakers', message: '等待说话人分析...' });
+                try {
+                    speakerProfiles = await speakerProfilePromise;
+                } catch (e) {
+                    logger.warn("Failed to get speaker profiles, proceeding without them", e);
+                }
+            }
+
             // ===== STEP 3: REFINEMENT =====
             // Acquire Refinement Semaphore (Gemini API limit)
             await refinementSemaphore.acquire();
             try {
-                if (signal?.aborted) throw new Error('Operation cancelled');
+                if (signal?.aborted) throw new Error('操作已取消');
 
                 // Re-slice audio for Gemini (Refine needs audio)
                 const refineWavBlob = await sliceAudioBuffer(audioBuffer, start, end);
@@ -365,20 +409,10 @@ export const generateSubtitles = async (
                 let refinedSegments: SubtitleItem[] = [];
                 onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'refining', message: '正在校对时间轴...' });
 
-                // Wait for speaker profiles if diarization is enabled
-                let speakerProfiles: SpeakerProfile[] | undefined;
-                if (speakerProfilePromise) {
-                    try {
-                        speakerProfiles = await speakerProfilePromise;
-                    } catch (e) {
-                        logger.warn("Failed to get speaker profiles, proceeding without them", e);
-                    }
-                }
-
                 const refineSystemInstruction = getSystemInstructionWithDiarization(
                     chunkSettings.genre,
                     undefined,
-                    'fix_timestamps',
+                    'refinement',
                     chunkSettings.glossary,
                     chunkSettings.enableDiarization,
                     speakerProfiles
@@ -416,6 +450,7 @@ export const generateSubtitles = async (
             → Return timestamps in HH:MM:SS,mmm format
             → Timestamps must be relative to the provided audio (starting at 00:00:00,000)
             → Ensure all required fields are present
+            ${chunkSettings.enableDiarization ? `→ INCLUDE "speaker" field for every segment (e.g., "Speaker 1")` : ''}
 
             FINAL VERIFICATION:
             ✓ Long segments (>4s or >25 chars) properly split
@@ -443,12 +478,12 @@ export const generateSubtitles = async (
                             },
                             config: {
                                 responseMimeType: "application/json",
-                                responseSchema: REFINEMENT_SCHEMA,
+                                responseSchema: chunkSettings.enableDiarization ? REFINEMENT_WITH_DIARIZATION_SCHEMA : REFINEMENT_SCHEMA,
                                 systemInstruction: refineSystemInstruction,
                                 safetySettings: SAFETY_SETTINGS,
                                 maxOutputTokens: 65536,
                             }
-                        }, 3, signal);
+                        }, 3, signal, trackUsage, (settings.requestTimeout || 600) * 1000);
 
                         refinedSegments = parseGeminiResponse(refineResponse.text, chunkDuration);
                     }
@@ -457,6 +492,9 @@ export const generateSubtitles = async (
                         refinedSegments = [...rawSegments];
                     }
                     logger.debug(`[Chunk ${index}] Refinement complete. Segments: ${refinedSegments.length}`);
+                    if (refinedSegments.length > 0 && chunkSettings.enableDiarization) {
+                        logger.debug(`[Chunk ${index}] Refinement first segment speaker: ${refinedSegments[0].speaker}`);
+                    }
                 } catch (e) {
                     logger.error(`分段 ${index} 时间轴失败，将回退到原始结果。`, formatGeminiError(e));
                     refinedSegments = [...rawSegments];
@@ -471,7 +509,8 @@ export const generateSubtitles = async (
                         id: idx + 1,
                         original: seg.original,
                         start: seg.startTime,
-                        end: seg.endTime
+                        end: seg.endTime,
+                        speaker: seg.speaker
                     }));
 
                     const translateSystemInstruction = getSystemInstruction(chunkSettings.genre, chunkSettings.customTranslationPrompt, 'translation', chunkSettings.glossary);
@@ -493,17 +532,23 @@ export const generateSubtitles = async (
                             1, // Internal concurrency (we're already in refinementSemaphore)
                             chunkSettings.translationBatchSize || 20,
                             (update) => onProgress?.({ id: index, total: totalChunks, status: 'processing', stage: 'translating', ...update }),
-                            signal
+                            signal,
+                            trackUsage,
+                            (settings.requestTimeout || 600) * 1000 // Custom timeout in milliseconds
                         );
                     }
                     logger.debug(`[Chunk ${index}] Translation complete. Items: ${translatedItems.length}`);
+                    if (translatedItems.length > 0 && chunkSettings.enableDiarization) {
+                        logger.debug(`[Chunk ${index}] Translation first segment speaker: ${translatedItems[0].speaker}`);
+                    }
 
                     finalChunkSubs = translatedItems.map(item => ({
                         id: 0, // Placeholder, will re-index later
                         startTime: formatTime(timeToSeconds(item.start) + start),
                         endTime: formatTime(timeToSeconds(item.end) + start),
                         original: item.original,
-                        translated: item.translated
+                        translated: item.translated,
+                        speaker: item.speaker
                     }));
                 }
 
@@ -526,5 +571,20 @@ export const generateSubtitles = async (
     });
 
     const finalSubtitles = chunkResults.flat().map((s, idx) => ({ ...s, id: idx + 1 }));
+
+    // Log Token Usage Report
+    let reportLog = "\n📊 Token Usage Report:\n----------------------------------------\n";
+    let grandTotal = 0;
+    for (const [model, usage] of Object.entries(usageReport)) {
+        reportLog += `Model: ${model}\n`;
+        reportLog += `  - Prompt Tokens: ${usage.prompt.toLocaleString()}\n`;
+        reportLog += `  - Output Tokens: ${usage.output.toLocaleString()}\n`;
+        reportLog += `  - Total: ${usage.total.toLocaleString()}\n`;
+        reportLog += `----------------------------------------\n`;
+        grandTotal += usage.total;
+    }
+    reportLog += `Grand Total: ${grandTotal.toLocaleString()}\n`;
+    logger.info(reportLog);
+
     return { subtitles: finalSubtitles, glossaryResults: extractedGlossaryResults };
 };

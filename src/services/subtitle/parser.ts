@@ -61,12 +61,50 @@ export const parseSrt = (content: string): SubtitleItem[] => {
             }
         }
 
+        // --- Speaker Extraction Logic ---
+        // Format: "Speaker Name: Content"
+        // We check both original and translated lines.
+        // If both have the same speaker, we extract it.
+        // If only one has it, we extract it.
+        // If they differ, we prefer the one from 'original' (or maybe just take the first one found).
+
+        let speaker: string | undefined = undefined;
+
+        const extractSpeaker = (text: string): { speaker?: string, content: string } => {
+            const match = text.match(/^(.+?):\s+(.*)$/s); // Use 's' flag for dotAll if needed, but here we process line by line usually. 
+            // Actually text might be multiline.
+            // The export format puts "Speaker: " at the beginning of the block if it's there.
+            // But wait, if it's multiline, does every line have speaker? No, usually just the first line of the block.
+            // Let's check the very start of the string.
+            const matchFirst = text.match(/^(.+?):\s+(.*)$/s);
+            if (matchFirst) {
+                return { speaker: matchFirst[1], content: matchFirst[2] };
+            }
+            return { content: text };
+        };
+
+        const origRes = extractSpeaker(original);
+        const transRes = extractSpeaker(translated);
+
+        if (origRes.speaker) {
+            speaker = origRes.speaker;
+            original = origRes.content;
+        }
+
+        // If translated also has speaker, remove it. 
+        // If we didn't find speaker in original (rare if bilingual export), take it from translated.
+        if (transRes.speaker) {
+            if (!speaker) speaker = transRes.speaker;
+            translated = transRes.content;
+        }
+
         items.push({
             id: items.length + 1,
             startTime: normalizeTimestamp(start),
             endTime: normalizeTimestamp(end),
             original: original,
-            translated: translated
+            translated: translated,
+            speaker: speaker
         });
     });
     return items;
@@ -141,12 +179,39 @@ export const parseAss = (content: string): SubtitleItem[] => {
             // Clean up ASS tags from the extracted text
             const clean = (t: string) => t.replace(/{[^}]+}/g, '').replace(/\\N/g, '\n').trim();
 
+            original = clean(original);
+            translated = clean(translated);
+
+            // --- Speaker Extraction Logic ---
+            let speaker: string | undefined = undefined;
+
+            const extractSpeaker = (text: string): { speaker?: string, content: string } => {
+                const match = text.match(/^(.+?):\s+(.*)$/s);
+                if (match) {
+                    return { speaker: match[1], content: match[2] };
+                }
+                return { content: text };
+            };
+
+            const origRes = extractSpeaker(original);
+            const transRes = extractSpeaker(translated);
+
+            if (origRes.speaker) {
+                speaker = origRes.speaker;
+                original = origRes.content;
+            }
+            if (transRes.speaker) {
+                if (!speaker) speaker = transRes.speaker;
+                translated = transRes.content;
+            }
+
             items.push({
                 id: items.length + 1,
                 startTime: normalizeTimestamp(parts[startIdx]),
                 endTime: normalizeTimestamp(parts[endIdx]),
-                original: clean(original),
-                translated: clean(translated)
+                original: original,
+                translated: translated,
+                speaker: speaker
             });
         }
     });
@@ -273,7 +338,8 @@ export const parseGeminiResponse = (jsonResponse: string | null | undefined, max
                 startTime: startStr,
                 endTime: endStr,
                 original: item.text_original || "",
-                translated: item.text_translated || ""
+                translated: item.text_translated || "",
+                speaker: (item as any).speaker || undefined
             };
         }).filter(item => item !== null) as SubtitleItem[];
 

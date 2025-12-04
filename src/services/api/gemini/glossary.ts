@@ -1,6 +1,6 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { GlossaryItem, GlossaryExtractionResult, GlossaryExtractionMetadata } from "@/types/glossary";
-import { SubtitleItem } from "@/types/subtitle";
+import { TokenUsage } from "@/types/api";
 import { blobToBase64 } from "@/services/audio/converter";
 import { sliceAudioBuffer } from "@/services/audio/processor";
 import { mapInParallel } from "@/services/utils/concurrency";
@@ -17,7 +17,9 @@ export const extractGlossaryFromAudio = async (
     genre: string,
     concurrency: number,
     onProgress?: (completed: number, total: number) => void,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onUsage?: (usage: TokenUsage) => void,
+    timeoutMs?: number // Custom timeout in milliseconds
 ): Promise<GlossaryExtractionResult[]> => {
     logger.info(`Starting glossary extraction on ${chunks.length} chunks...`);
 
@@ -52,7 +54,7 @@ export const extractGlossaryFromAudio = async (
                     maxOutputTokens: 65536,
                     tools: [{ googleSearch: {} }],
                 }
-            }, 3, signal);
+            }, 3, signal, onUsage, timeoutMs);
 
             const text = response.text || "[]";
             const clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -178,7 +180,7 @@ export const retryGlossaryExtraction = async (
             timeout: timeout || 600000
         }
     });
-    const results = await extractGlossaryFromAudio(ai, audioBuffer, chunks, genre, concurrency);
+    const results = await extractGlossaryFromAudio(ai, audioBuffer, chunks, genre, concurrency, undefined, undefined, undefined, timeout);
 
     const totalTerms = results.reduce((sum, r) => sum + r.terms.length, 0);
     const hasFailures = results.some(r => r.confidence === 'low' && r.terms.length === 0);
@@ -191,81 +193,4 @@ export const retryGlossaryExtraction = async (
     };
 };
 
-/**
- * Auto-generate a glossary from the current subtitles.
- * Uses Gemini to identify key terms, names, and specialized vocabulary.
- */
-export const generateGlossary = async (
-    subtitles: SubtitleItem[],
-    apiKey: string,
-    genre: string,
-    timeout?: number
-): Promise<GlossaryItem[]> => {
-    if (!apiKey) throw new Error("缺少 Gemini API 密钥。");
-    const ai = new GoogleGenAI({
-        apiKey,
-        httpOptions: { timeout: timeout || 600000 }
-    });
 
-    // Prepare a sample of the text to avoid context limit issues if the file is huge.
-    // We'll take the first 200 lines, middle 100, and last 100 to get a good spread.
-    let textSample = "";
-    // Gemini context window is large (1M+ tokens), so we can process most subtitle files entirely.
-    // We only sample if the file is extremely large (> 10,000 lines) to avoid timeouts.
-    if (subtitles.length > 10000) {
-        const start = subtitles.slice(0, 2000);
-        const midIdx = Math.floor(subtitles.length / 2);
-        const mid = subtitles.slice(midIdx, midIdx + 2000);
-        const end = subtitles.slice(-2000);
-        textSample = [...start, ...mid, ...end].map(s => s.original).join("\n");
-    } else {
-        textSample = subtitles.map(s => s.original).join("\n");
-    }
-
-    const prompt = `
-    Task: Extract a glossary of key terms from the subtitle text.
-
-      Context / Genre: ${genre}
-
-    FOCUS AREAS:
-    1. **Proper Names**: People, places, organizations.
-    2. **Specialized Terminology**: Terms specific to this genre/context.
-    3. **Recurring Terms**: Technical terms or slang appearing multiple times.
-
-      RULES:
-    1. **DEDUPLICATION**: Only list each unique term once. If a term appears multiple times, include it only once.
-    2. **SIMPLIFIED CHINESE**: All translations MUST BE in Simplified Chinese (zh-CN).
-    3. **RELEVANCE**: Only include terms important for consistent translation (not common words).
-    4. **NOTES**: Use the "notes" field to clarify context if the term is ambiguous.
-    5. **FINAL CHECK**: Verify all terms are unique, relevant, and translations are accurate.
-
-    Text Sample:
-    ${textSample}
-    `;
-
-    try {
-        const response = await generateContentWithRetry(ai, {
-            model: 'gemini-3-pro-preview',
-            contents: { parts: [{ text: prompt }] },
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: GLOSSARY_SCHEMA,
-                temperature: 1.0,
-                maxOutputTokens: 65536,
-                tools: [{ googleSearch: {} }],
-            }
-        });
-
-        const text = response.text;
-        if (!text) return [];
-
-        const clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
-        const extracted = extractJsonArray(clean);
-        const textToParse = extracted || clean;
-
-        return JSON.parse(textToParse) as GlossaryItem[];
-    } catch (e) {
-        logger.error("Failed to generate glossary:", e);
-        throw new Error("术语表生成失败，请重试。");
-    }
-};

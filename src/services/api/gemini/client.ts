@@ -2,6 +2,7 @@ import { GoogleGenAI, Part, Content } from "@google/genai";
 import { logger } from "@/services/utils/logger";
 import { SAFETY_SETTINGS } from "./schemas";
 import { extractJsonArray } from "@/services/subtitle/parser";
+import { TokenUsage } from "@/types/api";
 
 /**
  * Determines if an error should trigger a retry attempt.
@@ -55,6 +56,16 @@ export function isRetryableError(error: any): boolean {
 
     const status = error.status || error.response?.status;
     const msg = error.message || '';
+    const code = error.code || '';
+
+    // Timeout errors
+    if (code === 'ETIMEDOUT' || code === 'ECONNABORTED' ||
+        code === 'ENOTFOUND' || // DNS resolution failed
+        msg.includes('timeout') ||
+        msg.includes('timed out') ||
+        msg.toLowerCase().includes('timeout')) {
+        return true;
+    }
 
     // Rate limits (429)
     if (status === 429 || msg.includes('429') || msg.includes('Resource has been exhausted')) {
@@ -67,7 +78,7 @@ export function isRetryableError(error: any): boolean {
     }
 
     // Network errors (fetch failed)
-    if (msg.includes('fetch failed') || msg.includes('network')) {
+    if (msg.includes('fetch failed') || msg.includes('network') || msg.includes('ECONNREFUSED')) {
         return true;
     }
 
@@ -79,7 +90,14 @@ export function isRetryableError(error: any): boolean {
     return false;
 }
 
-export async function generateContentWithRetry(ai: GoogleGenAI, params: any, retries = 3, signal?: AbortSignal) {
+export async function generateContentWithRetry(
+    ai: GoogleGenAI,
+    params: any,
+    retries = 3,
+    signal?: AbortSignal,
+    onUsage?: (usage: TokenUsage) => void,
+    timeoutMs?: number // Custom timeout in milliseconds
+) {
     for (let i = 0; i < retries; i++) {
         // Check cancellation before request
         if (signal?.aborted) {
@@ -87,12 +105,46 @@ export async function generateContentWithRetry(ai: GoogleGenAI, params: any, ret
         }
 
         try {
-            const result = await ai.models.generateContent(params);
+            // Wrap the API call with custom timeout if provided
+            let result;
+            if (timeoutMs && timeoutMs > 0) {
+                let timeoutHandle: NodeJS.Timeout | null = null;
+                try {
+                    result = await Promise.race([
+                        ai.models.generateContent(params).then(res => {
+                            // Clear timeout when request succeeds
+                            if (timeoutHandle) clearTimeout(timeoutHandle);
+                            return res;
+                        }),
+                        new Promise((_, reject) => {
+                            timeoutHandle = setTimeout(() => reject(new Error(`Request timeout after ${timeoutMs}ms`)), timeoutMs);
+                        })
+                    ]);
+                } catch (error) {
+                    // Clear timeout on error as well
+                    if (timeoutHandle) clearTimeout(timeoutHandle);
+                    throw error;
+                }
+            } else {
+                result = await ai.models.generateContent(params);
+            }
 
             const candidates = (result as any).candidates;
 
             // Log token usage and response content
             if ((result as any).usageMetadata) {
+                const usageMeta = (result as any).usageMetadata;
+
+                // Track usage if callback provided
+                if (onUsage) {
+                    onUsage({
+                        promptTokens: usageMeta.promptTokenCount || 0,
+                        candidatesTokens: usageMeta.candidatesTokenCount || 0,
+                        totalTokens: usageMeta.totalTokenCount || 0,
+                        modelName: params.model || 'unknown-model'
+                    });
+                }
+
                 // Sanitize prompt for logging (remove base64 audio data)
                 const sanitizeValue = (value: any): any => {
                     if (!value) return value;
@@ -126,7 +178,7 @@ export async function generateContentWithRetry(ai: GoogleGenAI, params: any, ret
                         prompt: sanitizedPrompt
                     },
                     response: {
-                        usage: (result as any).usageMetadata,
+                        usage: usageMeta,
                         content: candidates?.[0]?.content?.parts?.[0]?.text
                     }
                 });
@@ -169,7 +221,9 @@ export async function generateContentWithLongOutput(
     parts: Part[],
     schema: any,
     tools?: any[],
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    onUsage?: (usage: TokenUsage) => void,
+    timeoutMs?: number // Custom timeout in milliseconds
 ): Promise<string> {
     let fullText = "";
 
@@ -198,7 +252,7 @@ export async function generateContentWithLongOutput(
                 maxOutputTokens: 65536,
                 tools: tools, // Pass tools for Search Grounding
             }
-        }, 3, signal);
+        }, 3, signal, onUsage, timeoutMs);
 
         let text = response.text || "";
         fullText += text;
@@ -237,7 +291,7 @@ export async function generateContentWithLongOutput(
             // and ask to continue.
 
             if (signal?.aborted) {
-                throw new Error('Operation cancelled');
+                throw new Error('操作已取消');
             }
 
             messages.push({ role: 'model', parts: [{ text: text }] });
@@ -253,14 +307,30 @@ export async function generateContentWithLongOutput(
                     safetySettings: SAFETY_SETTINGS,
                     maxOutputTokens: 65536,
                 }
-            }, 3, signal);
+            }, 3, signal, onUsage, timeoutMs);
 
             text = response.text || "";
             fullText += text;
             attempts++;
         }
 
-        return fullText;
+        // Final validation after all continuation attempts
+        try {
+            const clean = fullText.replace(/```json/g, '').replace(/```/g, '').trim();
+            const extracted = extractJsonArray(clean);
+            const textToParse = extracted || clean;
+
+            JSON.parse(textToParse);
+            logger.debug("Final JSON validation passed");
+            return fullText;
+        } catch (e) {
+            logger.error("Final JSON validation failed after 3 continuation attempts", {
+                fullTextLength: fullText.length,
+                preview: fullText.substring(0, 200),
+                error: e
+            });
+            throw new Error(`Gemini响应格式错误：经过3次续写尝试后JSON仍然无效。请稍后重试。`);
+        }
 
     } catch (e: any) {
         logger.error("generateContentWithLongOutput failed", e);

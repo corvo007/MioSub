@@ -49,6 +49,7 @@ interface WorkspacePageProps {
     updateLineComment: (index: number, comment: string) => void;
     updateSubtitleText: (id: number, translated: string) => void;
     updateSubtitleOriginal: (id: number, original: string) => void;
+    updateSpeaker: (id: number, speaker: string, applyToAll?: boolean) => void;
 }
 
 export const WorkspacePage: React.FC<WorkspacePageProps> = ({
@@ -86,7 +87,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     setEditingCommentId,
     updateLineComment,
     updateSubtitleText,
-    updateSubtitleOriginal
+    updateSubtitleOriginal,
+    updateSpeaker
 }) => {
     const subtitleListRef = useRef<HTMLDivElement>(null);
     const isProcessing = status === GenerationStatus.UPLOADING || status === GenerationStatus.PROCESSING || status === GenerationStatus.PROOFREADING;
@@ -260,6 +262,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                                         updateLineComment={updateLineComment}
                                         updateSubtitleText={updateSubtitleText}
                                         updateSubtitleOriginal={updateSubtitleOriginal}
+                                        updateSpeaker={updateSpeaker}
                                     />
                                 </div>
                             )}
