@@ -196,7 +196,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(({
     };
 
     return (
-        <div className="p-4 space-y-6 pb-20">
+        <div className="p-4 space-y-6 pb-20 min-h-full">
             {/* Always show BatchHeader when completed */}
             {status === GenerationStatus.COMPLETED && (
                 <BatchHeader

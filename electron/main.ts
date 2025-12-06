@@ -444,8 +444,8 @@ ipcMain.handle('log:get-history', async () => {
 
 const createWindow = () => {
     const mainWindow = new BrowserWindow({
-        width: 1200,
-        height: 800,
+        width: 1400,
+        height: 900,
         icon: path.join(__dirname, '../resources/icon.png'),
         backgroundColor: '#1a0f2e', // 深紫色背景，与主界面协调
         webPreferences: {
