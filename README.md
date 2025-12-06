@@ -28,12 +28,12 @@
 1.  访问项目的 [Releases](https://github.com/corvo007/gemini-subtitle-pro/releases) 页面。
 2.  下载最新版本：
     *   **便携版**: `Gemini-Subtitle-Pro-x.x.x.exe` (单文件，即点即用)
-3.  运行程序，打开设置，填写Gemini及OpenAI APIKEY，及配置其他选项。
+3.  运行程序，打开设置，填写 Gemini 及 OpenAI API KEY，及配置其他选项。
 
     **⚠️ 注意事项：**
     
     1. 如果需要使用本地 Whisper 模型的话，请参考下一节进行配置。
-    2. 你需要保证你的 API KEY 能请求 **Gemini 2.5 Flash** 及 **Gemini 3 Pro** 模型。目前免费层级的 API KEY 不能请求 Gemini 3 Pro 模型，你可以在设置中配置使用中转站/公益站进行请求，以绕开这个限制。
+    2. 你需要保证你的 API KEY 能请求 **Gemini 2.5 Flash** 及 **Gemini 3 Pro** 模型。目前免费层级的 API KEY 不能请求 Gemini 3 Pro 模型，你可以在设置中配置使用中转站/公益站进行请求，以绕开这个限制。如果你不需要使用**说话人识别**、**术语自动提取**、**翻译润色**功能（需在设置中关闭），可以使用免费层级的 API KEY。
     3. 为了保证翻译质量，目前暂不支持自定义模型。
 
 4.  Enjoy！
