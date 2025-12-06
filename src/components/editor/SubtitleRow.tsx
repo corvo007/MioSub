@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageCircle, Pencil, Clock, Type, AlertTriangle, Trash2 } from 'lucide-react';
+import { MessageCircle, Pencil, Clock, Type, AlertTriangle, Trash2, CheckSquare, Square } from 'lucide-react';
 import { SubtitleItem } from '@/types';
 import { SpeakerUIProfile } from '@/types/speaker';
 import { getSpeakerColor } from '@/utils/colors';
@@ -123,7 +123,10 @@ interface SubtitleRowProps {
     speakerProfiles?: SpeakerUIProfile[];
     onManageSpeakers?: () => void;
     deleteSubtitle?: (id: number) => void;
-
+    // Delete mode
+    isDeleteMode?: boolean;
+    isSelectedForDelete?: boolean;
+    onToggleDeleteSelection?: (id: number) => void;
 }
 
 export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
@@ -140,6 +143,10 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
     speakerProfiles,
     onManageSpeakers,
     deleteSubtitle,
+    // Delete mode
+    isDeleteMode,
+    isSelectedForDelete,
+    onToggleDeleteSelection,
 
 }) => {
     const [editing, setEditing] = React.useState(false);
@@ -177,8 +184,8 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
     const handleStartEdit = () => {
         setTempText(sub.translated);
         setTempOriginal(sub.original);
-        setTempStartTime((sub.startTime || '').split(',')[0]); // Show without ms for easier editing
-        setTempEndTime((sub.endTime || '').split(',')[0]);
+        setTempStartTime(sub.startTime || ''); // Show full time with ms for precise editing
+        setTempEndTime(sub.endTime || '');
         setEditing(true);
     };
 
@@ -255,9 +262,22 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
 
     return (
         <div
-            className={`p-3 hover:bg-slate-800/30 transition-colors flex items-start space-x-4 group/row ${getRowBackgroundClass()}`}
+            className={`p-3 hover:bg-slate-800/30 transition-colors flex items-start space-x-4 group/row ${getRowBackgroundClass()}${isDeleteMode && isSelectedForDelete ? ' bg-red-900/20' : ''}`}
             onBlur={editing ? handleRowBlur : undefined}
         >
+            {/* Delete mode checkbox */}
+            {isDeleteMode && (
+                <button
+                    onClick={() => onToggleDeleteSelection?.(sub.id)}
+                    className="mt-1 flex-shrink-0"
+                >
+                    {isSelectedForDelete ? (
+                        <CheckSquare className="w-5 h-5 text-red-400" />
+                    ) : (
+                        <Square className="w-5 h-5 text-red-400/50 hover:text-red-400" />
+                    )}
+                </button>
+            )}
             <div className="flex flex-col text-sm font-mono text-slate-400 min-w-[85px] pt-1">
                 {editing ? (
                     // Editable time inputs - compact style matching display
@@ -268,7 +288,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
                             onChange={(e) => setTempStartTime(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder="00:00:00"
-                            className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-sm text-white placeholder-slate-600 focus:outline-none leading-tight w-[75px]"
+                            className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-sm text-white placeholder-slate-600 focus:outline-none leading-tight w-[100px]"
                         />
                         <input
                             type="text"
@@ -276,7 +296,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
                             onChange={(e) => setTempEndTime(e.target.value)}
                             onKeyDown={handleKeyDown}
                             placeholder="00:00:00"
-                            className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-sm text-white/70 placeholder-slate-600 focus:outline-none leading-tight w-[75px]"
+                            className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-sm text-white/70 placeholder-slate-600 focus:outline-none leading-tight w-[100px]"
                         />
                     </>
                 ) : (
@@ -418,6 +438,8 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
         prev.editingCommentId === next.editingCommentId &&
         prev.speakerProfiles === next.speakerProfiles &&
         prev.deleteSubtitle === next.deleteSubtitle &&
+        prev.isDeleteMode === next.isDeleteMode &&
+        prev.isSelectedForDelete === next.isSelectedForDelete &&
         // Functions are usually stable if from useWorkspaceLogic, but if not, this might cause issues.
         // However, since we plan to memoize handlers in useWorkspaceLogic, strict equality check is fine.
         // But for editingCommentId, we only care if it matches THIS row's ID.

@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckSquare, Square, MessageCircle, Eye, EyeOff, Clock, Sparkles, Search, X, Filter, AlertTriangle, Type, ChevronDown, User, Eraser } from 'lucide-react';
+import { CheckSquare, Square, MessageCircle, Eye, EyeOff, Clock, Sparkles, Search, X, Filter, AlertTriangle, Type, ChevronDown, User, Eraser, Users, Trash2 } from 'lucide-react';
 import { SubtitleItem } from '@/types';
 import { SpeakerUIProfile } from '@/types/speaker';
 import { getSpeakerColor } from '@/utils/colors';
@@ -34,6 +34,15 @@ interface BatchHeaderProps {
     setFilters: (filters: SubtitleFilters) => void;
     issueCounts?: { duration: number; length: number; overlap: number };
     speakerProfiles?: SpeakerUIProfile[];
+    speakerCounts?: Record<string, number>;  // 每个说话人的字幕条数
+    onManageSpeakers?: () => void;
+    // Delete mode
+    isDeleteMode?: boolean;
+    onToggleDeleteMode?: () => void;
+    selectedForDeleteCount?: number;
+    onSelectAllForDelete?: () => void;
+    onConfirmDelete?: () => void;
+    totalVisibleCount?: number;
 }
 
 export const BatchHeader: React.FC<BatchHeaderProps> = ({
@@ -51,7 +60,15 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
     setFilters,
     issueCounts,
     speakerProfiles,
-
+    speakerCounts,
+    onManageSpeakers,
+    // Delete mode
+    isDeleteMode,
+    onToggleDeleteMode,
+    selectedForDeleteCount,
+    onSelectAllForDelete,
+    onConfirmDelete,
+    totalVisibleCount,
 
 }) => {
     const [isSearchExpanded, setIsSearchExpanded] = React.useState(false);
@@ -121,18 +138,62 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
             {/* Left Side Group (Selectors + Search + Filters) */}
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                 <div className="flex flex-wrap items-center gap-y-2 gap-x-4">
-                    <div className="flex items-center space-x-4">
-                        <button onClick={() => toggleAllBatches(chunks.length)} className="flex items-center space-x-2 text-sm text-slate-300 hover:text-white transition-colors">
-                            {selectedBatches.size === chunks.length ? <CheckSquare className="w-4 h-4 text-indigo-400" /> : <Square className="w-4 h-4 text-slate-500" />}
-                            <span>{selectedBatches.size === chunks.length ? '取消全选' : '全选'}</span>
-                        </button>
-                        <button onClick={() => selectBatchesWithComments(chunks)} className="flex items-center space-x-2 text-sm text-slate-300 hover:text-white transition-colors" title="选择带评论项">
-                            <MessageCircle className="w-4 h-4 text-amber-400" /><span className="hidden sm:inline">选择带评论项</span>
-                        </button>
-                        <button onClick={() => setShowSourceText(!showSourceText)} className="flex items-center space-x-2 text-sm text-slate-400 hover:text-white transition-colors">
-                            {showSourceText ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}<span className="hidden sm:inline">{showSourceText ? "隐藏原文" : "显示原文"}</span>
-                        </button>
-                    </div>
+                    {isDeleteMode ? (
+                        /* Delete Mode Toolbar */
+                        <div className="flex items-center space-x-3">
+                            <button
+                                onClick={onSelectAllForDelete}
+                                className="flex items-center space-x-2 text-sm text-red-300 hover:text-red-200 transition-colors"
+                            >
+                                {selectedForDeleteCount === totalVisibleCount && totalVisibleCount! > 0
+                                    ? <CheckSquare className="w-4 h-4 text-red-400" />
+                                    : <Square className="w-4 h-4 text-red-400" />}
+                                <span>全选</span>
+                            </button>
+                            <button
+                                onClick={onConfirmDelete}
+                                disabled={!selectedForDeleteCount || selectedForDeleteCount === 0}
+                                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedForDeleteCount && selectedForDeleteCount > 0
+                                    ? 'bg-red-600 border-red-500 text-white hover:bg-red-500'
+                                    : 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed'
+                                    }`}
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>删除 ({selectedForDeleteCount || 0})</span>
+                            </button>
+                            <button
+                                onClick={onToggleDeleteMode}
+                                className="flex items-center space-x-1 text-sm text-slate-400 hover:text-white transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                                <span>取消</span>
+                            </button>
+                        </div>
+                    ) : (
+                        /* Normal Mode Toolbar */
+                        <div className="flex items-center space-x-4">
+                            <button onClick={() => toggleAllBatches(chunks.length)} className="flex items-center space-x-2 text-sm text-slate-300 hover:text-white transition-colors">
+                                {selectedBatches.size === chunks.length ? <CheckSquare className="w-4 h-4 text-indigo-400" /> : <Square className="w-4 h-4 text-slate-500" />}
+                                <span>{selectedBatches.size === chunks.length ? '取消全选' : '全选'}</span>
+                            </button>
+                            <button onClick={() => selectBatchesWithComments(chunks)} className="flex items-center space-x-2 text-sm text-slate-300 hover:text-white transition-colors" title="选择带评论项">
+                                <MessageCircle className="w-4 h-4 text-amber-400" /><span className="hidden sm:inline">选择带评论项</span>
+                            </button>
+                            <button onClick={() => setShowSourceText(!showSourceText)} className="flex items-center space-x-2 text-sm text-slate-400 hover:text-white transition-colors">
+                                {showSourceText ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}<span className="hidden sm:inline">{showSourceText ? "隐藏原文" : "显示原文"}</span>
+                            </button>
+                            {onToggleDeleteMode && (
+                                <button
+                                    onClick={onToggleDeleteMode}
+                                    className="flex items-center space-x-1.5 text-sm text-red-400 hover:text-red-300 transition-colors"
+                                    title="批量删除"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    <span className="hidden sm:inline">批量删除</span>
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Search & Filters Group */}
@@ -325,11 +386,16 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                                                         {profile.name}
                                                     </span>
                                                 </div>
-                                                {filters.speakers.has(profile.name) ? (
-                                                    <CheckSquare className="w-4 h-4 text-indigo-400" />
-                                                ) : (
-                                                    <Square className="w-4 h-4 text-slate-600" />
-                                                )}
+                                                <div className="flex items-center space-x-2">
+                                                    {speakerCounts && speakerCounts[profile.name] !== undefined && (
+                                                        <span className="text-slate-500 text-[10px]">({speakerCounts[profile.name]})</span>
+                                                    )}
+                                                    {filters.speakers.has(profile.name) ? (
+                                                        <CheckSquare className="w-4 h-4 text-indigo-400" />
+                                                    ) : (
+                                                        <Square className="w-4 h-4 text-slate-600" />
+                                                    )}
+                                                </div>
                                             </button>
                                         ))}
 
@@ -346,6 +412,23 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                                                 </button>
                                             </>
                                         )}
+
+                                        {/* Manage Speakers */}
+                                        {onManageSpeakers && (
+                                            <>
+                                                <div className="border-t border-slate-700 my-1" />
+                                                <button
+                                                    onClick={() => {
+                                                        onManageSpeakers();
+                                                        setIsSpeakerFilterOpen(false);
+                                                    }}
+                                                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-indigo-400 hover:text-indigo-300 hover:bg-slate-800 transition-colors"
+                                                >
+                                                    <Users className="w-3 h-3" />
+                                                    管理说话人
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -357,19 +440,21 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
             </div>
 
 
-            {/* Right Side: Stats & Actions */}
-            <div className="flex items-center gap-2 ml-auto">
-                <div className="text-xs text-slate-500 font-mono mr-2 hidden sm:block">已选 {selectedBatches.size} 项</div>
-                {file && (
-                    <button onClick={() => handleBatchAction('fix_timestamps')} disabled={selectedBatches.size === 0} title="校对时间轴 (保留翻译)" className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-slate-700 border-slate-600 text-emerald-400 hover:bg-slate-600 hover:border-emerald-400/50' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}>
-                        <Clock className="w-3 h-3" /><span className="hidden sm:inline">校对时间轴</span>
-                    </button>
-                )}
+            {/* Right Side: Stats & Actions - Hide in delete mode */}
+            {!isDeleteMode && (
+                <div className="flex items-center gap-2 ml-auto">
+                    <div className="text-xs text-slate-500 font-mono mr-2 hidden sm:block">已选 {selectedBatches.size} 项</div>
+                    {file && (
+                        <button onClick={() => handleBatchAction('fix_timestamps')} disabled={selectedBatches.size === 0} title="校对时间轴 (保留翻译)" className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-slate-700 border-slate-600 text-emerald-400 hover:bg-slate-600 hover:border-emerald-400/50' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}>
+                            <Clock className="w-3 h-3" /><span className="hidden sm:inline">校对时间轴</span>
+                        </button>
+                    )}
 
-                <button onClick={() => handleBatchAction('proofread')} disabled={selectedBatches.size === 0} title="润色翻译 (保留时间轴)" className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}>
-                    <Sparkles className="w-3 h-3" /><span className="hidden sm:inline">润色翻译</span>
-                </button>
-            </div>
+                    <button onClick={() => handleBatchAction('proofread')} disabled={selectedBatches.size === 0} title="润色翻译 (保留时间轴)" className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}>
+                        <Sparkles className="w-3 h-3" /><span className="hidden sm:inline">润色翻译</span>
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

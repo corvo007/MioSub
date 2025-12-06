@@ -4,7 +4,7 @@
 
 **Gemini Subtitle Pro** 是一款基于 AI 的字幕创建、翻译和润色工具。采用 React + Vite + Electron 技术栈，支持 Web 和桌面客户端双平台部署。
 
-- **版本**: 2.7.1
+- **版本**: 2.7.2
 - **技术栈**: React 19, Vite 6, Electron 39, TypeScript
 - **AI 引擎**: Google Gemini (翻译/润色), OpenAI Whisper (语音识别)
 

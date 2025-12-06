@@ -2,11 +2,13 @@ import React from 'react';
 import { X, Users, Pencil, Trash2, GitMerge, Check, User, Plus, Square, CheckSquare, Loader2 } from 'lucide-react';
 import { SpeakerUIProfile } from '@/types/speaker';
 import { getSpeakerColor } from '@/utils/colors';
+import { SimpleConfirmationModal } from './SimpleConfirmationModal';
 
 interface SpeakerManagerModalProps {
     isOpen: boolean;
     onClose: () => void;
     speakerProfiles: SpeakerUIProfile[];
+    speakerCounts?: Record<string, number>;  // 每个说话人的字幕条数
     onRename: (id: string, newName: string) => void;
     onDelete: (id: string) => void;
     onMerge: (sourceIds: string[], targetId: string) => void;
@@ -17,6 +19,7 @@ export const SpeakerManagerModal: React.FC<SpeakerManagerModalProps> = ({
     isOpen,
     onClose,
     speakerProfiles,
+    speakerCounts,
     onRename,
     onDelete,
     onMerge,
@@ -29,6 +32,27 @@ export const SpeakerManagerModal: React.FC<SpeakerManagerModalProps> = ({
     const [isCreating, setIsCreating] = React.useState(false);
     const [newSpeakerName, setNewSpeakerName] = React.useState('');
     const [isProcessing, setIsProcessing] = React.useState(false);
+
+    // Delete confirmation state
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
+    const [deleteCandidateId, setDeleteCandidateId] = React.useState<string | null>(null);
+    const deleteCandidateName = React.useMemo(() => {
+        if (!deleteCandidateId) return '';
+        return speakerProfiles.find(p => p.id === deleteCandidateId)?.name || '';
+    }, [deleteCandidateId, speakerProfiles]);
+
+    const handleDeleteClick = (profileId: string) => {
+        setDeleteCandidateId(profileId);
+        setDeleteConfirmOpen(true);
+    };
+
+    const confirmDelete = () => {
+        if (deleteCandidateId) {
+            onDelete(deleteCandidateId);
+        }
+        setDeleteConfirmOpen(false);
+        setDeleteCandidateId(null);
+    };
 
     // Reset all state when modal closes
     const handleClose = () => {
@@ -175,6 +199,9 @@ export const SpeakerManagerModal: React.FC<SpeakerManagerModalProps> = ({
                                                     style={{ backgroundColor: getSpeakerColor(profile.name) }}
                                                 />
                                                 <span className="text-white font-medium">{profile.name}</span>
+                                                {speakerCounts && speakerCounts[profile.name] !== undefined && (
+                                                    <span className="text-slate-500 text-xs">({speakerCounts[profile.name]})</span>
+                                                )}
                                             </div>
                                             {!mergeMode && (
                                                 <div className="flex items-center gap-1">
@@ -186,7 +213,7 @@ export const SpeakerManagerModal: React.FC<SpeakerManagerModalProps> = ({
                                                         <Pencil className="w-4 h-4" />
                                                     </button>
                                                     <button
-                                                        onClick={() => onDelete(profile.id)}
+                                                        onClick={() => handleDeleteClick(profile.id)}
                                                         className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-700 rounded transition-colors"
                                                         title="删除"
                                                     >
@@ -285,6 +312,17 @@ export const SpeakerManagerModal: React.FC<SpeakerManagerModalProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            <SimpleConfirmationModal
+                isOpen={deleteConfirmOpen}
+                onClose={() => { setDeleteConfirmOpen(false); setDeleteCandidateId(null); }}
+                onConfirm={confirmDelete}
+                title="删除说话人"
+                message={`确定要删除说话人「${deleteCandidateName}」吗？该说话人的所有字幕将不再关联任何说话人。`}
+                confirmText="删除"
+                type="danger"
+            />
         </div>
     );
 };

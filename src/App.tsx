@@ -337,6 +337,7 @@ export default function App() {
                     updateSubtitleTime={workspace.updateSubtitleTime}
                     speakerProfiles={workspace.speakerProfiles}
                     deleteSubtitle={workspace.deleteSubtitle}
+                    deleteMultipleSubtitles={workspace.deleteMultipleSubtitles}
                     onManageSpeakers={() => setShowSpeakerManager(true)}
                     onStartCompression={() => setView('compression')}
                     histories={workspace.getHistories()}
@@ -363,6 +364,12 @@ export default function App() {
                 isOpen={showSpeakerManager}
                 onClose={() => setShowSpeakerManager(false)}
                 speakerProfiles={workspace.speakerProfiles}
+                speakerCounts={workspace.subtitles.reduce((acc, sub) => {
+                    if (sub.speaker) {
+                        acc[sub.speaker] = (acc[sub.speaker] || 0) + 1;
+                    }
+                    return acc;
+                }, {} as Record<string, number>)}
                 onRename={workspace.renameSpeaker}
                 onDelete={workspace.deleteSpeaker}
                 onMerge={workspace.mergeSpeakers}

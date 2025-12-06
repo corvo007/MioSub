@@ -556,6 +556,11 @@ export const useWorkspaceLogic = ({
         setSubtitles(prev => prev.filter(s => s.id !== id));
     }, []);
 
+    const deleteMultipleSubtitles = React.useCallback((ids: number[]) => {
+        const idSet = new Set(ids);
+        setSubtitles(prev => prev.filter(s => !idSet.has(s.id)));
+    }, []);
+
     // Speaker Profile CRUD
     const addSpeaker = React.useCallback((name: string) => {
         const id = `speaker_${Date.now()}`;
@@ -815,6 +820,7 @@ export const useWorkspaceLogic = ({
         updateSpeaker,
         updateSubtitleTime,
         deleteSubtitle,
+        deleteMultipleSubtitles,
         resetWorkspace,
         cancelOperation,
         loadFileFromPath,
@@ -860,6 +866,7 @@ export const useWorkspaceLogic = ({
         updateSpeaker,
         updateSubtitleTime,
         deleteSubtitle,
+        deleteMultipleSubtitles,
         resetWorkspace,
         cancelOperation,
         loadFileFromPath,

@@ -63,6 +63,7 @@ interface WorkspacePageProps {
     speakerProfiles?: SpeakerUIProfile[];
     onManageSpeakers?: () => void;
     deleteSubtitle?: (id: number) => void;
+    deleteMultipleSubtitles?: (ids: number[]) => void;
 }
 
 export const WorkspacePage: React.FC<WorkspacePageProps> = ({
@@ -108,6 +109,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
 
     onManageSpeakers,
     deleteSubtitle,
+    deleteMultipleSubtitles,
     onStartCompression,
     histories,
     onLoadHistory,
@@ -327,6 +329,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                                         updateSubtitleTime={updateSubtitleTime}
                                         speakerProfiles={speakerProfiles}
                                         deleteSubtitle={deleteSubtitle}
+                                        deleteMultipleSubtitles={deleteMultipleSubtitles}
                                         onManageSpeakers={onManageSpeakers}
                                         scrollContainerRef={subtitleListRef}
                                     />

@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.7.2] - 2025-12-06
+
+### Features
+
+- **Batch Operations**: Enhanced `BatchHeader` with improved bulk editing and speaker assignment.
+- **Speaker Manager**: Added batch speaker assignment and improved merge workflow.
+
+### Fixes
+
+- **Subtitle Editor**: Improved row selection and keyboard navigation.
+- **Workspace Logic**: Enhanced state management and undo/redo handling.
+
 ## [2.7.1] - 2025-12-06
 
 ### Performance

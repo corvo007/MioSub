@@ -32,6 +32,7 @@ interface SubtitleEditorProps {
     updateSpeaker: (id: number, speaker: string, applyToAll?: boolean) => void;
     updateSubtitleTime?: (id: number, startTime: string, endTime: string) => void;
     deleteSubtitle?: (id: number) => void;
+    deleteMultipleSubtitles?: (ids: number[]) => void;
     speakerProfiles?: SpeakerUIProfile[];
 
     onManageSpeakers?: () => void;
@@ -61,6 +62,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(({
     updateSpeaker,
     updateSubtitleTime,
     deleteSubtitle,
+    deleteMultipleSubtitles,
     speakerProfiles,
 
     onManageSpeakers,
@@ -82,6 +84,27 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(({
         }
     }, [deleteCandidateId, deleteSubtitle]);
 
+    // Delete mode state
+    const [isDeleteMode, setIsDeleteMode] = React.useState(false);
+    const [selectedForDelete, setSelectedForDelete] = React.useState<Set<number>>(new Set());
+    const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = React.useState(false);
+
+    const toggleDeleteMode = React.useCallback(() => {
+        if (isDeleteMode) {
+            setSelectedForDelete(new Set());
+        }
+        setIsDeleteMode(!isDeleteMode);
+    }, [isDeleteMode]);
+
+    const toggleDeleteSelection = React.useCallback((id: number) => {
+        setSelectedForDelete(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(id)) newSet.delete(id);
+            else newSet.add(id);
+            return newSet;
+        });
+    }, []);
+
 
     // Calculate issue counts for filter dropdown
     const issueCounts = React.useMemo(() => {
@@ -98,6 +121,17 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(({
         });
 
         return { duration, length, overlap };
+    }, [subtitles]);
+
+    // Calculate speaker counts
+    const speakerCounts = React.useMemo(() => {
+        const counts: Record<string, number> = {};
+        subtitles.forEach(sub => {
+            if (sub.speaker) {
+                counts[sub.speaker] = (counts[sub.speaker] || 0) + 1;
+            }
+        });
+        return counts;
     }, [subtitles]);
 
     // Check if any filter is active
@@ -159,6 +193,26 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(({
         return result;
     }, [subtitles, searchQuery, hasActiveFilter, filterByType]);
 
+    // Delete mode helpers
+    const visibleSubtitles = filteredSubtitles ?? subtitles;
+
+    const selectAllForDelete = React.useCallback(() => {
+        if (selectedForDelete.size === visibleSubtitles.length) {
+            setSelectedForDelete(new Set());
+        } else {
+            setSelectedForDelete(new Set(visibleSubtitles.map(s => s.id)));
+        }
+    }, [visibleSubtitles, selectedForDelete.size]);
+
+    const confirmBulkDelete = React.useCallback(() => {
+        if (deleteMultipleSubtitles && selectedForDelete.size > 0) {
+            deleteMultipleSubtitles(Array.from(selectedForDelete));
+            setSelectedForDelete(new Set());
+            setIsDeleteMode(false);
+        }
+        setBulkDeleteModalOpen(false);
+    }, [deleteMultipleSubtitles, selectedForDelete]);
+
     // Memoize chunks to prevent unnecessary re-renders of SubtitleBatch
     const chunks = React.useMemo(() => {
         const c: SubtitleItem[][] = [];
@@ -217,8 +271,14 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(({
                     setFilters={setFilters}
                     issueCounts={issueCounts}
                     speakerProfiles={speakerProfiles}
-
-
+                    speakerCounts={speakerCounts}
+                    onManageSpeakers={onManageSpeakers}
+                    isDeleteMode={isDeleteMode}
+                    onToggleDeleteMode={toggleDeleteMode}
+                    selectedForDeleteCount={selectedForDelete.size}
+                    onSelectAllForDelete={selectAllForDelete}
+                    onConfirmDelete={() => setBulkDeleteModalOpen(true)}
+                    totalVisibleCount={visibleSubtitles.length}
                 />
             )}
 
@@ -261,6 +321,9 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(({
                                                 prevEndTime={prevEndTime}
                                                 speakerProfiles={speakerProfiles}
                                                 onManageSpeakers={onManageSpeakers}
+                                                isDeleteMode={isDeleteMode}
+                                                isSelectedForDelete={selectedForDelete.has(sub.id)}
+                                                onToggleDeleteSelection={toggleDeleteSelection}
                                             />
                                         </div>
                                     );
@@ -304,6 +367,9 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(({
                                 batchSize={batchSize}
                                 speakerProfiles={speakerProfiles}
                                 onManageSpeakers={onManageSpeakers}
+                                isDeleteMode={isDeleteMode}
+                                selectedForDelete={selectedForDelete}
+                                onToggleDeleteSelection={toggleDeleteSelection}
                             />
                         </div>
                     )}
@@ -316,6 +382,16 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(({
                 onConfirm={confirmDelete}
                 title="删除字幕"
                 message="确定要删除这行字幕吗？此操作无法撤销。"
+                confirmText="删除"
+                type="danger"
+            />
+
+            <SimpleConfirmationModal
+                isOpen={bulkDeleteModalOpen}
+                onClose={() => setBulkDeleteModalOpen(false)}
+                onConfirm={confirmBulkDelete}
+                title="批量删除"
+                message={`确定删除 ${selectedForDelete.size} 条字幕吗？此操作无法撤销。`}
                 confirmText="删除"
                 type="danger"
             />

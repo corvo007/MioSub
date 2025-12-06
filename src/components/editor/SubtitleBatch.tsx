@@ -27,7 +27,10 @@ interface SubtitleBatchProps {
     batchSize?: number;
     speakerProfiles?: SpeakerUIProfile[];
     onManageSpeakers?: () => void;
-
+    // Delete mode
+    isDeleteMode?: boolean;
+    selectedForDelete?: Set<number>;
+    onToggleDeleteSelection?: (id: number) => void;
 }
 
 export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(({
@@ -52,6 +55,10 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(({
     batchSize = 20,
     speakerProfiles,
     onManageSpeakers,
+    // Delete mode
+    isDeleteMode,
+    selectedForDelete,
+    onToggleDeleteSelection,
 
 }) => {
     const startTime = chunk[0].startTime.split(',')[0];
@@ -64,7 +71,8 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(({
         <div className={`border rounded-xl overflow-hidden transition-all ${isSelected ? 'border-indigo-500/50 bg-indigo-500/5' : 'border-slate-700/50 bg-slate-900/40'}`}>
             <div className={`px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isSelected ? 'bg-indigo-900/20' : 'bg-slate-800/50'}`}>
                 <div className="flex items-center space-x-3">
-                    {status === GenerationStatus.COMPLETED && (
+                    {/* Hide batch checkbox in delete mode */}
+                    {status === GenerationStatus.COMPLETED && !isDeleteMode && (
                         <button onClick={() => toggleBatch(chunkIdx)} className="text-slate-400 hover:text-indigo-400 focus:outline-none">
                             {isSelected ? <CheckSquare className="w-5 h-5 text-indigo-400" /> : <Square className="w-5 h-5" />}
                         </button>
@@ -83,7 +91,8 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(({
                         className="w-full bg-slate-900/50 border border-slate-700/50 rounded px-2 py-1 text-xs text-amber-200 placeholder-slate-600 focus:border-amber-500/50 focus:outline-none"
                     />
                 </div>
-                {status === GenerationStatus.COMPLETED && (
+                {/* Hide proofread button in delete mode */}
+                {status === GenerationStatus.COMPLETED && !isDeleteMode && (
                     <div className="flex items-center space-x-1">
                         <button onClick={() => handleBatchAction('proofread', chunkIdx)} title="润色翻译" className="p-2 text-slate-500 hover:text-indigo-400 hover:bg-slate-700 rounded-lg transition-colors">
                             <Wand2 className="w-4 h-4" />
@@ -115,7 +124,9 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(({
                             prevEndTime={prevEndTime}
                             speakerProfiles={speakerProfiles}
                             onManageSpeakers={onManageSpeakers}
-
+                            isDeleteMode={isDeleteMode}
+                            isSelectedForDelete={selectedForDelete?.has(sub.id)}
+                            onToggleDeleteSelection={onToggleDeleteSelection}
                         />
                     );
                 })}
@@ -132,7 +143,9 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(({
         prev.editingCommentId === next.editingCommentId &&
         prev.subtitles === next.subtitles &&
         prev.speakerProfiles === next.speakerProfiles &&
-        prev.deleteSubtitle === next.deleteSubtitle
+        prev.deleteSubtitle === next.deleteSubtitle &&
+        prev.isDeleteMode === next.isDeleteMode &&
+        prev.selectedForDelete === next.selectedForDelete
     );
 });
 
