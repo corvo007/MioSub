@@ -1,33 +1,33 @@
 export interface GlossaryItem {
-    term: string;
-    translation: string;
-    notes?: string;
+  term: string;
+  translation: string;
+  notes?: string;
 }
 
 // Multi-Glossary Support
 export interface Glossary {
-    id: string;              // UUID
-    name: string;            // User-defined name
-    terms: GlossaryItem[];   // Terms list
-    createdAt: string;       // ISO timestamp
-    updatedAt: string;       // ISO timestamp
+  id: string; // UUID
+  name: string; // User-defined name
+  terms: GlossaryItem[]; // Terms list
+  createdAt: string; // ISO timestamp
+  updatedAt: string; // ISO timestamp
 }
 
 export interface GlossaryStorage {
-    glossaries: Glossary[];
-    activeGlossaryId: string | null;
+  glossaries: Glossary[];
+  activeGlossaryId: string | null;
 }
 
 export interface GlossaryExtractionResult {
-    terms: GlossaryItem[];
-    source: 'chunk' | 'full';
-    chunkIndex?: number;
-    confidence?: 'high' | 'medium' | 'low';
+  terms: GlossaryItem[];
+  source: 'chunk' | 'full';
+  chunkIndex?: number;
+  confidence?: 'high' | 'medium' | 'low';
 }
 
 export interface GlossaryExtractionMetadata {
-    results: GlossaryExtractionResult[];
-    totalTerms: number;
-    hasFailures: boolean;
-    glossaryChunks?: { index: number; start: number; end: number }[];
+  results: GlossaryExtractionResult[];
+  totalTerms: number;
+  hasFailures: boolean;
+  glossaryChunks?: { index: number; start: number; end: number }[];
 }

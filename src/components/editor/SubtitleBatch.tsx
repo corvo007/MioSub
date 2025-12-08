@@ -6,34 +6,35 @@ import { SubtitleRow } from './SubtitleRow';
 import { GenerationStatus } from '@/types/api';
 
 interface SubtitleBatchProps {
-    chunk: SubtitleItem[];
-    chunkIdx: number;
-    isSelected: boolean;
-    status: GenerationStatus; // We need to import this enum or use string
-    batchComment: string;
-    toggleBatch: (index: number) => void;
-    updateBatchComment: (index: number, comment: string) => void;
-    handleBatchAction: (action: 'proofread' | 'fix_timestamps', index?: number) => void;
-    showSourceText: boolean;
-    editingCommentId: number | null;
-    setEditingCommentId: (id: number | null) => void;
-    updateLineComment: (id: number, comment: string) => void;
-    updateSubtitleText: (id: number, translated: string) => void;
-    updateSubtitleOriginal: (id: number, original: string) => void;
-    updateSpeaker?: (id: number, speaker: string, applyToAll?: boolean) => void;
-    updateSubtitleTime?: (id: number, startTime: string, endTime: string) => void;
-    deleteSubtitle?: (id: number) => void;
-    subtitles?: SubtitleItem[]; // Full subtitles array for overlap detection
-    batchSize?: number;
-    speakerProfiles?: SpeakerUIProfile[];
-    onManageSpeakers?: () => void;
-    // Delete mode
-    isDeleteMode?: boolean;
-    selectedForDelete?: Set<number>;
-    onToggleDeleteSelection?: (id: number) => void;
+  chunk: SubtitleItem[];
+  chunkIdx: number;
+  isSelected: boolean;
+  status: GenerationStatus; // We need to import this enum or use string
+  batchComment: string;
+  toggleBatch: (index: number) => void;
+  updateBatchComment: (index: number, comment: string) => void;
+  handleBatchAction: (action: 'proofread' | 'fix_timestamps', index?: number) => void;
+  showSourceText: boolean;
+  editingCommentId: number | null;
+  setEditingCommentId: (id: number | null) => void;
+  updateLineComment: (id: number, comment: string) => void;
+  updateSubtitleText: (id: number, translated: string) => void;
+  updateSubtitleOriginal: (id: number, original: string) => void;
+  updateSpeaker?: (id: number, speaker: string, applyToAll?: boolean) => void;
+  updateSubtitleTime?: (id: number, startTime: string, endTime: string) => void;
+  deleteSubtitle?: (id: number) => void;
+  subtitles?: SubtitleItem[]; // Full subtitles array for overlap detection
+  batchSize?: number;
+  speakerProfiles?: SpeakerUIProfile[];
+  onManageSpeakers?: () => void;
+  // Delete mode
+  isDeleteMode?: boolean;
+  selectedForDelete?: Set<number>;
+  onToggleDeleteSelection?: (id: number) => void;
 }
 
-export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(({
+export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
+  ({
     chunk,
     chunkIdx,
     isSelected,
@@ -59,8 +60,7 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(({
     isDeleteMode,
     selectedForDelete,
     onToggleDeleteSelection,
-
-}) => {
+  }) => {
     const startTime = chunk[0].startTime.split(',')[0];
     const endTime = chunk[chunk.length - 1].endTime.split(',')[0];
 
@@ -68,84 +68,105 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(({
     const chunkStartIndex = chunkIdx * batchSize;
 
     return (
-        <div className={`border rounded-xl overflow-hidden transition-all ${isSelected ? 'border-indigo-500/50 bg-indigo-500/5' : 'border-slate-700/50 bg-slate-900/40'}`}>
-            <div className={`px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isSelected ? 'bg-indigo-900/20' : 'bg-slate-800/50'}`}>
-                <div className="flex items-center space-x-3">
-                    {/* Hide batch checkbox in delete mode */}
-                    {status === GenerationStatus.COMPLETED && !isDeleteMode && (
-                        <button onClick={() => toggleBatch(chunkIdx)} className="text-slate-400 hover:text-indigo-400 focus:outline-none">
-                            {isSelected ? <CheckSquare className="w-5 h-5 text-indigo-400" /> : <Square className="w-5 h-5" />}
-                        </button>
-                    )}
-                    <div>
-                        <h3 className={`text-sm font-semibold ${isSelected ? 'text-indigo-300' : 'text-slate-300'}`}>片段 {chunkIdx + 1}</h3>
-                        <p className="text-xs text-slate-500 font-mono mt-0.5">{startTime} - {endTime}</p>
-                    </div>
-                </div>
-                <div className="flex-1 px-2">
-                    <input
-                        type="text"
-                        value={batchComment}
-                        onChange={(e) => updateBatchComment(chunkIdx, e.target.value)}
-                        placeholder="添加说明或注释..."
-                        className="w-full bg-slate-900/50 border border-slate-700/50 rounded px-2 py-1 text-xs text-amber-200 placeholder-slate-600 focus:border-amber-500/50 focus:outline-none"
-                    />
-                </div>
-                {/* Hide proofread button in delete mode */}
-                {status === GenerationStatus.COMPLETED && !isDeleteMode && (
-                    <div className="flex items-center space-x-1">
-                        <button onClick={() => handleBatchAction('proofread', chunkIdx)} title="润色翻译" className="p-2 text-slate-500 hover:text-indigo-400 hover:bg-slate-700 rounded-lg transition-colors">
-                            <Wand2 className="w-4 h-4" />
-                        </button>
-                    </div>
+      <div
+        className={`border rounded-xl overflow-hidden transition-all ${isSelected ? 'border-indigo-500/50 bg-indigo-500/5' : 'border-slate-700/50 bg-slate-900/40'}`}
+      >
+        <div
+          className={`px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${isSelected ? 'bg-indigo-900/20' : 'bg-slate-800/50'}`}
+        >
+          <div className="flex items-center space-x-3">
+            {/* Hide batch checkbox in delete mode */}
+            {status === GenerationStatus.COMPLETED && !isDeleteMode && (
+              <button
+                onClick={() => toggleBatch(chunkIdx)}
+                className="text-slate-400 hover:text-indigo-400 focus:outline-none"
+              >
+                {isSelected ? (
+                  <CheckSquare className="w-5 h-5 text-indigo-400" />
+                ) : (
+                  <Square className="w-5 h-5" />
                 )}
+              </button>
+            )}
+            <div>
+              <h3
+                className={`text-sm font-semibold ${isSelected ? 'text-indigo-300' : 'text-slate-300'}`}
+              >
+                片段 {chunkIdx + 1}
+              </h3>
+              <p className="text-xs text-slate-500 font-mono mt-0.5">
+                {startTime} - {endTime}
+              </p>
             </div>
-            <div className="divide-y divide-slate-800/50">
-                {chunk.map((sub, indexInChunk) => {
-                    // Calculate global index and find previous subtitle's end time
-                    const globalIndex = chunkStartIndex + indexInChunk;
-                    const prevEndTime = globalIndex > 0 && subtitles
-                        ? subtitles[globalIndex - 1]?.endTime
-                        : undefined;
-
-                    return (
-                        <SubtitleRow
-                            key={sub.id}
-                            sub={sub}
-                            showSourceText={showSourceText}
-                            editingCommentId={editingCommentId}
-                            setEditingCommentId={setEditingCommentId}
-                            updateLineComment={updateLineComment}
-                            updateSubtitleText={updateSubtitleText}
-                            updateSubtitleOriginal={updateSubtitleOriginal}
-                            updateSpeaker={updateSpeaker}
-                            updateSubtitleTime={updateSubtitleTime}
-                            deleteSubtitle={deleteSubtitle}
-                            prevEndTime={prevEndTime}
-                            speakerProfiles={speakerProfiles}
-                            onManageSpeakers={onManageSpeakers}
-                            isDeleteMode={isDeleteMode}
-                            isSelectedForDelete={selectedForDelete?.has(sub.id)}
-                            onToggleDeleteSelection={onToggleDeleteSelection}
-                        />
-                    );
-                })}
+          </div>
+          <div className="flex-1 px-2">
+            <input
+              type="text"
+              value={batchComment}
+              onChange={(e) => updateBatchComment(chunkIdx, e.target.value)}
+              placeholder="添加说明或注释..."
+              className="w-full bg-slate-900/50 border border-slate-700/50 rounded px-2 py-1 text-xs text-amber-200 placeholder-slate-600 focus:border-amber-500/50 focus:outline-none"
+            />
+          </div>
+          {/* Hide proofread button in delete mode */}
+          {status === GenerationStatus.COMPLETED && !isDeleteMode && (
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => handleBatchAction('proofread', chunkIdx)}
+                title="润色翻译"
+                className="p-2 text-slate-500 hover:text-indigo-400 hover:bg-slate-700 rounded-lg transition-colors"
+              >
+                <Wand2 className="w-4 h-4" />
+              </button>
             </div>
+          )}
         </div>
-    );
-}, (prev, next) => {
-    return (
-        prev.chunk === next.chunk &&
-        prev.isSelected === next.isSelected &&
-        prev.status === next.status &&
-        prev.batchComment === next.batchComment &&
-        prev.showSourceText === next.showSourceText &&
-        prev.editingCommentId === next.editingCommentId &&
-        prev.subtitles === next.subtitles &&
-        prev.speakerProfiles === next.speakerProfiles &&
-        prev.deleteSubtitle === next.deleteSubtitle &&
-        prev.isDeleteMode === next.isDeleteMode &&
-        prev.selectedForDelete === next.selectedForDelete
-    );
-});
+        <div className="divide-y divide-slate-800/50">
+          {chunk.map((sub, indexInChunk) => {
+            // Calculate global index and find previous subtitle's end time
+            const globalIndex = chunkStartIndex + indexInChunk;
+            const prevEndTime =
+              globalIndex > 0 && subtitles ? subtitles[globalIndex - 1]?.endTime : undefined;
 
+            return (
+              <SubtitleRow
+                key={sub.id}
+                sub={sub}
+                showSourceText={showSourceText}
+                editingCommentId={editingCommentId}
+                setEditingCommentId={setEditingCommentId}
+                updateLineComment={updateLineComment}
+                updateSubtitleText={updateSubtitleText}
+                updateSubtitleOriginal={updateSubtitleOriginal}
+                updateSpeaker={updateSpeaker}
+                updateSubtitleTime={updateSubtitleTime}
+                deleteSubtitle={deleteSubtitle}
+                prevEndTime={prevEndTime}
+                speakerProfiles={speakerProfiles}
+                onManageSpeakers={onManageSpeakers}
+                isDeleteMode={isDeleteMode}
+                isSelectedForDelete={selectedForDelete?.has(sub.id)}
+                onToggleDeleteSelection={onToggleDeleteSelection}
+              />
+            );
+          })}
+        </div>
+      </div>
+    );
+  },
+  (prev, next) => {
+    return (
+      prev.chunk === next.chunk &&
+      prev.isSelected === next.isSelected &&
+      prev.status === next.status &&
+      prev.batchComment === next.batchComment &&
+      prev.showSourceText === next.showSourceText &&
+      prev.editingCommentId === next.editingCommentId &&
+      prev.subtitles === next.subtitles &&
+      prev.speakerProfiles === next.speakerProfiles &&
+      prev.deleteSubtitle === next.deleteSubtitle &&
+      prev.isDeleteMode === next.isDeleteMode &&
+      prev.selectedForDelete === next.selectedForDelete
+    );
+  }
+);

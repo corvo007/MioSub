@@ -14,7 +14,9 @@
     "electron:dev": "concurrently -k \"cross-env BROWSER=none yarn dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron -r ts-node/register electron/main.ts\"",
     "electron:build": "yarn build:main && vite build && electron-builder",
     "build:debug": "cross-env DEBUG_BUILD=true yarn electron:build",
-    "build:main": "vite build -c vite.config.electron.ts"
+    "build:main": "vite build -c vite.config.electron.ts",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\" \"electron/**/*.ts\"",
+    "prepare": "husky"
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
@@ -32,6 +34,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/electron-squirrel-startup": "^1.0.2",
     "@types/fluent-ffmpeg": "^2.1.28",
@@ -39,6 +42,8 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@types/uuid": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.48.1",
+    "@typescript-eslint/parser": "^8.48.1",
     "@vitejs/plugin-react": "^5.0.0",
     "adm-zip": "^0.5.16",
     "autoprefixer": "^10.4.22",
@@ -46,7 +51,14 @@
     "cross-env": "^10.1.0",
     "electron": "^39.2.4",
     "electron-builder": "^26.0.12",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "postcss": "^8.5.6",
+    "prettier": "^3.7.4",
     "tailwindcss": "^4.1.17",
     "ts-node": "^10.9.2",
     "typescript": "~5.8.2",
@@ -122,5 +134,14 @@
         }
       ]
     }
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.{css,json,md}": [
+      "prettier --write"
+    ]
   }
 }

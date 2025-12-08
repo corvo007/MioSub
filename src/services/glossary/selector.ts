@@ -6,22 +6,22 @@
  * @returns Selected chunks to analyze
  */
 export function selectChunksByDuration(
-    chunks: { index: number; start: number; end: number }[],
-    sampleMinutes: number | 'all',
-    chunkDuration: number
+  chunks: { index: number; start: number; end: number }[],
+  sampleMinutes: number | 'all',
+  chunkDuration: number
 ): { index: number; start: number; end: number }[] {
-    if (sampleMinutes === 'all') {
-        return chunks;
-    }
+  if (sampleMinutes === 'all') {
+    return chunks;
+  }
 
-    const targetSeconds = sampleMinutes * 60;
-    const chunksNeeded = Math.ceil(targetSeconds / chunkDuration);
+  const targetSeconds = sampleMinutes * 60;
+  const chunksNeeded = Math.ceil(targetSeconds / chunkDuration);
 
-    // If calculated chunks exceed total, return all
-    if (chunksNeeded >= chunks.length) {
-        return chunks;
-    }
+  // If calculated chunks exceed total, return all
+  if (chunksNeeded >= chunks.length) {
+    return chunks;
+  }
 
-    // Return chunks from the beginning
-    return chunks.slice(0, chunksNeeded);
+  // Return chunks from the beginning
+  return chunks.slice(0, chunksNeeded);
 }

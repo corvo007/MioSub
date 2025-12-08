@@ -2,27 +2,32 @@ import React, { useState, useEffect } from 'react';
 import { GenerationStatus } from '@/types/api';
 
 interface TimeTrackerProps {
-    startTime: number;
-    completed: number;
-    total: number;
-    status: GenerationStatus;
+  startTime: number;
+  completed: number;
+  total: number;
+  status: GenerationStatus;
 }
 
-export const TimeTracker: React.FC<TimeTrackerProps> = ({ startTime, completed, total, status }) => {
-    const [now, setNow] = useState(Date.now());
+export const TimeTracker: React.FC<TimeTrackerProps> = ({
+  startTime,
+  completed,
+  total,
+  status,
+}) => {
+  const [now, setNow] = useState(Date.now());
 
-    useEffect(() => {
-        const timer = setInterval(() => setNow(Date.now()), 1000);
-        return () => clearInterval(timer);
-    }, []);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
-    if (!startTime) return null;
+  if (!startTime) return null;
 
-    const elapsed = Math.floor((now - startTime) / 1000);
+  const elapsed = Math.floor((now - startTime) / 1000);
 
-    return (
-        <div className="flex justify-between text-xs text-slate-400 mb-4 px-1">
-            <span>用时: {elapsed}s</span>
-        </div>
-    );
+  return (
+    <div className="flex justify-between text-xs text-slate-400 mb-4 px-1">
+      <span>用时: {elapsed}s</span>
+    </div>
+  );
 };

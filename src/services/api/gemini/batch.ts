@@ -1,601 +1,698 @@
-import { GoogleGenAI, Part } from "@google/genai";
-import { SubtitleItem, BatchOperationMode } from "@/types/subtitle";
-import { AppSettings } from "@/types/settings";
-import { ChunkStatus, TokenUsage } from "@/types/api";
-import { parseGeminiResponse, extractJsonArray } from "@/services/subtitle/parser";
-import { formatTime, timeToSeconds } from "@/services/subtitle/time";
-import { decodeAudio } from "@/services/audio/decoder";
-import { sliceAudioBuffer } from "@/services/audio/processor";
-import { blobToBase64 } from "@/services/audio/converter";
-import { mapInParallel } from "@/services/utils/concurrency";
-import { logger } from "@/services/utils/logger";
-import { calculateDetailedCost } from "@/services/api/gemini/pricing";
-import { getSystemInstructionWithDiarization, getTranslationBatchPrompt, getFixTimestampsPrompt, getProofreadPrompt } from "@/services/api/gemini/prompts";
-import { SpeakerProfile } from "./speakerProfile";
+import { GoogleGenAI, Part } from '@google/genai';
+import { SubtitleItem, BatchOperationMode } from '@/types/subtitle';
+import { AppSettings } from '@/types/settings';
+import { ChunkStatus, TokenUsage } from '@/types/api';
+import { parseGeminiResponse, extractJsonArray } from '@/services/subtitle/parser';
+import { formatTime, timeToSeconds } from '@/services/subtitle/time';
+import { decodeAudio } from '@/services/audio/decoder';
+import { sliceAudioBuffer } from '@/services/audio/processor';
+import { blobToBase64 } from '@/services/audio/converter';
+import { mapInParallel } from '@/services/utils/concurrency';
+import { logger } from '@/services/utils/logger';
+import { calculateDetailedCost } from '@/services/api/gemini/pricing';
 import {
-    TRANSLATION_SCHEMA,
-    BATCH_SCHEMA,
-    BATCH_WITH_DIARIZATION_SCHEMA,
-    SAFETY_SETTINGS,
-    PROOFREAD_BATCH_SIZE
-} from "./schemas";
+  getSystemInstructionWithDiarization,
+  getTranslationBatchPrompt,
+  getFixTimestampsPrompt,
+  getProofreadPrompt,
+} from '@/services/api/gemini/prompts';
+import { SpeakerProfile } from './speakerProfile';
 import {
-    generateContentWithRetry,
-    generateContentWithLongOutput,
-    formatGeminiError,
-    getActionableErrorMessage
-} from "./client";
+  TRANSLATION_SCHEMA,
+  BATCH_SCHEMA,
+  BATCH_WITH_DIARIZATION_SCHEMA,
+  SAFETY_SETTINGS,
+  PROOFREAD_BATCH_SIZE,
+} from './schemas';
+import {
+  generateContentWithRetry,
+  generateContentWithLongOutput,
+  formatGeminiError,
+  getActionableErrorMessage,
+} from './client';
 
 export async function processTranslationBatchWithRetry(
-    ai: GoogleGenAI,
-    batch: any[],
-    systemInstruction: string,
-    maxRetries = 3,
-    onStatusUpdate?: (update: { message?: string, toast?: { message: string, type: 'info' | 'warning' | 'error' | 'success' } }) => void,
-    signal?: AbortSignal,
-    onUsage?: (usage: TokenUsage) => void,
-    timeoutMs?: number // Custom timeout in milliseconds
+  ai: GoogleGenAI,
+  batch: any[],
+  systemInstruction: string,
+  maxRetries = 3,
+  onStatusUpdate?: (update: {
+    message?: string;
+    toast?: { message: string; type: 'info' | 'warning' | 'error' | 'success' };
+  }) => void,
+  signal?: AbortSignal,
+  onUsage?: (usage: TokenUsage) => void,
+  timeoutMs?: number // Custom timeout in milliseconds
 ): Promise<any[]> {
-    const payload = batch.map(item => ({ id: item.id, text: item.original, speaker: item.speaker }));
+  const payload = batch.map((item) => ({
+    id: item.id,
+    text: item.original,
+    speaker: item.speaker,
+  }));
 
+  const prompt = getTranslationBatchPrompt(batch.length, payload);
 
-    const prompt = getTranslationBatchPrompt(batch.length, payload);
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await generateContentWithRetry(
+        ai,
+        {
+          model: 'gemini-2.5-flash',
+          contents: { parts: [{ text: prompt }] },
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: TRANSLATION_SCHEMA,
+            systemInstruction: systemInstruction,
+            safetySettings: SAFETY_SETTINGS,
+            maxOutputTokens: 65536,
+          },
+        },
+        3,
+        signal,
+        onUsage,
+        timeoutMs
+      );
 
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const text = response.text || '[]';
+      let translatedData: any[] = [];
+      try {
+        const clean = text
+          .replace(/```json/g, '')
+          .replace(/```/g, '')
+          .trim();
+        const extracted = extractJsonArray(clean);
+        const textToParse = extracted || clean;
+
+        translatedData = JSON.parse(textToParse);
+        if (!Array.isArray(translatedData) && (translatedData as any).items)
+          translatedData = (translatedData as any).items;
+      } catch (e) {
+        logger.warn(`Translation JSON parse error (Attempt ${attempt + 1}/${maxRetries})`);
+        throw e;
+      }
+
+      // Normalize ID type (LLM may return "5" instead of 5)
+      const transMap = new Map(translatedData.map((t: any) => [Number(t.id), t.text_translated]));
+
+      // Collect missing items for retry
+      const missingItems = batch.filter((item) => {
+        const translated = transMap.get(Number(item.id));
+        return !translated || translated.trim().length === 0;
+      });
+
+      // Retry missing items once (if partial failure, not total failure)
+      if (missingItems.length > 0 && missingItems.length < batch.length) {
+        logger.info(`Retrying ${missingItems.length} missing translations...`);
+        onStatusUpdate?.({ message: `重试 ${missingItems.length} 条漏翻...` });
+
         try {
-            const response = await generateContentWithRetry(ai, {
-                model: 'gemini-2.5-flash',
-                contents: { parts: [{ text: prompt }] },
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: TRANSLATION_SCHEMA,
-                    systemInstruction: systemInstruction,
-                    safetySettings: SAFETY_SETTINGS,
-                    maxOutputTokens: 65536,
-                }
-            }, 3, signal, onUsage, timeoutMs);
+          const retryPayload = missingItems.map((item) => ({
+            id: item.id,
+            text: item.original,
+            speaker: item.speaker,
+          }));
+          const retryPrompt = getTranslationBatchPrompt(missingItems.length, retryPayload);
 
-            const text = response.text || "[]";
-            let translatedData: any[] = [];
-            try {
-                const clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
-                const extracted = extractJsonArray(clean);
-                const textToParse = extracted || clean;
+          const retryResponse = await generateContentWithRetry(
+            ai,
+            {
+              model: 'gemini-2.5-flash',
+              contents: { parts: [{ text: retryPrompt }] },
+              config: {
+                responseMimeType: 'application/json',
+                responseSchema: TRANSLATION_SCHEMA,
+                systemInstruction: systemInstruction,
+                safetySettings: SAFETY_SETTINGS,
+                maxOutputTokens: 65536,
+              },
+            },
+            2,
+            signal,
+            onUsage,
+            timeoutMs
+          ); // Only 2 retries for missing items
 
-                translatedData = JSON.parse(textToParse);
-                if (!Array.isArray(translatedData) && (translatedData as any).items) translatedData = (translatedData as any).items;
-            } catch (e) {
-                logger.warn(`Translation JSON parse error (Attempt ${attempt + 1}/${maxRetries})`);
-                throw e;
+          const retryText = retryResponse.text || '[]';
+          const retryClean = retryText
+            .replace(/```json/g, '')
+            .replace(/```/g, '')
+            .trim();
+          let retryData = JSON.parse(retryClean);
+          if (!Array.isArray(retryData) && retryData.items) retryData = retryData.items;
+
+          // Merge retry results
+          let recoveredCount = 0;
+          retryData.forEach((t: any) => {
+            if (t.text_translated && t.text_translated.trim().length > 0) {
+              transMap.set(Number(t.id), t.text_translated);
+              recoveredCount++;
             }
+          });
 
-            // Normalize ID type (LLM may return "5" instead of 5)
-            const transMap = new Map(translatedData.map((t: any) => [Number(t.id), t.text_translated]));
-
-            // Collect missing items for retry
-            const missingItems = batch.filter(item => {
-                const translated = transMap.get(Number(item.id));
-                return !translated || translated.trim().length === 0;
-            });
-
-            // Retry missing items once (if partial failure, not total failure)
-            if (missingItems.length > 0 && missingItems.length < batch.length) {
-                logger.info(`Retrying ${missingItems.length} missing translations...`);
-                onStatusUpdate?.({ message: `重试 ${missingItems.length} 条漏翻...` });
-
-                try {
-                    const retryPayload = missingItems.map(item => ({ id: item.id, text: item.original, speaker: item.speaker }));
-                    const retryPrompt = getTranslationBatchPrompt(missingItems.length, retryPayload);
-
-                    const retryResponse = await generateContentWithRetry(ai, {
-                        model: 'gemini-2.5-flash',
-                        contents: { parts: [{ text: retryPrompt }] },
-                        config: {
-                            responseMimeType: "application/json",
-                            responseSchema: TRANSLATION_SCHEMA,
-                            systemInstruction: systemInstruction,
-                            safetySettings: SAFETY_SETTINGS,
-                            maxOutputTokens: 65536,
-                        }
-                    }, 2, signal, onUsage, timeoutMs); // Only 2 retries for missing items
-
-                    const retryText = retryResponse.text || "[]";
-                    const retryClean = retryText.replace(/```json/g, '').replace(/```/g, '').trim();
-                    let retryData = JSON.parse(retryClean);
-                    if (!Array.isArray(retryData) && retryData.items) retryData = retryData.items;
-
-                    // Merge retry results
-                    let recoveredCount = 0;
-                    retryData.forEach((t: any) => {
-                        if (t.text_translated && t.text_translated.trim().length > 0) {
-                            transMap.set(Number(t.id), t.text_translated);
-                            recoveredCount++;
-                        }
-                    });
-
-                    if (recoveredCount > 0) {
-                        logger.info(`Recovered ${recoveredCount}/${missingItems.length} translations on retry`);
-                    }
-                } catch (retryError) {
-                    logger.warn(`Retry failed for missing translations`, formatGeminiError(retryError));
-                }
-            }
-
-            let fallbackCount = 0;
-            const result = batch.map(item => {
-                const translatedText = transMap.get(Number(item.id));
-
-                // Log missing translations
-                if (!translatedText || translatedText.trim().length === 0) {
-                    logger.warn(`Translation missing for ID ${item.id}, using original text`, {
-                        original: item.original.substring(0, 50)
-                    });
-                    fallbackCount++;
-                }
-
-                return {
-                    ...item,
-                    translated: (translatedText && translatedText.trim().length > 0) ? translatedText : item.original
-                };
-            });
-
-            // Summary log
-            if (fallbackCount > 0) {
-                logger.warn(`Batch translation: ${fallbackCount}/${batch.length} items fallback to original text`);
-            }
-
-            return result;
-
-        } catch (e: any) {
-            if (attempt < maxRetries - 1) {
-                logger.warn(`Translation batch failed (Attempt ${attempt + 1}/${maxRetries}). Retrying entire batch...`, formatGeminiError(e));
-                onStatusUpdate?.({
-                    message: `正在重试 (${attempt + 1}/${maxRetries})...`,
-                    toast: {
-                        message: `批量翻译失败 (尝试 ${attempt + 1}/${maxRetries})。正在重试...`,
-                        type: 'warning'
-                    }
-                });
-                await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-            } else {
-                logger.error(`批量翻译在 ${maxRetries} 次尝试后失败`, formatGeminiError(e));
-                // Use actionable error message if available
-                const actionableMsg = getActionableErrorMessage(e);
-                const errorMsg = actionableMsg
-                    ? `翻译失败：${actionableMsg}`
-                    : `批量翻译在 ${maxRetries} 次尝试后失败。将使用原文。`;
-                onStatusUpdate?.({
-                    toast: {
-                        message: errorMsg,
-                        type: 'error'
-                    }
-                });
-            }
+          if (recoveredCount > 0) {
+            logger.info(`Recovered ${recoveredCount}/${missingItems.length} translations on retry`);
+          }
+        } catch (retryError) {
+          logger.warn(`Retry failed for missing translations`, formatGeminiError(retryError));
         }
-    }
+      }
 
-    return batch.map(item => ({ ...item, translated: item.original }));
+      let fallbackCount = 0;
+      const result = batch.map((item) => {
+        const translatedText = transMap.get(Number(item.id));
+
+        // Log missing translations
+        if (!translatedText || translatedText.trim().length === 0) {
+          logger.warn(`Translation missing for ID ${item.id}, using original text`, {
+            original: item.original.substring(0, 50),
+          });
+          fallbackCount++;
+        }
+
+        return {
+          ...item,
+          translated:
+            translatedText && translatedText.trim().length > 0 ? translatedText : item.original,
+        };
+      });
+
+      // Summary log
+      if (fallbackCount > 0) {
+        logger.warn(
+          `Batch translation: ${fallbackCount}/${batch.length} items fallback to original text`
+        );
+      }
+
+      return result;
+    } catch (e: any) {
+      if (attempt < maxRetries - 1) {
+        logger.warn(
+          `Translation batch failed (Attempt ${attempt + 1}/${maxRetries}). Retrying entire batch...`,
+          formatGeminiError(e)
+        );
+        onStatusUpdate?.({
+          message: `正在重试 (${attempt + 1}/${maxRetries})...`,
+          toast: {
+            message: `批量翻译失败 (尝试 ${attempt + 1}/${maxRetries})。正在重试...`,
+            type: 'warning',
+          },
+        });
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      } else {
+        logger.error(`批量翻译在 ${maxRetries} 次尝试后失败`, formatGeminiError(e));
+        // Use actionable error message if available
+        const actionableMsg = getActionableErrorMessage(e);
+        const errorMsg = actionableMsg
+          ? `翻译失败：${actionableMsg}`
+          : `批量翻译在 ${maxRetries} 次尝试后失败。将使用原文。`;
+        onStatusUpdate?.({
+          toast: {
+            message: errorMsg,
+            type: 'error',
+          },
+        });
+      }
+    }
+  }
+
+  return batch.map((item) => ({ ...item, translated: item.original }));
 }
 
 export async function translateBatch(
-    ai: GoogleGenAI,
-    items: any[],
-    systemInstruction: string,
-    concurrency: number,
-    batchSize: number,
-    onStatusUpdate?: (update: { message?: string, toast?: { message: string, type: 'info' | 'warning' | 'error' | 'success' } }) => void,
-    signal?: AbortSignal,
-    onUsage?: (usage: TokenUsage) => void,
-    timeoutMs?: number // Custom timeout in milliseconds
+  ai: GoogleGenAI,
+  items: any[],
+  systemInstruction: string,
+  concurrency: number,
+  batchSize: number,
+  onStatusUpdate?: (update: {
+    message?: string;
+    toast?: { message: string; type: 'info' | 'warning' | 'error' | 'success' };
+  }) => void,
+  signal?: AbortSignal,
+  onUsage?: (usage: TokenUsage) => void,
+  timeoutMs?: number // Custom timeout in milliseconds
 ): Promise<any[]> {
-    const batches: any[][] = [];
-    for (let i = 0; i < items.length; i += batchSize) {
-        batches.push(items.slice(i, i + batchSize));
-    }
+  const batches: any[][] = [];
+  for (let i = 0; i < items.length; i += batchSize) {
+    batches.push(items.slice(i, i + batchSize));
+  }
 
-    const batchResults = await mapInParallel(batches, concurrency, async (batch) => {
-        return await processTranslationBatchWithRetry(ai, batch, systemInstruction, 3, onStatusUpdate, signal, onUsage, timeoutMs);
-    }, signal);
+  const batchResults = await mapInParallel(
+    batches,
+    concurrency,
+    async (batch) => {
+      return await processTranslationBatchWithRetry(
+        ai,
+        batch,
+        systemInstruction,
+        3,
+        onStatusUpdate,
+        signal,
+        onUsage,
+        timeoutMs
+      );
+    },
+    signal
+  );
 
-    return batchResults.flat();
+  return batchResults.flat();
 }
 
 async function processBatch(
-    ai: GoogleGenAI,
-    batch: SubtitleItem[],
-    audioBuffer: AudioBuffer | null,
-    lastEndTime: string,
-    settings: AppSettings,
-    systemInstruction: string,
-    batchLabel: string,
-    totalVideoDuration?: number,
-    mode: BatchOperationMode = 'proofread',
-    batchComment?: string,
-    signal?: AbortSignal,
-    onUsage?: (usage: TokenUsage) => void
+  ai: GoogleGenAI,
+  batch: SubtitleItem[],
+  audioBuffer: AudioBuffer | null,
+  lastEndTime: string,
+  settings: AppSettings,
+  systemInstruction: string,
+  batchLabel: string,
+  totalVideoDuration?: number,
+  mode: BatchOperationMode = 'proofread',
+  batchComment?: string,
+  signal?: AbortSignal,
+  onUsage?: (usage: TokenUsage) => void
 ): Promise<SubtitleItem[]> {
-    if (batch.length === 0) return [];
+  if (batch.length === 0) return [];
 
-    const batchStartStr = batch[0].startTime;
-    const batchEndStr = batch[batch.length - 1].endTime;
-    const startSec = timeToSeconds(batchStartStr);
-    const endSec = timeToSeconds(batchEndStr);
+  const batchStartStr = batch[0].startTime;
+  const batchEndStr = batch[batch.length - 1].endTime;
+  const startSec = timeToSeconds(batchStartStr);
+  const endSec = timeToSeconds(batchEndStr);
 
-    // Audio is required for both fix_timestamps and proofread modes.
-    let base64Audio = "";
+  // Audio is required for both fix_timestamps and proofread modes.
+  let base64Audio = '';
 
-    let audioOffset = 0;
-    if (audioBuffer) {
-        try {
-            if (startSec < endSec) {
-                // Add padding to context (5 seconds before and after)
-                audioOffset = Math.max(0, startSec - 5);
-                const blob = await sliceAudioBuffer(audioBuffer, audioOffset, Math.min(audioBuffer.duration, endSec + 5));
-                base64Audio = await blobToBase64(blob);
-            }
-        } catch (e) {
-            logger.warn(`Audio slice failed for ${batchLabel}, falling back to text-only.`);
-        }
+  let audioOffset = 0;
+  if (audioBuffer) {
+    try {
+      if (startSec < endSec) {
+        // Add padding to context (5 seconds before and after)
+        audioOffset = Math.max(0, startSec - 5);
+        const blob = await sliceAudioBuffer(
+          audioBuffer,
+          audioOffset,
+          Math.min(audioBuffer.duration, endSec + 5)
+        );
+        base64Audio = await blobToBase64(blob);
+      }
+    } catch (e) {
+      logger.warn(`Audio slice failed for ${batchLabel}, falling back to text-only.`);
     }
+  }
 
-    const payload = batch.map(s => ({
-        id: s.id,
-        start: s.startTime,
-        end: s.endTime,
-        text_original: s.original,
-        text_translated: s.translated,
-        comment: s.comment, // Include user comment
-        speaker: s.speaker // Include speaker for context and consistency
-    }));
+  const payload = batch.map((s) => ({
+    id: s.id,
+    start: s.startTime,
+    end: s.endTime,
+    text_original: s.original,
+    text_translated: s.translated,
+    comment: s.comment, // Include user comment
+    speaker: s.speaker, // Include speaker for context and consistency
+  }));
 
-    let prompt = "";
-    const hasBatchComment = batchComment && batchComment.trim().length > 0;
-    const hasLineComments = batch.some(s => s.comment && s.comment.trim().length > 0);
+  let prompt = '';
+  const hasBatchComment = batchComment && batchComment.trim().length > 0;
+  const hasLineComments = batch.some((s) => s.comment && s.comment.trim().length > 0);
 
-    let specificInstruction = "";
+  let specificInstruction = '';
 
-    if (hasLineComments && !hasBatchComment) {
-        // Case 1: Line Comments Only
-        specificInstruction = `
+  if (hasLineComments && !hasBatchComment) {
+    // Case 1: Line Comments Only
+    specificInstruction = `
     USER LINE INSTRUCTIONS:
     1. Specific lines have "comment" fields. You MUST strictly follow these manual corrections.
     2. CRITICAL: For lines WITHOUT comments, DO NOT MODIFY THEM. Preserve them exactly as is. Only change lines with comments.
     `;
-    } else if (hasLineComments && hasBatchComment) {
-        // Case 2: Line Comments AND Batch Comment
-        specificInstruction = `
+  } else if (hasLineComments && hasBatchComment) {
+    // Case 2: Line Comments AND Batch Comment
+    specificInstruction = `
     USER INSTRUCTIONS:
     1. First, address the specific "comment" fields on individual lines.
     2. Second, apply this GLOBAL BATCH INSTRUCTION to the whole segment: "${batchComment}".
     3. You may modify any line to satisfy the global instruction or specific comments.
     `;
-    } else if (hasBatchComment && !hasLineComments) {
-        // Case 3: Batch Comment Only
-        specificInstruction = `
+  } else if (hasBatchComment && !hasLineComments) {
+    // Case 3: Batch Comment Only
+    specificInstruction = `
     USER BATCH INSTRUCTION (Apply to ALL lines in this batch): "${batchComment}"
     `;
-    }
-    // Case 4: No Comments -> Default behavior (prompt below covers it)
+  }
+  // Case 4: No Comments -> Default behavior (prompt below covers it)
 
-    // Construct Glossary Context
-    let glossaryContext = "";
-    if (settings.glossary && settings.glossary.length > 0) {
-        glossaryContext = `
+  // Construct Glossary Context
+  let glossaryContext = '';
+  if (settings.glossary && settings.glossary.length > 0) {
+    glossaryContext = `
     GLOSSARY (Strictly adhere to these terms):
-    ${settings.glossary.map(g => `- ${g.term}: ${g.translation} ${g.notes ? `(${g.notes})` : ''}`).join('\n')}
+    ${settings.glossary.map((g) => `- ${g.term}: ${g.translation} ${g.notes ? `(${g.notes})` : ''}`).join('\n')}
     `;
-        logger.info(`[Batch ${batchLabel}] Using glossary with ${settings.glossary.length} terms.`);
-    }
+    logger.info(`[Batch ${batchLabel}] Using glossary with ${settings.glossary.length} terms.`);
+  }
 
-
-    if (mode === 'fix_timestamps') {
-        prompt = getFixTimestampsPrompt({
-            batchLabel,
-            lastEndTime,
-            payload,
-            glossaryContext,
-            specificInstruction
-        });
-    } else {
-        // Proofread - Focus on TRANSLATION quality, may adjust timing when necessary
-        prompt = getProofreadPrompt({
-            batchLabel,
-            lastEndTime,
-            totalVideoDuration,
-            payload,
-            glossaryContext,
-            specificInstruction
-        });
-    }
-
-    try {
-        const parts: Part[] = [{ text: prompt }];
-        if (base64Audio) {
-            parts.push({
-                inlineData: {
-                    mimeType: "audio/wav",
-                    data: base64Audio
-                }
-            });
-        }
-
-        // Model Selection:
-        // Proofread -> Gemini 3 Pro (Best quality) + Search Grounding
-        // Fix Timestamps / Retranslate -> Gemini 2.5 Flash (Fast/Efficient)
-        const model = mode === 'proofread' ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
-        const tools = mode === 'proofread' ? [{ googleSearch: {} }] : undefined;
-
-        // Use the new Long Output handler
-        const text = await generateContentWithLongOutput(
-            ai,
-            model,
-            systemInstruction,
-            parts,
-            settings.enableDiarization ? BATCH_WITH_DIARIZATION_SCHEMA : BATCH_SCHEMA, // Use strict schema if diarization enabled
-            tools, // Enable Search Grounding for proofread
-            signal,
-            onUsage,
-            (settings.requestTimeout || 600) * 1000 // Custom timeout in milliseconds
-        );
-
-
-        let processedBatch = parseGeminiResponse(text, totalVideoDuration);
-
-        if (processedBatch.length > 0) {
-            // Heuristic: Detect if Gemini returned relative timestamps (starting from ~0) or absolute
-            // We explicitly asked for relative (0-based) in the prompt.
-            // However, models sometimes ignore this and return absolute timestamps if the input had them.
-
-            const firstStart = timeToSeconds(processedBatch[0].startTime);
-            const expectedRelativeStart = 0; // We asked for 0-based
-            const expectedAbsoluteStart = startSec; // The actual start time in the video
-
-            const diffRelative = Math.abs(firstStart - expectedRelativeStart);
-            const diffAbsolute = Math.abs(firstStart - expectedAbsoluteStart);
-
-            // If the result is closer to 0 than to the absolute start, it's likely relative.
-            // If audioOffset is 0 (start of video), diffRelative == diffAbsolute, so we don't need to add offset.
-            if (audioOffset > 0 && diffRelative < diffAbsolute) {
-                processedBatch = processedBatch.map(item => ({
-                    ...item,
-                    startTime: formatTime(timeToSeconds(item.startTime) + audioOffset),
-                    endTime: formatTime(timeToSeconds(item.endTime) + audioOffset)
-                }));
-            }
-
-            return processedBatch;
-        }
-
-        if (processedBatch.length > 0 && settings.enableDiarization) {
-            logger.debug(`[Batch ${batchLabel}] Processed first item speaker: ${processedBatch[0].speaker}`);
-        }
-    } catch (e) {
-        logger.error(`Batch ${batchLabel} processing failed (${mode}).`, e);
-    }
-    // Fallback: return original batch
-    return batch;
-}
-
-import { getEnvVariable } from "@/services/utils/env";
-
-export const runBatchOperation = async (
-    file: File | null,
-    allSubtitles: SubtitleItem[],
-    batchIndices: number[], // 0-based indices of chunks
-    settings: AppSettings,
-    mode: BatchOperationMode,
-    batchComments: Record<number, string> = {}, // Pass map of batch index -> comment
-    onProgress?: (update: ChunkStatus) => void,
-    signal?: AbortSignal,
-    speakerProfiles?: SpeakerProfile[]
-): Promise<SubtitleItem[]> => {
-    const geminiKey = getEnvVariable('GEMINI_API_KEY') || settings.geminiKey?.trim();
-    if (!geminiKey) throw new Error("缺少 API 密钥。");
-    const ai = new GoogleGenAI({
-        apiKey: geminiKey,
-        httpOptions: {
-            ...(settings.geminiEndpoint ? { baseUrl: settings.geminiEndpoint } : {}),
-            timeout: (settings.requestTimeout || 600) * 1000
-        }
+  if (mode === 'fix_timestamps') {
+    prompt = getFixTimestampsPrompt({
+      batchLabel,
+      lastEndTime,
+      payload,
+      glossaryContext,
+      specificInstruction,
     });
+  } else {
+    // Proofread - Focus on TRANSLATION quality, may adjust timing when necessary
+    prompt = getProofreadPrompt({
+      batchLabel,
+      lastEndTime,
+      totalVideoDuration,
+      payload,
+      glossaryContext,
+      specificInstruction,
+    });
+  }
 
-    let audioBuffer: AudioBuffer | null = null;
-    // Both Proofread and Fix Timestamps need audio context.
-    if (file) {
-        onProgress?.({ id: 'init', total: 0, status: 'processing', message: "Loading audio..." });
-        try {
-            audioBuffer = await decodeAudio(file);
-        } catch (e) {
-            logger.warn("Audio decode failed, proceeding with text-only mode.", e);
-        }
-    } else {
-        // If we are in Proofread mode but no file exists (SRT import), we fallback to text-only behavior inside processBatch (it handles null buffer)
-        logger.info("No media file provided, running in text-only context.");
+  try {
+    const parts: Part[] = [{ text: prompt }];
+    if (base64Audio) {
+      parts.push({
+        inlineData: {
+          mimeType: 'audio/wav',
+          data: base64Audio,
+        },
+      });
     }
 
-    const systemInstruction = getSystemInstructionWithDiarization(
-        settings.genre,
-        mode === 'proofread' ? settings.customProofreadingPrompt : settings.customTranslationPrompt,
-        mode,
-        settings.glossary,
-        settings.enableDiarization,  // Pass diarization flag
-        speakerProfiles
+    // Model Selection:
+    // Proofread -> Gemini 3 Pro (Best quality) + Search Grounding
+    // Fix Timestamps / Retranslate -> Gemini 2.5 Flash (Fast/Efficient)
+    const model = mode === 'proofread' ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
+    const tools = mode === 'proofread' ? [{ googleSearch: {} }] : undefined;
+
+    // Use the new Long Output handler
+    const text = await generateContentWithLongOutput(
+      ai,
+      model,
+      systemInstruction,
+      parts,
+      settings.enableDiarization ? BATCH_WITH_DIARIZATION_SCHEMA : BATCH_SCHEMA, // Use strict schema if diarization enabled
+      tools, // Enable Search Grounding for proofread
+      signal,
+      onUsage,
+      (settings.requestTimeout || 600) * 1000 // Custom timeout in milliseconds
     );
 
-    const currentSubtitles = [...allSubtitles];
-    const chunks: SubtitleItem[][] = [];
-    const batchSize = settings.proofreadBatchSize || PROOFREAD_BATCH_SIZE;
-    for (let i = 0; i < currentSubtitles.length; i += batchSize) {
-        chunks.push(currentSubtitles.slice(i, i + batchSize));
+    let processedBatch = parseGeminiResponse(text, totalVideoDuration);
+
+    if (processedBatch.length > 0) {
+      // Heuristic: Detect if Gemini returned relative timestamps (starting from ~0) or absolute
+      // We explicitly asked for relative (0-based) in the prompt.
+      // However, models sometimes ignore this and return absolute timestamps if the input had them.
+
+      const firstStart = timeToSeconds(processedBatch[0].startTime);
+      const expectedRelativeStart = 0; // We asked for 0-based
+      const expectedAbsoluteStart = startSec; // The actual start time in the video
+
+      const diffRelative = Math.abs(firstStart - expectedRelativeStart);
+      const diffAbsolute = Math.abs(firstStart - expectedAbsoluteStart);
+
+      // If the result is closer to 0 than to the absolute start, it's likely relative.
+      // If audioOffset is 0 (start of video), diffRelative == diffAbsolute, so we don't need to add offset.
+      if (audioOffset > 0 && diffRelative < diffAbsolute) {
+        processedBatch = processedBatch.map((item) => ({
+          ...item,
+          startTime: formatTime(timeToSeconds(item.startTime) + audioOffset),
+          endTime: formatTime(timeToSeconds(item.endTime) + audioOffset),
+        }));
+      }
+
+      return processedBatch;
     }
 
-    const sortedIndices = [...batchIndices].sort((a, b) => a - b);
+    if (processedBatch.length > 0 && settings.enableDiarization) {
+      logger.debug(
+        `[Batch ${batchLabel}] Processed first item speaker: ${processedBatch[0].speaker}`
+      );
+    }
+  } catch (e) {
+    logger.error(`Batch ${batchLabel} processing failed (${mode}).`, e);
+  }
+  // Fallback: return original batch
+  return batch;
+}
 
-    // Group consecutive indices
-    const groups: number[][] = [];
+import { getEnvVariable } from '@/services/utils/env';
 
-    // Exception: If ALL batches are selected, do NOT group them. Process individually.
-    // This prevents sending the entire movie as one huge prompt which would definitely fail.
-    const isSelectAll = sortedIndices.length === chunks.length;
+export const runBatchOperation = async (
+  file: File | null,
+  allSubtitles: SubtitleItem[],
+  batchIndices: number[], // 0-based indices of chunks
+  settings: AppSettings,
+  mode: BatchOperationMode,
+  batchComments: Record<number, string> = {}, // Pass map of batch index -> comment
+  onProgress?: (update: ChunkStatus) => void,
+  signal?: AbortSignal,
+  speakerProfiles?: SpeakerProfile[]
+): Promise<SubtitleItem[]> => {
+  const geminiKey = getEnvVariable('GEMINI_API_KEY') || settings.geminiKey?.trim();
+  if (!geminiKey) throw new Error('缺少 API 密钥。');
+  const ai = new GoogleGenAI({
+    apiKey: geminiKey,
+    httpOptions: {
+      ...(settings.geminiEndpoint ? { baseUrl: settings.geminiEndpoint } : {}),
+      timeout: (settings.requestTimeout || 600) * 1000,
+    },
+  });
 
-    if (sortedIndices.length > 0) {
-        if (isSelectAll) {
-            // 1-on-1 mapping
-            sortedIndices.forEach(idx => groups.push([idx]));
+  let audioBuffer: AudioBuffer | null = null;
+  // Both Proofread and Fix Timestamps need audio context.
+  if (file) {
+    onProgress?.({ id: 'init', total: 0, status: 'processing', message: 'Loading audio...' });
+    try {
+      audioBuffer = await decodeAudio(file);
+    } catch (e) {
+      logger.warn('Audio decode failed, proceeding with text-only mode.', e);
+    }
+  } else {
+    // If we are in Proofread mode but no file exists (SRT import), we fallback to text-only behavior inside processBatch (it handles null buffer)
+    logger.info('No media file provided, running in text-only context.');
+  }
+
+  const systemInstruction = getSystemInstructionWithDiarization(
+    settings.genre,
+    mode === 'proofread' ? settings.customProofreadingPrompt : settings.customTranslationPrompt,
+    mode,
+    settings.glossary,
+    settings.enableDiarization, // Pass diarization flag
+    speakerProfiles
+  );
+
+  const currentSubtitles = [...allSubtitles];
+  const chunks: SubtitleItem[][] = [];
+  const batchSize = settings.proofreadBatchSize || PROOFREAD_BATCH_SIZE;
+  for (let i = 0; i < currentSubtitles.length; i += batchSize) {
+    chunks.push(currentSubtitles.slice(i, i + batchSize));
+  }
+
+  const sortedIndices = [...batchIndices].sort((a, b) => a - b);
+
+  // Group consecutive indices
+  const groups: number[][] = [];
+
+  // Exception: If ALL batches are selected, do NOT group them. Process individually.
+  // This prevents sending the entire movie as one huge prompt which would definitely fail.
+  const isSelectAll = sortedIndices.length === chunks.length;
+
+  if (sortedIndices.length > 0) {
+    if (isSelectAll) {
+      // 1-on-1 mapping
+      sortedIndices.forEach((idx) => groups.push([idx]));
+    } else {
+      // Consecutive grouping logic
+      let currentGroup = [sortedIndices[0]];
+      for (let i = 1; i < sortedIndices.length; i++) {
+        if (sortedIndices[i] === sortedIndices[i - 1] + 1) {
+          currentGroup.push(sortedIndices[i]);
         } else {
-            // Consecutive grouping logic
-            let currentGroup = [sortedIndices[0]];
-            for (let i = 1; i < sortedIndices.length; i++) {
-                if (sortedIndices[i] === sortedIndices[i - 1] + 1) {
-                    currentGroup.push(sortedIndices[i]);
-                } else {
-                    groups.push(currentGroup);
-                    currentGroup = [sortedIndices[i]];
-                }
-            }
-            groups.push(currentGroup);
+          groups.push(currentGroup);
+          currentGroup = [sortedIndices[i]];
         }
+      }
+      groups.push(currentGroup);
     }
+  }
 
-    // Determine concurrency based on mode
-    // Proofread uses Gemini 3 Pro (Low RPM) -> Concurrency PRO
-    // Others use Gemini 2.5 Flash (High RPM) -> Concurrency FLASH
-    const concurrency = mode === 'proofread' ? (settings.concurrencyPro || 2) : (settings.concurrencyFlash || 5);
+  // Determine concurrency based on mode
+  // Proofread uses Gemini 3 Pro (Low RPM) -> Concurrency PRO
+  // Others use Gemini 2.5 Flash (High RPM) -> Concurrency FLASH
+  const concurrency =
+    mode === 'proofread' ? settings.concurrencyPro || 2 : settings.concurrencyFlash || 5;
 
-    // Token Usage Tracking with modality breakdown
-    const usageReport: Record<string, {
-        prompt: number, output: number, total: number,
-        textInput: number, audioInput: number, thoughts: number
-    }> = {};
-    const trackUsage = (usage: TokenUsage) => {
-        const model = usage.modelName;
-        if (!usageReport[model]) {
-            usageReport[model] = { prompt: 0, output: 0, total: 0, textInput: 0, audioInput: 0, thoughts: 0 };
+  // Token Usage Tracking with modality breakdown
+  const usageReport: Record<
+    string,
+    {
+      prompt: number;
+      output: number;
+      total: number;
+      textInput: number;
+      audioInput: number;
+      thoughts: number;
+    }
+  > = {};
+  const trackUsage = (usage: TokenUsage) => {
+    const model = usage.modelName;
+    if (!usageReport[model]) {
+      usageReport[model] = {
+        prompt: 0,
+        output: 0,
+        total: 0,
+        textInput: 0,
+        audioInput: 0,
+        thoughts: 0,
+      };
+    }
+    usageReport[model].prompt += usage.promptTokens;
+    usageReport[model].output += usage.candidatesTokens;
+    usageReport[model].total += usage.totalTokens;
+    usageReport[model].textInput += usage.textInputTokens || 0;
+    usageReport[model].audioInput += usage.audioInputTokens || 0;
+    usageReport[model].thoughts += usage.thoughtsTokens || 0;
+  };
+
+  await mapInParallel(
+    groups,
+    concurrency,
+    async (group, i) => {
+      const firstBatchIdx = group[0];
+
+      // Merge batches in the group
+      let mergedBatch: SubtitleItem[] = [];
+      let mergedComment = '';
+
+      group.forEach((idx) => {
+        if (idx < chunks.length) {
+          const batch = chunks[idx];
+          mergedBatch = [...mergedBatch, ...batch];
+
+          if (batchComments[idx] && batch.length > 0) {
+            const rangeLabel = `[IDs ${batch[0].id}-${batch[batch.length - 1].id}]`;
+            mergedComment += (mergedComment ? ' | ' : '') + `${rangeLabel}: ${batchComments[idx]}`;
+          }
         }
-        usageReport[model].prompt += usage.promptTokens;
-        usageReport[model].output += usage.candidatesTokens;
-        usageReport[model].total += usage.totalTokens;
-        usageReport[model].textInput += usage.textInputTokens || 0;
-        usageReport[model].audioInput += usage.audioInputTokens || 0;
-        usageReport[model].thoughts += usage.thoughtsTokens || 0;
-    };
+      });
 
-    await mapInParallel(groups, concurrency, async (group, i) => {
-        const firstBatchIdx = group[0];
+      // Context for timestamps
+      let lastEndTime = '00:00:00,000';
+      if (firstBatchIdx > 0) {
+        const prevChunk = chunks[firstBatchIdx - 1];
+        if (prevChunk.length > 0) {
+          lastEndTime = prevChunk[prevChunk.length - 1].endTime;
+        }
+      }
 
-        // Merge batches in the group
-        let mergedBatch: SubtitleItem[] = [];
-        let mergedComment = "";
+      let actionLabel = '';
+      if (mode === 'proofread') actionLabel = 'Polishing';
+      else if (mode === 'fix_timestamps') actionLabel = 'Aligning';
+      else actionLabel = 'Translating';
 
-        group.forEach(idx => {
-            if (idx < chunks.length) {
-                const batch = chunks[idx];
-                mergedBatch = [...mergedBatch, ...batch];
+      const groupLabel =
+        group.length > 1
+          ? `${group[0] + 1}-${group[group.length - 1] + 1}`
+          : `${firstBatchIdx + 1}`;
+      onProgress?.({
+        id: groupLabel,
+        total: groups.length,
+        status: 'processing',
+        message: `${actionLabel}...`,
+      });
+      logger.debug(
+        `[Batch ${groupLabel}] Starting ${mode} operation. Merged items: ${mergedBatch.length}`
+      );
 
-                if (batchComments[idx] && batch.length > 0) {
-                    const rangeLabel = `[IDs ${batch[0].id}-${batch[batch.length - 1].id}]`;
-                    mergedComment += (mergedComment ? " | " : "") + `${rangeLabel}: ${batchComments[idx]}`;
+      try {
+        const processed = await processBatch(
+          ai,
+          mergedBatch,
+          audioBuffer,
+          lastEndTime,
+          settings,
+          systemInstruction,
+          groupLabel,
+          audioBuffer?.duration,
+          mode,
+          mergedComment,
+          signal,
+          trackUsage
+        );
+
+        // Update original subtitles with processed results
+        // We need to map back by ID
+        const processedMap = new Map(processed.map((p) => [p.id, p]));
+
+        // Update the chunks in the main array
+        group.forEach((idx) => {
+          if (idx < chunks.length) {
+            const batch = chunks[idx];
+            for (let k = 0; k < batch.length; k++) {
+              const item = batch[k];
+              const updated = processedMap.get(item.id);
+              if (updated) {
+                // Find index in main array
+                const mainIndex = currentSubtitles.findIndex((s) => s.id === item.id);
+                if (mainIndex !== -1) {
+                  // Preserve speaker if not present in updated (e.g. proofread mode)
+                  if (!updated.speaker && currentSubtitles[mainIndex].speaker) {
+                    updated.speaker = currentSubtitles[mainIndex].speaker;
+                  }
+                  currentSubtitles[mainIndex] = updated;
                 }
+              }
             }
+          }
         });
 
-        // Context for timestamps
-        let lastEndTime = "00:00:00,000";
-        if (firstBatchIdx > 0) {
-            const prevChunk = chunks[firstBatchIdx - 1];
-            if (prevChunk.length > 0) {
-                lastEndTime = prevChunk[prevChunk.length - 1].endTime;
-            }
-        }
-
-        let actionLabel = "";
-        if (mode === 'proofread') actionLabel = "Polishing";
-        else if (mode === 'fix_timestamps') actionLabel = "Aligning";
-        else actionLabel = "Translating";
-
-        const groupLabel = group.length > 1 ? `${group[0] + 1}-${group[group.length - 1] + 1}` : `${firstBatchIdx + 1}`;
-        onProgress?.({ id: groupLabel, total: groups.length, status: 'processing', message: `${actionLabel}...` });
-        logger.debug(`[Batch ${groupLabel}] Starting ${mode} operation. Merged items: ${mergedBatch.length}`);
-
-        try {
-            const processed = await processBatch(
-                ai,
-                mergedBatch,
-                audioBuffer,
-                lastEndTime,
-                settings,
-                systemInstruction,
-                groupLabel,
-                audioBuffer?.duration,
-                mode,
-                mergedComment,
-                signal,
-                trackUsage
-            );
-
-            // Update original subtitles with processed results
-            // We need to map back by ID
-            const processedMap = new Map(processed.map(p => [p.id, p]));
-
-            // Update the chunks in the main array
-            group.forEach(idx => {
-                if (idx < chunks.length) {
-                    const batch = chunks[idx];
-                    for (let k = 0; k < batch.length; k++) {
-                        const item = batch[k];
-                        const updated = processedMap.get(item.id);
-                        if (updated) {
-                            // Find index in main array
-                            const mainIndex = currentSubtitles.findIndex(s => s.id === item.id);
-                            if (mainIndex !== -1) {
-                                // Preserve speaker if not present in updated (e.g. proofread mode)
-                                if (!updated.speaker && currentSubtitles[mainIndex].speaker) {
-                                    updated.speaker = currentSubtitles[mainIndex].speaker;
-                                }
-                                currentSubtitles[mainIndex] = updated;
-                            }
-                        }
-                    }
-                }
-            });
-
-            onProgress?.({ id: groupLabel, total: groups.length, status: 'completed', message: "Done" });
-
-        } catch (e) {
-            logger.error(`Group ${groupLabel} failed`, e);
-            onProgress?.({ id: groupLabel, total: groups.length, status: 'error', message: "Failed" });
-            throw e; // Re-throw to stop mapInParallel if needed, or handle cancellation
-        }
-    }, signal);
-
-    // Log Token Usage Report
-    let reportLog = "\n📊 Token Usage Report (Batch Operation):\n----------------------------------------\n";
-    let grandTotal = 0;
-    let totalCost = 0;
-
-    for (const [model, usage] of Object.entries(usageReport)) {
-        const cost = calculateDetailedCost({
-            textInputTokens: usage.textInput,
-            audioInputTokens: usage.audioInput,
-            candidatesTokens: usage.output,
-            thoughtsTokens: usage.thoughts,
-            modelName: model
+        onProgress?.({
+          id: groupLabel,
+          total: groups.length,
+          status: 'completed',
+          message: 'Done',
         });
-        totalCost += cost;
+      } catch (e) {
+        logger.error(`Group ${groupLabel} failed`, e);
+        onProgress?.({ id: groupLabel, total: groups.length, status: 'error', message: 'Failed' });
+        throw e; // Re-throw to stop mapInParallel if needed, or handle cancellation
+      }
+    },
+    signal
+  );
 
-        reportLog += `Model: ${model}\n`;
-        reportLog += `  - Text Input: ${usage.textInput.toLocaleString()}\n`;
-        reportLog += `  - Audio Input: ${usage.audioInput.toLocaleString()}\n`;
-        reportLog += `  - Output: ${usage.output.toLocaleString()}\n`;
-        reportLog += `  - Thoughts: ${usage.thoughts.toLocaleString()}\n`;
-        reportLog += `  - Total: ${usage.total.toLocaleString()}\n`;
-        reportLog += `  - Est. Cost: $${cost.toFixed(6)}\n`;
-        reportLog += `----------------------------------------\n`;
-        grandTotal += usage.total;
-    }
-    reportLog += `Grand Total Tokens: ${grandTotal.toLocaleString()}\n`;
-    reportLog += `Total Est. Cost: $${totalCost.toFixed(6)}\n`;
-    logger.info(reportLog);
+  // Log Token Usage Report
+  let reportLog =
+    '\n📊 Token Usage Report (Batch Operation):\n----------------------------------------\n';
+  let grandTotal = 0;
+  let totalCost = 0;
 
-    return currentSubtitles;
+  for (const [model, usage] of Object.entries(usageReport)) {
+    const cost = calculateDetailedCost({
+      textInputTokens: usage.textInput,
+      audioInputTokens: usage.audioInput,
+      candidatesTokens: usage.output,
+      thoughtsTokens: usage.thoughts,
+      modelName: model,
+    });
+    totalCost += cost;
+
+    reportLog += `Model: ${model}\n`;
+    reportLog += `  - Text Input: ${usage.textInput.toLocaleString()}\n`;
+    reportLog += `  - Audio Input: ${usage.audioInput.toLocaleString()}\n`;
+    reportLog += `  - Output: ${usage.output.toLocaleString()}\n`;
+    reportLog += `  - Thoughts: ${usage.thoughts.toLocaleString()}\n`;
+    reportLog += `  - Total: ${usage.total.toLocaleString()}\n`;
+    reportLog += `  - Est. Cost: $${cost.toFixed(6)}\n`;
+    reportLog += `----------------------------------------\n`;
+    grandTotal += usage.total;
+  }
+  reportLog += `Grand Total Tokens: ${grandTotal.toLocaleString()}\n`;
+  reportLog += `Total Est. Cost: $${totalCost.toFixed(6)}\n`;
+  logger.info(reportLog);
+
+  return currentSubtitles;
 };

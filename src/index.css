@@ -1,30 +1,30 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Tailwind v4 自定义主题 */
 @theme {
-    /* 自定义字体 */
-    --font-sans: 'Inter', sans-serif;
+  /* 自定义字体 */
+  --font-sans: 'Inter', sans-serif;
 
-    /* 自定义颜色 */
-    --color-primary: #6366f1;
-    --color-primary-dark: #4f46e5;
-    --color-primary-light: #818cf8;
+  /* 自定义颜色 */
+  --color-primary: #6366f1;
+  --color-primary-dark: #4f46e5;
+  --color-primary-light: #818cf8;
 }
 
 /* 全局样式 */
 body {
-    font-family: var(--font-sans);
-    background-color: #0f172a;
-    /* slate-900 */
-    color: #e2e8f0;
-    /* slate-200 */
+  font-family: var(--font-sans);
+  background-color: #0f172a;
+  /* slate-900 */
+  color: #e2e8f0;
+  /* slate-200 */
 }
 
 /* Electron 窗口拖动区域 - 用于无边框窗口 */
 .window-drag-region {
-    -webkit-app-region: drag;
+  -webkit-app-region: drag;
 }
 
 /* 拖动区域内的按钮等交互元素需要禁用拖动 */
@@ -32,75 +32,75 @@ body {
 .window-drag-region a,
 .window-drag-region input,
 .window-drag-region select,
-.window-drag-region [role="button"],
+.window-drag-region [role='button'],
 .window-no-drag {
-    -webkit-app-region: no-drag;
+  -webkit-app-region: no-drag;
 }
 
 /* 自定义滚动条 */
 .custom-scrollbar::-webkit-scrollbar,
 ::-webkit-scrollbar {
-    width: 8px;
+  width: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track,
 ::-webkit-scrollbar-track {
-    background: #1e293b;
-    /* slate-800 */
+  background: #1e293b;
+  /* slate-800 */
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb,
 ::-webkit-scrollbar-thumb {
-    background: #475569;
-    /* slate-600 */
-    border-radius: 4px;
+  background: #475569;
+  /* slate-600 */
+  border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover,
 ::-webkit-scrollbar-thumb:hover {
-    background: #64748b;
-    /* slate-500 */
+  background: #64748b;
+  /* slate-500 */
 }
 
 /* 自定义动画 */
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: scale(0.95);
-    }
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
 
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .animate-fade-in {
-    animation: fadeIn 0.2s ease-out;
+  animation: fadeIn 0.2s ease-out;
 }
 
 @keyframes shimmer {
-    from {
-        transform: translateX(-100%);
-    }
+  from {
+    transform: translateX(-100%);
+  }
 
-    to {
-        transform: translateX(100%);
-    }
+  to {
+    transform: translateX(100%);
+  }
 }
 
 .animate-shimmer {
-    animation: shimmer 2s infinite;
+  animation: shimmer 2s infinite;
 }
 
 /* Hide native number input spinners */
 .no-spinner::-webkit-inner-spin-button,
 .no-spinner::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .no-spinner {
-    -moz-appearance: textfield;
-    appearance: none;
+  -moz-appearance: textfield;
+  appearance: none;
 }

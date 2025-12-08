@@ -43,7 +43,7 @@ export async function extractAudioFromVideo(
     channels = 1,
     bitrate = '128k',
     customFfmpegPath,
-    customFfprobePath
+    customFfprobePath,
   } = options;
 
   // Set custom FFprobe path if provided
@@ -52,7 +52,8 @@ export async function extractAudioFromVideo(
       if (onLog) onLog(`[INFO] Using Custom FFprobe Path: ${customFfprobePath}`);
       ffmpeg.setFfprobePath(customFfprobePath);
     } else {
-      if (onLog) onLog(`[WARN] Custom FFprobe Path not found: ${customFfprobePath}, using default.`);
+      if (onLog)
+        onLog(`[WARN] Custom FFprobe Path not found: ${customFfprobePath}, using default.`);
     }
   }
 
@@ -74,8 +75,8 @@ export async function extractAudioFromVideo(
   return new Promise((resolve, reject) => {
     let command = ffmpeg(videoPath)
       .outputOptions([
-        `-ar ${sampleRate}`,     // 采样率
-        `-ac ${channels}`,        // 声道数
+        `-ar ${sampleRate}`, // 采样率
+        `-ac ${channels}`, // 声道数
       ])
       .output(outputPath);
 
@@ -106,7 +107,7 @@ export async function extractAudioFromVideo(
         onProgress({
           percent: progress.percent || 0,
           currentTime: progress.timemark || '00:00:00',
-          targetSize: progress.targetSize ? `${progress.targetSize}KB` : 'Unknown'
+          targetSize: progress.targetSize ? `${progress.targetSize}KB` : 'Unknown',
         });
       });
     }
@@ -166,7 +167,7 @@ export async function getAudioInfo(videoPath: string): Promise<{
         return;
       }
 
-      const audioStream = metadata.streams.find(s => s.codec_type === 'audio');
+      const audioStream = metadata.streams.find((s) => s.codec_type === 'audio');
       if (!audioStream) {
         reject(new Error('No audio stream found in video'));
         return;
@@ -176,7 +177,7 @@ export async function getAudioInfo(videoPath: string): Promise<{
         duration: metadata.format.duration || 0,
         codec: audioStream.codec_name || 'unknown',
         sampleRate: audioStream.sample_rate || 0,
-        channels: audioStream.channels || 0
+        channels: audioStream.channels || 0,
       });
     });
   });

@@ -4,106 +4,107 @@ import { SpeakerUIProfile } from '@/types/speaker';
 import { getSpeakerColor } from '@/utils/colors';
 
 interface SpeakerSelectProps {
-    currentSpeaker?: string;
-    speakerProfiles: SpeakerUIProfile[];
-    onSelect: (speaker: string) => void;
-    onManageSpeakers?: () => void;
-
+  currentSpeaker?: string;
+  speakerProfiles: SpeakerUIProfile[];
+  onSelect: (speaker: string) => void;
+  onManageSpeakers?: () => void;
 }
 
 export const SpeakerSelect: React.FC<SpeakerSelectProps> = ({
-    currentSpeaker,
-    speakerProfiles,
-    onSelect,
-    onManageSpeakers,
-
+  currentSpeaker,
+  speakerProfiles,
+  onSelect,
+  onManageSpeakers,
 }) => {
-    const [isOpen, setIsOpen] = React.useState(false);
-    const [dropUp, setDropUp] = React.useState(false);
-    const dropdownRef = React.useRef<HTMLDivElement>(null);
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [dropUp, setDropUp] = React.useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
 
-    const toggleOpen = () => {
-        if (!isOpen) {
-            // Check position before opening
-            if (dropdownRef.current) {
-                const rect = dropdownRef.current.getBoundingClientRect();
-                const spaceBelow = window.innerHeight - rect.bottom;
-                // If less than 250px below, open upwards
-                setDropUp(spaceBelow < 250);
-            }
-        }
-        setIsOpen(!isOpen);
+  const toggleOpen = () => {
+    if (!isOpen) {
+      // Check position before opening
+      if (dropdownRef.current) {
+        const rect = dropdownRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        // If less than 250px below, open upwards
+        setDropUp(spaceBelow < 250);
+      }
+    }
+    setIsOpen(!isOpen);
+  };
+
+  // Close on outside click
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
     };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-    // Close on outside click
-    React.useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+  const speakerColor = getSpeakerColor(currentSpeaker || '');
 
-    const speakerColor = getSpeakerColor(currentSpeaker || '');
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={toggleOpen}
+        className="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium cursor-pointer hover:opacity-90 transition-opacity"
+        style={{
+          backgroundColor: speakerColor + '20',
+          color: speakerColor,
+          border: `1px solid ${speakerColor}`,
+        }}
+      >
+        <span>{currentSpeaker || '选择说话人'}</span>
+        <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
 
-    return (
-        <div className="relative" ref={dropdownRef}>
-            <button
-                onClick={toggleOpen}
-                className="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium cursor-pointer hover:opacity-90 transition-opacity"
-                style={{
-                    backgroundColor: speakerColor + '20',
-                    color: speakerColor,
-                    border: `1px solid ${speakerColor}`
+      {isOpen && (
+        <div
+          className={`absolute left-0 ${dropUp ? 'bottom-full mb-1 origin-bottom' : 'top-full mt-1 origin-top'} bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-50 min-w-[150px] py-1 animate-fade-in`}
+        >
+          {speakerProfiles.length === 0 ? (
+            <div className="px-3 py-2 text-xs text-slate-500">暂无说话人</div>
+          ) : (
+            speakerProfiles.map((profile) => (
+              <button
+                key={profile.id}
+                onClick={() => {
+                  onSelect(profile.name);
+                  setIsOpen(false);
                 }}
-            >
-                <span>{currentSpeaker || '选择说话人'}</span>
-                <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            </button>
+                className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-slate-800 transition-colors ${
+                  currentSpeaker === profile.name ? 'bg-slate-800' : ''
+                }`}
+              >
+                <span
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: getSpeakerColor(profile.name) }}
+                />
+                <span className="text-slate-200">{profile.name}</span>
+              </button>
+            ))
+          )}
 
-            {isOpen && (
-                <div className={`absolute left-0 ${dropUp ? 'bottom-full mb-1 origin-bottom' : 'top-full mt-1 origin-top'} bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-50 min-w-[150px] py-1 animate-fade-in`}>
-                    {speakerProfiles.length === 0 ? (
-                        <div className="px-3 py-2 text-xs text-slate-500">暂无说话人</div>
-                    ) : (
-                        speakerProfiles.map(profile => (
-                            <button
-                                key={profile.id}
-                                onClick={() => {
-                                    onSelect(profile.name);
-                                    setIsOpen(false);
-                                }}
-                                className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-slate-800 transition-colors ${currentSpeaker === profile.name ? 'bg-slate-800' : ''
-                                    }`}
-                            >
-                                <span
-                                    className="w-2 h-2 rounded-full"
-                                    style={{ backgroundColor: getSpeakerColor(profile.name) }}
-                                />
-                                <span className="text-slate-200">{profile.name}</span>
-                            </button>
-                        ))
-                    )}
-
-                    {onManageSpeakers && (
-                        <>
-                            <div className="border-t border-slate-700 my-1" />
-                            <button
-                                onClick={() => {
-                                    onManageSpeakers();
-                                    setIsOpen(false);
-                                }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                            >
-                                <Users className="w-3 h-3" />
-                                管理说话人
-                            </button>
-                        </>
-                    )}
-                </div>
-            )}
+          {onManageSpeakers && (
+            <>
+              <div className="border-t border-slate-700 my-1" />
+              <button
+                onClick={() => {
+                  onManageSpeakers();
+                  setIsOpen(false);
+                }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <Users className="w-3 h-3" />
+                管理说话人
+              </button>
+            </>
+          )}
         </div>
-    );
+      )}
+    </div>
+  );
 };

@@ -7,7 +7,7 @@
  * @returns true if in Electron, false if in Web browser
  */
 export const isElectron = (): boolean => {
-    return !!(window as any).electronAPI?.isElectron;
+  return !!(window as any).electronAPI?.isElectron;
 };
 
 /**
@@ -16,11 +16,11 @@ export const isElectron = (): boolean => {
  * to ensure users use the settings configuration.
  */
 export const getEnvVariable = (key: string): string | undefined => {
-    if (isElectron()) {
-        return undefined;
-    }
+  if (isElectron()) {
+    return undefined;
+  }
 
-    // In Web environment, check window.env first (injected by runtime), then process.env
-    const windowEnv = (typeof window !== 'undefined' ? (window as any).env : undefined);
-    return windowEnv?.[key] || process.env[key] || process.env[`REACT_APP_${key}`];
+  // In Web environment, check window.env first (injected by runtime), then process.env
+  const windowEnv = typeof window !== 'undefined' ? (window as any).env : undefined;
+  return windowEnv?.[key] || process.env[key] || process.env[`REACT_APP_${key}`];
 };

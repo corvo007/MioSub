@@ -1,7 +1,7 @@
-import { BatchOperationMode } from "@/types/subtitle";
-import { GlossaryItem } from "@/types/glossary";
-import { SpeakerProfile } from "./speakerProfile";
-import { formatTime } from "@/services/subtitle/time";
+import { BatchOperationMode } from '@/types/subtitle';
+import { GlossaryItem } from '@/types/glossary';
+import { SpeakerProfile } from './speakerProfile';
+import { formatTime } from '@/services/subtitle/time';
 
 // --- Helper Functions ---
 
@@ -48,9 +48,9 @@ export const getSystemInstructionWithDiarization = (
   let glossaryText = '';
   if (glossary && glossary.length > 0) {
     if (mode === 'refinement') {
-      glossaryText = `\n\nKEY TERMINOLOGY (Listen for these terms and transcribe them accurately in the ORIGINAL LANGUAGE):\n${glossary.map(g => `- ${g.term}${g.notes ? ` (${g.notes})` : ''}`).join('\n')}`;
+      glossaryText = `\n\nKEY TERMINOLOGY (Listen for these terms and transcribe them accurately in the ORIGINAL LANGUAGE):\n${glossary.map((g) => `- ${g.term}${g.notes ? ` (${g.notes})` : ''}`).join('\n')}`;
     } else {
-      glossaryText = `\n\nTERMINOLOGY GLOSSARY (STRICTLY FOLLOW):\n${glossary.map(g => `- ${g.term}: ${g.translation} ${g.notes ? `(${g.notes})` : ''}`).join('\n')}`;
+      glossaryText = `\n\nTERMINOLOGY GLOSSARY (STRICTLY FOLLOW):\n${glossary.map((g) => `- ${g.term}: ${g.translation} ${g.notes ? `(${g.notes})` : ''}`).join('\n')}`;
     }
   }
 
@@ -65,7 +65,9 @@ export const getSystemInstructionWithDiarization = (
 Your task is to MATCH voices to these profiles.
 
 **KNOWN SPEAKER PROFILES**:
-${speakerProfiles.map((p, i) => `
+${speakerProfiles
+  .map(
+    (p, i) => `
 ${i + 1}. **${p.id}**
    - Gender: ${p.characteristics.gender}
    ${p.characteristics.name ? `- Name: ${p.characteristics.name}` : ''}
@@ -76,11 +78,13 @@ ${i + 1}. **${p.id}**
    ${p.inferredIdentity ? `- Role: ${p.inferredIdentity}` : ''}
    ${p.speakingStyle ? `- Speaking Style: ${p.speakingStyle.formality || ''} ${p.speakingStyle.vocabulary ? `(${p.speakingStyle.vocabulary})` : ''}` : ''}
    ${p.emotionalTone ? `- Emotional Tone: ${p.emotionalTone}` : ''}
-   ${p.catchphrases && p.catchphrases.length > 0 ? `- Catchphrases: ${p.catchphrases.map(c => `"${c}"`).join(', ')}` : ''}
+   ${p.catchphrases && p.catchphrases.length > 0 ? `- Catchphrases: ${p.catchphrases.map((c) => `"${c}"`).join(', ')}` : ''}
    ${p.speakingContext && p.speakingContext.length > 0 ? `- Speaking Context: ${p.speakingContext.join(', ')}` : ''}
-   - Sample Quotes: ${p.sampleQuotes.map(q => `"${q}"`).join(', ')}
+   - Sample Quotes: ${p.sampleQuotes.map((q) => `"${q}"`).join(', ')}
    - Confidence: ${(p.confidence * 100).toFixed(0)}%
-`).join('\n')}
+`
+  )
+  .join('\n')}
 
 **MATCHING STRATEGY** (Priority Order):
 
@@ -243,16 +247,15 @@ export const getSystemInstruction = (
   glossary?: GlossaryItem[],
   speakerProfiles?: SpeakerProfile[]
 ): string => {
-
   // Helper to format glossary for different modes
   let glossaryText = '';
   if (glossary && glossary.length > 0) {
     if (mode === 'refinement') {
       // For refinement: Only show original terms (no translations) to prevent language mixing
-      glossaryText = `\n\nKEY TERMINOLOGY (Listen for these terms and transcribe them accurately in the ORIGINAL LANGUAGE):\n${glossary.map(g => `- ${g.term}${g.notes ? ` (${g.notes})` : ''}`).join('\n')}`;
+      glossaryText = `\n\nKEY TERMINOLOGY (Listen for these terms and transcribe them accurately in the ORIGINAL LANGUAGE):\n${glossary.map((g) => `- ${g.term}${g.notes ? ` (${g.notes})` : ''}`).join('\n')}`;
     } else {
       // For translation/proofread: Show full glossary with translations
-      glossaryText = `\n\nTERMINOLOGY GLOSSARY (STRICTLY FOLLOW):\n${glossary.map(g => `- ${g.term}: ${g.translation} ${g.notes ? `(${g.notes})` : ''}`).join('\n')}`;
+      glossaryText = `\n\nTERMINOLOGY GLOSSARY (STRICTLY FOLLOW):\n${glossary.map((g) => `- ${g.term}: ${g.translation} ${g.notes ? `(${g.notes})` : ''}`).join('\n')}`;
     }
   }
 
@@ -287,14 +290,26 @@ export const getSystemInstruction = (
 
   // 2. Translation Prompt (Flash 2.5) - Initial Pass
   if (mode === 'translation') {
-    let genreContext = "";
+    let genreContext = '';
     switch (genre) {
-      case 'anime': genreContext = "Genre: Anime. Use casual, emotive tone. Preserve honorifics nuances."; break;
-      case 'movie': genreContext = "Genre: Movie/TV. Natural dialogue, concise, easy to read."; break;
-      case 'news': genreContext = "Genre: News. Formal, objective, standard terminology."; break;
-      case 'tech': genreContext = "Genre: Tech. Precise terminology. Keep standard English acronyms."; break;
-      case 'general': genreContext = "Genre: General. Neutral and accurate."; break;
-      default: genreContext = `Context: ${genre}. Translate using tone/terminology appropriate for this context.`; break;
+      case 'anime':
+        genreContext = 'Genre: Anime. Use casual, emotive tone. Preserve honorifics nuances.';
+        break;
+      case 'movie':
+        genreContext = 'Genre: Movie/TV. Natural dialogue, concise, easy to read.';
+        break;
+      case 'news':
+        genreContext = 'Genre: News. Formal, objective, standard terminology.';
+        break;
+      case 'tech':
+        genreContext = 'Genre: Tech. Precise terminology. Keep standard English acronyms.';
+        break;
+      case 'general':
+        genreContext = 'Genre: General. Neutral and accurate.';
+        break;
+      default:
+        genreContext = `Context: ${genre}. Translate using tone/terminology appropriate for this context.`;
+        break;
     }
 
     return `You are an expert Subtitle Translator specializing in ${genre} content.
@@ -334,16 +349,22 @@ export const getSystemInstruction = (
     ✓ Is the Chinese fluent and natural?
     ✓ Did I remove all filler words?
 
-    ${genreContext}${glossaryText}${speakerProfiles && speakerProfiles.length > 0 ? `
+    ${genreContext}${glossaryText}${
+      speakerProfiles && speakerProfiles.length > 0
+        ? `
 
 **SPEAKER PROFILES**:
-${speakerProfiles.map(p => `
+${speakerProfiles
+  .map(
+    (p) => `
 [${p.id}]
 - Gender: ${p.characteristics.gender}
 - Role: ${p.inferredIdentity || 'unknown'}
 - Style: ${p.speakingStyle?.formality || 'normal'}
 - Vocabulary: ${p.speakingStyle?.vocabulary || 'standard'}
-`).join('')}
+`
+  )
+  .join('')}
 **TRANSLATION STYLE EXAMPLES**:
 - formal style → polite/literary expressions
 - casual style → colloquial expressions
@@ -352,7 +373,9 @@ ${speakerProfiles.map(p => `
 Example:
 Speaker (casual): "すごい！" → "太棒了！"
 Speaker (formal): "すごいですね" → "真是令人印象深刻。"
-` : ''}`;
+`
+        : ''
+    }`;
   }
 
   // 3. Fix Timestamps Prompt (Flash 2.5)
@@ -507,7 +530,6 @@ FINAL VERIFICATION:
 ✓ Only included terms that need consistent translation
 ✓ Notes added where helpful for consistency
 `;
-
 
 export const getSpeakerProfileExtractionPrompt = (genre: string) => `
 **TASK**: Extract comprehensive speaker profiles from audio samples for downstream voice matching.
@@ -821,5 +843,5 @@ export const getRefinementPrompt = (params: RefinementPromptParams): string => `
             ${params.glossaryInfo ? `✓ Checked against ${params.glossaryCount} glossary terms` : ''}
 
             Input Transcription (JSON):
-            ${JSON.stringify(params.rawSegments.map(s => ({ start: s.startTime, end: s.endTime, text: s.original })))}
+            ${JSON.stringify(params.rawSegments.map((s) => ({ start: s.startTime, end: s.endTime, text: s.original })))}
             `;

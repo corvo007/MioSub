@@ -1,5 +1,14 @@
 import React from 'react';
-import { MessageCircle, Pencil, Clock, Type, AlertTriangle, Trash2, CheckSquare, Square } from 'lucide-react';
+import {
+  MessageCircle,
+  Pencil,
+  Clock,
+  Type,
+  AlertTriangle,
+  Trash2,
+  CheckSquare,
+  Square,
+} from 'lucide-react';
 import { SubtitleItem } from '@/types';
 import { SpeakerUIProfile } from '@/types/speaker';
 import { getSpeakerColor } from '@/utils/colors';
@@ -11,63 +20,64 @@ const MAX_CHINESE_CHARACTERS = 25;
 
 // Parse time string (HH:MM:SS,mmm or HH:MM:SS.mmm) to seconds
 export const parseTimeToSeconds = (timeStr: string): number => {
-    if (!timeStr) return 0;
-    const parts = timeStr.replace(',', '.').split(':');
-    if (parts.length !== 3) return 0;
-    const hours = parseFloat(parts[0]) || 0;
-    const minutes = parseFloat(parts[1]) || 0;
-    const seconds = parseFloat(parts[2]) || 0;
-    return hours * 3600 + minutes * 60 + seconds;
+  if (!timeStr) return 0;
+  const parts = timeStr.replace(',', '.').split(':');
+  if (parts.length !== 3) return 0;
+  const hours = parseFloat(parts[0]) || 0;
+  const minutes = parseFloat(parts[1]) || 0;
+  const seconds = parseFloat(parts[2]) || 0;
+  return hours * 3600 + minutes * 60 + seconds;
 };
 
 // Format seconds to time string (HH:MM:SS,mmm)
 const formatSecondsToTime = (totalSeconds: number): string => {
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    const secs = Math.floor(seconds);
-    const ms = Math.round((seconds - secs) * 1000);
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')},${ms.toString().padStart(3, '0')}`;
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const secs = Math.floor(seconds);
+  const ms = Math.round((seconds - secs) * 1000);
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')},${ms.toString().padStart(3, '0')}`;
 };
 
 // Validate time format and return normalized string or null
 const validateAndNormalizeTime = (input: string): string | null => {
-    // Try to parse various formats: HH:MM:SS, HH:MM:SS,mmm, HH:MM:SS.mmm, MM:SS
-    const trimmed = input.trim();
-    if (!trimmed) return null;
+  // Try to parse various formats: HH:MM:SS, HH:MM:SS,mmm, HH:MM:SS.mmm, MM:SS
+  const trimmed = input.trim();
+  if (!trimmed) return null;
 
-    // Handle MM:SS format
-    const shortMatch = trimmed.match(/^(\d{1,2}):(\d{2})$/);
-    if (shortMatch) {
-        const mins = parseInt(shortMatch[1]);
-        const secs = parseInt(shortMatch[2]);
-        return formatSecondsToTime(mins * 60 + secs);
-    }
+  // Handle MM:SS format
+  const shortMatch = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+  if (shortMatch) {
+    const mins = parseInt(shortMatch[1]);
+    const secs = parseInt(shortMatch[2]);
+    return formatSecondsToTime(mins * 60 + secs);
+  }
 
-    // Handle HH:MM:SS or HH:MM:SS,mmm or HH:MM:SS.mmm
-    const fullMatch = trimmed.match(/^(\d{1,2}):(\d{2}):(\d{2})([,.](\d{1,3}))?$/);
-    if (fullMatch) {
-        const hours = parseInt(fullMatch[1]);
-        const mins = parseInt(fullMatch[2]);
-        const secs = parseInt(fullMatch[3]);
-        const ms = fullMatch[5] ? parseInt(fullMatch[5].padEnd(3, '0')) : 0;
-        return formatSecondsToTime(hours * 3600 + mins * 60 + secs + ms / 1000);
-    }
+  // Handle HH:MM:SS or HH:MM:SS,mmm or HH:MM:SS.mmm
+  const fullMatch = trimmed.match(/^(\d{1,2}):(\d{2}):(\d{2})([,.](\d{1,3}))?$/);
+  if (fullMatch) {
+    const hours = parseInt(fullMatch[1]);
+    const mins = parseInt(fullMatch[2]);
+    const secs = parseInt(fullMatch[3]);
+    const ms = fullMatch[5] ? parseInt(fullMatch[5].padEnd(3, '0')) : 0;
+    return formatSecondsToTime(hours * 3600 + mins * 60 + secs + ms / 1000);
+  }
 
-    return null;
+  return null;
 };
 
 // Calculate subtitle duration in seconds
 const calculateDuration = (startTime: string, endTime: string): number => {
-    return parseTimeToSeconds(endTime) - parseTimeToSeconds(startTime);
+  return parseTimeToSeconds(endTime) - parseTimeToSeconds(startTime);
 };
 
 // Count Chinese characters (CJK range)
 const countChineseCharacters = (text: string): number => {
-    if (!text) return 0;
-    const cjkRegex = /[\u4e00-\u9fff\u3400-\u4dbf\u{20000}-\u{2a6df}\u{2a700}-\u{2b73f}\u{2b740}-\u{2b81f}\u{2b820}-\u{2ceaf}\u{2ceb0}-\u{2ebef}]/gu;
-    const matches = text.match(cjkRegex);
-    return matches ? matches.length : 0;
+  if (!text) return 0;
+  const cjkRegex =
+    /[\u4e00-\u9fff\u3400-\u4dbf\u{20000}-\u{2a6df}\u{2a700}-\u{2b73f}\u{2b740}-\u{2b81f}\u{2b820}-\u{2ceaf}\u{2ceb0}-\u{2ebef}]/gu;
+  const matches = text.match(cjkRegex);
+  return matches ? matches.length : 0;
 };
 
 // Overlap threshold in seconds (only show warning if overlap > this value)
@@ -75,61 +85,62 @@ const OVERLAP_THRESHOLD_SECONDS = 2;
 
 // Validation result type
 export interface ValidationResult {
-    hasDurationIssue: boolean;
-    hasLengthIssue: boolean;
-    hasOverlapIssue: boolean;
-    duration: number;
-    charCount: number;
-    overlapAmount: number; // How many seconds of overlap (negative means gap)
+  hasDurationIssue: boolean;
+  hasLengthIssue: boolean;
+  hasOverlapIssue: boolean;
+  duration: number;
+  charCount: number;
+  overlapAmount: number; // How many seconds of overlap (negative means gap)
 }
 
 // Validate a subtitle item
 export const validateSubtitle = (sub: SubtitleItem, prevEndTime?: string): ValidationResult => {
-    const duration = calculateDuration(sub.startTime, sub.endTime);
-    const charCount = countChineseCharacters(sub.translated);
+  const duration = calculateDuration(sub.startTime, sub.endTime);
+  const charCount = countChineseCharacters(sub.translated);
 
-    // Check overlap: current start time < previous end time
-    let overlapAmount = 0;
-    if (prevEndTime) {
-        const prevEnd = parseTimeToSeconds(prevEndTime);
-        const currentStart = parseTimeToSeconds(sub.startTime);
-        overlapAmount = prevEnd - currentStart; // Positive means overlap
-    }
+  // Check overlap: current start time < previous end time
+  let overlapAmount = 0;
+  if (prevEndTime) {
+    const prevEnd = parseTimeToSeconds(prevEndTime);
+    const currentStart = parseTimeToSeconds(sub.startTime);
+    overlapAmount = prevEnd - currentStart; // Positive means overlap
+  }
 
-    // Only flag as issue if overlap exceeds threshold
-    const hasOverlapIssue = overlapAmount > OVERLAP_THRESHOLD_SECONDS;
+  // Only flag as issue if overlap exceeds threshold
+  const hasOverlapIssue = overlapAmount > OVERLAP_THRESHOLD_SECONDS;
 
-    return {
-        hasDurationIssue: duration > MAX_DURATION_SECONDS,
-        hasLengthIssue: charCount > MAX_CHINESE_CHARACTERS,
-        hasOverlapIssue,
-        duration,
-        charCount,
-        overlapAmount
-    };
+  return {
+    hasDurationIssue: duration > MAX_DURATION_SECONDS,
+    hasLengthIssue: charCount > MAX_CHINESE_CHARACTERS,
+    hasOverlapIssue,
+    duration,
+    charCount,
+    overlapAmount,
+  };
 };
 
 interface SubtitleRowProps {
-    sub: SubtitleItem;
-    showSourceText: boolean;
-    editingCommentId: number | null;
-    setEditingCommentId: (id: number | null) => void;
-    updateLineComment: (id: number, comment: string) => void;
-    updateSubtitleText: (id: number, translated: string) => void;
-    updateSubtitleOriginal: (id: number, original: string) => void;
-    updateSpeaker?: (id: number, speaker: string, applyToAll?: boolean) => void;
-    updateSubtitleTime?: (id: number, startTime: string, endTime: string) => void;
-    prevEndTime?: string; // For overlap detection
-    speakerProfiles?: SpeakerUIProfile[];
-    onManageSpeakers?: () => void;
-    deleteSubtitle?: (id: number) => void;
-    // Delete mode
-    isDeleteMode?: boolean;
-    isSelectedForDelete?: boolean;
-    onToggleDeleteSelection?: (id: number) => void;
+  sub: SubtitleItem;
+  showSourceText: boolean;
+  editingCommentId: number | null;
+  setEditingCommentId: (id: number | null) => void;
+  updateLineComment: (id: number, comment: string) => void;
+  updateSubtitleText: (id: number, translated: string) => void;
+  updateSubtitleOriginal: (id: number, original: string) => void;
+  updateSpeaker?: (id: number, speaker: string, applyToAll?: boolean) => void;
+  updateSubtitleTime?: (id: number, startTime: string, endTime: string) => void;
+  prevEndTime?: string; // For overlap detection
+  speakerProfiles?: SpeakerUIProfile[];
+  onManageSpeakers?: () => void;
+  deleteSubtitle?: (id: number) => void;
+  // Delete mode
+  isDeleteMode?: boolean;
+  isSelectedForDelete?: boolean;
+  onToggleDeleteSelection?: (id: number) => void;
 }
 
-export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
+export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
+  ({
     sub,
     showSourceText,
     editingCommentId,
@@ -147,8 +158,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
     isDeleteMode,
     isSelectedForDelete,
     onToggleDeleteSelection,
-
-}) => {
+  }) => {
     const [editing, setEditing] = React.useState(false);
     const [tempText, setTempText] = React.useState('');
     const [tempOriginal, setTempOriginal] = React.useState('');
@@ -161,288 +171,297 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(({
     const validation = React.useMemo(() => validateSubtitle(sub, prevEndTime), [sub, prevEndTime]);
 
     // Count total issues for background color
-    const issueCount = [validation.hasDurationIssue, validation.hasLengthIssue, validation.hasOverlapIssue].filter(Boolean).length;
+    const issueCount = [
+      validation.hasDurationIssue,
+      validation.hasLengthIssue,
+      validation.hasOverlapIssue,
+    ].filter(Boolean).length;
 
     // Determine background color based on validation issues
     const getRowBackgroundClass = (): string => {
-        if (issueCount >= 2) {
-            // Multiple issues: purple/violet background
-            return 'bg-violet-900/30 border-l-2 border-violet-500';
-        } else if (validation.hasOverlapIssue) {
-            // Overlap issue: orange background
-            return 'bg-orange-900/30 border-l-2 border-orange-500';
-        } else if (validation.hasDurationIssue) {
-            // Duration issue only: yellow background
-            return 'bg-yellow-900/30 border-l-2 border-yellow-500';
-        } else if (validation.hasLengthIssue) {
-            // Length issue only: rose/red background
-            return 'bg-rose-900/30 border-l-2 border-rose-500';
-        }
-        return '';
+      if (issueCount >= 2) {
+        // Multiple issues: purple/violet background
+        return 'bg-violet-900/30 border-l-2 border-violet-500';
+      } else if (validation.hasOverlapIssue) {
+        // Overlap issue: orange background
+        return 'bg-orange-900/30 border-l-2 border-orange-500';
+      } else if (validation.hasDurationIssue) {
+        // Duration issue only: yellow background
+        return 'bg-yellow-900/30 border-l-2 border-yellow-500';
+      } else if (validation.hasLengthIssue) {
+        // Length issue only: rose/red background
+        return 'bg-rose-900/30 border-l-2 border-rose-500';
+      }
+      return '';
     };
 
     const handleStartEdit = () => {
-        setTempText(sub.translated);
-        setTempOriginal(sub.original);
-        setTempStartTime(sub.startTime || ''); // Show full time with ms for precise editing
-        setTempEndTime(sub.endTime || '');
-        setEditing(true);
+      setTempText(sub.translated);
+      setTempOriginal(sub.original);
+      setTempStartTime(sub.startTime || ''); // Show full time with ms for precise editing
+      setTempEndTime(sub.endTime || '');
+      setEditing(true);
     };
 
     const handleSave = () => {
-        if (tempText.trim() !== sub.translated) {
-            updateSubtitleText(sub.id, tempText.trim());
+      if (tempText.trim() !== sub.translated) {
+        updateSubtitleText(sub.id, tempText.trim());
+      }
+      if (showSourceText && tempOriginal.trim() !== sub.original) {
+        updateSubtitleOriginal(sub.id, tempOriginal.trim());
+      }
+      // Save time if changed and valid
+      if (updateSubtitleTime) {
+        const normalizedStart = validateAndNormalizeTime(tempStartTime);
+        const normalizedEnd = validateAndNormalizeTime(tempEndTime);
+        if (normalizedStart && normalizedEnd) {
+          const startChanged = normalizedStart !== sub.startTime;
+          const endChanged = normalizedEnd !== sub.endTime;
+          if (startChanged || endChanged) {
+            updateSubtitleTime(sub.id, normalizedStart, normalizedEnd);
+          }
         }
-        if (showSourceText && tempOriginal.trim() !== sub.original) {
-            updateSubtitleOriginal(sub.id, tempOriginal.trim());
-        }
-        // Save time if changed and valid
-        if (updateSubtitleTime) {
-            const normalizedStart = validateAndNormalizeTime(tempStartTime);
-            const normalizedEnd = validateAndNormalizeTime(tempEndTime);
-            if (normalizedStart && normalizedEnd) {
-                const startChanged = normalizedStart !== sub.startTime;
-                const endChanged = normalizedEnd !== sub.endTime;
-                if (startChanged || endChanged) {
-                    updateSubtitleTime(sub.id, normalizedStart, normalizedEnd);
-                }
-            }
-        }
-        setEditing(false);
+      }
+      setEditing(false);
     };
 
     const handleCancel = () => {
-        setEditing(false);
-        setTempText('');
-        setTempOriginal('');
-        setTempStartTime('');
-        setTempEndTime('');
+      setEditing(false);
+      setTempText('');
+      setTempOriginal('');
+      setTempStartTime('');
+      setTempEndTime('');
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            handleSave();
-        } else if (e.key === 'Escape') {
-            e.preventDefault();
-            handleCancel();
-        }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSave();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        handleCancel();
+      }
     };
 
     const handleSpeakerSave = () => {
-        if (updateSpeaker && tempSpeaker.trim() !== (sub.speaker || '')) {
-            updateSpeaker(sub.id, tempSpeaker.trim());
-        }
-        setEditingSpeaker(false);
+      if (updateSpeaker && tempSpeaker.trim() !== (sub.speaker || '')) {
+        updateSpeaker(sub.id, tempSpeaker.trim());
+      }
+      setEditingSpeaker(false);
     };
 
     const handleSpeakerEdit = () => {
-        setTempSpeaker(sub.speaker || '');
-        setEditingSpeaker(true);
+      setTempSpeaker(sub.speaker || '');
+      setEditingSpeaker(true);
     };
 
     const handleSpeakerCancel = () => {
-        setTempSpeaker('');
-        setEditingSpeaker(false);
+      setTempSpeaker('');
+      setEditingSpeaker(false);
     };
 
     // Handle blur for the entire editing row
     const handleRowBlur = (e: React.FocusEvent<HTMLDivElement>) => {
-        if (!editing) return;
-        // Check if the new focus target is still within this row
-        const rowElement = e.currentTarget;
-        const relatedTarget = e.relatedTarget as Node | null;
-        if (relatedTarget && rowElement.contains(relatedTarget)) {
-            // Focus is still within the row, don't save
-            return;
-        }
-        // Focus left the row, save changes
-        handleSave();
+      if (!editing) return;
+      // Check if the new focus target is still within this row
+      const rowElement = e.currentTarget;
+      const relatedTarget = e.relatedTarget as Node | null;
+      if (relatedTarget && rowElement.contains(relatedTarget)) {
+        // Focus is still within the row, don't save
+        return;
+      }
+      // Focus left the row, save changes
+      handleSave();
     };
 
     return (
-        <div
-            className={`p-3 hover:bg-slate-800/30 transition-colors flex items-start space-x-4 group/row ${getRowBackgroundClass()}${isDeleteMode && isSelectedForDelete ? ' bg-red-900/20' : ''}`}
-            onBlur={editing ? handleRowBlur : undefined}
-        >
-            {/* Delete mode checkbox */}
-            {isDeleteMode && (
-                <button
-                    onClick={() => onToggleDeleteSelection?.(sub.id)}
-                    className="mt-1 flex-shrink-0"
-                >
-                    {isSelectedForDelete ? (
-                        <CheckSquare className="w-5 h-5 text-red-400" />
-                    ) : (
-                        <Square className="w-5 h-5 text-red-400/50 hover:text-red-400" />
-                    )}
-                </button>
+      <div
+        className={`p-3 hover:bg-slate-800/30 transition-colors flex items-start space-x-4 group/row ${getRowBackgroundClass()}${isDeleteMode && isSelectedForDelete ? ' bg-red-900/20' : ''}`}
+        onBlur={editing ? handleRowBlur : undefined}
+      >
+        {/* Delete mode checkbox */}
+        {isDeleteMode && (
+          <button onClick={() => onToggleDeleteSelection?.(sub.id)} className="mt-1 flex-shrink-0">
+            {isSelectedForDelete ? (
+              <CheckSquare className="w-5 h-5 text-red-400" />
+            ) : (
+              <Square className="w-5 h-5 text-red-400/50 hover:text-red-400" />
             )}
-            <div className="flex flex-col text-sm font-mono text-slate-400 min-w-[85px] pt-1">
-                {editing ? (
-                    // Editable time inputs - compact style matching display
-                    <>
-                        <input
-                            type="text"
-                            value={tempStartTime}
-                            onChange={(e) => setTempStartTime(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="00:00:00"
-                            className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-sm text-white placeholder-slate-600 focus:outline-none leading-tight w-[100px]"
-                        />
-                        <input
-                            type="text"
-                            value={tempEndTime}
-                            onChange={(e) => setTempEndTime(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="00:00:00"
-                            className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-sm text-white/70 placeholder-slate-600 focus:outline-none leading-tight w-[100px]"
-                        />
-                    </>
-                ) : (
-                    <>
-                        <span className="leading-tight">{(sub.startTime || '').split(',')[0]}</span>
-                        <span className="leading-tight opacity-70">{(sub.endTime || '').split(',')[0]}</span>
-                    </>
+          </button>
+        )}
+        <div className="flex flex-col text-sm font-mono text-slate-400 min-w-[85px] pt-1">
+          {editing ? (
+            // Editable time inputs - compact style matching display
+            <>
+              <input
+                type="text"
+                value={tempStartTime}
+                onChange={(e) => setTempStartTime(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="00:00:00"
+                className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-sm text-white placeholder-slate-600 focus:outline-none leading-tight w-[100px]"
+              />
+              <input
+                type="text"
+                value={tempEndTime}
+                onChange={(e) => setTempEndTime(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="00:00:00"
+                className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-sm text-white/70 placeholder-slate-600 focus:outline-none leading-tight w-[100px]"
+              />
+            </>
+          ) : (
+            <>
+              <span className="leading-tight">{(sub.startTime || '').split(',')[0]}</span>
+              <span className="leading-tight opacity-70">{(sub.endTime || '').split(',')[0]}</span>
+            </>
+          )}
+          {/* Validation indicators */}
+          {!editing &&
+            (validation.hasDurationIssue ||
+              validation.hasLengthIssue ||
+              validation.hasOverlapIssue) && (
+              <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                {validation.hasOverlapIssue && (
+                  <span
+                    className="flex items-center gap-0.5 text-[10px] text-orange-400"
+                    title={`与上一行重叠 ${validation.overlapAmount.toFixed(1)}s`}
+                  >
+                    <AlertTriangle className="w-3 h-3" />
+                    <span>{validation.overlapAmount.toFixed(1)}s</span>
+                  </span>
                 )}
-                {/* Validation indicators */}
-                {!editing && (validation.hasDurationIssue || validation.hasLengthIssue || validation.hasOverlapIssue) && (
-                    <div className="flex flex-wrap items-center gap-1 mt-1.5">
-                        {validation.hasOverlapIssue && (
-                            <span
-                                className="flex items-center gap-0.5 text-[10px] text-orange-400"
-                                title={`与上一行重叠 ${validation.overlapAmount.toFixed(1)}s`}
-                            >
-                                <AlertTriangle className="w-3 h-3" />
-                                <span>{validation.overlapAmount.toFixed(1)}s</span>
-                            </span>
-                        )}
-                        {validation.hasDurationIssue && (
-                            <span
-                                className="flex items-center gap-0.5 text-[10px] text-yellow-400"
-                                title={`持续时间 ${validation.duration.toFixed(1)}s 超过 ${MAX_DURATION_SECONDS}s`}
-                            >
-                                <Clock className="w-3 h-3" />
-                                <span>{validation.duration.toFixed(1)}s</span>
-                            </span>
-                        )}
-                        {validation.hasLengthIssue && (
-                            <span
-                                className="flex items-center gap-0.5 text-[10px] text-rose-400"
-                                title={`字符数 ${validation.charCount} 超过 ${MAX_CHINESE_CHARACTERS} 字符`}
-                            >
-                                <Type className="w-3 h-3" />
-                                <span>{validation.charCount}字</span>
-                            </span>
-                        )}
-                    </div>
+                {validation.hasDurationIssue && (
+                  <span
+                    className="flex items-center gap-0.5 text-[10px] text-yellow-400"
+                    title={`持续时间 ${validation.duration.toFixed(1)}s 超过 ${MAX_DURATION_SECONDS}s`}
+                  >
+                    <Clock className="w-3 h-3" />
+                    <span>{validation.duration.toFixed(1)}s</span>
+                  </span>
                 )}
+                {validation.hasLengthIssue && (
+                  <span
+                    className="flex items-center gap-0.5 text-[10px] text-rose-400"
+                    title={`字符数 ${validation.charCount} 超过 ${MAX_CHINESE_CHARACTERS} 字符`}
+                  >
+                    <Type className="w-3 h-3" />
+                    <span>{validation.charCount}字</span>
+                  </span>
+                )}
+              </div>
+            )}
+        </div>
+        <div className="flex-1 space-y-1">
+          {/* Speaker Select */}
+          {sub.speaker && updateSpeaker && speakerProfiles && (
+            <div className="mb-2">
+              <SpeakerSelect
+                currentSpeaker={sub.speaker}
+                speakerProfiles={speakerProfiles}
+                onSelect={(speaker) => updateSpeaker(sub.id, speaker)}
+                onManageSpeakers={onManageSpeakers}
+              />
             </div>
-            <div className="flex-1 space-y-1">
-                {/* Speaker Select */}
-                {sub.speaker && updateSpeaker && speakerProfiles && (
-                    <div className="mb-2">
-                        <SpeakerSelect
-                            currentSpeaker={sub.speaker}
-                            speakerProfiles={speakerProfiles}
-                            onSelect={(speaker) => updateSpeaker(sub.id, speaker)}
-                            onManageSpeakers={onManageSpeakers}
-
-                        />
-                    </div>
-                )}
-                {editing ? (
-                    <div className="space-y-1">
-                        {showSourceText && (
-                            <input
-                                type="text"
-                                value={tempOriginal}
-                                onChange={(e) => setTempOriginal(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                                placeholder="原文"
-                                className="w-full bg-slate-600/10 border border-slate-500/30 rounded px-2 py-1 text-sm text-slate-300 placeholder-slate-500/50 focus:outline-none focus:border-slate-400/50 leading-relaxed"
-                            />
-                        )}
-                        <input
-                            type="text"
-                            value={tempText}
-                            onChange={(e) => setTempText(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            autoFocus
-                            placeholder="译文"
-                            className="w-full bg-indigo-500/10 border border-indigo-500/30 rounded px-2 py-1 text-lg text-indigo-200 placeholder-indigo-500/50 focus:outline-none focus:border-indigo-500/50 leading-relaxed font-medium"
-                        />
-                    </div>
-                ) : (
-                    <>
-                        {showSourceText && (
-                            <p className="text-sm text-slate-400 leading-relaxed opacity-70 mb-1">
-                                {sub.original}
-                            </p>
-                        )}
-                        <p className="text-lg text-indigo-300 leading-relaxed font-medium">
-                            {sub.translated}
-                        </p>
-                    </>
-                )}
-                {(editingCommentId === sub.id || sub.comment) && (
-                    <div className="mt-2 flex items-start animate-fade-in">
-                        <MessageCircle className="w-3 h-3 text-amber-500 mt-1 mr-2 flex-shrink-0" />
-                        <input
-                            type="text"
-                            value={sub.comment || ''}
-                            onChange={(e) => updateLineComment(sub.id, e.target.value)}
-                            placeholder="添加具体修改说明..."
-                            autoFocus={editingCommentId === sub.id}
-                            onBlur={() => setEditingCommentId(null)}
-                            className="w-full bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1 text-sm text-amber-200 placeholder-amber-500/50 focus:outline-none focus:border-amber-500/50"
-                        />
-                    </div>
-                )}
+          )}
+          {editing ? (
+            <div className="space-y-1">
+              {showSourceText && (
+                <input
+                  type="text"
+                  value={tempOriginal}
+                  onChange={(e) => setTempOriginal(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="原文"
+                  className="w-full bg-slate-600/10 border border-slate-500/30 rounded px-2 py-1 text-sm text-slate-300 placeholder-slate-500/50 focus:outline-none focus:border-slate-400/50 leading-relaxed"
+                />
+              )}
+              <input
+                type="text"
+                value={tempText}
+                onChange={(e) => setTempText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                autoFocus
+                placeholder="译文"
+                className="w-full bg-indigo-500/10 border border-indigo-500/30 rounded px-2 py-1 text-lg text-indigo-200 placeholder-indigo-500/50 focus:outline-none focus:border-indigo-500/50 leading-relaxed font-medium"
+              />
             </div>
-            <div className="flex flex-col space-y-1">
-                <button
-                    onClick={handleStartEdit}
-                    className={`p-1.5 rounded hover:bg-slate-700 transition-colors ${editing ? 'text-indigo-400' : 'text-slate-600 opacity-0 group-hover/row:opacity-100'
-                        }`}
-                    title="编辑字幕"
-                >
-                    <Pencil className="w-4 h-4" />
-                </button>
-                <button
-                    onClick={() => setEditingCommentId(sub.id)}
-                    className={`p-1.5 rounded hover:bg-slate-700 transition-colors ${sub.comment ? 'text-amber-400' : 'text-slate-600 opacity-0 group-hover/row:opacity-100'
-                        }`}
-                    title="添加评论"
-                >
-                    <MessageCircle className="w-4 h-4" />
-                </button>
-                {deleteSubtitle && (
-                    <button
-                        onClick={() => {
-                            deleteSubtitle(sub.id);
-                        }}
-                        className="p-1.5 rounded hover:bg-slate-700 hover:text-red-400 transition-colors text-slate-600 opacity-0 group-hover/row:opacity-100"
-                        title="删除字幕"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                )}
+          ) : (
+            <>
+              {showSourceText && (
+                <p className="text-sm text-slate-400 leading-relaxed opacity-70 mb-1">
+                  {sub.original}
+                </p>
+              )}
+              <p className="text-lg text-indigo-300 leading-relaxed font-medium">
+                {sub.translated}
+              </p>
+            </>
+          )}
+          {(editingCommentId === sub.id || sub.comment) && (
+            <div className="mt-2 flex items-start animate-fade-in">
+              <MessageCircle className="w-3 h-3 text-amber-500 mt-1 mr-2 flex-shrink-0" />
+              <input
+                type="text"
+                value={sub.comment || ''}
+                onChange={(e) => updateLineComment(sub.id, e.target.value)}
+                placeholder="添加具体修改说明..."
+                autoFocus={editingCommentId === sub.id}
+                onBlur={() => setEditingCommentId(null)}
+                className="w-full bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1 text-sm text-amber-200 placeholder-amber-500/50 focus:outline-none focus:border-amber-500/50"
+              />
             </div>
-        </div >
+          )}
+        </div>
+        <div className="flex flex-col space-y-1">
+          <button
+            onClick={handleStartEdit}
+            className={`p-1.5 rounded hover:bg-slate-700 transition-colors ${
+              editing ? 'text-indigo-400' : 'text-slate-600 opacity-0 group-hover/row:opacity-100'
+            }`}
+            title="编辑字幕"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setEditingCommentId(sub.id)}
+            className={`p-1.5 rounded hover:bg-slate-700 transition-colors ${
+              sub.comment
+                ? 'text-amber-400'
+                : 'text-slate-600 opacity-0 group-hover/row:opacity-100'
+            }`}
+            title="添加评论"
+          >
+            <MessageCircle className="w-4 h-4" />
+          </button>
+          {deleteSubtitle && (
+            <button
+              onClick={() => {
+                deleteSubtitle(sub.id);
+              }}
+              className="p-1.5 rounded hover:bg-slate-700 hover:text-red-400 transition-colors text-slate-600 opacity-0 group-hover/row:opacity-100"
+              title="删除字幕"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
     );
-}, (prev, next) => {
+  },
+  (prev, next) => {
     return (
-        prev.sub === next.sub &&
-        prev.showSourceText === next.showSourceText &&
-        prev.editingCommentId === next.editingCommentId &&
-        prev.speakerProfiles === next.speakerProfiles &&
-        prev.deleteSubtitle === next.deleteSubtitle &&
-        prev.isDeleteMode === next.isDeleteMode &&
-        prev.isSelectedForDelete === next.isSelectedForDelete &&
-        // Functions are usually stable if from useWorkspaceLogic, but if not, this might cause issues.
-        // However, since we plan to memoize handlers in useWorkspaceLogic, strict equality check is fine.
-        // But for editingCommentId, we only care if it matches THIS row's ID.
-        (prev.editingCommentId === prev.sub.id) === (next.editingCommentId === next.sub.id)
+      prev.sub === next.sub &&
+      prev.showSourceText === next.showSourceText &&
+      prev.editingCommentId === next.editingCommentId &&
+      prev.speakerProfiles === next.speakerProfiles &&
+      prev.deleteSubtitle === next.deleteSubtitle &&
+      prev.isDeleteMode === next.isDeleteMode &&
+      prev.isSelectedForDelete === next.isSelectedForDelete &&
+      // Functions are usually stable if from useWorkspaceLogic, but if not, this might cause issues.
+      // However, since we plan to memoize handlers in useWorkspaceLogic, strict equality check is fine.
+      // But for editingCommentId, we only care if it matches THIS row's ID.
+      (prev.editingCommentId === prev.sub.id) === (next.editingCommentId === next.sub.id)
     );
-});
+  }
+);
