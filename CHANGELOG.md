@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.7.3] - 2025-12-09
+
+### Refactor
+
+- **Model Names**: Unified model names across the codebase and auto-fixed unused imports.
+- **Hooks Architecture**: Split `useWorkspaceLogic` into 4 smaller focused hooks for better maintainability.
+- **Environment Variables**: Centralized env vars configuration.
+
+### Chore
+
+- **Code Quality**: Added Prettier + ESLint with pre-commit hooks.
+
 ## [2.7.2] - 2025-12-06
 
 ### Features
