@@ -1,5 +1,5 @@
 export interface SubtitleItem {
-  id: number;
+  id: string;
   startTime: string; // Format: HH:MM:SS,ms
   endTime: string; // Format: HH:MM:SS,ms
   original: string;
@@ -13,7 +13,7 @@ export interface SubtitleSnapshot {
   timestamp: string;
   description: string;
   subtitles: SubtitleItem[];
-  batchComments: Record<number, string>; // Store batch comments with snapshot
+  batchComments: Record<string, string>; // Store batch comments with snapshot
   fileId: string; // File path or unique identifier for grouping
   fileName: string; // Display name of the file
 }

@@ -1,5 +1,6 @@
 import { SubtitleItem, GeminiSubtitleSchema } from '@/types/subtitle';
 import { timeToSeconds, normalizeTimestamp, formatTime } from './time';
+import { generateSubtitleId } from '@/utils/id';
 
 /**
  * Known non-speech annotations from Whisper transcription
@@ -159,7 +160,7 @@ export const parseSrt = (content: string): SubtitleItem[] => {
     }
 
     items.push({
-      id: items.length + 1,
+      id: generateSubtitleId(),
       startTime: normalizeTimestamp(start),
       endTime: normalizeTimestamp(end),
       original: original,
@@ -305,7 +306,7 @@ export const parseAss = (content: string): SubtitleItem[] => {
       }
 
       items.push({
-        id: items.length + 1,
+        id: generateSubtitleId(),
         startTime: normalizeTimestamp(parts[startIdx]),
         endTime: normalizeTimestamp(parts[endIdx]),
         original: original,
@@ -447,7 +448,7 @@ export const parseGeminiResponse = (
           endStr = formatTime(endSec);
         }
         return {
-          id: index + 1,
+          id: (item as any).id ? String((item as any).id) : generateSubtitleId(),
           startTime: startStr,
           endTime: endStr,
           original: item.text_original || '',

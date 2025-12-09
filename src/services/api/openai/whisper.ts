@@ -1,4 +1,5 @@
 import { SubtitleItem, OpenAIWhisperSegment } from '@/types/subtitle';
+import { generateSubtitleId } from '@/utils/id';
 import { formatTime } from '@/services/subtitle/time';
 import { logger } from '@/services/utils/logger';
 
@@ -154,7 +155,7 @@ export const transcribeWithWhisper = async (
       if (!segments) return [];
 
       return segments.map((seg, idx) => ({
-        id: idx + 1,
+        id: generateSubtitleId(),
         startTime: formatTime(seg.start),
         endTime: formatTime(seg.end),
         original: seg.text.trim(),

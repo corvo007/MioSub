@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { SubtitleItem } from '@/types/subtitle';
+import { generateSubtitleId } from '@/utils/id';
 import { AppSettings } from '@/types/settings';
 import { ChunkStatus, TokenUsage } from '@/types/api';
 import {
@@ -452,7 +453,7 @@ export const generateSubtitles = async (
         if (shouldMockTranscription) {
           const mockTranscription = [
             {
-              id: 0,
+              id: generateSubtitleId(),
               startTime: '00:00:00,000',
               endTime: formatTime(end - start),
               original: `[Mock] Transcription for Chunk ${index}`,
@@ -722,7 +723,7 @@ export const generateSubtitles = async (
           }
 
           finalChunkSubs = translatedItems.map((item) => ({
-            id: 0, // Placeholder, will re-index later
+            id: generateSubtitleId(),
             startTime: formatTime(timeToSeconds(item.start) + start),
             endTime: formatTime(timeToSeconds(item.end) + start),
             original: item.original,
@@ -734,7 +735,7 @@ export const generateSubtitles = async (
         chunkResults[i] = finalChunkSubs;
 
         // Update Intermediate Result
-        const currentAll = chunkResults.flat().map((s, idx) => ({ ...s, id: idx + 1 }));
+        const currentAll = chunkResults.flat();
         onIntermediateResult?.(currentAll);
 
         onProgress?.({ id: index, total: totalChunks, status: 'completed', message: '完成' });
@@ -743,14 +744,13 @@ export const generateSubtitles = async (
       }
     } catch (e: any) {
       logger.error(`Chunk ${index} failed`, e);
-      // Use actionable error message if available for user feedback
       const actionableMsg = getActionableErrorMessage(e);
       const errorMsg = actionableMsg || '失败';
       onProgress?.({ id: index, total: totalChunks, status: 'error', message: errorMsg });
     }
   });
 
-  const finalSubtitles = chunkResults.flat().map((s, idx) => ({ ...s, id: idx + 1 }));
+  const finalSubtitles = chunkResults.flat();
 
   // Log Token Usage Report
   let reportLog = '\n📊 Token Usage Report:\n----------------------------------------\n';

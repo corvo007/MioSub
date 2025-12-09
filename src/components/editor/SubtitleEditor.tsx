@@ -21,21 +21,20 @@ interface SubtitleEditorProps {
   setShowSourceText: (show: boolean) => void;
   file: File | null;
   handleBatchAction: (action: 'proofread' | 'fix_timestamps', index?: number) => void;
-  batchComments: Record<number, string>;
+  batchComments: Record<string, string>;
   toggleBatch: (index: number) => void;
   updateBatchComment: (index: number, comment: string) => void;
-  editingCommentId: number | null;
-  setEditingCommentId: (id: number | null) => void;
-  updateLineComment: (id: number, comment: string) => void;
-  updateSubtitleText: (id: number, translated: string) => void;
-  updateSubtitleOriginal: (id: number, original: string) => void;
-  updateSpeaker: (id: number, speaker: string, applyToAll?: boolean) => void;
-  updateSubtitleTime?: (id: number, startTime: string, endTime: string) => void;
-  deleteSubtitle?: (id: number) => void;
-  deleteMultipleSubtitles?: (ids: number[]) => void;
-  addSubtitle?: (referenceId: number, position: 'before' | 'after', defaultTime: string) => void;
+  editingCommentId: string | null;
+  setEditingCommentId: (id: string | null) => void;
+  updateLineComment: (id: string, comment: string) => void;
+  updateSubtitleText: (id: string, translated: string) => void;
+  updateSubtitleOriginal: (id: string, original: string) => void;
+  updateSpeaker: (id: string, speaker: string, applyToAll?: boolean) => void;
+  updateSubtitleTime?: (id: string, startTime: string, endTime: string) => void;
+  deleteSubtitle?: (id: string) => void;
+  deleteMultipleSubtitles?: (ids: string[]) => void;
+  addSubtitle?: (referenceId: string, position: 'before' | 'after', defaultTime: string) => void;
   speakerProfiles?: SpeakerUIProfile[];
-
   onManageSpeakers?: () => void;
   scrollContainerRef?: React.RefObject<HTMLDivElement>;
 }
@@ -74,9 +73,9 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
     const [searchQuery, setSearchQuery] = React.useState('');
     const [filters, setFilters] = React.useState<SubtitleFilters>(defaultFilters);
     const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
-    const [deleteCandidateId, setDeleteCandidateId] = React.useState<number | null>(null);
+    const [deleteCandidateId, setDeleteCandidateId] = React.useState<string | null>(null);
 
-    const checkDelete = React.useCallback((id: number) => {
+    const checkDelete = React.useCallback((id: string) => {
       setDeleteCandidateId(id);
       setDeleteModalOpen(true);
     }, []);
@@ -89,7 +88,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
 
     // Delete mode state
     const [isDeleteMode, setIsDeleteMode] = React.useState(false);
-    const [selectedForDelete, setSelectedForDelete] = React.useState<Set<number>>(new Set());
+    const [selectedForDelete, setSelectedForDelete] = React.useState<Set<string>>(new Set());
     const [bulkDeleteModalOpen, setBulkDeleteModalOpen] = React.useState(false);
 
     const toggleDeleteMode = React.useCallback(() => {
@@ -99,7 +98,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
       setIsDeleteMode(!isDeleteMode);
     }, [isDeleteMode]);
 
-    const toggleDeleteSelection = React.useCallback((id: number) => {
+    const toggleDeleteSelection = React.useCallback((id: string) => {
       setSelectedForDelete((prev) => {
         const newSet = new Set(prev);
         if (newSet.has(id)) newSet.delete(id);
@@ -188,7 +187,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
           (sub) =>
             sub.translated?.toLowerCase().includes(lowerQuery) ||
             sub.original?.toLowerCase().includes(lowerQuery) ||
-            sub.id.toString() === lowerQuery ||
+            sub.id === lowerQuery ||
             sub.speaker?.toLowerCase().includes(lowerQuery)
         );
       }
@@ -361,7 +360,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
                     chunkIdx={chunkIdx}
                     isSelected={selectedBatches.has(chunkIdx)}
                     status={status}
-                    batchComment={batchComments[chunkIdx] || ''}
+                    batchComment={batchComments[String(chunkIdx)] || ''}
                     toggleBatch={toggleBatch}
                     updateBatchComment={updateBatchComment}
                     handleBatchAction={handleBatchAction}

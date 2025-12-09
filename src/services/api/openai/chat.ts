@@ -4,6 +4,8 @@ import { blobToBase64 } from '@/services/audio/converter';
 import { logger } from '@/services/utils/logger';
 import { extractJsonArray } from '@/services/subtitle/parser';
 
+import { generateSubtitleId } from '@/utils/id';
+
 export const transcribeWithOpenAIChat = async (
   audioBlob: Blob,
   apiKey: string,
@@ -92,7 +94,7 @@ export const transcribeWithOpenAIChat = async (
     if (!Array.isArray(segments)) return [];
 
     return segments.map((seg, idx) => ({
-      id: idx + 1,
+      id: generateSubtitleId(),
       startTime: formatTime(parseFloat(seg.start)),
       endTime: formatTime(parseFloat(seg.end)),
       original: seg.text ? seg.text.trim() : '',

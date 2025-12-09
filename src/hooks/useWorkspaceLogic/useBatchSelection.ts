@@ -3,9 +3,9 @@ import { SubtitleItem } from '@/types/subtitle';
 
 export function useBatchSelection() {
   const [selectedBatches, setSelectedBatches] = useState<Set<number>>(new Set());
-  const [batchComments, setBatchComments] = useState<Record<number, string>>({});
+  const [batchComments, setBatchComments] = useState<Record<string, string>>({});
   const [showSourceText, setShowSourceText] = useState(true);
-  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
 
   const toggleBatch = useCallback((index: number) => {
     setSelectedBatches((prev) => {
@@ -27,7 +27,8 @@ export function useBatchSelection() {
     (chunks: SubtitleItem[][]) => {
       const newSet = new Set<number>();
       chunks.forEach((chunk, idx) => {
-        const hasBatchComment = batchComments[idx] && batchComments[idx].trim().length > 0;
+        const hasBatchComment =
+          batchComments[String(idx)] && batchComments[String(idx)].trim().length > 0;
         const hasLineComments = chunk.some((s) => s.comment && s.comment.trim().length > 0);
         if (hasBatchComment || hasLineComments) newSet.add(idx);
       });
@@ -37,7 +38,7 @@ export function useBatchSelection() {
   );
 
   const updateBatchComment = useCallback((index: number, comment: string) => {
-    setBatchComments((prev) => ({ ...prev, [index]: comment }));
+    setBatchComments((prev) => ({ ...prev, [String(index)]: comment }));
   }, []);
 
   const resetBatchState = useCallback(() => {

@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { SubtitleItem } from '@/types/subtitle';
+import { generateSubtitleId } from '@/utils/id';
 
 interface UseSubtitleCRUDProps {
   setSubtitles: React.Dispatch<React.SetStateAction<SubtitleItem[]>>;
@@ -7,49 +8,49 @@ interface UseSubtitleCRUDProps {
 
 export function useSubtitleCRUD({ setSubtitles }: UseSubtitleCRUDProps) {
   const updateSubtitleText = useCallback(
-    (id: number, text: string) => {
+    (id: string, text: string) => {
       setSubtitles((prev) => prev.map((s) => (s.id === id ? { ...s, translated: text } : s)));
     },
     [setSubtitles]
   );
 
   const updateSubtitleOriginal = useCallback(
-    (id: number, text: string) => {
+    (id: string, text: string) => {
       setSubtitles((prev) => prev.map((s) => (s.id === id ? { ...s, original: text } : s)));
     },
     [setSubtitles]
   );
 
   const updateSpeaker = useCallback(
-    (id: number, speaker: string | undefined) => {
+    (id: string, speaker: string | undefined) => {
       setSubtitles((prev) => prev.map((s) => (s.id === id ? { ...s, speaker } : s)));
     },
     [setSubtitles]
   );
 
   const updateSubtitleTime = useCallback(
-    (id: number, startTime: string, endTime: string) => {
+    (id: string, startTime: string, endTime: string) => {
       setSubtitles((prev) => prev.map((s) => (s.id === id ? { ...s, startTime, endTime } : s)));
     },
     [setSubtitles]
   );
 
   const updateLineComment = useCallback(
-    (id: number, comment: string) => {
+    (id: string, comment: string) => {
       setSubtitles((prev) => prev.map((s) => (s.id === id ? { ...s, comment } : s)));
     },
     [setSubtitles]
   );
 
   const deleteSubtitle = useCallback(
-    (id: number) => {
+    (id: string) => {
       setSubtitles((prev) => prev.filter((s) => s.id !== id));
     },
     [setSubtitles]
   );
 
   const deleteMultipleSubtitles = useCallback(
-    (ids: number[]) => {
+    (ids: string[]) => {
       const idSet = new Set(ids);
       setSubtitles((prev) => prev.filter((s) => !idSet.has(s.id)));
     },
@@ -57,19 +58,15 @@ export function useSubtitleCRUD({ setSubtitles }: UseSubtitleCRUDProps) {
   );
 
   const addSubtitle = useCallback(
-    (referenceId: number, position: 'before' | 'after', defaultTime: string) => {
+    (referenceId: string, position: 'before' | 'after', defaultTime: string) => {
       setSubtitles((prev) => {
         // Find the index of the reference subtitle
         const refIndex = prev.findIndex((s) => s.id === referenceId);
         if (refIndex === -1) return prev;
 
-        // Generate new unique ID
-        const maxId = prev.reduce((max, s) => Math.max(max, s.id), 0);
-        const newId = maxId + 1;
-
         // Create new subtitle with default times
         const newSubtitle: SubtitleItem = {
-          id: newId,
+          id: generateSubtitleId(),
           startTime: defaultTime,
           endTime: defaultTime,
           original: '',

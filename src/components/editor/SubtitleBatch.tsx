@@ -15,24 +15,24 @@ interface SubtitleBatchProps {
   updateBatchComment: (index: number, comment: string) => void;
   handleBatchAction: (action: 'proofread' | 'fix_timestamps', index?: number) => void;
   showSourceText: boolean;
-  editingCommentId: number | null;
-  setEditingCommentId: (id: number | null) => void;
-  updateLineComment: (id: number, comment: string) => void;
-  updateSubtitleText: (id: number, translated: string) => void;
-  updateSubtitleOriginal: (id: number, original: string) => void;
-  updateSpeaker?: (id: number, speaker: string, applyToAll?: boolean) => void;
-  updateSubtitleTime?: (id: number, startTime: string, endTime: string) => void;
-  deleteSubtitle?: (id: number) => void;
+  editingCommentId: string | null;
+  setEditingCommentId: (id: string | null) => void;
+  updateLineComment: (id: string, comment: string) => void;
+  updateSubtitleText: (id: string, translated: string) => void;
+  updateSubtitleOriginal: (id: string, original: string) => void;
+  updateSpeaker?: (id: string, speaker: string, applyToAll?: boolean) => void;
+  updateSubtitleTime?: (id: string, startTime: string, endTime: string) => void;
+  deleteSubtitle?: (id: string) => void;
   subtitles?: SubtitleItem[]; // Full subtitles array for overlap detection
   batchSize?: number;
   speakerProfiles?: SpeakerUIProfile[];
   onManageSpeakers?: () => void;
   // Delete mode
   isDeleteMode?: boolean;
-  selectedForDelete?: Set<number>;
-  onToggleDeleteSelection?: (id: number) => void;
+  selectedForDelete?: Set<string>;
+  onToggleDeleteSelection?: (id: string) => void;
   // Add subtitle
-  addSubtitle?: (referenceId: number, position: 'before' | 'after', defaultTime: string) => void;
+  addSubtitle?: (referenceId: string, position: 'before' | 'after', defaultTime: string) => void;
 }
 
 export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(

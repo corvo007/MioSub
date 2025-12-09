@@ -7,7 +7,7 @@ import { snapshotStorage } from '@/services/storage/snapshotStorage';
  */
 const computeContentHash = (
   subtitles: SubtitleItem[],
-  batchComments: Record<number, string>
+  batchComments: Record<string, string>
 ): string => {
   const subtitleContent = subtitles
     .map(
@@ -41,7 +41,7 @@ export const useSnapshots = () => {
     (
       description: string,
       subtitles: SubtitleItem[],
-      batchComments: Record<number, string>,
+      batchComments: Record<string, string>,
       fileId: string = '',
       fileName: string = ''
     ) => {
@@ -70,7 +70,7 @@ export const useSnapshots = () => {
   const createAutoSaveSnapshot = useCallback(
     (
       subtitles: SubtitleItem[],
-      batchComments: Record<number, string>,
+      batchComments: Record<string, string>,
       fileId: string = '',
       fileName: string = ''
     ): boolean => {

@@ -35,9 +35,9 @@ interface WorkspacePageProps {
   snapshots: SubtitleSnapshot[];
   showSnapshots: boolean;
   selectedBatches: Set<number>;
-  batchComments: Record<number, string>;
+  batchComments: Record<string, string>;
   showSourceText: boolean;
-  editingCommentId: number | null;
+  editingCommentId: string | null;
 
   // Handlers
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -63,17 +63,17 @@ interface WorkspacePageProps {
   handleBatchAction: (mode: BatchOperationMode, batchIndex: number, prompt?: string) => void;
   toggleBatch: (index: number) => void;
   updateBatchComment: (index: number, comment: string) => void;
-  setEditingCommentId: (id: number | null) => void;
-  updateLineComment: (index: number, comment: string) => void;
-  updateSubtitleText: (id: number, translated: string) => void;
-  updateSubtitleOriginal: (id: number, original: string) => void;
-  updateSpeaker: (id: number, speaker: string, applyToAll?: boolean) => void;
-  updateSubtitleTime: (id: number, startTime: string, endTime: string) => void;
+  setEditingCommentId: (id: string | null) => void;
+  updateLineComment: (id: string, comment: string) => void;
+  updateSubtitleText: (id: string, translated: string) => void;
+  updateSubtitleOriginal: (id: string, original: string) => void;
+  updateSpeaker: (id: string, speaker: string, applyToAll?: boolean) => void;
+  updateSubtitleTime: (id: string, startTime: string, endTime: string) => void;
   speakerProfiles?: SpeakerUIProfile[];
   onManageSpeakers?: () => void;
-  deleteSubtitle?: (id: number) => void;
-  deleteMultipleSubtitles?: (ids: number[]) => void;
-  addSubtitle?: (referenceId: number, position: 'before' | 'after', defaultTime: string) => void;
+  deleteSubtitle?: (id: string) => void;
+  deleteMultipleSubtitles?: (ids: string[]) => void;
+  addSubtitle?: (referenceId: string, position: 'before' | 'after', defaultTime: string) => void;
 }
 
 export const WorkspacePage: React.FC<WorkspacePageProps> = ({

@@ -92,12 +92,12 @@ export async function processTranslationBatchWithRetry(
         throw e;
       }
 
-      // Normalize ID type (LLM may return "5" instead of 5)
-      const transMap = new Map(translatedData.map((t: any) => [Number(t.id), t.text_translated]));
+      // Normalize ID type
+      const transMap = new Map(translatedData.map((t: any) => [String(t.id), t.text_translated]));
 
       // Collect missing items for retry
       const missingItems = batch.filter((item) => {
-        const translated = transMap.get(Number(item.id));
+        const translated = transMap.get(item.id);
         return !translated || translated.trim().length === 0;
       });
 
@@ -145,7 +145,7 @@ export async function processTranslationBatchWithRetry(
           let recoveredCount = 0;
           retryData.forEach((t: any) => {
             if (t.text_translated && t.text_translated.trim().length > 0) {
-              transMap.set(Number(t.id), t.text_translated);
+              transMap.set(String(t.id), t.text_translated);
               recoveredCount++;
             }
           });
@@ -160,7 +160,7 @@ export async function processTranslationBatchWithRetry(
 
       let fallbackCount = 0;
       const result = batch.map((item) => {
-        const translatedText = transMap.get(Number(item.id));
+        const translatedText = transMap.get(item.id);
 
         // Log missing translations
         if (!translatedText || translatedText.trim().length === 0) {
@@ -447,7 +447,7 @@ export const runBatchOperation = async (
   batchIndices: number[], // 0-based indices of chunks
   settings: AppSettings,
   mode: BatchOperationMode,
-  batchComments: Record<number, string> = {}, // Pass map of batch index -> comment
+  batchComments: Record<string, string> = {}, // Pass map of batch index -> comment
   onProgress?: (update: ChunkStatus) => void,
   signal?: AbortSignal,
   speakerProfiles?: SpeakerProfile[]

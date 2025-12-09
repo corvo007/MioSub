@@ -124,23 +124,23 @@ export const validateSubtitle = (sub: SubtitleItem, prevEndTime?: string): Valid
 interface SubtitleRowProps {
   sub: SubtitleItem;
   showSourceText: boolean;
-  editingCommentId: number | null;
-  setEditingCommentId: (id: number | null) => void;
-  updateLineComment: (id: number, comment: string) => void;
-  updateSubtitleText: (id: number, translated: string) => void;
-  updateSubtitleOriginal: (id: number, original: string) => void;
-  updateSpeaker?: (id: number, speaker: string, applyToAll?: boolean) => void;
-  updateSubtitleTime?: (id: number, startTime: string, endTime: string) => void;
+  editingCommentId: string | null;
+  setEditingCommentId: (id: string | null) => void;
+  updateLineComment: (id: string, comment: string) => void;
+  updateSubtitleText: (id: string, translated: string) => void;
+  updateSubtitleOriginal: (id: string, original: string) => void;
+  updateSpeaker?: (id: string, speaker: string, applyToAll?: boolean) => void;
+  updateSubtitleTime?: (id: string, startTime: string, endTime: string) => void;
   prevEndTime?: string; // For overlap detection
   speakerProfiles?: SpeakerUIProfile[];
   onManageSpeakers?: () => void;
-  deleteSubtitle?: (id: number) => void;
+  deleteSubtitle?: (id: string) => void;
   // Delete mode
   isDeleteMode?: boolean;
   isSelectedForDelete?: boolean;
-  onToggleDeleteSelection?: (id: number) => void;
+  onToggleDeleteSelection?: (id: string) => void;
   // Add subtitle
-  addSubtitle?: (referenceId: number, position: 'before' | 'after', defaultTime: string) => void;
+  addSubtitle?: (referenceId: string, position: 'before' | 'after', defaultTime: string) => void;
 }
 
 export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
