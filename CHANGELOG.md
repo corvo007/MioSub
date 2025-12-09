@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.0] - 2025-12-09
+
+### Features
+
+- **Unified Snapshots**: Implemented a unified persistent snapshot system for better history management.
+- **UI Redesign**: Redesigned `BatchHeader` with improved responsive layout and aesthetics.
+
 ## [2.7.3] - 2025-12-09
 
 ### Refactor
