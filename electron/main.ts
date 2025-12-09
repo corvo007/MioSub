@@ -18,7 +18,6 @@ import type {
   AudioExtractionOptions,
   AudioExtractionProgress,
 } from './services/ffmpegAudioExtractor.ts';
-import { spawn, ChildProcess } from 'child_process';
 import { storageService } from './services/storage.ts';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -336,6 +335,25 @@ ipcMain.handle('history-delete', async (_event, id: string) => {
     return await storageService.deleteHistoryItem(id);
   } catch (error: any) {
     console.error('[Main] Failed to delete history:', error);
+    return false;
+  }
+});
+
+// IPC Handler: Snapshots
+ipcMain.handle('snapshots-get', async () => {
+  try {
+    return await storageService.readSnapshots();
+  } catch (error: any) {
+    console.error('[Main] Failed to read snapshots:', error);
+    return [];
+  }
+});
+
+ipcMain.handle('snapshots-save', async (_event, snapshots: any[]) => {
+  try {
+    return await storageService.saveSnapshots(snapshots);
+  } catch (error: any) {
+    console.error('[Main] Failed to save snapshots:', error);
     return false;
   }
 });

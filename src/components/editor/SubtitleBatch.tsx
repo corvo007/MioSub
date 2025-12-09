@@ -31,6 +31,8 @@ interface SubtitleBatchProps {
   isDeleteMode?: boolean;
   selectedForDelete?: Set<number>;
   onToggleDeleteSelection?: (id: number) => void;
+  // Add subtitle
+  addSubtitle?: (referenceId: number, position: 'before' | 'after', defaultTime: string) => void;
 }
 
 export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
@@ -60,6 +62,8 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
     isDeleteMode,
     selectedForDelete,
     onToggleDeleteSelection,
+    // Add subtitle
+    addSubtitle,
   }) => {
     const startTime = chunk[0].startTime.split(',')[0];
     const endTime = chunk[chunk.length - 1].endTime.split(',')[0];
@@ -147,6 +151,7 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
                 isDeleteMode={isDeleteMode}
                 isSelectedForDelete={selectedForDelete?.has(sub.id)}
                 onToggleDeleteSelection={onToggleDeleteSelection}
+                addSubtitle={addSubtitle}
               />
             );
           })}
@@ -165,6 +170,7 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
       prev.subtitles === next.subtitles &&
       prev.speakerProfiles === next.speakerProfiles &&
       prev.deleteSubtitle === next.deleteSubtitle &&
+      prev.addSubtitle === next.addSubtitle &&
       prev.isDeleteMode === next.isDeleteMode &&
       prev.selectedForDelete === next.selectedForDelete
     );

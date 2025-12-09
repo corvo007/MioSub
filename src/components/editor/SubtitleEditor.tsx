@@ -33,6 +33,7 @@ interface SubtitleEditorProps {
   updateSubtitleTime?: (id: number, startTime: string, endTime: string) => void;
   deleteSubtitle?: (id: number) => void;
   deleteMultipleSubtitles?: (ids: number[]) => void;
+  addSubtitle?: (referenceId: number, position: 'before' | 'after', defaultTime: string) => void;
   speakerProfiles?: SpeakerUIProfile[];
 
   onManageSpeakers?: () => void;
@@ -64,6 +65,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
     updateSubtitleTime,
     deleteSubtitle,
     deleteMultipleSubtitles,
+    addSubtitle,
     speakerProfiles,
 
     onManageSpeakers,
@@ -331,6 +333,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
                           isDeleteMode={isDeleteMode}
                           isSelectedForDelete={selectedForDelete.has(sub.id)}
                           onToggleDeleteSelection={toggleDeleteSelection}
+                          addSubtitle={addSubtitle}
                         />
                       </div>
                     );
@@ -377,6 +380,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
                   isDeleteMode={isDeleteMode}
                   selectedForDelete={selectedForDelete}
                   onToggleDeleteSelection={toggleDeleteSelection}
+                  addSubtitle={addSubtitle}
                 />
               </div>
             )}

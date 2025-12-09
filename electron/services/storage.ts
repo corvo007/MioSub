@@ -4,6 +4,7 @@ import fs from 'fs';
 
 const SETTINGS_FILE = 'gemini-subtitle-pro-settings.json';
 const HISTORY_FILE = 'gemini-subtitle-pro-history.json';
+const SNAPSHOTS_FILE = 'gemini-subtitle-pro-snapshots.json';
 
 export interface WorkspaceHistoryItem {
   id: string;
@@ -16,11 +17,13 @@ export interface WorkspaceHistoryItem {
 export class StorageService {
   private settingsPath: string;
   private historyPath: string;
+  private snapshotsPath: string;
 
   constructor() {
     const userDataPath = app.getPath('userData');
     this.settingsPath = path.join(userDataPath, SETTINGS_FILE);
     this.historyPath = path.join(userDataPath, HISTORY_FILE);
+    this.snapshotsPath = path.join(userDataPath, SNAPSHOTS_FILE);
   }
 
   // Settings methods
@@ -79,6 +82,30 @@ export class StorageService {
     } catch (error) {
       console.error('Failed to delete history item:', error);
       return false;
+    }
+  }
+
+  // Snapshot methods
+  async saveSnapshots(snapshots: any[]): Promise<boolean> {
+    try {
+      await fs.promises.writeFile(this.snapshotsPath, JSON.stringify(snapshots, null, 2), 'utf-8');
+      return true;
+    } catch (error) {
+      console.error('Failed to save snapshots:', error);
+      return false;
+    }
+  }
+
+  async readSnapshots(): Promise<any[]> {
+    try {
+      if (!fs.existsSync(this.snapshotsPath)) {
+        return [];
+      }
+      const data = await fs.promises.readFile(this.snapshotsPath, 'utf-8');
+      return JSON.parse(data);
+    } catch (error) {
+      console.error('Failed to read snapshots:', error);
+      return [];
     }
   }
 }

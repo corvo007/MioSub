@@ -14,6 +14,8 @@ export interface SubtitleSnapshot {
   description: string;
   subtitles: SubtitleItem[];
   batchComments: Record<number, string>; // Store batch comments with snapshot
+  fileId: string; // File path or unique identifier for grouping
+  fileName: string; // Display name of the file
 }
 
 export type OutputFormat = 'srt' | 'ass' | 'json';

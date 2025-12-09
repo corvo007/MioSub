@@ -56,6 +56,36 @@ export function useSubtitleCRUD({ setSubtitles }: UseSubtitleCRUDProps) {
     [setSubtitles]
   );
 
+  const addSubtitle = useCallback(
+    (referenceId: number, position: 'before' | 'after', defaultTime: string) => {
+      setSubtitles((prev) => {
+        // Find the index of the reference subtitle
+        const refIndex = prev.findIndex((s) => s.id === referenceId);
+        if (refIndex === -1) return prev;
+
+        // Generate new unique ID
+        const maxId = prev.reduce((max, s) => Math.max(max, s.id), 0);
+        const newId = maxId + 1;
+
+        // Create new subtitle with default times
+        const newSubtitle: SubtitleItem = {
+          id: newId,
+          startTime: defaultTime,
+          endTime: defaultTime,
+          original: '',
+          translated: '',
+        };
+
+        // Insert at the appropriate position
+        const insertIndex = position === 'before' ? refIndex : refIndex + 1;
+        const newSubtitles = [...prev];
+        newSubtitles.splice(insertIndex, 0, newSubtitle);
+        return newSubtitles;
+      });
+    },
+    [setSubtitles]
+  );
+
   return {
     updateSubtitleText,
     updateSubtitleOriginal,
@@ -64,5 +94,6 @@ export function useSubtitleCRUD({ setSubtitles }: UseSubtitleCRUDProps) {
     updateLineComment,
     deleteSubtitle,
     deleteMultipleSubtitles,
+    addSubtitle,
   };
 }

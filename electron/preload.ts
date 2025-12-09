@@ -98,6 +98,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     delete: (id: string) => ipcRenderer.invoke('history-delete', id),
   },
 
+  // Snapshots APIs
+  snapshots: {
+    get: () => ipcRenderer.invoke('snapshots-get'),
+    save: (snapshots: any[]) => ipcRenderer.invoke('snapshots-save', snapshots),
+  },
+
   // Logs APIs
   getMainLogs: () => ipcRenderer.invoke('log:get-history'),
   onShowAbout: (callback: () => void) => {

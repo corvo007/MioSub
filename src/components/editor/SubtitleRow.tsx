@@ -8,6 +8,9 @@ import {
   Trash2,
   CheckSquare,
   Square,
+  Plus,
+  MoreVertical,
+  ChevronRight,
 } from 'lucide-react';
 import { SubtitleItem } from '@/types';
 import { SpeakerUIProfile } from '@/types/speaker';
@@ -136,6 +139,8 @@ interface SubtitleRowProps {
   isDeleteMode?: boolean;
   isSelectedForDelete?: boolean;
   onToggleDeleteSelection?: (id: number) => void;
+  // Add subtitle
+  addSubtitle?: (referenceId: number, position: 'before' | 'after', defaultTime: string) => void;
 }
 
 export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
@@ -157,6 +162,8 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
     isDeleteMode,
     isSelectedForDelete,
     onToggleDeleteSelection,
+    // Add subtitle
+    addSubtitle,
   }) => {
     const [editing, setEditing] = React.useState(false);
     const [tempText, setTempText] = React.useState('');
@@ -165,6 +172,26 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
     const [tempEndTime, setTempEndTime] = React.useState('');
     const [editingSpeaker, setEditingSpeaker] = React.useState(false);
     const [tempSpeaker, setTempSpeaker] = React.useState('');
+    const [showAddMenu, setShowAddMenu] = React.useState(false);
+    const [showAddSubmenu, setShowAddSubmenu] = React.useState(false);
+    const addMenuRef = React.useRef<HTMLDivElement>(null);
+
+    // Close add menu when clicking outside
+    React.useEffect(() => {
+      if (!showAddMenu) return;
+      const handleClickOutside = (e: MouseEvent) => {
+        if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
+          setShowAddMenu(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showAddMenu]);
+
+    // Close submenu when main menu closes
+    React.useEffect(() => {
+      if (!showAddMenu) setShowAddSubmenu(false);
+    }, [showAddMenu]);
 
     // Validate this subtitle
     const validation = React.useMemo(() => validateSubtitle(sub, prevEndTime), [sub, prevEndTime]);
@@ -412,38 +439,100 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
             </div>
           )}
         </div>
-        <div className="flex flex-col space-y-1">
-          <button
-            onClick={handleStartEdit}
-            className={`p-1.5 rounded hover:bg-slate-700 transition-colors ${
-              editing ? 'text-indigo-400' : 'text-slate-600 opacity-0 group-hover/row:opacity-100'
-            }`}
-            title="编辑字幕"
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setEditingCommentId(sub.id)}
-            className={`p-1.5 rounded hover:bg-slate-700 transition-colors ${
-              sub.comment
-                ? 'text-amber-400'
-                : 'text-slate-600 opacity-0 group-hover/row:opacity-100'
-            }`}
-            title="添加评论"
-          >
-            <MessageCircle className="w-4 h-4" />
-          </button>
-          {deleteSubtitle && (
+        <div className="flex items-center">
+          <div className="relative" ref={addMenuRef}>
             <button
-              onClick={() => {
-                deleteSubtitle(sub.id);
-              }}
-              className="p-1.5 rounded hover:bg-slate-700 hover:text-red-400 transition-colors text-slate-600 opacity-0 group-hover/row:opacity-100"
-              title="删除字幕"
+              onClick={() => setShowAddMenu(!showAddMenu)}
+              className={`p-1.5 rounded hover:bg-slate-700 transition-colors ${
+                showAddMenu
+                  ? 'text-slate-300'
+                  : 'text-slate-600 opacity-0 group-hover/row:opacity-100'
+              }`}
+              title="更多操作"
             >
-              <Trash2 className="w-4 h-4" />
+              <MoreVertical className="w-6 h-6" />
             </button>
-          )}
+            {showAddMenu && (
+              <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 py-1 min-w-[130px]">
+                {/* 1. 编辑行 */}
+                <button
+                  onClick={() => {
+                    handleStartEdit();
+                    setShowAddMenu(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-indigo-400 transition-colors flex items-center gap-2"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                  编辑行
+                </button>
+                {/* 2. 添加新行 (submenu) */}
+                {addSubtitle && (
+                  <div
+                    className="relative"
+                    onMouseEnter={() => setShowAddSubmenu(true)}
+                    onMouseLeave={() => setShowAddSubmenu(false)}
+                  >
+                    <button className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Plus className="w-3.5 h-3.5" />
+                        添加新行
+                      </span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                    {showAddSubmenu && (
+                      <div className="absolute right-full top-0 mr-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 py-1 min-w-[110px]">
+                        <button
+                          onClick={() => {
+                            addSubtitle(sub.id, 'before', sub.startTime);
+                            setShowAddMenu(false);
+                          }}
+                          className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors"
+                        >
+                          在前面添加
+                        </button>
+                        <button
+                          onClick={() => {
+                            addSubtitle(sub.id, 'after', sub.endTime);
+                            setShowAddMenu(false);
+                          }}
+                          className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors"
+                        >
+                          在后面添加
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* 3. 添加评论 */}
+                <button
+                  onClick={() => {
+                    setEditingCommentId(sub.id);
+                    setShowAddMenu(false);
+                  }}
+                  className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-amber-400 transition-colors flex items-center gap-2"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  添加评论
+                </button>
+                {/* 4. 删除行 (red) */}
+                {deleteSubtitle && (
+                  <>
+                    <div className="border-t border-slate-700 my-1" />
+                    <button
+                      onClick={() => {
+                        deleteSubtitle(sub.id);
+                        setShowAddMenu(false);
+                      }}
+                      className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors flex items-center gap-2"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      删除行
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -455,6 +544,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
       prev.editingCommentId === next.editingCommentId &&
       prev.speakerProfiles === next.speakerProfiles &&
       prev.deleteSubtitle === next.deleteSubtitle &&
+      prev.addSubtitle === next.addSubtitle &&
       prev.isDeleteMode === next.isDeleteMode &&
       prev.isSelectedForDelete === next.isSelectedForDelete &&
       // Functions are usually stable if from useWorkspaceLogic, but if not, this might cause issues.

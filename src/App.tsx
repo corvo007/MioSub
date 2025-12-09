@@ -340,11 +340,10 @@ export default function App() {
           speakerProfiles={workspace.speakerProfiles}
           deleteSubtitle={workspace.deleteSubtitle}
           deleteMultipleSubtitles={workspace.deleteMultipleSubtitles}
+          addSubtitle={workspace.addSubtitle}
           onManageSpeakers={() => setShowSpeakerManager(true)}
           onStartCompression={() => setView('compression')}
-          histories={workspace.getHistories()}
-          onLoadHistory={workspace.loadHistory}
-          onDeleteHistory={workspace.deleteHistory}
+          onDeleteSnapshot={snapshotsValues.deleteSnapshot}
         />
       )}
       <GenreSettingsDialog

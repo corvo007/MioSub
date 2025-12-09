@@ -18,7 +18,7 @@ import { SpeakerUIProfile } from '@/types/speaker';
 import { AppSettings } from '@/types/settings';
 import { GenerationStatus } from '@/types/api';
 import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
-import { HistoryPanel, WorkspaceHistory } from '@/components/layout/HistoryPanel';
+import { HistoryPanel } from '@/components/layout/HistoryPanel';
 import { FileUploader } from '@/components/upload/FileUploader';
 import { SubtitleEditor } from '@/components/editor/SubtitleEditor';
 import { CustomSelect } from '@/components/settings';
@@ -53,12 +53,8 @@ interface WorkspacePageProps {
   onUpdateSetting: (key: keyof AppSettings, value: any) => void;
   onToggleSnapshots: () => void;
   onRestoreSnapshot: (snapshot: SubtitleSnapshot) => void;
+  onDeleteSnapshot: (id: string) => void;
   onStartCompression?: () => void;
-
-  // History
-  histories: WorkspaceHistory[];
-  onLoadHistory: (history: WorkspaceHistory) => void;
-  onDeleteHistory: (id: string) => void;
 
   // Editor Handlers
   toggleAllBatches: (total: number) => void;
@@ -77,6 +73,7 @@ interface WorkspacePageProps {
   onManageSpeakers?: () => void;
   deleteSubtitle?: (id: number) => void;
   deleteMultipleSubtitles?: (ids: number[]) => void;
+  addSubtitle?: (referenceId: number, position: 'before' | 'after', defaultTime: string) => void;
 }
 
 export const WorkspacePage: React.FC<WorkspacePageProps> = ({
@@ -123,10 +120,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   onManageSpeakers,
   deleteSubtitle,
   deleteMultipleSubtitles,
+  addSubtitle,
   onStartCompression,
-  histories,
-  onLoadHistory,
-  onDeleteHistory,
+  onDeleteSnapshot,
 }) => {
   const subtitleListRef = useRef<HTMLDivElement>(null);
   const isProcessing =
@@ -167,8 +163,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   }, [subtitles, status]);
 
   return (
-    <div className="h-screen bg-slate-950 text-slate-200 p-4 md:p-8 flex flex-col overflow-hidden">
-      <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col space-y-6">
+    <div className="h-screen bg-slate-950 text-slate-200 p-4 md:p-6 flex flex-col overflow-hidden">
+      <div className="max-w-screen-2xl mx-auto w-full flex-1 flex flex-col space-y-6">
         <WorkspaceHeader
           title={activeTab === 'new' ? '新建项目' : '字幕编辑器'}
           modeLabel={activeTab === 'new' ? '生成模式' : '导入模式'}
@@ -392,9 +388,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                   onClose={onToggleSnapshots}
                   snapshots={snapshots}
                   onRestoreSnapshot={onRestoreSnapshot}
-                  histories={histories}
-                  onLoadHistory={onLoadHistory}
-                  onDeleteHistory={onDeleteHistory}
+                  onDeleteSnapshot={onDeleteSnapshot}
                 />
               ) : (
                 <div className="flex-1 relative w-full h-full" ref={subtitleListRef}>
@@ -423,6 +417,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                     speakerProfiles={speakerProfiles}
                     deleteSubtitle={deleteSubtitle}
                     deleteMultipleSubtitles={deleteMultipleSubtitles}
+                    addSubtitle={addSubtitle}
                     onManageSpeakers={onManageSpeakers}
                     scrollContainerRef={subtitleListRef}
                   />

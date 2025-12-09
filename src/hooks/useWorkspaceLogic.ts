@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { SubtitleItem, SubtitleSnapshot, BatchOperationMode } from '@/types/subtitle';
-import { useWorkspaceHistory } from './useWorkspaceLogic/useWorkspaceHistory';
 import { useSpeakerProfiles } from './useWorkspaceLogic/useSpeakerProfiles';
 import { useBatchSelection } from './useWorkspaceLogic/useBatchSelection';
 import { useSubtitleCRUD } from './useWorkspaceLogic/useSubtitleCRUD';
@@ -53,8 +52,17 @@ interface UseWorkspaceLogicProps {
     createSnapshot: (
       description: string,
       subtitles: SubtitleItem[],
-      batchComments?: Record<number, string>
+      batchComments?: Record<number, string>,
+      fileId?: string,
+      fileName?: string
     ) => void;
+    createAutoSaveSnapshot: (
+      subtitles: SubtitleItem[],
+      batchComments: Record<number, string>,
+      fileId?: string,
+      fileName?: string
+    ) => boolean;
+    deleteSnapshot: (id: string) => void;
   };
   setShowSettings: (show: boolean) => void;
 }
@@ -109,6 +117,7 @@ export const useWorkspaceLogic = ({
     updateLineComment,
     deleteSubtitle,
     deleteMultipleSubtitles,
+    addSubtitle,
   } = useSubtitleCRUD({ setSubtitles });
 
   // Speaker Profiles (extracted to useSpeakerProfiles)
@@ -127,6 +136,28 @@ export const useWorkspaceLogic = ({
   const [snapshotBeforeOperation, setSnapshotBeforeOperation] = useState<SubtitleItem[] | null>(
     null
   );
+
+  // Auto-save snapshot every 5 minutes (only if subtitles have changed)
+  React.useEffect(() => {
+    const AUTO_SAVE_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+    const intervalId = setInterval(() => {
+      if (subtitles.length > 0 && status === GenerationStatus.COMPLETED && file) {
+        const fileId = window.electronAPI?.getFilePath?.(file) || file.name;
+        const saved = snapshotsValues.createAutoSaveSnapshot(
+          subtitles,
+          batchComments,
+          fileId,
+          file.name
+        );
+        if (saved) {
+          logger.info('Auto-save snapshot created');
+        }
+      }
+    }, AUTO_SAVE_INTERVAL);
+
+    return () => clearInterval(intervalId);
+  }, [subtitles, batchComments, status, snapshotsValues, file]);
 
   // Helpers
   const cancelOperation = React.useCallback(() => {
@@ -263,6 +294,8 @@ export const useWorkspaceLogic = ({
 
         try {
           addToast('正在解析字幕...', 'info', 2000);
+          // Allow toast to render before heavy parsing
+          await new Promise((resolve) => setTimeout(resolve, 50));
 
           const content = await subFile.text();
           const fileType = subFile.name.endsWith('.ass') ? 'ass' : 'srt';
@@ -287,7 +320,8 @@ export const useWorkspaceLogic = ({
           setStatus(GenerationStatus.COMPLETED);
           snapshotsValues.setSnapshots([]);
           setBatchComments({});
-          snapshotsValues.createSnapshot('初始导入', parsed, {});
+          const fileId = window.electronAPI?.getFilePath?.(subFile) || subFile.name;
+          snapshotsValues.createSnapshot('初始导入', parsed, {}, fileId, subFile.name);
         } catch (error: any) {
           logger.error('Failed to parse subtitle', error);
           setError(`字幕解析失败: ${error.message}`);
@@ -475,7 +509,9 @@ export const useWorkspaceLogic = ({
 
       setSubtitles(result);
       setStatus(GenerationStatus.COMPLETED);
-      snapshotsValues.createSnapshot('初始生成', result, {});
+      const fileId = file ? window.electronAPI?.getFilePath?.(file) || file.name : '';
+      const fileName = file?.name || '';
+      snapshotsValues.createSnapshot('初始生成', result, {}, fileId, fileName);
 
       logger.info('Subtitle generation completed', { count: result.length });
       addToast('字幕生成成功！', 'success');
@@ -487,7 +523,15 @@ export const useWorkspaceLogic = ({
 
         // Keep partial results (subtitles state already updated via onIntermediateResult)
         if (subtitlesRef.current.length > 0) {
-          snapshotsValues.createSnapshot('部分生成 (已终止)', subtitlesRef.current, batchComments);
+          const fileId = file ? window.electronAPI?.getFilePath?.(file) || file.name : '';
+          const fileName = file?.name || '';
+          snapshotsValues.createSnapshot(
+            '部分生成 (已终止)',
+            subtitlesRef.current,
+            batchComments,
+            fileId,
+            fileName
+          );
           addToast('生成已终止，保留部分结果', 'warning');
         } else {
           addToast('生成已终止', 'info');
@@ -531,6 +575,18 @@ export const useWorkspaceLogic = ({
       // Save current state BEFORE operation
       setSnapshotBeforeOperation([...subtitles]);
 
+      // Create snapshot BEFORE AI operation for user recovery
+      const actionName = mode === 'fix_timestamps' ? '校对时间轴' : '润色翻译';
+      const fileId = file ? window.electronAPI?.getFilePath?.(file) || file.name : '';
+      const fileName = file?.name || '';
+      snapshotsValues.createSnapshot(
+        `${actionName}前备份`,
+        subtitles,
+        batchComments,
+        fileId,
+        fileName
+      );
+
       // Create new AbortController
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
@@ -559,8 +615,6 @@ export const useWorkspaceLogic = ({
           return next;
         });
         if (singleIndex === undefined) setSelectedBatches(new Set());
-        const actionName = mode === 'fix_timestamps' ? '校对时间轴' : '润色翻译';
-        snapshotsValues.createSnapshot(`${actionName} (${indices.length} 个片段)`, refined);
         logger.info(`Batch action ${mode} completed`);
         addToast(`批量操作 '${actionName}' 完成！`, 'success');
       } catch (err: any) {
@@ -731,18 +785,6 @@ export const useWorkspaceLogic = ({
     };
   }, [cleanup]);
 
-  // History management (extracted to useWorkspaceHistory)
-  const { histories, getHistories, saveHistory, loadHistory, deleteHistory } = useWorkspaceHistory({
-    file,
-    subtitles,
-    status,
-    setSubtitles,
-    setStatus,
-    setError,
-    loadFileFromPath,
-    createSnapshot: snapshotsValues.createSnapshot,
-  });
-
   return React.useMemo(
     () => ({
       // State
@@ -782,14 +824,10 @@ export const useWorkspaceLogic = ({
       updateSubtitleTime,
       deleteSubtitle,
       deleteMultipleSubtitles,
+      addSubtitle,
       resetWorkspace,
       cancelOperation,
       loadFileFromPath,
-
-      // History
-      getHistories,
-      loadHistory,
-      deleteHistory,
 
       // Speaker Profiles
       speakerProfiles,
@@ -829,12 +867,10 @@ export const useWorkspaceLogic = ({
       updateSubtitleTime,
       deleteSubtitle,
       deleteMultipleSubtitles,
+      addSubtitle,
       resetWorkspace,
       cancelOperation,
       loadFileFromPath,
-      getHistories,
-      loadHistory,
-      deleteHistory,
       speakerProfiles,
       addSpeaker,
       renameSpeaker,

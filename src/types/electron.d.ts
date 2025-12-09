@@ -1,5 +1,6 @@
 import { AppSettings } from './settings';
 import { WorkspaceHistory } from './history';
+import { SubtitleSnapshot } from './subtitle';
 
 export interface AudioExtractionOptions {
   format?: 'wav' | 'mp3' | 'flac';
@@ -172,6 +173,12 @@ export interface ElectronAPI {
     get: () => Promise<WorkspaceHistory[]>;
     save: (histories: WorkspaceHistory[]) => Promise<boolean>;
     delete: (id: string) => Promise<boolean>;
+  };
+
+  // Snapshots APIs
+  snapshots: {
+    get: () => Promise<SubtitleSnapshot[]>;
+    save: (snapshots: SubtitleSnapshot[]) => Promise<boolean>;
   };
 
   getMainLogs: () => Promise<string[]>;
