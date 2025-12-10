@@ -1,5 +1,6 @@
 import { SubtitleItem } from '@/types/subtitle';
 import { logger } from '@/services/utils/logger';
+import { generateSubtitleId } from '@/utils/id';
 
 // Error types
 class WhisperLocalError extends Error {
@@ -75,8 +76,8 @@ export const transcribeWithLocalWhisper = async (
 
     if (!result.segments) return [];
 
-    return result.segments.map((seg: any, index: number) => ({
-      id: index + 1,
+    return result.segments.map((seg: any) => ({
+      id: generateSubtitleId(),
       startTime: seg.start,
       endTime: seg.end,
       original: seg.text.trim(),

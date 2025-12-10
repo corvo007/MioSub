@@ -707,7 +707,6 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                 ]}
                 className="w-48"
                 placeholder="选择术语表"
-                direction="up"
               />
             </div>
             <button

@@ -172,26 +172,26 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-3 bg-slate-800/90 p-3 rounded-lg border border-slate-700 sticky top-0 z-20 backdrop-blur-md shadow-md">
+    <div className="flex flex-col gap-2 sm:gap-3 bg-slate-800/90 p-2 sm:p-3 rounded-lg border border-slate-700 sticky top-0 z-20 backdrop-blur-md shadow-md">
       {/* Row 1: Search, Filters & Action Buttons */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-2 sm:gap-3">
         {/* Left: Search & Filter Tools */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Search Input */}
-          <div className="relative group">
-            <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+          <div className="relative group flex-shrink-0">
+            <Search className="absolute left-2 sm:left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
             <input
               ref={searchInputRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索..."
-              className="w-32 sm:w-48 bg-slate-900 border border-slate-700 rounded-md pl-9 pr-8 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
+              className="w-24 focus:w-36 sm:w-32 sm:focus:w-48 md:w-48 bg-slate-900 border border-slate-700 rounded-md pl-7 sm:pl-9 pr-7 sm:pr-8 py-1 sm:py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
             />
             {searchQuery && (
               <button
                 onClick={handleClearSearch}
-                className="absolute right-1.5 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-700 rounded text-slate-500 hover:text-slate-300 transition-colors"
+                className="absolute right-1 sm:right-1.5 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-700 rounded text-slate-500 hover:text-slate-300 transition-colors"
                 title="清除搜索"
               >
                 <X className="w-3 h-3" />
@@ -199,28 +199,28 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
             )}
           </div>
 
-          <div className="h-4 w-px bg-slate-700/50"></div>
+          <div className="h-4 w-px bg-slate-700/50 hidden sm:block"></div>
 
           {/* Issue Filter */}
-          <div className="relative" ref={issueFilterRef}>
+          <div className="relative flex-shrink-0" ref={issueFilterRef}>
             <button
               onClick={toggleIssueFilter}
-              className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md text-xs transition-all border ${
+              className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md text-xs transition-all border ${
                 activeIssueFilterCount > 0
                   ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
                   : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
               }`}
               title="过滤问题"
             >
-              <Filter className="w-3.5 h-3.5" />
+              <Filter className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span className="hidden sm:inline">问题</span>
               {activeIssueFilterCount > 0 && (
-                <span className="bg-indigo-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium ml-0.5">
+                <span className="bg-indigo-500 text-white text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded-full font-medium">
                   {activeIssueFilterCount}
                 </span>
               )}
               <ChevronDown
-                className={`w-3 h-3 transition-transform ${isIssueFilterOpen ? 'rotate-180' : ''}`}
+                className={`w-2.5 h-2.5 sm:w-3 sm:h-3 transition-transform ${isIssueFilterOpen ? 'rotate-180' : ''}`}
               />
             </button>
 
@@ -320,25 +320,25 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
 
           {/* Speaker Filter */}
           {speakerProfiles && speakerProfiles.length > 0 && (
-            <div className="relative" ref={speakerFilterRef}>
+            <div className="relative flex-shrink-0" ref={speakerFilterRef}>
               <button
                 onClick={toggleSpeakerFilter}
-                className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md text-xs transition-all border ${
+                className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md text-xs transition-all border ${
                   activeSpeakerFilterCount > 0
                     ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
                     : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
                 }`}
                 title="筛选说话人"
               >
-                <User className="w-3.5 h-3.5" />
+                <User className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 <span className="hidden sm:inline">说话人</span>
                 {activeSpeakerFilterCount > 0 && (
-                  <span className="bg-indigo-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-medium ml-0.5">
+                  <span className="bg-indigo-500 text-white text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded-full font-medium">
                     {activeSpeakerFilterCount}
                   </span>
                 )}
                 <ChevronDown
-                  className={`w-3 h-3 transition-transform ${isSpeakerFilterOpen ? 'rotate-180' : ''}`}
+                  className={`w-2.5 h-2.5 sm:w-3 sm:h-3 transition-transform ${isSpeakerFilterOpen ? 'rotate-180' : ''}`}
                 />
               </button>
 
@@ -424,13 +424,13 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
 
         {/* Right: Primary Actions */}
         {!isDeleteMode && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             {file && (
               <button
                 onClick={() => handleBatchAction('fix_timestamps')}
                 disabled={selectedBatches.size === 0}
                 title="校对时间轴 (保留翻译)"
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-slate-700 border-slate-600 text-emerald-400 hover:bg-slate-600 hover:border-emerald-400/50' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}
+                className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-slate-700 border-slate-600 text-emerald-400 hover:bg-slate-600 hover:border-emerald-400/50' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}
               >
                 <Clock className="w-3 h-3" />
                 <span className="hidden sm:inline">校对时间轴</span>
@@ -441,7 +441,7 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
               onClick={() => handleBatchAction('proofread')}
               disabled={selectedBatches.size === 0}
               title="润色翻译 (保留时间轴)"
-              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}
+              className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border ${selectedBatches.size > 0 ? 'bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500' : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'}`}
             >
               <Sparkles className="w-3 h-3" />
               <span className="hidden sm:inline">润色翻译</span>
@@ -451,20 +451,20 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
       </div>
 
       {/* Row 2: Batch Selection & Status */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-700/50">
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 pt-2 border-t border-slate-700/50">
         {/* Selection Tools */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto">
           {isDeleteMode ? (
             /* Delete Mode Selection */
             <>
               <button
                 onClick={onSelectAllForDelete}
-                className="flex items-center space-x-2 text-xs text-red-300 hover:text-red-200 transition-colors"
+                className="flex items-center space-x-1.5 sm:space-x-2 text-xs text-red-300 hover:text-red-200 transition-colors"
               >
                 {selectedForDeleteCount === totalVisibleCount && totalVisibleCount! > 0 ? (
-                  <CheckSquare className="w-4 h-4 text-red-400" />
+                  <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-400" />
                 ) : (
-                  <Square className="w-4 h-4 text-red-400" />
+                  <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-400" />
                 )}
                 <span>全选</span>
               </button>
@@ -474,22 +474,22 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
               <button
                 onClick={onConfirmDelete}
                 disabled={!selectedForDeleteCount || selectedForDeleteCount === 0}
-                className={`flex items-center space-x-1.5 px-3 py-1 rounded-md text-xs font-bold transition-all shadow-sm border ${
+                className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1 rounded-md text-xs font-bold transition-all shadow-sm border ${
                   selectedForDeleteCount && selectedForDeleteCount > 0
                     ? 'bg-red-600 border-red-500 text-white hover:bg-red-500'
                     : 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed'
                 }`}
               >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>确认删除 ({selectedForDeleteCount || 0})</span>
+                <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span>删除 ({selectedForDeleteCount || 0})</span>
               </button>
 
               <button
                 onClick={onToggleDeleteMode}
                 className="flex items-center space-x-1 text-xs text-slate-400 hover:text-white transition-colors"
               >
-                <X className="w-3.5 h-3.5" />
-                <span>取消</span>
+                <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span className="hidden sm:inline">取消</span>
               </button>
             </>
           ) : (
@@ -497,32 +497,36 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
             <>
               <button
                 onClick={() => toggleAllBatches(chunks.length)}
-                className="flex items-center space-x-2 text-sm text-slate-300 hover:text-white transition-colors"
+                className="flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm text-slate-300 hover:text-white transition-colors"
               >
                 {selectedBatches.size === chunks.length ? (
-                  <CheckSquare className="w-4 h-4 text-indigo-400" />
+                  <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400" />
                 ) : (
-                  <Square className="w-4 h-4 text-slate-500" />
+                  <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />
                 )}
                 <span>{selectedBatches.size === chunks.length ? '取消全选' : '全选'}</span>
               </button>
 
               <button
                 onClick={() => selectBatchesWithComments(chunks)}
-                className="flex items-center space-x-2 text-sm text-slate-300 hover:text-white transition-colors"
+                className="flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm text-slate-300 hover:text-white transition-colors"
                 title="选择带评论项"
               >
-                <MessageCircle className="w-4 h-4 text-amber-400" />
+                <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
                 <span className="hidden sm:inline">选择带评论项</span>
               </button>
 
-              <div className="h-4 w-px bg-slate-700/50"></div>
+              <div className="h-4 w-px bg-slate-700/50 hidden sm:block"></div>
 
               <button
                 onClick={() => setShowSourceText(!showSourceText)}
-                className="flex items-center space-x-2 text-sm text-slate-400 hover:text-white transition-colors"
+                className="flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm text-slate-400 hover:text-white transition-colors"
               >
-                {showSourceText ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                {showSourceText ? (
+                  <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                ) : (
+                  <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                )}
                 <span className="hidden sm:inline">{showSourceText ? '隐藏原文' : '显示原文'}</span>
               </button>
             </>
@@ -530,23 +534,25 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
         </div>
 
         {/* Right: Status / Delete Toggle */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           {!isDeleteMode && (
             <>
               {onToggleDeleteMode && (
                 <button
                   onClick={onToggleDeleteMode}
-                  className="flex items-center space-x-1.5 text-sm text-red-400 hover:text-red-300 transition-colors opacity-80 hover:opacity-100"
+                  className="flex items-center space-x-1 sm:space-x-1.5 text-xs sm:text-sm text-red-400 hover:text-red-300 transition-colors opacity-80 hover:opacity-100"
                   title="批量删除"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   <span className="hidden sm:inline">批量删除</span>
                 </button>
               )}
 
-              {onToggleDeleteMode && <div className="h-4 w-px bg-slate-700/50"></div>}
+              {onToggleDeleteMode && (
+                <div className="h-4 w-px bg-slate-700/50 hidden sm:block"></div>
+              )}
 
-              <span className="text-sm text-slate-500 font-mono">
+              <span className="text-xs sm:text-sm text-slate-500 font-mono whitespace-nowrap">
                 已选 {selectedBatches.size} 项
               </span>
             </>

@@ -326,20 +326,20 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
 
     return (
       <div
-        className={`p-3 hover:bg-slate-800/30 transition-colors flex items-start space-x-4 group/row ${getRowBackgroundClass()}${isDeleteMode && isSelectedForDelete ? ' bg-red-900/20' : ''}`}
+        className={`p-2 sm:p-3 hover:bg-slate-800/30 transition-colors flex items-start space-x-2 sm:space-x-4 group/row ${getRowBackgroundClass()}${isDeleteMode && isSelectedForDelete ? ' bg-red-900/20' : ''}`}
         onBlur={editing ? handleRowBlur : undefined}
       >
         {/* Delete mode checkbox */}
         {isDeleteMode && (
           <button onClick={() => onToggleDeleteSelection?.(sub.id)} className="mt-1 flex-shrink-0">
             {isSelectedForDelete ? (
-              <CheckSquare className="w-5 h-5 text-red-400" />
+              <CheckSquare className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
             ) : (
-              <Square className="w-5 h-5 text-red-400/50 hover:text-red-400" />
+              <Square className="w-4 h-4 sm:w-5 sm:h-5 text-red-400/50 hover:text-red-400" />
             )}
           </button>
         )}
-        <div className="flex flex-col text-sm font-mono text-slate-400 min-w-[85px] pt-1">
+        <div className="flex flex-col text-[11px] sm:text-sm font-mono text-slate-400 min-w-[65px] sm:min-w-[85px] pt-1">
           {editing ? (
             // Editable time inputs - compact style matching display
             <>
@@ -349,7 +349,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 onChange={(e) => setTempStartTime(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="00:00:00"
-                className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-sm text-white placeholder-slate-600 focus:outline-none leading-tight w-[100px]"
+                className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-[11px] sm:text-sm text-white placeholder-slate-600 focus:outline-none leading-tight w-[70px] sm:w-[100px]"
               />
               <input
                 type="text"
@@ -357,7 +357,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 onChange={(e) => setTempEndTime(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="00:00:00"
-                className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-sm text-white/70 placeholder-slate-600 focus:outline-none leading-tight w-[100px]"
+                className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-[11px] sm:text-sm text-white/70 placeholder-slate-600 focus:outline-none leading-tight w-[70px] sm:w-[100px]"
               />
             </>
           ) : (
@@ -423,7 +423,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                   onChange={(e) => setTempOriginal(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="原文"
-                  className="w-full bg-slate-600/10 border border-slate-500/30 rounded px-2 py-1 text-sm text-slate-300 placeholder-slate-500/50 focus:outline-none focus:border-slate-400/50 leading-relaxed"
+                  className="w-full bg-slate-600/10 border border-slate-500/30 rounded px-2 py-1 text-xs sm:text-sm text-slate-300 placeholder-slate-500/50 focus:outline-none focus:border-slate-400/50 leading-relaxed"
                 />
               )}
               <input
@@ -433,17 +433,17 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 onKeyDown={handleKeyDown}
                 autoFocus
                 placeholder="译文"
-                className="w-full bg-indigo-500/10 border border-indigo-500/30 rounded px-2 py-1 text-lg text-indigo-200 placeholder-indigo-500/50 focus:outline-none focus:border-indigo-500/50 leading-relaxed font-medium"
+                className="w-full bg-indigo-500/10 border border-indigo-500/30 rounded px-2 py-1 text-base sm:text-lg text-indigo-200 placeholder-indigo-500/50 focus:outline-none focus:border-indigo-500/50 leading-relaxed font-medium"
               />
             </div>
           ) : (
             <>
               {showSourceText && (
-                <p className="text-sm text-slate-400 leading-relaxed opacity-70 mb-1">
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed opacity-70 mb-1">
                   {sub.original}
                 </p>
               )}
-              <p className="text-lg text-indigo-300 leading-relaxed font-medium">
+              <p className="text-base sm:text-lg text-indigo-300 leading-relaxed font-medium">
                 {sub.translated}
               </p>
             </>

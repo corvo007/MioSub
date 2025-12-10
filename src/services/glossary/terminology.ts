@@ -6,7 +6,7 @@ export interface TerminologyIssue {
   term: string;
   expected: string;
   occurrences: {
-    segmentId: number;
+    segmentId: string;
     text: string;
     found: string;
   }[];

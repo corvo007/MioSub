@@ -2,7 +2,7 @@ import { SubtitleItem } from '@/types/subtitle';
 
 export interface ConsistencyIssue {
   type: 'punctuation' | 'spacing' | 'length' | 'brackets' | 'ai_consistency' | 'other';
-  segmentId: number;
+  segmentId: string;
   description: string;
   severity: 'low' | 'medium' | 'high';
 }
