@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.3] - 2025-12-11
+
+### Features
+
+- **Hardware Acceleration**: Added hardware acceleration support for video encoding.
+- **File Handling**: Improved file handling in Electron main process.
+
 ## [2.8.2] - 2025-12-10
 
 ### Features
