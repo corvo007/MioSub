@@ -179,13 +179,13 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-2 sm:gap-3 bg-slate-800/90 p-2 sm:p-3 rounded-lg border border-slate-700 sticky top-0 z-20 backdrop-blur-md shadow-md">
+    <div className="flex flex-col gap-2 sm:gap-3 bg-slate-800/90 p-2 sm:p-3 rounded-lg border border-slate-700 sticky top-0 z-20 backdrop-blur-md shadow-md min-w-0">
       {/* Row 1: Search, Filters & Action Buttons */}
-      <div className="flex items-center justify-between gap-2 sm:gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
         {/* Left: Search & Filter Tools */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink">
           {/* Search Input */}
-          <div className="relative group flex-shrink-0">
+          <div className="relative group flex-shrink min-w-0">
             <Search className="absolute left-2 sm:left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
             <input
               ref={searchInputRef}
@@ -193,7 +193,7 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索..."
-              className="w-24 focus:w-36 sm:w-32 sm:focus:w-48 md:w-48 bg-slate-900 border border-slate-700 rounded-md pl-7 sm:pl-9 pr-7 sm:pr-8 py-1 sm:py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
+              className="w-full min-w-[80px] max-w-[120px] focus:max-w-[150px] sm:min-w-[100px] sm:max-w-[140px] sm:focus:max-w-[180px] md:max-w-[180px] bg-slate-900 border border-slate-700 rounded-md pl-7 sm:pl-9 pr-7 sm:pr-8 py-1 sm:py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
             />
             {searchQuery && (
               <button
@@ -438,7 +438,7 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                 onClick={onToggleConservativeMode}
                 title={
                   conservativeBatchMode
-                    ? '保守模式：仅处理有comment的行 + 微调时间轴，不拆分/合并/添加'
+                    ? '保守模式：仅处理有评论的行 + 微调时间轴，不拆分/合并/添加'
                     : '普通模式：AI可拆分/合并长段落，添加遗漏内容'
                 }
                 className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md text-xs transition-all border ${

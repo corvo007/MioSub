@@ -25,7 +25,6 @@ import { HistoryPanel } from '@/components/layout/HistoryPanel';
 import { FileUploader } from '@/components/upload/FileUploader';
 import { SubtitleEditor } from '@/components/editor/SubtitleEditor';
 import { CustomSelect } from '@/components/settings';
-import { StatusBadge } from '@/components/ui';
 
 interface WorkspacePageProps {
   activeTab: 'new' | 'import';
@@ -508,10 +507,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
           <div
             className={`flex flex-col h-[60vh] sm:h-[70vh] min-h-0 ${forceVerticalLayout ? '' : 'md:col-span-8 lg:col-span-9 md:h-full'}`}
           >
-            <div className="flex items-center justify-between mb-2 h-8 shrink-0">
-              <div className="flex items-center space-x-2"></div>
-              <StatusBadge status={status} />
-            </div>
+            {/* Desktop Spacer for Alignment - matches sidebar spacer */}
+            <div
+              className={`${forceVerticalLayout ? 'hidden' : 'hidden md:block'} h-6 mb-1 shrink-0`}
+            ></div>
             <div className="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl overflow-hidden flex flex-col shadow-2xl relative flex-1 min-h-0">
               {showSnapshots ? (
                 <HistoryPanel
