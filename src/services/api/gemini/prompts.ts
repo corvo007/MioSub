@@ -771,6 +771,7 @@ export const getFixTimestampsPrompt = (params: FixTimestampsPromptParams): strin
     ? `
 **CONSERVATIVE MODE OVERRIDES**:
 - DO NOT split/merge segments or add new entries
+- ONLY adjust timestamps clearly misaligned (>0.5s off)
 - Note missed speech in "comment" field instead
 - Output MUST have exactly ${params.payload.length} items`
     : '';
