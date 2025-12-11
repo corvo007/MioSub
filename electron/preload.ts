@@ -64,6 +64,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     cancel: () => ipcRenderer.invoke('download:cancel'),
     selectDir: () => ipcRenderer.invoke('download:select-dir'),
     getDefaultDir: () => ipcRenderer.invoke('download:default-dir'),
+    downloadThumbnail: (options: {
+      thumbnailUrl: string;
+      outputDir: string;
+      videoTitle: string;
+      videoId: string;
+    }) => ipcRenderer.invoke('download:thumbnail', options),
     onProgress: (callback: (progress: any) => void) => {
       const subscription = (_event: any, progress: any) => callback(progress);
       ipcRenderer.on('download:progress', subscription);

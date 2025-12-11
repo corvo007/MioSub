@@ -12,6 +12,7 @@ import {
   FolderOpen,
   RefreshCw,
   X,
+  Image,
 } from 'lucide-react';
 import { useDownload } from '../../hooks/useDownload';
 import { UrlInput } from './UrlInput';
@@ -40,8 +41,10 @@ export function DownloadPage({
     error,
     errorInfo,
     outputPath,
+    thumbnailPath,
     parse,
     download,
+    downloadThumbnail,
     cancel,
     selectDir,
     reset,
@@ -49,6 +52,8 @@ export function DownloadPage({
   } = useDownload();
 
   const [selectedFormat, setSelectedFormat] = useState<string>('');
+  const [includeThumbnail, setIncludeThumbnail] = useState<boolean>(false);
+  const [downloadingThumbnail, setDownloadingThumbnail] = useState<boolean>(false);
 
   // Auto-select first format when video info is available
   React.useEffect(() => {
@@ -59,16 +64,34 @@ export function DownloadPage({
 
   const handleDownload = async () => {
     if (selectedFormat) {
-      await download(selectedFormat);
+      const path = await download(selectedFormat);
+      // Download thumbnail if option is enabled
+      if (path && includeThumbnail) {
+        await downloadThumbnail();
+      }
     }
   };
 
   const handleDownloadAndContinue = async () => {
     if (selectedFormat) {
       const path = await download(selectedFormat);
+      // Download thumbnail if option is enabled
+      if (path && includeThumbnail) {
+        await downloadThumbnail();
+      }
       if (path && onDownloadComplete) {
         onDownloadComplete(path);
       }
+    }
+  };
+
+  const handleDownloadThumbnailOnly = async () => {
+    if (!videoInfo) return;
+    setDownloadingThumbnail(true);
+    try {
+      await downloadThumbnail();
+    } finally {
+      setDownloadingThumbnail(false);
     }
   };
 
@@ -190,7 +213,7 @@ export function DownloadPage({
               />
 
               {/* Output Directory */}
-              <div className="pt-4 mb-6 border-t border-white/10">
+              <div className="pt-4 mb-4 border-t border-white/10">
                 <label className="block text-sm text-white/60 mb-2">保存位置</label>
                 <div className="flex items-center gap-3">
                   <span className="flex-1 px-3 py-2 bg-white/5 rounded-md text-white/70 text-sm truncate">
@@ -207,14 +230,55 @@ export function DownloadPage({
                 </div>
               </div>
 
+              {/* Download Thumbnail Option (Custom Checkbox) */}
+              <div className="mb-6">
+                <div
+                  className="flex items-center gap-2 cursor-pointer select-none group w-fit"
+                  onClick={() => setIncludeThumbnail(!includeThumbnail)}
+                >
+                  <div
+                    className={`w-5 h-5 rounded flex items-center justify-center transition-all duration-200 border ${
+                      includeThumbnail
+                        ? 'bg-violet-500 border-violet-500'
+                        : 'bg-white/5 border-white/20 group-hover:border-white/30'
+                    }`}
+                  >
+                    {includeThumbnail && <CheckCircle className="w-3.5 h-3.5 text-white" />}
+                  </div>
+                  <span
+                    className={`text-sm transition-colors ${
+                      includeThumbnail ? 'text-white' : 'text-white/70 group-hover:text-white/90'
+                    }`}
+                  >
+                    同时下载封面
+                  </span>
+                </div>
+              </div>
+
               {/* Action Buttons */}
               <div className="flex gap-4 justify-end pt-4 border-t border-white/10">
+                {/* Standalone Thumbnail Download Button */}
+                <button
+                  onClick={handleDownloadThumbnailOnly}
+                  disabled={downloadingThumbnail}
+                  className="px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white/70 font-medium transition-colors hover:bg-white/10 hover:text-white mr-auto"
+                >
+                  <span className="flex items-center gap-2">
+                    {downloadingThumbnail ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Image className="w-4 h-4" />
+                    )}
+                    仅下载封面
+                  </span>
+                </button>
+
                 <button
                   onClick={handleDownload}
                   className="px-6 py-3 bg-white/10 border border-white/20 rounded-lg text-white font-medium transition-colors hover:bg-white/15"
                 >
                   <span className="flex items-center gap-2">
-                    <Download className="w-4 h-4" /> 下载
+                    <Download className="w-4 h-4" /> 下载视频
                   </span>
                 </button>
                 <button
@@ -236,8 +300,11 @@ export function DownloadPage({
             <div className="text-center p-8 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl">
               <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
               <h3 className="text-lg font-medium text-white mb-2">下载完成</h3>
-              <p className="text-white/60 text-sm mb-6 break-all">{outputPath}</p>
-              <div className="flex gap-4 justify-center flex-wrap">
+              <p className="text-white/60 text-sm mb-2 break-all">{outputPath}</p>
+              {thumbnailPath && (
+                <p className="text-white/50 text-xs mb-4 break-all">封面: {thumbnailPath}</p>
+              )}
+              <div className="flex gap-4 justify-center flex-wrap mt-4">
                 <button
                   onClick={() => window.electronAPI.showItemInFolder(outputPath)}
                   className="px-6 py-3 bg-white/10 border border-white/20 rounded-lg text-white transition-colors hover:bg-white/15"

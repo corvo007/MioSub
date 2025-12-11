@@ -158,6 +158,16 @@ export interface ElectronAPI {
     cancel: () => Promise<{ success: boolean }>;
     selectDir: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
     getDefaultDir: () => Promise<{ success: boolean; path: string }>;
+    downloadThumbnail: (options: {
+      thumbnailUrl: string;
+      outputDir: string;
+      videoTitle: string;
+      videoId: string;
+    }) => Promise<{
+      success: boolean;
+      thumbnailPath?: string;
+      error?: string;
+    }>;
     onProgress: (
       callback: (progress: {
         percent: number;

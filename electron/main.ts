@@ -582,6 +582,39 @@ ipcMain.handle('download:default-dir', async () => {
   return { success: true, path: ytDlpService.getDefaultOutputDir() };
 });
 
+// IPC Handler: Video Download - Download Thumbnail
+ipcMain.handle(
+  'download:thumbnail',
+  async (
+    _event,
+    {
+      thumbnailUrl,
+      outputDir,
+      videoTitle,
+      videoId,
+    }: {
+      thumbnailUrl: string;
+      outputDir: string;
+      videoTitle: string;
+      videoId: string;
+    }
+  ) => {
+    try {
+      console.log(`[Main] Downloading thumbnail: ${videoTitle}`);
+      const thumbnailPath = await ytDlpService.downloadThumbnail(
+        thumbnailUrl,
+        outputDir,
+        videoTitle,
+        videoId
+      );
+      return { success: true, thumbnailPath };
+    } catch (error: any) {
+      console.error('[Main] Thumbnail download failed:', error);
+      return { success: false, error: error.message };
+    }
+  }
+);
+
 // IPC Handler: Get Main Logs (Recent History)
 ipcMain.handle('log:get-history', async () => {
   return mainLogger.getLogs();

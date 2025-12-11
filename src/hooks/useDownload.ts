@@ -15,6 +15,7 @@ import {
   selectOutputDir,
   getDefaultOutputDir,
   onDownloadProgress,
+  downloadThumbnail as downloadThumbnailService,
 } from '../services/download';
 
 interface UseDownloadReturn {
@@ -26,11 +27,13 @@ interface UseDownloadReturn {
   error: string | null;
   errorInfo: DownloadError | null;
   outputPath: string | null;
+  thumbnailPath: string | null;
   lastUrl: string;
 
   // Actions
   parse: (url: string) => Promise<void>;
   download: (formatId: string) => Promise<string | undefined>;
+  downloadThumbnail: () => Promise<string | undefined>;
   cancel: () => Promise<void>;
   selectDir: () => Promise<void>;
   reset: () => void;
@@ -45,6 +48,7 @@ export function useDownload(): UseDownloadReturn {
   const [error, setError] = useState<string | null>(null);
   const [errorInfo, setErrorInfo] = useState<DownloadError | null>(null);
   const [outputPath, setOutputPath] = useState<string | null>(null);
+  const [thumbnailPath, setThumbnailPath] = useState<string | null>(null);
   const [currentUrl, setCurrentUrl] = useState<string>('');
   const [lastFormatId, setLastFormatId] = useState<string>('');
 
@@ -71,6 +75,7 @@ export function useDownload(): UseDownloadReturn {
     setError(null);
     setErrorInfo(null);
     setVideoInfo(null);
+    setThumbnailPath(null);
     setCurrentUrl(url);
     try {
       const info = await parseVideoUrl(url);
@@ -110,6 +115,25 @@ export function useDownload(): UseDownloadReturn {
     [currentUrl, outputDir]
   );
 
+  const downloadThumbnail = useCallback(async (): Promise<string | undefined> => {
+    if (!videoInfo || !outputDir) return;
+
+    try {
+      const path = await downloadThumbnailService({
+        thumbnailUrl: videoInfo.thumbnail,
+        outputDir,
+        videoTitle: videoInfo.title,
+        videoId: videoInfo.id,
+      });
+      setThumbnailPath(path);
+      return path;
+    } catch (err: any) {
+      console.error('Thumbnail download failed:', err);
+      // Don't set error state for thumbnail failures - it's not critical
+      return undefined;
+    }
+  }, [videoInfo, outputDir]);
+
   const cancel = useCallback(async () => {
     await cancelDownload();
     setStatus('idle');
@@ -128,6 +152,7 @@ export function useDownload(): UseDownloadReturn {
     setError(null);
     setErrorInfo(null);
     setOutputPath(null);
+    setThumbnailPath(null);
     setCurrentUrl('');
     setLastFormatId('');
   }, []);
@@ -152,9 +177,11 @@ export function useDownload(): UseDownloadReturn {
     error,
     errorInfo,
     outputPath,
+    thumbnailPath,
     lastUrl: currentUrl,
     parse,
     download,
+    downloadThumbnail,
     cancel,
     selectDir,
     reset,

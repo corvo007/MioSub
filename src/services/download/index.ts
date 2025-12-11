@@ -1,10 +1,15 @@
 /**
  * Download Service - Renderer Process
  */
-import type { VideoInfo, DownloadProgress, DownloadOptions } from './types';
+import type {
+  VideoInfo,
+  DownloadProgress,
+  DownloadOptions,
+  ThumbnailDownloadOptions,
+} from './types';
 
 // Re-export types
-export type { VideoInfo, DownloadProgress, DownloadOptions };
+export type { VideoInfo, DownloadProgress, DownloadOptions, ThumbnailDownloadOptions };
 
 export async function parseVideoUrl(url: string): Promise<VideoInfo> {
   if (!window.electronAPI?.download) {
@@ -30,6 +35,17 @@ export async function startDownload(options: DownloadOptions): Promise<string> {
     throw error;
   }
   return result.outputPath;
+}
+
+export async function downloadThumbnail(options: ThumbnailDownloadOptions): Promise<string> {
+  if (!window.electronAPI?.download) {
+    throw new Error('Download API not available');
+  }
+  const result = await window.electronAPI.download.downloadThumbnail(options);
+  if (!result.success || !result.thumbnailPath) {
+    throw new Error(result.error || 'Thumbnail download failed');
+  }
+  return result.thumbnailPath;
 }
 
 export async function cancelDownload(): Promise<void> {

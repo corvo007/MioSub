@@ -39,6 +39,13 @@ export interface DownloadProgress {
   stage?: 'video' | 'audio' | 'merging';
 }
 
+export interface ThumbnailDownloadOptions {
+  thumbnailUrl: string;
+  outputDir: string;
+  videoTitle: string;
+  videoId: string;
+}
+
 export type DownloadStatus = 'idle' | 'parsing' | 'downloading' | 'completed' | 'error';
 
 // Error types for better UX

@@ -7,6 +7,8 @@ import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
+import http from 'http';
+import https from 'https';
 
 export interface VideoInfo {
   id: string;
@@ -938,6 +940,82 @@ class YtDlpService {
 
   getDefaultOutputDir(): string {
     return path.join(os.homedir(), 'Downloads');
+  }
+
+  /**
+   * 下载视频封面
+   * @param thumbnailUrl 封面URL
+   * @param outputDir 输出目录
+   * @param videoTitle 视频标题（用于生成文件名）
+   * @param videoId 视频ID（用于防止文件名冲突）
+   */
+  async downloadThumbnail(
+    thumbnailUrl: string,
+    outputDir: string,
+    videoTitle: string,
+    videoId: string
+  ): Promise<string> {
+    console.log(`[Download] 开始下载封面: ${thumbnailUrl}`);
+
+    // Sanitize title for use in filename
+    const sanitizedTitle = videoTitle
+      .replace(/[<>:"/\\|?*]/g, '_') // Remove illegal filename characters
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim()
+      .slice(0, 100); // Limit length
+
+    // Determine file extension from URL
+    const urlPath = new URL(thumbnailUrl).pathname;
+    let ext = path.extname(urlPath).toLowerCase();
+    if (!ext || !['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext)) {
+      ext = '.jpg'; // Default to jpg
+    }
+
+    const outputPath = path.join(outputDir, `${sanitizedTitle} [${videoId}]_cover${ext}`);
+
+    return new Promise((resolve, reject) => {
+      const protocol = thumbnailUrl.startsWith('https') ? https : http;
+
+      const request = protocol.get(thumbnailUrl, (response: any) => {
+        // Handle redirects
+        if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+          console.log(`[Download] 封面重定向到: ${response.headers.location}`);
+          this.downloadThumbnail(response.headers.location, outputDir, videoTitle, videoId)
+            .then(resolve)
+            .catch(reject);
+          return;
+        }
+
+        if (response.statusCode !== 200) {
+          reject(new Error(`封面下载失败: HTTP ${response.statusCode}`));
+          return;
+        }
+
+        const fileStream = fs.createWriteStream(outputPath);
+        response.pipe(fileStream);
+
+        fileStream.on('finish', () => {
+          fileStream.close();
+          console.log(`[Download] 封面下载完成: ${outputPath}`);
+          resolve(outputPath);
+        });
+
+        fileStream.on('error', (err: Error) => {
+          fs.unlink(outputPath, () => {}); // Delete partial file
+          reject(err);
+        });
+      });
+
+      request.on('error', (err: Error) => {
+        console.error(`[Download] 封面下载错误: ${err.message}`);
+        reject(err);
+      });
+
+      request.setTimeout(30000, () => {
+        request.destroy();
+        reject(new Error('封面下载超时'));
+      });
+    });
   }
 }
 
