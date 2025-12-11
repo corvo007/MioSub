@@ -39,7 +39,7 @@ export const TRANSLATION_SCHEMA = {
   items: {
     type: Type.OBJECT,
     properties: {
-      id: { type: Type.INTEGER },
+      id: { type: Type.STRING },
       text_original: { type: Type.STRING },
       text_translated: { type: Type.STRING, description: 'Simplified Chinese translation' },
       speaker: { type: Type.STRING, description: 'Speaker identifier', nullable: true },
@@ -53,7 +53,7 @@ export const BATCH_SCHEMA = {
   items: {
     type: Type.OBJECT,
     properties: {
-      id: { type: Type.INTEGER },
+      id: { type: Type.STRING },
       start: { type: Type.STRING, description: 'HH:MM:SS,mmm' },
       end: { type: Type.STRING, description: 'HH:MM:SS,mmm' },
       text_original: { type: Type.STRING },
@@ -74,7 +74,7 @@ export const BATCH_WITH_DIARIZATION_SCHEMA = {
   items: {
     type: Type.OBJECT,
     properties: {
-      id: { type: Type.INTEGER },
+      id: { type: Type.STRING },
       start: { type: Type.STRING, description: 'HH:MM:SS,mmm' },
       end: { type: Type.STRING, description: 'HH:MM:SS,mmm' },
       text_original: { type: Type.STRING },

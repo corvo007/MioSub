@@ -664,7 +664,7 @@ export const generateSubtitles = async (
           });
 
           const toTranslate = refinedSegments.map((seg, idx) => ({
-            id: idx + 1,
+            id: seg.id,
             original: seg.original,
             start: seg.startTime,
             end: seg.endTime,
@@ -723,7 +723,7 @@ export const generateSubtitles = async (
           }
 
           finalChunkSubs = translatedItems.map((item) => ({
-            id: generateSubtitleId(),
+            id: item.id,
             startTime: formatTime(timeToSeconds(item.start) + start),
             endTime: formatTime(timeToSeconds(item.end) + start),
             original: item.original,

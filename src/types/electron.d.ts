@@ -37,6 +37,22 @@ export interface ElectronAPI {
     canceled?: boolean;
     error?: string;
   }>;
+  selectSubtitleFile: () => Promise<{
+    success: boolean;
+    filePath?: string;
+    fileName?: string;
+    content?: string;
+    canceled?: boolean;
+    error?: string;
+  }>;
+  selectJsonFile: () => Promise<{
+    success: boolean;
+    filePath?: string;
+    fileName?: string;
+    content?: string;
+    canceled?: boolean;
+    error?: string;
+  }>;
   readAudioFile: (filePath: string) => Promise<ArrayBuffer>;
   readLocalFile: (filePath: string) => Promise<ArrayBuffer>;
   saveSubtitleDialog: (

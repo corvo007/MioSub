@@ -317,6 +317,7 @@ export default function App() {
           onFileChange={(e) => workspace.handleFileChange(e, activeTab)}
           onFileChangeNative={workspace.handleFileSelectNative}
           onSubtitleImport={workspace.handleSubtitleImport}
+          onSubtitleImportNative={workspace.handleSubtitleImportNative}
           onGenerate={workspace.handleGenerate}
           onDownload={workspace.handleDownload}
           onGoBack={goBackHome}

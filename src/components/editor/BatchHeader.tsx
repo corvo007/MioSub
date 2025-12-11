@@ -16,6 +16,7 @@ import {
   User,
   Users,
   Trash2,
+  Shield,
 } from 'lucide-react';
 import { SubtitleItem } from '@/types';
 import { SpeakerUIProfile } from '@/types/speaker';
@@ -60,6 +61,9 @@ interface BatchHeaderProps {
   onSelectAllForDelete?: () => void;
   onConfirmDelete?: () => void;
   totalVisibleCount?: number;
+  // Conservative mode
+  conservativeBatchMode?: boolean;
+  onToggleConservativeMode?: () => void;
 }
 
 // Minimum space required below to open downward (in pixels)
@@ -89,6 +93,9 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
   onSelectAllForDelete,
   onConfirmDelete,
   totalVisibleCount,
+  // Conservative mode
+  conservativeBatchMode,
+  onToggleConservativeMode,
 }) => {
   const [isIssueFilterOpen, setIsIssueFilterOpen] = React.useState(false);
   const [isSpeakerFilterOpen, setIsSpeakerFilterOpen] = React.useState(false);
@@ -425,6 +432,26 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
         {/* Right: Primary Actions */}
         {!isDeleteMode && (
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            {/* Conservative Mode Toggle */}
+            {onToggleConservativeMode && (
+              <button
+                onClick={onToggleConservativeMode}
+                title={
+                  conservativeBatchMode
+                    ? '保守模式：仅微调时间轴，不拆分/合并'
+                    : '普通模式：AI可拆分/合并长段落'
+                }
+                className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md text-xs transition-all border ${
+                  conservativeBatchMode
+                    ? 'bg-amber-500/20 border-amber-500/50 text-amber-300'
+                    : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
+                }`}
+              >
+                <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                <span className="hidden sm:inline">{conservativeBatchMode ? '保守' : '普通'}</span>
+              </button>
+            )}
+
             {file && (
               <button
                 onClick={() => handleBatchAction('fix_timestamps')}

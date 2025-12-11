@@ -128,6 +128,68 @@ ipcMain.handle('select-media-file', async () => {
   }
 });
 
+// IPC Handler: Select Subtitle File (for native dialog in Electron)
+ipcMain.handle('select-subtitle-file', async () => {
+  try {
+    const result = await dialog.showOpenDialog({
+      title: '选择字幕文件',
+      filters: [
+        { name: '字幕文件', extensions: ['srt', 'ass'] },
+        { name: '所有文件', extensions: ['*'] },
+      ],
+      properties: ['openFile'],
+    });
+
+    if (!result.canceled && result.filePaths.length > 0) {
+      const filePath = result.filePaths[0];
+      const fileName = path.basename(filePath);
+      const content = await fs.promises.readFile(filePath, 'utf-8');
+
+      return {
+        success: true,
+        filePath,
+        fileName,
+        content,
+      };
+    }
+    return { success: false, canceled: true };
+  } catch (error: any) {
+    console.error('[Main] Subtitle file selection failed:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// IPC Handler: Select JSON File (for glossary import)
+ipcMain.handle('select-json-file', async () => {
+  try {
+    const result = await dialog.showOpenDialog({
+      title: '选择 JSON 文件',
+      filters: [
+        { name: 'JSON 文件', extensions: ['json'] },
+        { name: '所有文件', extensions: ['*'] },
+      ],
+      properties: ['openFile'],
+    });
+
+    if (!result.canceled && result.filePaths.length > 0) {
+      const filePath = result.filePaths[0];
+      const fileName = path.basename(filePath);
+      const content = await fs.promises.readFile(filePath, 'utf-8');
+
+      return {
+        success: true,
+        filePath,
+        fileName,
+        content,
+      };
+    }
+    return { success: false, canceled: true };
+  } catch (error: any) {
+    console.error('[Main] JSON file selection failed:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // IPC Handler: Select Whisper Model
 ipcMain.handle('select-whisper-model', async () => {
   try {

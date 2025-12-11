@@ -332,6 +332,46 @@ export const useWorkspaceLogic = ({
     [snapshotsValues, parseSubtitle]
   );
 
+  // Native dialog handler for subtitle import (Electron only)
+  const handleSubtitleImportNative = React.useCallback(async () => {
+    if (!window.electronAPI?.selectSubtitleFile) return;
+
+    try {
+      const result = await window.electronAPI.selectSubtitleFile();
+      if (!result.success || !result.content || !result.fileName) return;
+
+      logger.info('Subtitle file imported (native)', { name: result.fileName });
+      addToast('正在解析字幕...', 'info', 2000);
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const fileType = result.fileName.endsWith('.ass') ? 'ass' : 'srt';
+      const parsed = await parseSubtitle(result.content, fileType);
+
+      setSubtitles(parsed);
+
+      // Extract and set speaker profiles
+      const uniqueSpeakers = Array.from(
+        new Set(parsed.map((s) => s.speaker).filter(Boolean))
+      ) as string[];
+      const profiles: SpeakerUIProfile[] = uniqueSpeakers.map((name) => ({
+        id: name,
+        name: name,
+        color: getSpeakerColor(name),
+      }));
+      setSpeakerProfiles(profiles);
+
+      setStatus(GenerationStatus.COMPLETED);
+      snapshotsValues.setSnapshots([]);
+      setBatchComments({});
+      const fileId = result.filePath || result.fileName;
+      snapshotsValues.createSnapshot('初始导入', parsed, {}, fileId, result.fileName);
+    } catch (error: any) {
+      logger.error('Failed to parse subtitle (native)', error);
+      setError(`字幕解析失败: ${error.message}`);
+      setStatus(GenerationStatus.ERROR);
+    }
+  }, [snapshotsValues, parseSubtitle, addToast]);
+
   const handleGenerate = React.useCallback(async () => {
     if (!file) {
       setError('请先上传媒体文件。');
@@ -809,6 +849,7 @@ export const useWorkspaceLogic = ({
       handleFileChange,
       handleFileSelectNative,
       handleSubtitleImport,
+      handleSubtitleImportNative,
       handleGenerate,
       handleBatchAction,
       handleDownload,
@@ -852,6 +893,7 @@ export const useWorkspaceLogic = ({
       handleFileChange,
       handleFileSelectNative,
       handleSubtitleImport,
+      handleSubtitleImportNative,
       handleGenerate,
       handleBatchAction,
       handleDownload,

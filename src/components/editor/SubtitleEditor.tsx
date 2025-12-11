@@ -37,6 +37,9 @@ interface SubtitleEditorProps {
   speakerProfiles?: SpeakerUIProfile[];
   onManageSpeakers?: () => void;
   scrollContainerRef?: React.RefObject<HTMLDivElement>;
+  // Conservative mode
+  conservativeBatchMode?: boolean;
+  onToggleConservativeMode?: () => void;
 }
 
 export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
@@ -69,6 +72,9 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
 
     onManageSpeakers,
     scrollContainerRef,
+    // Conservative mode
+    conservativeBatchMode,
+    onToggleConservativeMode,
   }) => {
     const [searchQuery, setSearchQuery] = React.useState('');
     const [filters, setFilters] = React.useState<SubtitleFilters>(defaultFilters);
@@ -286,6 +292,8 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
             onSelectAllForDelete={selectAllForDelete}
             onConfirmDelete={() => setBulkDeleteModalOpen(true)}
             totalVisibleCount={visibleSubtitles.length}
+            conservativeBatchMode={conservativeBatchMode}
+            onToggleConservativeMode={onToggleConservativeMode}
           />
         )}
 

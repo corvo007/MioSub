@@ -9,7 +9,10 @@ export const decodeAudio = async (
   file: File,
   onProgress?: (progress: { stage: string; percent: number }) => void
 ): Promise<AudioBuffer> => {
-  const filePath = isElectron() ? window.electronAPI.getFilePath(file) : undefined;
+  // Priority: file.path (from native dialog) > webUtils.getPathForFile > undefined
+  const filePath = isElectron()
+    ? (file as any).path || window.electronAPI.getFilePath(file) || undefined
+    : undefined;
 
   // Debug logs
   logger.info('Audio decoding environment check:', {

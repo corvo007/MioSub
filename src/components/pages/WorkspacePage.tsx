@@ -46,6 +46,7 @@ interface WorkspacePageProps {
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onFileChangeNative?: (file: File) => void;
   onSubtitleImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSubtitleImportNative?: () => void;
   onGenerate: () => void;
   onDownload: (format: 'srt' | 'ass') => void;
   onGoBack: () => void;
@@ -96,6 +97,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   onFileChange,
   onFileChangeNative,
   onSubtitleImport,
+  onSubtitleImportNative,
   onGenerate,
   onDownload,
   onGoBack,
@@ -328,6 +330,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                     <FileUploader
                       hasFile={false}
                       onFileSelect={onSubtitleImport}
+                      onNativeClick={onSubtitleImportNative}
+                      useNativeDialog={isElectron}
                       accept=".srt,.ass"
                       icon={<FileText className="text-emerald-500 group-hover:text-emerald-400" />}
                       uploadTitle="导入 .SRT / .ASS"
@@ -339,6 +343,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                       hasFile={true}
                       fileInfo="字幕已加载"
                       onFileSelect={onSubtitleImport}
+                      onNativeClick={onSubtitleImportNative}
+                      useNativeDialog={isElectron}
                       accept=".srt,.ass"
                       icon={<FileText className="text-emerald-500" />}
                       uploadTitle=""
@@ -351,7 +357,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                 </div>
               )}
               {/* Settings Section - Collapsible */}
-              <div className="bg-slate-800/50 rounded border border-slate-700/50 overflow-hidden">
+              <div className="bg-slate-800/50 rounded border border-slate-700/50">
                 <button
                   onClick={() => setSettingsExpanded(!settingsExpanded)}
                   className="w-full flex items-center justify-between px-2.5 py-2 text-xs text-slate-400 hover:bg-slate-800/50 transition-colors"
@@ -545,6 +551,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                     addSubtitle={addSubtitle}
                     onManageSpeakers={onManageSpeakers}
                     scrollContainerRef={subtitleListRef}
+                    conservativeBatchMode={settings.conservativeBatchMode}
+                    onToggleConservativeMode={() =>
+                      onUpdateSetting('conservativeBatchMode', !settings.conservativeBatchMode)
+                    }
                   />
                 </div>
               )}

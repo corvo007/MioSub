@@ -691,14 +691,45 @@ export interface FixTimestampsPromptParams {
   payload: any[];
   glossaryContext: string;
   specificInstruction: string;
+  conservativeMode?: boolean; // Only fine-tune, no splits/merges
 }
 
 /**
  * Generate fix timestamps prompt
  */
-export const getFixTimestampsPrompt = (params: FixTimestampsPromptParams): string => `
+export const getFixTimestampsPrompt = (params: FixTimestampsPromptParams): string => {
+  const conservativeRules = params.conservativeMode
+    ? `
+    **[CONSERVATIVE MODE - MINIMAL CHANGES]**
+    → DO NOT split or merge any segments
+    → DO NOT add new subtitle entries
+    → ONLY fine-tune timestamps that are clearly misaligned (>0.5 second off)
+    → Preserve original segment count and structure exactly
+    → Output must have EXACTLY the same number of items as input
+    `
+    : `
+    [P2 - MANDATORY] Segment Splitting for Readability
+    → SPLIT any segment >4 seconds OR >25 Chinese characters
+    → When splitting: distribute timing based on actual audio speech
+    → Ensure splits occur at natural speech breaks
+    → For NEW/SPLIT entries: provide appropriate translation in Simplified Chinese
+    `;
+
+  const contentRules = params.conservativeMode
+    ? `
+    [P3 - CONTENT] Audio Verification (Limited)
+    → If you hear speech NOT in the text → ADD new subtitle entries with translation
+    → Remove filler words from 'text_original' (uh, um, 呃, 嗯, etc.)
+    `
+    : `
+    [P3 - CONTENT] Audio Verification
+    → If you hear speech NOT in the text → ADD new subtitle entries with translation
+    → Remove filler words from 'text_original' (uh, um, 呃, 嗯, etc.)
+    `;
+
+  return `
     Batch ${params.batchLabel}.
-    TIMESTAMP ALIGNMENT & SEGMENTATION TASK
+    TIMESTAMP ALIGNMENT TASK${params.conservativeMode ? ' (CONSERVATIVE MODE)' : ''}
     Previous batch ended at: "${params.lastEndTime}"
     ${params.glossaryContext}
     ${params.specificInstruction}
@@ -710,30 +741,23 @@ export const getFixTimestampsPrompt = (params: FixTimestampsPromptParams): strin
     → Align "start" and "end" to actual speech boundaries in audio
     → Timestamps MUST be relative to provided audio file (starting at 00:00:00)
     → Fix bunched-up or spread-out timing issues
-    
-    [P2 - MANDATORY] Segment Splitting for Readability
-    → SPLIT any segment >4 seconds OR >25 Chinese characters
-    → When splitting: distribute timing based on actual audio speech
-    → Ensure splits occur at natural speech breaks
-    
-    [P3 - CONTENT] Audio Verification
-    → If you hear speech NOT in the text → ADD new subtitle entries
-    → Remove filler words from 'text_original' (uh, um, 呃, 嗯, etc.)
-    
+    ${conservativeRules}
+    ${contentRules}
     [P4 - ABSOLUTE] Translation Preservation
-    → DO NOT modify 'text_translated' under ANY circumstances
+    → DO NOT modify 'text_translated' of EXISTING entries under ANY circumstances
     → Even if it's English, wrong, or nonsensical → LEAVE IT
     → Translation is handled by Proofread function, not here
     
     FINAL VERIFICATION:
     ✓ All timestamps aligned to audio
-    ✓ Long segments split appropriately  
+    ${params.conservativeMode ? '✓ Segment count unchanged from input' : '✓ Long segments split appropriately'}
     ✓ No missed speech
-    ✓ 'text_translated' completely unchanged
+    ✓ 'text_translated' of existing entries completely unchanged
 
-    Input JSON:
+    Input JSON (${params.payload.length} items):
     ${JSON.stringify(params.payload)}
         `;
+};
 
 /**
  * Parameters for proofread prompt

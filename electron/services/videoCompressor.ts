@@ -1,7 +1,6 @@
 import ffmpeg from 'fluent-ffmpeg';
 import ffmpegPath from '@ffmpeg-installer/ffmpeg';
 import ffprobePath from '@ffprobe-installer/ffprobe';
-import path from 'path';
 import fs from 'fs';
 
 const fixPathForAsar = (pathStr: string) => {
@@ -97,9 +96,11 @@ export class VideoCompressorService {
       if (options.encoder === 'libx264') {
         // Log: --crf 23.5 --preset 8 -I 300 -r 4 -b 3 --me umh -i 1 --scenecut 60 -f 1:1 --qcomp 0.5 --psy-rd 0.3:0 --aq-mode 2 --aq-strength 0.8
         // Additional from x264 info: subme=10, merange=24, trellis=2, direct=auto, b_adapt=2, rc_lookahead=60
+        // Note: psy-rd and deblock values use comma (,) instead of colon (:) as internal separator
+        // because x264-params uses colon to separate different parameters
         command.addOutputOption(
           '-x264-params',
-          'keyint=300:min-keyint=1:ref=4:bframes=3:b-adapt=2:me=umh:merange=24:subme=10:trellis=2:direct=auto:scenecut=60:qcomp=0.5:psy-rd=0.3:0:aq-mode=2:aq-strength=0.8:deblock=1:1:rc-lookahead=60'
+          'keyint=300:min-keyint=1:ref=4:bframes=3:b-adapt=2:me=umh:merange=24:subme=10:trellis=2:direct=auto:scenecut=60:qcomp=0.5:psy-rd=0.3,0:aq-mode=2:aq-strength=0.8:deblock=1,1:rc-lookahead=60'
         );
       }
 
@@ -138,7 +139,52 @@ export class VideoCompressorService {
             });
         })
         .on('stderr', (stderrLine) => {
-          // Log ALL FFmpeg stderr for debugging
+          // Filter out verbose FFmpeg output to reduce console noise
+          // Only log actual errors and important warnings
+          const trimmedLine = stderrLine.trim();
+
+          // Skip empty lines
+          if (!trimmedLine) return;
+
+          // Skip progress lines (frame=... fps=... size=... etc)
+          if (/^frame=\s*\d+\s+fps=/.test(trimmedLine)) return;
+
+          // Skip subtitle parsing events
+          if (/^\[Parsed_subtitles_\d+\s*@/.test(trimmedLine)) return;
+
+          // Skip FFmpeg version/build info
+          if (/^ffmpeg version|^built with|^configuration:|^lib(av|sw|postproc)/.test(trimmedLine))
+            return;
+
+          // Skip stream/codec info
+          if (
+            /^Stream #|^Stream mapping:|^Input #|^Output #|^Metadata:|Duration:|^\s+Stream\s/.test(
+              trimmedLine
+            )
+          )
+            return;
+
+          // Skip common info messages
+          if (
+            /^Press \[q\]|^graph_\d+_in|^\s*(major_brand|minor_version|compatible_brands|encoder|handler_name)\s*:/.test(
+              trimmedLine
+            )
+          )
+            return;
+
+          // Skip ASS/subtitle format info (headers, styles, events)
+          if (
+            /^\[Script Info\]|^Title:|^ScriptType:|^WrapStyle:|^ScaledBorderAndShadow|^YCbCr Matrix|^PlayRes[XY]|^\[V4\+ Styles\]|^Format:|^Style:|^\[Events\]|^Event at \d+/.test(
+              trimmedLine
+            )
+          )
+            return;
+
+          // Skip decoder/filter initialization messages
+          if (/^\[.*@\s*[0-9a-f]+\]/.test(trimmedLine) && !/error|fail|invalid/i.test(trimmedLine))
+            return;
+
+          // Log everything else (errors, warnings, etc.)
           console.log('[FFmpeg stderr]', stderrLine);
           log(`[FFmpeg] ${stderrLine}`);
         })

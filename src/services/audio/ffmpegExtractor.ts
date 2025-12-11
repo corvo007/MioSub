@@ -13,7 +13,8 @@ export async function extractAndDecodeAudio(
     throw new Error('FFmpeg 提取仅在 Electron 环境中可用');
   }
 
-  const filePath = window.electronAPI.getFilePath(file);
+  // Priority: file.path (from native dialog) > webUtils.getPathForFile
+  const filePath = (file as any).path || window.electronAPI.getFilePath(file);
   if (!filePath) {
     throw new Error('FFmpeg 提取需要文件路径');
   }
@@ -104,7 +105,10 @@ export async function smartDecodeAudio(
   file: File,
   onProgress?: (progress: { stage: string; percent: number }) => void
 ): Promise<AudioBuffer> {
-  const filePath = isElectron() ? window.electronAPI.getFilePath(file) : undefined;
+  // Priority: file.path (from native dialog) > webUtils.getPathForFile > undefined
+  const filePath = isElectron()
+    ? (file as any).path || window.electronAPI.getFilePath(file) || undefined
+    : undefined;
 
   if (!isElectron() || !filePath) {
     // 非 Electron 环境或没有文件路径，直接使用 Web Audio API

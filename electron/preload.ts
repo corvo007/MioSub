@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   isDebug: process.env.DEBUG_BUILD === 'true' || process.env.NODE_ENV === 'development',
   getFilePath: (file: File) => webUtils.getPathForFile(file),
   selectMediaFile: () => ipcRenderer.invoke('select-media-file'),
+  selectSubtitleFile: () => ipcRenderer.invoke('select-subtitle-file'),
+  selectJsonFile: () => ipcRenderer.invoke('select-json-file'),
   readAudioFile: (filePath: string) => ipcRenderer.invoke('read-audio-file', filePath),
   readLocalFile: (filePath: string) => ipcRenderer.invoke('read-local-file', filePath),
   saveSubtitleDialog: (defaultName: string, content: string, format: 'srt' | 'ass') =>

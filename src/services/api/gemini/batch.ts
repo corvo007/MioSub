@@ -97,7 +97,7 @@ export async function processTranslationBatchWithRetry(
 
       // Collect missing items for retry
       const missingItems = batch.filter((item) => {
-        const translated = transMap.get(item.id);
+        const translated = transMap.get(String(item.id));
         return !translated || translated.trim().length === 0;
       });
 
@@ -160,7 +160,7 @@ export async function processTranslationBatchWithRetry(
 
       let fallbackCount = 0;
       const result = batch.map((item) => {
-        const translatedText = transMap.get(item.id);
+        const translatedText = transMap.get(String(item.id));
 
         // Log missing translations
         if (!translatedText || translatedText.trim().length === 0) {
@@ -357,6 +357,7 @@ async function processBatch(
       payload,
       glossaryContext,
       specificInstruction,
+      conservativeMode: settings.conservativeBatchMode,
     });
   } else {
     // Proofread - Focus on TRANSLATION quality, may adjust timing when necessary
@@ -465,7 +466,7 @@ export const runBatchOperation = async (
   let audioBuffer: AudioBuffer | null = null;
   // Both Proofread and Fix Timestamps need audio context.
   if (file) {
-    onProgress?.({ id: 'init', total: 0, status: 'processing', message: 'Loading audio...' });
+    onProgress?.({ id: 'init', total: 0, status: 'processing', message: '加载音频中...' });
     try {
       audioBuffer = await decodeAudio(file);
     } catch (e) {
@@ -590,9 +591,9 @@ export const runBatchOperation = async (
       }
 
       let actionLabel = '';
-      if (mode === 'proofread') actionLabel = 'Polishing';
-      else if (mode === 'fix_timestamps') actionLabel = 'Aligning';
-      else actionLabel = 'Translating';
+      if (mode === 'proofread') actionLabel = '润色中';
+      else if (mode === 'fix_timestamps') actionLabel = '校对时间轴中';
+      else actionLabel = '翻译中';
 
       const groupLabel =
         group.length > 1
@@ -625,45 +626,128 @@ export const runBatchOperation = async (
         );
 
         // Update original subtitles with processed results
-        // We need to map back by ID
-        const processedMap = new Map(processed.map((p) => [p.id, p]));
+        // Strategy: Replace the entire region covered by the original batch with processed results
+        // This handles cases where AI splits, merges, or adds new subtitle entries
 
-        // Update the chunks in the main array
-        group.forEach((idx) => {
-          if (idx < chunks.length) {
-            const batch = chunks[idx];
-            for (let k = 0; k < batch.length; k++) {
-              const item = batch[k];
-              const updated = processedMap.get(item.id);
-              if (updated) {
-                // Find index in main array
-                const mainIndex = currentSubtitles.findIndex((s) => s.id === item.id);
-                if (mainIndex !== -1) {
-                  // Preserve speaker if not present in updated (e.g. proofread mode)
-                  if (!updated.speaker && currentSubtitles[mainIndex].speaker) {
-                    updated.speaker = currentSubtitles[mainIndex].speaker;
-                  }
-                  currentSubtitles[mainIndex] = updated;
-                }
+        // Find the range in currentSubtitles that corresponds to this batch
+        const firstOriginalId = mergedBatch[0]?.id;
+        const lastOriginalId = mergedBatch[mergedBatch.length - 1]?.id;
+
+        if (firstOriginalId && lastOriginalId) {
+          const startIdx = currentSubtitles.findIndex((s) => s.id === firstOriginalId);
+          const endIdx = currentSubtitles.findIndex((s) => s.id === lastOriginalId);
+
+          if (startIdx !== -1 && endIdx !== -1 && startIdx <= endIdx) {
+            // Preserve speaker info from original if not present in processed
+            const originalSpeakers = new Map(
+              currentSubtitles.slice(startIdx, endIdx + 1).map((s) => [s.id, s.speaker])
+            );
+
+            const processedWithSpeakers = processed.map((p) => {
+              // If processed item has no speaker but original did, preserve it
+              if (!p.speaker && originalSpeakers.has(p.id)) {
+                return { ...p, speaker: originalSpeakers.get(p.id) };
               }
-            }
+              return p;
+            });
+
+            // Replace the entire region [startIdx, endIdx] with processed results
+            const itemsToRemove = endIdx - startIdx + 1;
+            currentSubtitles.splice(startIdx, itemsToRemove, ...processedWithSpeakers);
+
+            logger.debug(
+              `[Batch ${groupLabel}] Replaced ${itemsToRemove} items with ${processed.length} processed items`
+            );
+          } else {
+            logger.warn(
+              `[Batch ${groupLabel}] Could not find region to update. startIdx=${startIdx}, endIdx=${endIdx}`
+            );
           }
-        });
+        }
 
         onProgress?.({
           id: groupLabel,
           total: groups.length,
           status: 'completed',
-          message: 'Done',
+          message: '完成',
         });
       } catch (e) {
         logger.error(`Group ${groupLabel} failed`, e);
-        onProgress?.({ id: groupLabel, total: groups.length, status: 'error', message: 'Failed' });
+        onProgress?.({ id: groupLabel, total: groups.length, status: 'error', message: '失败' });
         throw e; // Re-throw to stop mapInParallel if needed, or handle cancellation
       }
     },
     signal
   );
+
+  // Auto-translate entries with empty text_translated after fix_timestamps
+  if (mode === 'fix_timestamps') {
+    const emptyTranslationItems = currentSubtitles.filter(
+      (s) => !s.translated || s.translated.trim() === ''
+    );
+
+    if (emptyTranslationItems.length > 0) {
+      logger.info(
+        `[Auto-Translate] Found ${emptyTranslationItems.length} entries with empty translations. Starting translation...`
+      );
+      onProgress?.({
+        id: 'auto-translate',
+        total: 1,
+        status: 'processing',
+        message: `正在翻译 ${emptyTranslationItems.length} 条新增字幕...`,
+      });
+
+      try {
+        const translationResults = await translateBatch(
+          ai,
+          emptyTranslationItems.map((item) => ({
+            id: item.id,
+            original: item.original,
+            speaker: item.speaker,
+          })),
+          systemInstruction,
+          settings.concurrencyFlash || 5,
+          settings.translationBatchSize || 20,
+          undefined,
+          signal,
+          trackUsage,
+          (settings.requestTimeout || 600) * 1000
+        );
+
+        // Create a map of translations
+        const transMap = new Map(
+          translationResults.map((t: any) => [String(t.id), t.text_translated])
+        );
+
+        // Apply translations to currentSubtitles
+        for (const sub of currentSubtitles) {
+          const translation = transMap.get(sub.id);
+          if (translation && (!sub.translated || sub.translated.trim() === '')) {
+            sub.translated = translation;
+          }
+        }
+
+        logger.info(
+          `[Auto-Translate] Successfully translated ${translationResults.length} entries`
+        );
+        onProgress?.({
+          id: 'auto-translate',
+          total: 1,
+          status: 'completed',
+          message: '自动翻译完成',
+        });
+      } catch (e) {
+        logger.error('[Auto-Translate] Failed to translate new entries', e);
+        onProgress?.({
+          id: 'auto-translate',
+          total: 1,
+          status: 'error',
+          message: '自动翻译失败',
+        });
+        // Don't throw - allow the operation to complete with untranslated entries
+      }
+    }
+  }
 
   // Log Token Usage Report
   let reportLog =

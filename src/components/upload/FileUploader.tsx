@@ -6,7 +6,8 @@ interface FileUploaderProps {
   fileName?: string;
   fileInfo?: React.ReactNode;
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onFileSelectNative?: (file: File) => void; // New: callback for native dialog
+  onFileSelectNative?: (file: File) => void; // Callback for native dialog (receives File with path)
+  onNativeClick?: () => void; // Generic callback for native dialog click (no File returned)
   disabled?: boolean;
   accept: string;
   icon: React.ReactNode;
@@ -15,7 +16,7 @@ interface FileUploaderProps {
   heightClass?: string;
   activeTab?: string;
   error?: boolean;
-  useNativeDialog?: boolean; // New: use Electron native dialog
+  useNativeDialog?: boolean; // Use Electron native dialog
 }
 
 export const FileUploader: React.FC<FileUploaderProps> = ({
@@ -24,6 +25,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   fileInfo,
   onFileSelect,
   onFileSelectNative,
+  onNativeClick,
   disabled = false,
   accept,
   icon,
@@ -35,10 +37,17 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
 }) => {
   // Handle click for native dialog
   const handleNativeClick = async (e: React.MouseEvent) => {
-    if (!window.electronAPI?.selectMediaFile || !onFileSelectNative) return;
-
     e.preventDefault();
     e.stopPropagation();
+
+    // If a generic native click handler is provided, use it
+    if (onNativeClick) {
+      onNativeClick();
+      return;
+    }
+
+    // Otherwise use the media file selection with File callback
+    if (!window.electronAPI?.selectMediaFile || !onFileSelectNative) return;
 
     try {
       const result = await window.electronAPI.selectMediaFile();
@@ -65,7 +74,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   };
 
   const isElectron = !!window.electronAPI?.isElectron;
-  const shouldUseNative = useNativeDialog && isElectron && onFileSelectNative;
+  const shouldUseNative = useNativeDialog && isElectron && (onFileSelectNative || onNativeClick);
 
   if (hasFile) {
     return (
