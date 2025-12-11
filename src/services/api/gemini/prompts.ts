@@ -737,48 +737,19 @@ export const getSpeakerProfileExtractionPrompt = (genre: string) => `
 `;
 
 /**
- * Generate translation batch prompt
+ * Generate translation batch prompt (simplified - relies on System Prompt rules)
  */
 export const getTranslationBatchPrompt = (batchLength: number, payload: any[]): string => `
-    TRANSLATION BATCH TASK
-    
-    TASK: Translate ${batchLength} subtitle segments to Simplified Chinese.
-    
-    RULES (Priority Order):
-    
-    [P1 - ACCURACY] Complete and Accurate Translation
-    → Translate all ${batchLength} items (one-to-one mapping with input IDs)
-    → Ensure no meaning is lost from source text
-    → ID matching is critical - do not skip any ID
-    → Output exactly ${batchLength} items in the response
-    
-    [P1.5 - CONTEXT-AWARE DISTRIBUTION]
-    → **MULTI-LINE CONTEXT**: Before translating each line, READ the previous and next 1-2 lines to understand the full context. This helps resolve ambiguous words, pronouns, and incomplete sentences.
-    → **SENTENCE CONTINUITY**: Look at "start" and "end" timestamps. If consecutive items are part of the SAME SENTENCE and are **< ${TEMPORAL_THRESHOLDS.CLOSE_SECONDS} seconds apart**, you may distribute translation content across them for **visual balance** (similar character counts per line).
-    → **TEMPORAL ISOLATION**: If items are **> ${TEMPORAL_THRESHOLDS.FAR_SECONDS} seconds apart**, keep translation content **strictly within each item**. Do NOT shift content between them.
-    → **NATURAL BREAKS**: When distributing, split at natural phrase boundaries (after clauses, before conjunctions).
-    
-    [P2 - QUALITY] Translation Excellence
-    → ${getFillerWordsRule()} and stuttering
-    → Produce fluent, natural Simplified Chinese
-    → Use terminology from system instruction if provided
-    → Maintain appropriate tone and style
-    
-    [P3 - OUTPUT] Format Requirements
-    → 'text_translated' MUST BE in Simplified Chinese
-    → Never output English, Japanese, or other languages in 'text_translated'
-    → Maintain exact ID values from input
-    
-    FINAL VERIFICATION:
-    ✓ All ${batchLength} IDs present in output
-    ✓ All translations are Simplified Chinese
-    ✓ No meaning lost from original text
-    ✓ Filler words removed
-    ✓ Translations visually balanced across temporally-close lines
-    
-    Input JSON:
-    ${JSON.stringify(payload)}
-    `;
+TRANSLATION BATCH: ${batchLength} items
+
+Apply all rules from system instruction. Key reminders:
+- Output MUST have exactly ${batchLength} items (1:1 mapping with input IDs)
+- Preserve all IDs exactly as provided
+- All 'text_translated' must be Simplified Chinese
+
+Input:
+${JSON.stringify(payload)}
+`;
 
 /**
  * Parameters for fix timestamps prompt
@@ -793,68 +764,31 @@ export interface FixTimestampsPromptParams {
 }
 
 /**
- * Generate fix timestamps prompt
+ * Generate fix timestamps prompt (simplified - relies on System Prompt rules)
  */
 export const getFixTimestampsPrompt = (params: FixTimestampsPromptParams): string => {
-  const conservativeRules = params.conservativeMode
+  const modeNote = params.conservativeMode
     ? `
-    **[CONSERVATIVE MODE - MINIMAL CHANGES]**
-    → DO NOT split or merge any segments
-    → DO NOT add new subtitle entries (even for missed speech - note in "comment" field instead)
-    → ONLY fine-tune timestamps that are clearly misaligned (>0.5 second off)
-    → Preserve original segment count and structure exactly
-    → Output must have EXACTLY the same number of items as input
-    `
-    : `
-    [P2 - MANDATORY] Segment Splitting for Readability
-    → ${getSegmentSplittingRule('translation')}
-    → When splitting: distribute timing based on actual audio speech
-    → Ensure splits occur at natural speech breaks
-    → For NEW/SPLIT entries: provide appropriate translation in Simplified Chinese
-    `;
-
-  const contentRules = params.conservativeMode
-    ? `
-    [P3 - CONTENT] Audio Verification (Limited)
-    → If you hear speech NOT in the text → Note in "comment" field (do NOT add entries)
-    → ${getFillerWordsRule()} from 'text_original'
-    `
-    : `
-    [P3 - CONTENT] Audio Verification
-    → If you hear speech NOT in the text → ADD new subtitle entries with translation
-    → ${getFillerWordsRule()} from 'text_original'
-    `;
+**CONSERVATIVE MODE OVERRIDES**:
+- DO NOT split/merge segments or add new entries
+- Note missed speech in "comment" field instead
+- Output MUST have exactly ${params.payload.length} items`
+    : '';
 
   return `
-    Batch ${params.batchLabel}.
-    TIMESTAMP ALIGNMENT TASK${params.conservativeMode ? ' (CONSERVATIVE MODE)' : ''}
-    Previous batch ended at: "${params.lastEndTime}"
-    ${params.glossaryContext}
-    ${params.specificInstruction}
+TIMESTAMP BATCH: ${params.batchLabel}
+Previous end: ${params.lastEndTime}
+${params.glossaryContext}
+${params.specificInstruction}
+${modeNote}
 
-    TASK RULES (Priority Order):
-    
-    [P1 - PRIMARY] Perfect Timestamp Alignment
-    → Listen to audio carefully
-    → Align "start" and "end" to actual speech boundaries in audio
-    → Timestamps MUST be relative to provided audio file (starting at 00:00:00)
-    → Fix bunched-up or spread-out timing issues
-    ${conservativeRules}
-    ${contentRules}
-    [P4 - ABSOLUTE] Translation Preservation
-    → DO NOT modify 'text_translated' of EXISTING entries under ANY circumstances
-    → Even if it's English, wrong, or nonsensical → LEAVE IT
-    → Translation is handled by Proofread function, not here
-    
-    FINAL VERIFICATION:
-    ✓ All timestamps aligned to audio
-    ${params.conservativeMode ? '✓ Segment count unchanged from input' : '✓ Long segments split appropriately'}
-    ✓ No missed speech
-    ✓ 'text_translated' of existing entries completely unchanged
+Apply all rules from system instruction. Key reminders:
+- Align timestamps to actual speech boundaries in audio
+- DO NOT modify 'text_translated' under ANY circumstances
 
-    Input JSON (${params.payload.length} items):
-    ${JSON.stringify(params.payload)}
-        `;
+Input (${params.payload.length} items):
+${JSON.stringify(params.payload)}
+`;
 };
 
 /**
@@ -870,54 +804,23 @@ export interface ProofreadPromptParams {
 }
 
 /**
- * Generate proofread prompt
+ * Generate proofread prompt (simplified - relies on System Prompt rules)
  */
 export const getProofreadPrompt = (params: ProofreadPromptParams): string => `
-    Batch ${params.batchLabel}.
-    TRANSLATION QUALITY IMPROVEMENT TASK
-    Previous batch ended at: "${params.lastEndTime}"
-    Total video duration: ${params.totalVideoDuration ? formatTime(params.totalVideoDuration) : 'Unknown'}
-    ${params.glossaryContext}
-    ${params.specificInstruction}
+PROOFREAD BATCH: ${params.batchLabel}
+Previous end: ${params.lastEndTime}
+Duration: ${params.totalVideoDuration ? formatTime(params.totalVideoDuration) : 'Unknown'}
+${params.glossaryContext}
+${params.specificInstruction}
 
-    TASK RULES (Priority Order):
-    
-    [P1 - PRIMARY] Translation Quality Excellence
-    → Fix mistranslations and missed meanings
-    → Improve awkward or unnatural Chinese phrasing
-    → Ensure ALL 'text_translated' are fluent Simplified Chinese (never English/Japanese/etc.)
-    → Verify translation captures full intent of 'text_original'
-    
-    [P2 - CONTENT] Audio Content Verification
-    → Listen to audio carefully
-    → If you hear speech NOT in subtitles → ADD new subtitle entries
-    → Verify 'text_original' matches what was actually said
+Apply all rules from system instruction. Key reminders:
+- Fix mistranslations and improve Chinese phrasing
+- DO NOT modify timestamps of existing subtitles
+- Only modify when there's a clear translation quality problem
 
-    [P2.5 - CONTEXT-AWARE DISTRIBUTION]
-    → **MULTI-LINE CONTEXT**: Before refining each line, READ the previous and next 1-2 lines to understand the full context.
-    → **SENTENCE CONTINUITY**: Check for sentences spanning multiple subtitles.
-    ${getTemporalProximityRule()}
-    → **NATURAL BREAKS**: Split at natural phrase boundaries.
-    
-    [P3 - ABSOLUTE] Timestamp Preservation
-    → DO NOT modify timestamps of existing subtitles
-    → Exception: When adding NEW entries for missed speech, assign appropriate timestamps
-    → Even if existing lines are very long → LEAVE their timing unchanged
-    → Your job is TRANSLATION quality, not timing adjustment
-    
-    [P4 - PRESERVATION] Default Behavior
-    → For subtitles WITHOUT issues: preserve them as-is
-    → Only modify when there's a clear translation quality problem
-    
-    FINAL VERIFICATION:
-    ✓ All 'text_translated' are fluent Simplified Chinese
-    ✓ No missed meaning from 'text_original'
-    ✓ No missed speech from audio
-    ✓ Translation quality significantly improved
-
-    Current Subtitles JSON:
-    ${JSON.stringify(params.payload)}
-        `;
+Input (${params.payload.length} items):
+${JSON.stringify(params.payload)}
+`;
 
 /**
  * Parameters for refinement prompt
