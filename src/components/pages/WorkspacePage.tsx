@@ -148,7 +148,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   const [forceVerticalLayout, setForceVerticalLayout] = useState(false);
 
   // Thresholds for layout switching
-  const MIN_HEIGHT_FOR_TWO_COLUMN = 800; // Minimum height to use two-column layout
+  const MIN_HEIGHT_FOR_TWO_COLUMN = 700; // Minimum height to use two-column layout
   const MIN_WIDTH_FOR_TWO_COLUMN = 768; // Matches md: breakpoint
   const COMPACT_HEIGHT_THRESHOLD = 600; // For auto-collapsing sections
 
@@ -242,7 +242,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
           onShowSettings={onShowSettings}
         />
         <div
-          className={`flex-1 flex flex-col gap-3 sm:gap-6 ${forceVerticalLayout ? '' : 'md:grid md:grid-cols-12 md:min-h-0'}`}
+          className={`flex-1 flex flex-col gap-3 sm:gap-6 workspace-grid ${forceVerticalLayout ? '' : 'md:grid md:grid-cols-12 md:min-h-0'}`}
         >
           {/* Mobile/Compact: Collapsible Sidebar Toggle */}
           <div className={forceVerticalLayout ? '' : 'md:hidden'}>
@@ -270,7 +270,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
           {/* Sidebar: Hidden on mobile/compact when collapsed */}
           <div
             ref={sidebarRef}
-            className={`${sidebarCollapsed && forceVerticalLayout ? 'hidden' : sidebarCollapsed ? 'hidden' : 'block'} ${forceVerticalLayout ? '' : 'md:block md:col-span-4 lg:col-span-3 md:h-full md:min-h-0'} max-h-[60vh] ${forceVerticalLayout ? '' : 'md:max-h-none'} h-auto overflow-y-auto custom-scrollbar space-y-2 sm:space-y-3`}
+            className={`workspace-sidebar ${sidebarCollapsed && forceVerticalLayout ? 'hidden' : sidebarCollapsed ? 'hidden' : 'block'} ${forceVerticalLayout ? '' : 'md:block md:col-span-4 lg:col-span-3 md:h-full md:min-h-0'} max-h-[60vh] ${forceVerticalLayout ? '' : 'md:max-h-none'} h-auto overflow-y-auto custom-scrollbar space-y-2 sm:space-y-3`}
           >
             {/* Desktop Spacer for Alignment */}
             <div
@@ -279,7 +279,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
 
             <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-3 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-semibold text-slate-300">项目文件</h3>
+                <h3 className="fluid-heading font-semibold text-slate-300">项目文件</h3>
               </div>
               {file ? (
                 <FileUploader
@@ -319,7 +319,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
               {activeTab === 'import' && (
                 <div className="pt-2 border-t border-slate-800">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xs font-semibold text-slate-400">字幕文件</h3>
+                    <h3 className="fluid-heading font-semibold text-slate-400">字幕文件</h3>
                     {subtitles.length > 0 && (
                       <span className="text-[10px] text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">
                         {subtitles.length} 行
@@ -350,7 +350,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                       uploadTitle=""
                     />
                   )}
-                  <div className="mt-1.5 text-[11px] text-amber-300 bg-amber-500/10 px-2 py-1.5 rounded border border-amber-500/30">
+                  <div className="mt-1.5 fluid-small text-amber-300 bg-amber-500/10 px-2 py-1.5 rounded border border-amber-500/30">
                     <span className="font-medium">💡 提示：</span>
                     仅完全支持本程序生成的字幕格式
                   </div>
@@ -362,7 +362,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                   onClick={() => setSettingsExpanded(!settingsExpanded)}
                   className="w-full flex items-center justify-between px-2.5 py-2 text-xs text-slate-400 hover:bg-slate-800/50 transition-colors"
                 >
-                  <span className="flex items-center font-medium text-slate-300">
+                  <span className="flex items-center fluid-heading font-medium text-slate-300">
                     <Clapperboard className="w-3 h-3 mr-2" /> 项目设置
                   </span>
                   {settingsExpanded ? (
@@ -462,7 +462,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                     onClick={() => setExportExpanded(!exportExpanded)}
                     className="w-full flex items-center justify-between p-3 hover:bg-slate-800/50 transition-colors"
                   >
-                    <h3 className="text-sm font-semibold text-white flex items-center">
+                    <h3 className="fluid-heading font-semibold text-white flex items-center">
                       <Download className="w-4 h-4 mr-2 text-emerald-400" /> 导出
                     </h3>
                     {exportExpanded ? (

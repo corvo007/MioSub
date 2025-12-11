@@ -15,6 +15,7 @@ import {
   X,
   Cpu,
   Zap,
+  Loader2,
 } from 'lucide-react';
 import { SimpleConfirmationModal } from '../modals/SimpleConfirmationModal';
 import { generateAssContent } from '../../services/subtitle/generator';
@@ -79,13 +80,29 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
   const [hwAccelEnabled, setHwAccelEnabled] = useState(true);
   const [hwAccelInfo, setHwAccelInfo] = useState<HardwareAccelInfo | null>(null);
 
-  // Fetch hardware acceleration info on mount
+  // Fetch hardware acceleration info on mount (with localStorage cache)
   useEffect(() => {
     const fetchHwAccelInfo = async () => {
+      // Check sessionStorage cache first (cleared on app restart)
+      const cached = sessionStorage.getItem('hwAccelInfo');
+      if (cached) {
+        try {
+          const info = JSON.parse(cached) as HardwareAccelInfo;
+          setHwAccelInfo(info);
+          console.log('[CompressionPage] Using cached hardware acceleration info:', info);
+          return;
+        } catch {
+          sessionStorage.removeItem('hwAccelInfo');
+        }
+      }
+
+      // Fetch from backend if not cached
       if (window.electronAPI?.compression?.getHwAccelInfo) {
         try {
           const info = await window.electronAPI.compression.getHwAccelInfo();
           setHwAccelInfo(info);
+          // Cache to sessionStorage
+          sessionStorage.setItem('hwAccelInfo', JSON.stringify(info));
           console.log('[CompressionPage] Hardware acceleration info:', info);
         } catch (error) {
           console.error('[CompressionPage] Failed to get hardware acceleration info:', error);
@@ -388,42 +405,71 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                 <label className="w-32 text-sm font-medium text-slate-400 shrink-0">硬件加速</label>
                 <div className="flex-1 space-y-2">
                   <button
-                    onClick={() => setHwAccelEnabled(!hwAccelEnabled)}
+                    onClick={() => hwAccelInfo?.available && setHwAccelEnabled(!hwAccelEnabled)}
+                    disabled={!hwAccelInfo || !hwAccelInfo.available}
                     className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
-                      hwAccelEnabled
-                        ? 'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20'
-                        : 'bg-slate-800 border-slate-700 hover:bg-slate-700'
+                      !hwAccelInfo
+                        ? 'bg-slate-800/50 border-slate-700/50 cursor-wait opacity-70'
+                        : !hwAccelInfo.available
+                          ? 'bg-slate-800/50 border-slate-700/50 cursor-not-allowed opacity-60'
+                          : hwAccelEnabled
+                            ? 'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20'
+                            : 'bg-slate-800 border-slate-700 hover:bg-slate-700'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      {hwAccelEnabled ? (
+                      {!hwAccelInfo ? (
+                        <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
+                      ) : !hwAccelInfo.available ? (
+                        <Cpu className="w-5 h-5 text-slate-500" />
+                      ) : hwAccelEnabled ? (
                         <Zap className="w-5 h-5 text-emerald-400" />
                       ) : (
                         <Cpu className="w-5 h-5 text-slate-400" />
                       )}
                       <div className="text-left">
                         <div
-                          className={`font-medium ${hwAccelEnabled ? 'text-emerald-300' : 'text-slate-300'}`}
+                          className={`font-medium ${
+                            !hwAccelInfo
+                              ? 'text-slate-400'
+                              : !hwAccelInfo.available
+                                ? 'text-slate-500'
+                                : hwAccelEnabled
+                                  ? 'text-emerald-300'
+                                  : 'text-slate-300'
+                          }`}
                         >
-                          {hwAccelEnabled ? 'GPU 加速已开启' : 'CPU 模式'}
+                          {!hwAccelInfo
+                            ? '正在检测...'
+                            : !hwAccelInfo.available
+                              ? '硬件加速不可用'
+                              : hwAccelEnabled
+                                ? 'GPU 加速已开启'
+                                : 'CPU 模式'}
                         </div>
                         <div className="text-xs text-slate-500">
-                          {hwAccelEnabled
-                            ? hwAccelInfo?.available
-                              ? `将使用 ${options.encoder === 'libx264' ? hwAccelInfo.preferredH264 : hwAccelInfo.preferredH265}`
-                              : '未检测到 GPU 编码器，将使用 CPU'
-                            : '强制使用 CPU 编码'}
+                          {!hwAccelInfo
+                            ? '正在检测硬件加速支持情况'
+                            : !hwAccelInfo.available
+                              ? '未检测到可以使用硬件加速的 GPU'
+                              : hwAccelEnabled
+                                ? `将使用 ${options.encoder === 'libx264' ? hwAccelInfo.preferredH264 : hwAccelInfo.preferredH265}`
+                                : '强制使用 CPU 编码'}
                         </div>
                       </div>
                     </div>
                     <div
                       className={`w-10 h-5 rounded-full relative transition-colors ${
-                        hwAccelEnabled ? 'bg-emerald-500' : 'bg-slate-600'
+                        !hwAccelInfo || !hwAccelInfo.available
+                          ? 'bg-slate-700'
+                          : hwAccelEnabled
+                            ? 'bg-emerald-500'
+                            : 'bg-slate-600'
                       }`}
                     >
                       <div
                         className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-md transition-all ${
-                          hwAccelEnabled ? 'left-5' : 'left-0.5'
+                          hwAccelEnabled && hwAccelInfo?.available ? 'left-5' : 'left-0.5'
                         }`}
                       />
                     </div>
@@ -501,7 +547,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                         value: 'original',
                         label: (
                           <div>
-                            <div className="font-medium text-slate-200">原样 (Original)</div>
+                            <div className="font-medium text-slate-200">原始分辨率</div>
                             <div className="text-xs text-slate-500">保持原始分辨率</div>
                           </div>
                         ),
@@ -537,7 +583,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                         value: 'custom',
                         label: (
                           <div>
-                            <div className="font-medium text-slate-200">自定义 (Custom)</div>
+                            <div className="font-medium text-slate-200">自定义</div>
                             <div className="text-xs text-slate-500">手动输入宽高</div>
                           </div>
                         ),
@@ -588,7 +634,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                         value: 'none',
                         label: (
                           <div>
-                            <div className="font-medium text-slate-200">无 (None)</div>
+                            <div className="font-medium text-slate-200">无</div>
                             <div className="text-xs text-slate-500">不内嵌字幕</div>
                           </div>
                         ),
@@ -597,7 +643,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                         value: 'file',
                         label: (
                           <div>
-                            <div className="font-medium text-slate-200">本地文件 (Local File)</div>
+                            <div className="font-medium text-slate-200">本地文件</div>
                             <div className="text-xs text-slate-500">
                               选择本地 .ass 或 .srt 字幕文件
                             </div>
@@ -609,7 +655,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                         disabled: !workspaceSubtitles || workspaceSubtitles.length === 0,
                         label: (
                           <div>
-                            <div className="font-medium text-slate-200">当前工作区 (Workspace)</div>
+                            <div className="font-medium text-slate-200">当前工作区</div>
                             <div className="text-xs text-slate-500">
                               {!workspaceSubtitles || workspaceSubtitles.length === 0
                                 ? '当前工作区无字幕'

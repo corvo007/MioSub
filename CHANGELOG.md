@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.4] - 2025-12-11
+
+### Features
+
+- **HiDPI Support**: Added optimizations for high pixel density screens (Retina/4K), including compact spacing and refined layout.
+- **Fluid Typography**: Implemented viewport-aware font scaling for better readability across different screen sizes.
+- **Prompt Engineering**: Improved translation prompts with "Visual Balance" checks and better filler word removal.
+- **Hardware Acceleration**: Enhanced GPU encoder detection by verifying encoding capability with test frames.
+
 ## [2.8.3] - 2025-12-11
 
 ### Features

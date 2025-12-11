@@ -134,17 +134,30 @@ export class VideoCompressorService {
     try {
       // Get the fixed FFmpeg path
       const ffmpegBinary = ffmpegPath ? fixPathForAsar(ffmpegPath) : 'ffmpeg';
-      const output = execSync(`"${ffmpegBinary}" -encoders 2>&1`, {
-        encoding: 'utf-8',
-        timeout: 10000,
-        windowsHide: true,
-      });
 
+      // For each encoder, actually TEST if it works by trying to encode 1 frame
+      // This is more reliable than just checking if FFmpeg lists the encoder
       for (const encoder of encodersToCheck) {
-        // Check if encoder is listed in the output
-        if (output.includes(encoder)) {
+        try {
+          // Use lavfi color source to generate 1 test frame, encode it with the GPU encoder
+          // Use 1280x720 for maximum compatibility with all encoder minimum requirements
+          // Output to null (NUL on Windows, /dev/null on Unix)
+          const nullDevice = process.platform === 'win32' ? 'NUL' : '/dev/null';
+          execSync(
+            `"${ffmpegBinary}" -f lavfi -i color=black:s=1280x720:d=0.1 -c:v ${encoder} -frames:v 1 -f null ${nullDevice}`,
+            {
+              encoding: 'utf-8',
+              timeout: 10000, // 10s timeout for GPU initialization
+              windowsHide: true,
+              stdio: ['pipe', 'pipe', 'pipe'], // Suppress all output
+            }
+          );
+          // If we get here without exception, the encoder works!
           encoderStatus[encoder] = true;
-          console.log(`[VideoCompressor] Found GPU encoder: ${encoder}`);
+          console.log(`[VideoCompressor] GPU encoder available: ${encoder}`);
+        } catch {
+          // Encoder failed - not available on this system
+          console.log(`[VideoCompressor] GPU encoder not available: ${encoder}`);
         }
       }
     } catch (error) {

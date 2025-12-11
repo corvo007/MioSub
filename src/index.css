@@ -104,3 +104,72 @@ body {
   -moz-appearance: textfield;
   appearance: none;
 }
+
+/* ========================================
+   High DPI Screen Optimizations
+   For screens with 2x+ pixel density (Retina, HiDPI)
+   ======================================== */
+
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  /* Compact spacing for high DPI screens */
+  .hidpi-compact {
+    --spacing-multiplier: 0.85;
+  }
+
+  /* Reduce sidebar padding on high DPI */
+  .workspace-sidebar {
+    padding: 0.625rem; /* 10px instead of 12px */
+  }
+
+  /* Slightly smaller gaps */
+  .workspace-grid {
+    gap: 0.75rem; /* 12px instead of 16px */
+  }
+
+  /* Compact scrollbar for high DPI */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+}
+
+/* ========================================
+   Fluid Typography
+   Text scales smoothly between min and max sizes
+   ======================================== */
+
+/* Page titles - scales from 18px to 24px based on viewport */
+.fluid-title {
+  font-size: clamp(1.125rem, 1.5vw + 0.75rem, 1.5rem);
+}
+
+/* Section headers - scales from 12px to 14px */
+.fluid-heading {
+  font-size: clamp(0.75rem, 0.5vw + 0.625rem, 0.875rem);
+}
+
+/* Body text - scales from 12px to 14px */
+.fluid-body {
+  font-size: clamp(0.75rem, 0.25vw + 0.6875rem, 0.875rem);
+}
+
+/* Small text - scales from 10px to 12px */
+.fluid-small {
+  font-size: clamp(0.625rem, 0.25vw + 0.5625rem, 0.75rem);
+}
+
+/* ========================================
+   Viewport-aware Height Utilities
+   Uses dvh for accurate mobile viewport height
+   ======================================== */
+
+.h-screen-safe {
+  height: 100dvh;
+}
+
+.min-h-screen-safe {
+  min-height: 100dvh;
+}
+
+.max-h-screen-safe {
+  max-height: 100dvh;
+}
