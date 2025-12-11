@@ -438,8 +438,8 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                 onClick={onToggleConservativeMode}
                 title={
                   conservativeBatchMode
-                    ? '保守模式：仅微调时间轴，不拆分/合并'
-                    : '普通模式：AI可拆分/合并长段落'
+                    ? '保守模式：仅处理有comment的行 + 微调时间轴，不拆分/合并/添加'
+                    : '普通模式：AI可拆分/合并长段落，添加遗漏内容'
                 }
                 className={`flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md text-xs transition-all border ${
                   conservativeBatchMode

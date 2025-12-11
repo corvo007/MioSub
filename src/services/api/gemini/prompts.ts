@@ -42,7 +42,7 @@ const TEMPORAL_THRESHOLDS = {
 };
 
 /** Model name for display in prompts */
-const SENIOR_MODEL_NAME = 'Gemini 2.5 Pro';
+const SENIOR_MODEL_NAME = 'Gemini 3 Pro Thinking';
 
 // --- Helper Functions ---
 
@@ -798,14 +798,17 @@ export interface FixTimestampsPromptParams {
 export const getFixTimestampsPrompt = (params: FixTimestampsPromptParams): string => {
   const conservativeRules = params.conservativeMode
     ? `
-    **[CONSERVATIVE MODE - MINIMAL CHANGES]**
-    → DO NOT split or merge any segments
-    → DO NOT add new subtitle entries (even for missed speech - note in "comment" field instead)
-    → ONLY fine-tune timestamps that are clearly misaligned (>0.5 second off)
+    **[CONSERVATIVE MODE - ONLY PROCESS COMMENTED LINES]**
+    → ONLY fix subtitles that have a "comment" field (user-marked for attention)
+    → Leave ALL other lines COMPLETELY UNCHANGED (do not touch timestamps, text, or anything)
+    → DO NOT split, merge, or add any segments
     → Preserve original segment count and structure exactly
     → Output must have EXACTLY the same number of items as input
     `
     : `
+    [P1.5 - PRIORITY] Comment Lines First
+    → If a line has a "comment" field, prioritize fixing it according to the user's instruction
+    
     [P2 - MANDATORY] Segment Splitting for Readability
     → ${getSegmentSplittingRule('translation')}
     → When splitting: distribute timing based on actual audio speech
@@ -815,9 +818,9 @@ export const getFixTimestampsPrompt = (params: FixTimestampsPromptParams): strin
 
   const contentRules = params.conservativeMode
     ? `
-    [P3 - CONTENT] Audio Verification (Limited)
-    → If you hear speech NOT in the text → Note in "comment" field (do NOT add entries)
-    → ${getFillerWordsRule()} from 'text_original'
+    [P3 - CONTENT] Focus on Commented Lines Only
+    → Apply the user's requested fix from the "comment" field
+    → ${getFillerWordsRule()} from 'text_original' (commented lines only)
     `
     : `
     [P3 - CONTENT] Audio Verification
@@ -847,9 +850,9 @@ export const getFixTimestampsPrompt = (params: FixTimestampsPromptParams): strin
     → Translation is handled by Proofread function, not here
     
     FINAL VERIFICATION:
-    ✓ All timestamps aligned to audio
-    ${params.conservativeMode ? '✓ Segment count unchanged from input' : '✓ Long segments split appropriately'}
-    ✓ No missed speech
+    ✓ ${params.conservativeMode ? 'ONLY commented lines were modified' : 'All timestamps aligned to audio'}
+    ${params.conservativeMode ? '✓ All non-commented lines unchanged' : '✓ Long segments split appropriately'}
+    ✓ Segment count ${params.conservativeMode ? 'unchanged from input' : 'appropriate'}
     ✓ 'text_translated' of existing entries completely unchanged
 
     Input JSON (${params.payload.length} items):
