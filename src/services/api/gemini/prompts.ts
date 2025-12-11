@@ -2,7 +2,96 @@ import { GlossaryItem } from '@/types/glossary';
 import { SpeakerProfile } from './speakerProfile';
 import { formatTime } from '@/services/subtitle/time';
 
+// --- Constants ---
+
+/** Maximum segment duration before splitting (seconds) */
+const MAX_SEGMENT_DURATION_SECONDS = 4;
+
+/** Maximum character count before splitting */
+const MAX_SEGMENT_CHARACTERS = 25;
+
+/** Filler words to remove across all languages */
+const FILLER_WORDS = [
+  // English
+  'uh',
+  'um',
+  'ah',
+  'er',
+  'hmm',
+  // Japanese
+  'eto',
+  'ano',
+  'えーと',
+  'あの',
+  // Chinese
+  '呃',
+  '嗯',
+  '那个',
+  '就是',
+];
+
+/** Filler words formatted for prompt inclusion */
+const FILLER_WORDS_PROMPT = FILLER_WORDS.join(', ');
+
+/** Temporal proximity thresholds for translation distribution (seconds) */
+const TEMPORAL_THRESHOLDS = {
+  /** Lines closer than this can share content */
+  CLOSE_SECONDS: 3,
+  /** Lines farther than this must be isolated */
+  FAR_SECONDS: 5,
+};
+
+/** Model name for display in prompts */
+const SENIOR_MODEL_NAME = 'Gemini 2.5 Pro';
+
 // --- Helper Functions ---
+
+/**
+ * Get standard segment splitting rule text for prompts
+ */
+function getSegmentSplittingRule(
+  context: 'transcription' | 'translation' = 'transcription'
+): string {
+  const charType = context === 'translation' ? 'Chinese characters' : 'characters';
+  return `SPLIT any segment longer than ${MAX_SEGMENT_DURATION_SECONDS} seconds OR >${MAX_SEGMENT_CHARACTERS} ${charType}`;
+}
+
+/**
+ * Get filler words removal rule text
+ */
+function getFillerWordsRule(): string {
+  return `Remove filler words (${FILLER_WORDS_PROMPT})`;
+}
+
+/**
+ * Get temporal proximity rule text for translation distribution
+ */
+function getTemporalProximityRule(): string {
+  return `→ **TEMPORAL PROXIMITY RULE**: 
+       - If adjacent lines are **< ${TEMPORAL_THRESHOLDS.CLOSE_SECONDS} seconds apart**: You may freely distribute the translation content across these lines to achieve **visually balanced line lengths**.
+       - If adjacent lines are **${TEMPORAL_THRESHOLDS.CLOSE_SECONDS}-${TEMPORAL_THRESHOLDS.FAR_SECONDS} seconds apart**: Use your judgment. Prefer distribution if they form a single sentence, otherwise keep content isolated.
+       - If adjacent lines are **> ${TEMPORAL_THRESHOLDS.FAR_SECONDS} seconds apart**: Keep the translation content **strictly within each line's own segment**.`;
+}
+
+/**
+ * Format glossary for prompt inclusion
+ */
+function formatGlossaryForPrompt(
+  glossary: GlossaryItem[] | undefined,
+  mode: 'refinement' | 'translation' | 'proofread' | 'fix_timestamps'
+): string {
+  if (!glossary || glossary.length === 0) return '';
+
+  if (mode === 'refinement') {
+    const terms = glossary.map((g) => `- ${g.term}${g.notes ? ` (${g.notes})` : ''}`).join('\n');
+    return `\n\nKEY TERMINOLOGY (Listen for these terms and transcribe them accurately in the ORIGINAL LANGUAGE):\n${terms}`;
+  }
+
+  const terms = glossary
+    .map((g) => `- ${g.term}: ${g.translation} ${g.notes ? `(${g.notes})` : ''}`)
+    .join('\n');
+  return `\n\nTERMINOLOGY GLOSSARY (STRICTLY FOLLOW):\n${terms}`;
+}
 
 /**
  * Get genre-specific guidance for prompts
@@ -42,16 +131,7 @@ export const getSystemInstructionWithDiarization = (
   }
 
   // For fix_timestamps with diarization, build custom prompt
-  // Get glossary text
-  // Get glossary text
-  let glossaryText = '';
-  if (glossary && glossary.length > 0) {
-    if (mode === 'refinement') {
-      glossaryText = `\n\nKEY TERMINOLOGY (Listen for these terms and transcribe them accurately in the ORIGINAL LANGUAGE):\n${glossary.map((g) => `- ${g.term}${g.notes ? ` (${g.notes})` : ''}`).join('\n')}`;
-    } else {
-      glossaryText = `\n\nTERMINOLOGY GLOSSARY (STRICTLY FOLLOW):\n${glossary.map((g) => `- ${g.term}: ${g.translation} ${g.notes ? `(${g.notes})` : ''}`).join('\n')}`;
-    }
-  }
+  const glossaryText = formatGlossaryForPrompt(glossary, mode);
 
   let diarizationSection = '';
   if (enableDiarization) {
@@ -60,7 +140,7 @@ export const getSystemInstructionWithDiarization = (
       diarizationSection = `
 [P1.5 - SPEAKER IDENTIFICATION] Diarization (ENABLED - WITH PROFILE DATABASE)
 
-**IMPORTANT**: A senior AI (Gemini 3.0 Pro) has pre-analyzed this audio and identified ${speakerProfiles.length} speakers.
+**IMPORTANT**: A senior AI (${SENIOR_MODEL_NAME}) has pre-analyzed this audio and identified ${speakerProfiles.length} speakers.
 Your task is to MATCH voices to these profiles.
 
 **KNOWN SPEAKER PROFILES**:
@@ -177,8 +257,8 @@ Before returning, confirm:
     2. **CHECK FOR MISSED HEARING**: If there is speech in the audio that is MISSING from the transcription, you MUST ADD IT.
     3. FIX TIMESTAMPS: Ensure start/end times match the audio speech perfectly. **Timestamps MUST be strictly within the provided audio duration.**
     4. FIX TRANSCRIPTION: Correct mishearings, typos, and proper nouns (names, terminology).
-    5. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (uh, um, ah, eto, ano, 呃, 那个).
-    6. SPLIT LINES: STRICT RULE. If a segment is longer than 4 seconds or > 22 characters, YOU MUST SPLIT IT into shorter, natural segments.
+    5. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (${FILLER_WORDS_PROMPT}).
+    6. SPLIT LINES: STRICT RULE. ${getSegmentSplittingRule()}, YOU MUST SPLIT IT into shorter, natural segments.
     7. **LANGUAGE RULE**: Keep the transcription in the ORIGINAL LANGUAGE spoken in the audio. DO NOT translate to any other language.
     8. FORMAT: Return a valid JSON array.
 
@@ -207,13 +287,13 @@ TASK RULES (Priority Order):
 ${diarizationSection}
 
 [P2 - READABILITY] Segment Splitting
-→ SPLIT any segment longer than 4 seconds OR >25 Chinese characters
+→ ${getSegmentSplittingRule('translation')}
 → When splitting: distribute timing proportionally based on audio
 → Ensure natural speech breaks between split segments
 
 [P3 - CONTENT ACCURACY] Audio Content Verification
 → If you hear speech NOT in subtitles → ADD new subtitle entries
-→ Remove filler words from 'text_original' (uh, um, ah, etc.)
+→ ${getFillerWordsRule()} from 'text_original'
 
 [P4 - ABSOLUTE RULE] Translation Preservation
 → DO NOT modify 'text_translated' field under ANY circumstances
@@ -246,17 +326,8 @@ export const getSystemInstruction = (
   glossary?: GlossaryItem[],
   speakerProfiles?: SpeakerProfile[]
 ): string => {
-  // Helper to format glossary for different modes
-  let glossaryText = '';
-  if (glossary && glossary.length > 0) {
-    if (mode === 'refinement') {
-      // For refinement: Only show original terms (no translations) to prevent language mixing
-      glossaryText = `\n\nKEY TERMINOLOGY (Listen for these terms and transcribe them accurately in the ORIGINAL LANGUAGE):\n${glossary.map((g) => `- ${g.term}${g.notes ? ` (${g.notes})` : ''}`).join('\n')}`;
-    } else {
-      // For translation/proofread: Show full glossary with translations
-      glossaryText = `\n\nTERMINOLOGY GLOSSARY (STRICTLY FOLLOW):\n${glossary.map((g) => `- ${g.term}: ${g.translation} ${g.notes ? `(${g.notes})` : ''}`).join('\n')}`;
-    }
-  }
+  // Use helper function to format glossary
+  const glossaryText = formatGlossaryForPrompt(glossary, mode);
 
   // If custom prompt is provided, usually we prepend/mix it, but for simplicity if a user overrides "Proofreading Prompt", we use it for "Deep Proofread" mode.
   if (mode === 'proofread' && customPrompt && customPrompt.trim().length > 0) {
@@ -277,8 +348,8 @@ export const getSystemInstruction = (
     2. **CHECK FOR MISSED HEARING**: If there is speech in the audio that is MISSING from the transcription, you MUST ADD IT.
     3. FIX TIMESTAMPS: Ensure start/end times match the audio speech perfectly. **Timestamps MUST be strictly within the provided audio duration.**
     4. FIX TRANSCRIPTION: Correct mishearings, typos, and proper nouns (names, terminology).
-    5. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (uh, um, ah, eto, ano, 呃, 那个).
-    6. SPLIT LINES: STRICT RULE. If a segment is longer than 4 seconds or > 22 characters, YOU MUST SPLIT IT into shorter, natural segments.
+    5. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (${FILLER_WORDS_PROMPT}).
+    6. SPLIT LINES: STRICT RULE. ${getSegmentSplittingRule()}, YOU MUST SPLIT IT into shorter, natural segments.
     7. **LANGUAGE RULE**: Keep the transcription in the ORIGINAL LANGUAGE spoken in the audio. DO NOT translate to any other language.
     8. FORMAT: Return a valid JSON array.
     9. FINAL CHECK: Before outputting, strictly verify that ALL previous rules (1-8) have been perfectly followed. Correct any remaining errors.
@@ -408,13 +479,13 @@ Speaker (formal): "すごいですね" → "真是令人印象深刻。"
       → Fix timing drift and bunched-up segments
       
       [P2 - READABILITY] Segment Splitting
-      → SPLIT any segment longer than 4 seconds OR >25 Chinese characters
+      → ${getSegmentSplittingRule('translation')}
       → When splitting: distribute timing proportionally based on audio
       → Ensure natural speech breaks between split segments
       
       [P3 - CONTENT ACCURACY] Audio Content Verification
       → If you hear speech NOT in subtitles → ADD new subtitle entries
-      → Remove filler words from 'text_original' (uh, um, 呃, 嗯, etc.)
+      → ${getFillerWordsRule()} from 'text_original'
       
       [P4 - ABSOLUTE RULE] Translation Preservation
       → DO NOT modify 'text_translated' field under ANY circumstances
@@ -438,7 +509,7 @@ Speaker (formal): "すごいですね" → "真是令人印象深刻。"
       Context: ${genre}`;
   }
 
-  return `You are an expert Subtitle Translation Quality Specialist using Gemini 3 Pro.
+  return `You are an expert Subtitle Translation Quality Specialist.
     Your PRIMARY GOAL is to perfect the Chinese translation quality for ${genre} content.
     
     TASK RULES (Strict Priority):
@@ -604,6 +675,13 @@ export const getSpeakerProfileExtractionPrompt = (genre: string) => `
 - Include background speakers if they speak ≥3 sentences
 - Describe accents/tone in English for consistency
 
+**CONFIDENCE SCORING GUIDE**:
+- 0.9-1.0: Extremely distinct voice with unique characteristics, name mentioned in dialogue
+- 0.7-0.89: Clearly distinguishable, consistent patterns observed across multiple segments
+- 0.5-0.69: Moderately distinguishable, some overlap with other speakers possible
+- 0.3-0.49: Low confidence, similar to other speakers or inconsistent patterns
+- 0.0-0.29: Very uncertain, might be same speaker as another profile
+
 **EXAMPLE OUTPUT**:
 \`\`\`json
 {
@@ -676,12 +754,12 @@ export const getTranslationBatchPrompt = (batchLength: number, payload: any[]): 
     
     [P1.5 - CONTEXT-AWARE DISTRIBUTION]
     → **MULTI-LINE CONTEXT**: Before translating each line, READ the previous and next 1-2 lines to understand the full context. This helps resolve ambiguous words, pronouns, and incomplete sentences.
-    → **SENTENCE CONTINUITY**: Look at "start" and "end" timestamps. If consecutive items are part of the SAME SENTENCE and are **< 3 seconds apart**, you may distribute translation content across them for **visual balance** (similar character counts per line).
-    → **TEMPORAL ISOLATION**: If items are **> 5 seconds apart**, keep translation content **strictly within each item**. Do NOT shift content between them.
+    → **SENTENCE CONTINUITY**: Look at "start" and "end" timestamps. If consecutive items are part of the SAME SENTENCE and are **< ${TEMPORAL_THRESHOLDS.CLOSE_SECONDS} seconds apart**, you may distribute translation content across them for **visual balance** (similar character counts per line).
+    → **TEMPORAL ISOLATION**: If items are **> ${TEMPORAL_THRESHOLDS.FAR_SECONDS} seconds apart**, keep translation content **strictly within each item**. Do NOT shift content between them.
     → **NATURAL BREAKS**: When distributing, split at natural phrase boundaries (after clauses, before conjunctions).
     
     [P2 - QUALITY] Translation Excellence
-    → Remove filler words and stuttering (uh, um, 呃, 嗯, etc.)
+    → ${getFillerWordsRule()} and stuttering
     → Produce fluent, natural Simplified Chinese
     → Use terminology from system instruction if provided
     → Maintain appropriate tone and style
@@ -722,14 +800,14 @@ export const getFixTimestampsPrompt = (params: FixTimestampsPromptParams): strin
     ? `
     **[CONSERVATIVE MODE - MINIMAL CHANGES]**
     → DO NOT split or merge any segments
-    → DO NOT add new subtitle entries
+    → DO NOT add new subtitle entries (even for missed speech - note in "comment" field instead)
     → ONLY fine-tune timestamps that are clearly misaligned (>0.5 second off)
     → Preserve original segment count and structure exactly
     → Output must have EXACTLY the same number of items as input
     `
     : `
     [P2 - MANDATORY] Segment Splitting for Readability
-    → SPLIT any segment >4 seconds OR >25 Chinese characters
+    → ${getSegmentSplittingRule('translation')}
     → When splitting: distribute timing based on actual audio speech
     → Ensure splits occur at natural speech breaks
     → For NEW/SPLIT entries: provide appropriate translation in Simplified Chinese
@@ -738,13 +816,13 @@ export const getFixTimestampsPrompt = (params: FixTimestampsPromptParams): strin
   const contentRules = params.conservativeMode
     ? `
     [P3 - CONTENT] Audio Verification (Limited)
-    → If you hear speech NOT in the text → ADD new subtitle entries with translation
-    → Remove filler words from 'text_original' (uh, um, 呃, 嗯, etc.)
+    → If you hear speech NOT in the text → Note in "comment" field (do NOT add entries)
+    → ${getFillerWordsRule()} from 'text_original'
     `
     : `
     [P3 - CONTENT] Audio Verification
     → If you hear speech NOT in the text → ADD new subtitle entries with translation
-    → Remove filler words from 'text_original' (uh, um, 呃, 嗯, etc.)
+    → ${getFillerWordsRule()} from 'text_original'
     `;
 
   return `
@@ -814,6 +892,12 @@ export const getProofreadPrompt = (params: ProofreadPromptParams): string => `
     → Listen to audio carefully
     → If you hear speech NOT in subtitles → ADD new subtitle entries
     → Verify 'text_original' matches what was actually said
+
+    [P2.5 - CONTEXT-AWARE DISTRIBUTION]
+    → **MULTI-LINE CONTEXT**: Before refining each line, READ the previous and next 1-2 lines to understand the full context.
+    → **SENTENCE CONTINUITY**: Check for sentences spanning multiple subtitles.
+    ${getTemporalProximityRule()}
+    → **NATURAL BREAKS**: Split at natural phrase boundaries.
     
     [P3 - ABSOLUTE] Timestamp Preservation
     → DO NOT modify timestamps of existing subtitles
@@ -864,12 +948,12 @@ export const getRefinementPrompt = (params: RefinementPromptParams): string => `
             ${params.glossaryInfo ? `→ Pay special attention to key terminology listed below` : ''}
 
             [P2 - READABILITY] Segment Splitting
-            → SPLIT any segment longer than 4 seconds OR >25 characters
+            → ${getSegmentSplittingRule()}
             → When splitting: distribute timing based on actual audio speech
             → Ensure splits occur at natural speech breaks
             
             [P3 - CLEANING] Remove Non-Speech Elements
-            → Remove filler words (uh, um, 呃, 嗯, etc.)
+            → ${getFillerWordsRule()}
             → Remove stuttering and false starts
             → Keep natural speech flow
 
@@ -880,7 +964,7 @@ export const getRefinementPrompt = (params: RefinementPromptParams): string => `
             ${params.enableDiarization ? `→ INCLUDE "speaker" field for every segment (e.g., "Speaker 1")` : ''}
 
             FINAL VERIFICATION:
-            ✓ Long segments (>4s or >25 chars) properly split
+            ✓ Long segments (>${MAX_SEGMENT_DURATION_SECONDS}s or >${MAX_SEGMENT_CHARACTERS} chars) properly split
             ✓ Timestamps are relative to chunk start
             ✓ Terminology from glossary is used correctly
             ${params.glossaryInfo ? `✓ Checked against ${params.glossaryCount} glossary terms` : ''}
