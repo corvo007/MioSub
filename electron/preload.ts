@@ -84,6 +84,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('video:compress', inputPath, outputPath, options),
     cancel: () => ipcRenderer.invoke('video:cancel'),
     getInfo: (filePath: string) => ipcRenderer.invoke('video:get-info', filePath),
+    getHwAccelInfo: () => ipcRenderer.invoke('video:hw-accel-info'),
     onProgress: (callback: (progress: any) => void) => {
       const subscription = (_event: any, progress: any) => callback(progress);
       ipcRenderer.on('video:compression-progress', subscription);

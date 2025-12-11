@@ -235,24 +235,36 @@ export const parseAss = (content: string): SubtitleItem[] => {
       }
 
       // Parse specific generator tags:
-      // Format: {\rSecondary}ORIGINAL\N{\r}TRANSLATED
+      // Old format: {\rSecondary}ORIGINAL\N{\r}TRANSLATED
+      // New format: {\rSecondary}ORIGINAL\N{\rDefault}TRANSLATED (or {\rSpeaker_XXX})
       // Or just TRANSLATED (if target_only)
 
       let original = '';
       let translated = '';
 
-      // Check for our specific bilingual signature
-      if (rawText.includes('{\\rSecondary}') && rawText.includes('{\\r}')) {
-        // Extract Original
-        const secondaryMatch = rawText.match(/{\\rSecondary}(.*?)(?:\\N)?{\\r}/);
+      // Check for our specific bilingual signature (supports both old and new formats)
+      // Old: {\r} (implicit reset), New: {\rStyleName} (explicit style)
+      const hasSecondary = rawText.includes('{\\rSecondary}');
+      // Match {\r} or {\rSomething} - the reset tag that marks the start of translated text
+      const resetTagMatch = rawText.match(/{\\r([^}]*)}/g);
+      const hasResetAfterSecondary = resetTagMatch && resetTagMatch.length >= 2;
+
+      if (hasSecondary && hasResetAfterSecondary) {
+        // Extract Original: everything between {\rSecondary} and the next {\r...} tag
+        const secondaryMatch = rawText.match(/{\\rSecondary}(.*?)(?:\\N)?{\\r/);
         if (secondaryMatch) {
           original = secondaryMatch[1];
         }
 
-        // Extract Translated (everything after {\r})
-        const mainMatch = rawText.split('{\\r}');
-        if (mainMatch.length > 1) {
-          translated = mainMatch[1];
+        // Extract Translated: everything after the second {\r...} tag
+        // Split by {\r and take the part after the second occurrence
+        const parts = rawText.split(/{\\r[^}]*}/);
+        if (parts.length > 2) {
+          // parts[0] = before {\rSecondary}, parts[1] = original text, parts[2] = translated text
+          translated = parts[2] || '';
+        } else if (parts.length > 1) {
+          // Fallback: try to get the last part
+          translated = parts[parts.length - 1] || '';
         }
       } else {
         // Fallback: Treat as Original

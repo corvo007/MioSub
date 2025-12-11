@@ -486,6 +486,28 @@ ipcMain.handle('video:cancel', async () => {
   return { success: cancelled };
 });
 
+// IPC Handler: Get Hardware Acceleration Info
+ipcMain.handle('video:hw-accel-info', async () => {
+  try {
+    return videoCompressorService.getHardwareAccelInfo();
+  } catch (error: any) {
+    console.error('[Main] Failed to get hardware acceleration info:', error);
+    return {
+      available: false,
+      encoders: {
+        h264_nvenc: false,
+        hevc_nvenc: false,
+        h264_qsv: false,
+        hevc_qsv: false,
+        h264_amf: false,
+        hevc_amf: false,
+      },
+      preferredH264: 'libx264',
+      preferredH265: 'libx265',
+    };
+  }
+});
+
 // IPC Handler: Show Item In Folder
 ipcMain.handle('shell:show-item-in-folder', async (_event, filePath: string) => {
   try {

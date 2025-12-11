@@ -181,6 +181,19 @@ export interface ElectronAPI {
     compress: (inputPath: string, outputPath: string, options: any) => Promise<string>;
     cancel: () => Promise<{ success: boolean }>;
     getInfo: (filePath: string) => Promise<any>;
+    getHwAccelInfo: () => Promise<{
+      available: boolean;
+      encoders: {
+        h264_nvenc: boolean;
+        hevc_nvenc: boolean;
+        h264_qsv: boolean;
+        hevc_qsv: boolean;
+        h264_amf: boolean;
+        hevc_amf: boolean;
+      };
+      preferredH264: string;
+      preferredH265: string;
+    }>;
     onProgress: (callback: (progress: any) => void) => () => void;
   };
 

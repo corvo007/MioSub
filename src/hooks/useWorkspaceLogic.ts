@@ -15,6 +15,7 @@ import { generateSrtContent, generateAssContent } from '@/services/subtitle/gene
 import { downloadFile } from '@/services/subtitle/downloader';
 import { logger } from '@/services/utils/logger';
 import { mergeGlossaryResults } from '@/services/glossary/merger';
+import { createGlossary } from '@/services/glossary/manager';
 import { generateSubtitles } from '@/services/api/gemini/subtitle';
 import { runBatchOperation } from '@/services/api/gemini/batch';
 import { retryGlossaryExtraction } from '@/services/api/gemini/glossary';
@@ -444,44 +445,54 @@ export const useWorkspaceLogic = ({
           logger.info('onGlossaryReady called with metadata:', metadata);
 
           if (settings.glossaryAutoConfirm && !metadata.hasFailures) {
-            const { unique } = mergeGlossaryResults(metadata.results);
+            const { unique, conflicts } = mergeGlossaryResults(metadata.results);
 
-            if (settings.activeGlossaryId && settings.glossaries) {
-              const activeG = settings.glossaries.find((g) => g.id === settings.activeGlossaryId);
-              const activeTerms = activeG?.terms || (activeG as any)?.items || [];
-              const existingTerms = new Set(activeTerms.map((g: any) => g.term.toLowerCase()));
-              const newTerms = unique.filter((t) => !existingTerms.has(t.term.toLowerCase()));
+            // For conflicts, auto-select the first new option (not the existing one)
+            const autoResolvedConflicts = conflicts.map((c) => {
+              // Find the first non-existing option
+              const newOption = c.options.find((opt) => !c.hasExisting || opt !== c.options[0]);
+              return newOption || c.options[0];
+            });
 
-              if (newTerms.length > 0) {
-                const updatedGlossaries = settings.glossaries.map((g) => {
-                  if (g.id === settings.activeGlossaryId) {
-                    const currentTerms = g.terms || (g as any).items || [];
-                    return { ...g, terms: [...currentTerms, ...newTerms] };
-                  }
-                  return g;
-                });
-                updateSetting('glossaries', updatedGlossaries);
-                logger.info(`Auto-added ${newTerms.length} terms to active glossary`);
-                const updatedActive = updatedGlossaries.find(
-                  (g) => g.id === settings.activeGlossaryId
-                );
-                return updatedActive?.terms || [];
-              }
-              return activeTerms;
-            } else {
-              // Fallback for legacy
-              const existingTerms = new Set(
-                settings.glossary?.map((g) => g.term.toLowerCase()) || []
-              );
-              const newTerms = unique.filter((t) => !existingTerms.has(t.term.toLowerCase()));
-              if (newTerms.length > 0) {
-                const updatedGlossary = [...(settings.glossary || []), ...newTerms];
-                updateSetting('glossary', updatedGlossary);
-                logger.info(`Auto-added ${newTerms.length} terms to glossary`);
-                return updatedGlossary;
-              }
-              return settings.glossary || [];
+            // Combine unique terms and auto-resolved conflicts
+            const allTerms = [...unique, ...autoResolvedConflicts];
+
+            // Ensure we have a glossaries array
+            const currentGlossaries = settings.glossaries || [];
+
+            // Find or create an active glossary
+            let targetGlossaryId = settings.activeGlossaryId;
+            let updatedGlossaries = [...currentGlossaries];
+
+            // If no active glossary, create a new one for auto-extracted terms
+            if (!targetGlossaryId || !currentGlossaries.find((g) => g.id === targetGlossaryId)) {
+              const newGlossary = createGlossary('自动提取术语');
+              newGlossary.terms = [];
+              updatedGlossaries = [...currentGlossaries, newGlossary];
+              targetGlossaryId = newGlossary.id;
+              logger.info('Auto-created new glossary for extracted terms');
             }
+
+            const activeG = updatedGlossaries.find((g) => g.id === targetGlossaryId);
+            const activeTerms = activeG?.terms || (activeG as any)?.items || [];
+            const existingTerms = new Set(activeTerms.map((g: any) => g.term.toLowerCase()));
+            const newTerms = allTerms.filter((t) => !existingTerms.has(t.term.toLowerCase()));
+
+            if (newTerms.length > 0 || updatedGlossaries !== currentGlossaries) {
+              const finalGlossaries = updatedGlossaries.map((g) => {
+                if (g.id === targetGlossaryId) {
+                  const currentTerms = g.terms || (g as any).items || [];
+                  return { ...g, terms: [...currentTerms, ...newTerms] };
+                }
+                return g;
+              });
+              updateSetting('glossaries', finalGlossaries);
+              updateSetting('activeGlossaryId', targetGlossaryId);
+              logger.info(`Auto-added ${newTerms.length} terms to glossary`);
+              const updatedActive = finalGlossaries.find((g) => g.id === targetGlossaryId);
+              return updatedActive?.terms || [];
+            }
+            return activeTerms;
           }
 
           // Manual confirmation required

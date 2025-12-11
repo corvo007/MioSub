@@ -1,5 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { CompressionOptions, CompressionProgress } from '../../services/compression/types';
+import {
+  CompressionOptions,
+  CompressionProgress,
+  HardwareAccelInfo,
+} from '../../services/compression/types';
 import {
   FileVideo,
   Settings,
@@ -9,6 +13,8 @@ import {
   FileText,
   AlertCircle,
   X,
+  Cpu,
+  Zap,
 } from 'lucide-react';
 import { SimpleConfirmationModal } from '../modals/SimpleConfirmationModal';
 import { generateAssContent } from '../../services/subtitle/generator';
@@ -48,9 +54,46 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
   const [outputPath, setOutputPath] = useState('');
   const [progress, setProgress] = useState<CompressionProgress | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
+  const [compressionStartTime, setCompressionStartTime] = useState<number | null>(null);
+  const [elapsedTime, setElapsedTime] = useState('00:00');
   const [showAutoLoadPrompt, setShowAutoLoadPrompt] = useState(false);
   const [showDownloadedVideoPrompt, setShowDownloadedVideoPrompt] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Update elapsed time every second during compression
+  useEffect(() => {
+    if (!compressionStartTime) {
+      setElapsedTime('00:00');
+      return;
+    }
+    const interval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - compressionStartTime) / 1000);
+      const mins = Math.floor(elapsed / 60);
+      const secs = elapsed % 60;
+      setElapsedTime(`${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [compressionStartTime]);
+
+  // Hardware acceleration state
+  const [hwAccelEnabled, setHwAccelEnabled] = useState(true);
+  const [hwAccelInfo, setHwAccelInfo] = useState<HardwareAccelInfo | null>(null);
+
+  // Fetch hardware acceleration info on mount
+  useEffect(() => {
+    const fetchHwAccelInfo = async () => {
+      if (window.electronAPI?.compression?.getHwAccelInfo) {
+        try {
+          const info = await window.electronAPI.compression.getHwAccelInfo();
+          setHwAccelInfo(info);
+          console.log('[CompressionPage] Hardware acceleration info:', info);
+        } catch (error) {
+          console.error('[CompressionPage] Failed to get hardware acceleration info:', error);
+        }
+      }
+    };
+    fetchHwAccelInfo();
+  }, []);
 
   // Check for workspace video on mount or update
   useEffect(() => {
@@ -340,6 +383,74 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                 </div>
               </div>
 
+              {/* Hardware Acceleration */}
+              <div className="flex flex-col md:flex-row md:items-center gap-4">
+                <label className="w-32 text-sm font-medium text-slate-400 shrink-0">硬件加速</label>
+                <div className="flex-1 space-y-2">
+                  <button
+                    onClick={() => setHwAccelEnabled(!hwAccelEnabled)}
+                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
+                      hwAccelEnabled
+                        ? 'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20'
+                        : 'bg-slate-800 border-slate-700 hover:bg-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {hwAccelEnabled ? (
+                        <Zap className="w-5 h-5 text-emerald-400" />
+                      ) : (
+                        <Cpu className="w-5 h-5 text-slate-400" />
+                      )}
+                      <div className="text-left">
+                        <div
+                          className={`font-medium ${hwAccelEnabled ? 'text-emerald-300' : 'text-slate-300'}`}
+                        >
+                          {hwAccelEnabled ? 'GPU 加速已开启' : 'CPU 模式'}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {hwAccelEnabled
+                            ? hwAccelInfo?.available
+                              ? `将使用 ${options.encoder === 'libx264' ? hwAccelInfo.preferredH264 : hwAccelInfo.preferredH265}`
+                              : '未检测到 GPU 编码器，将使用 CPU'
+                            : '强制使用 CPU 编码'}
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      className={`w-10 h-5 rounded-full relative transition-colors ${
+                        hwAccelEnabled ? 'bg-emerald-500' : 'bg-slate-600'
+                      }`}
+                    >
+                      <div
+                        className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-md transition-all ${
+                          hwAccelEnabled ? 'left-5' : 'left-0.5'
+                        }`}
+                      />
+                    </div>
+                  </button>
+                  {hwAccelInfo?.available && hwAccelEnabled && (
+                    <div className="text-xs text-slate-500 flex items-center gap-2 flex-wrap">
+                      <span>可用编码器:</span>
+                      {hwAccelInfo.encoders.h264_nvenc && (
+                        <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded">
+                          NVENC
+                        </span>
+                      )}
+                      {hwAccelInfo.encoders.h264_qsv && (
+                        <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">
+                          QSV
+                        </span>
+                      )}
+                      {hwAccelInfo.encoders.h264_amf && (
+                        <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded">
+                          AMF
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* CRF */}
               <div className="flex flex-col md:flex-row md:items-center gap-4">
                 <label className="w-32 text-sm font-medium text-slate-400 shrink-0">
@@ -591,6 +702,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                 }
 
                 setIsCompressing(true);
+                setCompressionStartTime(Date.now());
                 try {
                   let finalSubtitlePath = undefined;
 
@@ -627,13 +739,18 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                   await window.electronAPI.compression.compress(inputPath, outputPath, {
                     ...options,
                     subtitlePath: finalSubtitlePath,
+                    hwAccel: hwAccelEnabled ? 'auto' : 'off',
                   });
                   cleanup();
                   setShowSuccessModal(true);
                 } catch (e: any) {
-                  alert('压制失败: ' + e.message);
+                  // Don't show error for user-initiated cancellation
+                  if (e.message !== 'CANCELLED') {
+                    alert('压制失败: ' + e.message);
+                  }
                 } finally {
                   setIsCompressing(false);
+                  setCompressionStartTime(null);
                   setProgress(null);
                 }
               }}
@@ -683,7 +800,9 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                 </div>
 
                 <div className="flex justify-between items-center text-xs text-slate-500 font-mono pt-2 border-t border-slate-800/50">
-                  <span>耗时: {progress.timemark}</span>
+                  <span>
+                    耗时: {elapsedTime} | 进度: {progress.timemark}
+                  </span>
                   <span>大小: {(progress.targetSize / 1024).toFixed(2)} MB</span>
                 </div>
 

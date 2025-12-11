@@ -25,51 +25,51 @@ export default defineConfig(({ mode }) => {
         targets: [
           {
             src: 'node_modules/onnxruntime-web/dist/ort.min.js',
-            dest: '.'
+            dest: '.',
           },
           {
             src: 'node_modules/@ricky0123/vad-web/dist/bundle.min.js',
             dest: '.',
-            rename: 'vad.bundle.min.js'
+            rename: 'vad.bundle.min.js',
           },
           {
             src: 'node_modules/onnxruntime-web/dist/*.wasm',
-            dest: '.'
+            dest: '.',
           },
           {
             src: 'node_modules/onnxruntime-web/dist/*.mjs',
-            dest: '.'
+            dest: '.',
           },
           {
             src: 'node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js',
-            dest: '.'
+            dest: '.',
           },
           {
             src: 'node_modules/@ricky0123/vad-web/dist/*.onnx',
-            dest: '.'
+            dest: '.',
           },
-        ]
-      })
+        ],
+      }),
     ],
     build: {
       rollupOptions: {
         external: [
           'electron',
           'fluent-ffmpeg',
-          '@ffmpeg-installer/ffmpeg',
-          '@ffprobe-installer/ffprobe',
+          'ffmpeg-static',
+          'ffprobe-static',
           'electron-squirrel-startup',
           'path',
           'fs',
           'child_process',
-        ]
-      }
+        ],
+      },
     },
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.OPENAI_API_KEY': JSON.stringify(env.OPENAI_API_KEY),
-      '__APP_VERSION__': JSON.stringify(packageJson.version)
+      __APP_VERSION__: JSON.stringify(packageJson.version),
     },
     resolve: {
       alias: {
@@ -81,6 +81,6 @@ export default defineConfig(({ mode }) => {
         '@types': path.resolve(__dirname, './src/types'),
         '@constants': path.resolve(__dirname, './src/constants'),
       },
-    }
+    },
   };
 });

@@ -105,8 +105,10 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
       let text = '';
       if (bilingual) {
         // Layout: Original (Small/Secondary) on TOP. Translated (Large/Default) on BOTTOM.
-        // \rSecondary sets style to Secondary. \r resets to Default (or current line style).
-        text = `{\\rSecondary}${cleanOriginal}\\N{\\r}${cleanTranslated}`;
+        // Use explicit style names for FFmpeg libass compatibility.
+        // Note: {\r} (implicit reset) causes double-rendering issues in some libass versions.
+        // Using explicit {\rStyleName} fixes the rendering bug.
+        text = `{\\rSecondary}${cleanOriginal}\\N{\\r${style}}${cleanTranslated}`;
       } else {
         // Just translated text using Default style (large) (or speaker style)
         text = cleanTranslated;

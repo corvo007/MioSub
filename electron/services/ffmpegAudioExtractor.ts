@@ -1,6 +1,6 @@
 import ffmpeg from 'fluent-ffmpeg';
-import ffmpegPath from '@ffmpeg-installer/ffmpeg';
-import ffprobePath from '@ffprobe-installer/ffprobe';
+import ffmpegPath from 'ffmpeg-static';
+import ffprobePath from 'ffprobe-static';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
@@ -10,7 +10,7 @@ const fixPathForAsar = (pathStr: string) => {
   return pathStr.replace('app.asar', 'app.asar.unpacked');
 };
 
-ffmpeg.setFfmpegPath(fixPathForAsar(ffmpegPath.path));
+ffmpeg.setFfmpegPath(fixPathForAsar(ffmpegPath as string));
 ffmpeg.setFfprobePath(fixPathForAsar(ffprobePath.path));
 
 export interface AudioExtractionOptions {
@@ -87,7 +87,7 @@ export async function extractAudioFromVideo(
 
     // Log FFmpeg path and command
     if (onLog) {
-      onLog(`[INFO] FFmpeg Path: ${ffmpegPath.path}`);
+      onLog(`[INFO] FFmpeg Path: ${ffmpegPath}`);
       onLog(`[INFO] FFmpeg Probe Path: ${ffprobePath.path}`);
     }
 
