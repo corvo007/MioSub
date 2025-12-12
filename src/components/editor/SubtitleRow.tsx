@@ -17,7 +17,7 @@ import { SpeakerUIProfile } from '@/types/speaker';
 import { SpeakerSelect } from './SpeakerSelect';
 
 // Validation thresholds (from prompts.ts rules)
-const MAX_DURATION_SECONDS = 4;
+const MAX_DURATION_SECONDS = 5;
 const MAX_CHINESE_CHARACTERS = 25;
 
 // Parse time string (HH:MM:SS,mmm or HH:MM:SS.mmm) to seconds
