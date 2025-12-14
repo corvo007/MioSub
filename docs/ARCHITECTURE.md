@@ -97,6 +97,30 @@ flowchart TB
 
 ---
 
+## 📏 代码规范与工程化
+
+### 路径别名 (Path Aliases)
+
+本项目在 `src` 和 `electron` 目录下全面使用路径别名，**禁止使用相对路径** (如 `../../`) 引用跨层级模块，但同层级文件引用除外（推荐统一使用别名）。
+
+- `@/*` -> `src/*` (核心源码)
+- `@components/*` -> `src/components/*`
+- `@hooks/*` -> `src/hooks/*`
+- `@services/*` -> `src/services/*`
+- `@utils/*` -> `src/utils/*`
+- `@types/*` -> `src/types/*`
+- `@electron/*` -> `electron/*` (Electron 主进程代码)
+
+### 目录组织原则
+
+- **就近原则 (Co-location)**: 仅在特定模块内部使用的工具函数或组件，应放置在该模块的 `utils` 或 `shared` 子目录下，而非提升到全局。
+  - 例如 `src/components/endToEnd/wizard/utils/validation.ts` 仅服务于向导模块。
+- **关注点分离**:
+  - `src/utils`: 全局通用、纯 JavaScript/UI 辅助函数。
+  - `src/services/utils`: 基础设施、日志、系统级工具。
+
+---
+
 ## 🧱 应用模块架构
 
 ```mermaid
@@ -111,6 +135,7 @@ flowchart TB
             GLOSSARY_PAGE["GlossaryManager<br/>术语管理"]
             DOWNLOAD_PAGE["DownloadPage<br/>视频下载"]
             COMPRESS_PAGE["CompressionPage<br/>视频压制"]
+            E2E_WIZARD["EndToEndWizard<br/>全自动处理"]
         end
 
         APP --> PAGES
@@ -129,6 +154,7 @@ flowchart TB
             USE_SNAPSHOTS["useSnapshots<br/>版本快照"]
             USE_DOWNLOAD["useDownload<br/>下载逻辑"]
             USE_TOAST["useToast<br/>通知系统"]
+            USE_E2E["useEndToEnd<br/>流水线状态"]
         end
     end
 
@@ -291,7 +317,13 @@ Gemini-Subtitle-Pro/
 │   │   ├── 📂 ui/                   # 基础 UI 组件
 │   │   ├── 📂 upload/               # 上传组件
 │   │   ├── 📂 download/             # 下载页面组件
-│   │   └── 📂 compression/          # 压制页面组件
+│   │   ├── 📂 compression/          # 压制页面组件
+│   │   └── 📂 endToEnd/             # 端到端全自动流程
+│   │       ├── 📂 wizard/           # 向导组件
+│   │       │   ├── 📂 shared/       # 向导内共享组件
+│   │       │   ├── 📂 steps/        # 向导步骤组件
+│   │       │   └── 📂 utils/        # 向导专用工具
+│   │       └── 📄 EndToEndWizard.tsx# 向导主入口
 │   │
 │   ├── 📂 hooks/                    # React Hooks (7个文件)
 │   │   ├── 📄 useWorkspaceLogic.ts  # 核心工作区逻辑 (28KB)
