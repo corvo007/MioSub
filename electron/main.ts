@@ -843,6 +843,35 @@ app.on('ready', async () => {
 // SECURITY: Restrict navigation and new window creation
 // ============================================================================
 app.on('web-contents-created', (_event, contents) => {
+  // Add context menu for text inputs (copy, paste, cut, etc.)
+  contents.on('context-menu', (_event, params) => {
+    const { isEditable, selectionText, editFlags } = params;
+
+    // Only show menu for editable fields or when text is selected
+    if (isEditable || selectionText) {
+      const menuItems: Electron.MenuItemConstructorOptions[] = [];
+
+      if (isEditable) {
+        menuItems.push(
+          { label: '撤销', role: 'undo', enabled: editFlags.canUndo },
+          { label: '重做', role: 'redo', enabled: editFlags.canRedo },
+          { type: 'separator' }
+        );
+      }
+
+      menuItems.push(
+        { label: '剪切', role: 'cut', enabled: editFlags.canCut },
+        { label: '复制', role: 'copy', enabled: editFlags.canCopy },
+        { label: '粘贴', role: 'paste', enabled: editFlags.canPaste },
+        { type: 'separator' },
+        { label: '全选', role: 'selectAll', enabled: editFlags.canSelectAll }
+      );
+
+      const contextMenu = Menu.buildFromTemplate(menuItems);
+      contextMenu.popup();
+    }
+  });
+
   // Restrict navigation to prevent XSS-based redirects
   contents.on('will-navigate', (event, navigationUrl) => {
     try {
