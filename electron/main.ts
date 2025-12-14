@@ -30,7 +30,7 @@ import { ytDlpService, classifyError } from './services/ytdlp.ts';
 import { VideoCompressorService } from './services/videoCompressor.ts';
 import type { CompressionOptions } from './services/videoCompressor.ts';
 import { endToEndPipeline } from './services/endToEndPipeline.ts';
-import type { EndToEndConfig } from '../src/types/endToEnd.ts';
+import type { EndToEndConfig } from '@/types/endToEnd.ts';
 
 const videoCompressorService = new VideoCompressorService();
 

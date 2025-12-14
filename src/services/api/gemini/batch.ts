@@ -483,7 +483,9 @@ export const runBatchOperation = async (
     mode,
     settings.glossary,
     settings.enableDiarization, // Pass diarization flag
-    speakerProfiles
+    speakerProfiles,
+    settings.minSpeakers,
+    settings.maxSpeakers
   );
 
   const currentSubtitles = [...allSubtitles];

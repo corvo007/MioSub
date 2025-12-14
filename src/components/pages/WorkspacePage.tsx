@@ -15,6 +15,7 @@ import {
   ChevronUp,
   ChevronDown,
   FolderOpen,
+  Users,
 } from 'lucide-react';
 import { SubtitleItem, SubtitleSnapshot, BatchOperationMode } from '@/types/subtitle';
 import { SpeakerUIProfile } from '@/types/speaker';
@@ -422,6 +423,50 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                         placeholder="(无)"
                       />
                     </div>
+
+                    {/* Speaker Count Hints - Only visible when diarization enabled */}
+                    {settings.enableDiarization && (
+                      <div className="flex flex-col space-y-1.5 pt-2 border-t border-slate-700/50">
+                        <span className="text-slate-500 text-xs flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5" />
+                          说话人数量 (可选)
+                        </span>
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400">最少</span>
+                            <input
+                              type="text"
+                              value={settings.minSpeakers ?? ''}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                const num = val
+                                  ? Math.min(99, Math.max(1, parseInt(val)))
+                                  : undefined;
+                                onUpdateSetting('minSpeakers', num);
+                              }}
+                              placeholder="-"
+                              className="w-12 px-1.5 py-1 bg-slate-800 border border-slate-700 rounded-md text-slate-200 text-xs text-center focus:outline-none focus:border-indigo-500 transition-colors"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-slate-400">最多</span>
+                            <input
+                              type="text"
+                              value={settings.maxSpeakers ?? ''}
+                              onChange={(e) => {
+                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                const num = val
+                                  ? Math.min(99, Math.max(1, parseInt(val)))
+                                  : undefined;
+                                onUpdateSetting('maxSpeakers', num);
+                              }}
+                              placeholder="-"
+                              className="w-12 px-1.5 py-1 bg-slate-800 border border-slate-700 rounded-md text-slate-200 text-xs text-center focus:outline-none focus:border-indigo-500 transition-colors"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

@@ -145,7 +145,7 @@ flowchart TB
         direction LR
 
         subgraph CORE_HOOKS["核心 Hooks"]
-            USE_WORKSPACE["useWorkspaceLogic<br/>工作区核心逻辑 (28KB)"]
+            USE_WORKSPACE["useWorkspaceLogic<br/>工作区核心逻辑 (33KB)"]
             USE_SETTINGS["useSettings<br/>设置持久化"]
         end
 
@@ -163,7 +163,7 @@ flowchart TB
 
         subgraph API_SVC["API 服务"]
             direction LR
-            GEMINI_SVC["gemini/<br/>subtitle.ts (29KB)<br/>batch.ts (22KB)<br/>client.ts (14KB)"]
+            GEMINI_SVC["gemini/<br/>subtitle.ts (30KB)<br/>batch.ts (27KB)<br/>client.ts (18KB)"]
             OPENAI_SVC2["openai/<br/>transcribe.ts"]
             WHISPER_SVC["whisper-local/<br/>transcribe.ts"]
         end
@@ -319,31 +319,37 @@ Gemini-Subtitle-Pro/
 │   │   ├── 📂 download/             # 下载页面组件
 │   │   ├── 📂 compression/          # 压制页面组件
 │   │   └── 📂 endToEnd/             # 端到端全自动流程
-│   │       ├── 📂 wizard/           # 向导组件
-│   │       │   ├── 📂 shared/       # 向导内共享组件
-│   │       │   ├── 📂 steps/        # 向导步骤组件
-│   │       │   └── 📂 utils/        # 向导专用工具
-│   │       └── 📄 EndToEndWizard.tsx# 向导主入口
+│   │       ├── 📄 EndToEndWizard.tsx # 向导主入口 (9KB)
+│   │       ├── 📄 EndToEndProgress.tsx # 进度展示 (17KB)
+│   │       └── 📂 wizard/           # 向导组件
+│   │           ├── 📂 shared/       # 向导内共享组件
+│   │           ├── 📂 steps/        # 向导步骤组件
+│   │           └── 📂 utils/        # 向导专用工具
 │   │
-│   ├── 📂 hooks/                    # React Hooks (7个文件)
-│   │   ├── 📄 useWorkspaceLogic.ts  # 核心工作区逻辑 (28KB)
+│   ├── 📂 hooks/                    # React Hooks (10个文件)
+│   │   ├── 📄 useWorkspaceLogic.ts  # 核心工作区逻辑 (33KB)
 │   │   ├── 📄 useSettings.ts        # 设置管理
 │   │   ├── 📄 useGlossaryFlow.ts    # 术语表流程
 │   │   ├── 📄 useSnapshots.ts       # 版本快照
 │   │   ├── 📄 useToast.ts           # 提示消息
+│   │   ├── 📄 useDownload.ts        # 下载逻辑
+│   │   ├── 📄 useEndToEnd.ts        # 端到端流水线状态
+│   │   ├── 📄 useEndToEndSubtitleGeneration.ts # 字幕生成钩子
 │   │   └── 📄 useFileParserWorker.ts# 文件解析 Worker
 │   │
 │   ├── 📂 services/                 # 服务层 (34个文件)
 │   │   ├── 📂 api/                  # API 服务
-│   │   │   ├── 📂 gemini/           # Gemini API (9个文件)
-│   │   │   │   ├── 📄 client.ts     # API 客户端 (14KB)
-│   │   │   │   ├── 📄 subtitle.ts   # 字幕生成 (29KB)
-│   │   │   │   ├── 📄 batch.ts      # 批量处理 (22KB)
-│   │   │   │   ├── 📄 prompts.ts    # Prompt 模板 (37KB)
+│   │   │   ├── 📂 gemini/           # Gemini API (10个文件)
+│   │   │   │   ├── 📄 client.ts     # API 客户端 (18KB)
+│   │   │   │   ├── 📄 subtitle.ts   # 字幕生成 (30KB)
+│   │   │   │   ├── 📄 batch.ts      # 批量处理 (27KB)
+│   │   │   │   ├── 📄 prompts.ts    # Prompt 模板 (41KB)
 │   │   │   │   ├── 📄 schemas.ts    # JSON Schema (6KB)
 │   │   │   │   ├── 📄 glossary.ts   # 术语提取 (8KB)
+│   │   │   │   ├── 📄 glossary-state.ts # 术语状态管理
 │   │   │   │   ├── 📄 speakerProfile.ts # 说话人识别 (4KB)
-│   │   │   │   └── 📄 pricing.ts    # 费用计算 (5KB)
+│   │   │   │   ├── 📄 pricing.ts    # 费用计算 (5KB)
+│   │   │   │   └── 📄 usage.ts      # Token 用量追踪
 │   │   │   ├── 📂 openai/           # OpenAI API (3个文件)
 │   │   │   └── 📂 whisper-local/    # 本地 Whisper
 │   │   │
@@ -366,23 +372,27 @@ Gemini-Subtitle-Pro/
 │   │   ├── 📂 storage/              # 本地存储
 │   │   └── 📂 utils/                # 工具函数 (4个文件)
 │   │
-│   ├── 📂 types/                    # TypeScript 类型定义 (7个文件)
+│   ├── 📂 types/                    # TypeScript 类型定义 (10个文件)
 │   │   ├── 📄 subtitle.ts           # 字幕类型
 │   │   ├── 📄 settings.ts           # 设置类型
 │   │   ├── 📄 glossary.ts           # 术语表类型
-│   │   └── 📄 api.ts                # API 类型
+│   │   ├── 📄 api.ts                # API 类型
+│   │   ├── 📄 endToEnd.ts           # 端到端类型
+│   │   ├── 📄 history.ts            # 历史记录类型
+│   │   ├── 📄 speaker.ts            # 说话人类型
+│   │   └── 📄 electron.d.ts         # Electron API 类型声明
 │   │
 │   └── 📂 workers/                  # Web Workers (2个文件)
 │
 ├── 📂 electron/                     # Electron 桌面端代码
 │   ├── 📄 main.ts                   # 主进程入口 (15KB)
 │   ├── 📄 preload.ts                # 预加载脚本 (2KB)
-│   └── 📂 services/                 # 桌面端服务 (3个文件)
-│       ├── 📄 localWhisper.ts       # 本地 Whisper (13KB)
+│   └── 📂 services/                 # 桌面端服务 (6个文件)
+│       ├── 📄 localWhisper.ts       # 本地 Whisper (11KB)
 │       ├── 📄 ffmpegAudioExtractor.ts # FFmpeg 音频提取 (5KB)
-│       ├── 📄 videoCompressor.ts    # 视频压缩服务
-│       ├── 📄 ytdlp.ts              # 视频下载服务
-│       ├── 📄 endToEndPipeline.ts   # 全自动流水线 (核心业务)
+│       ├── 📄 videoCompressor.ts    # 视频压缩服务 (19KB)
+│       ├── 📄 ytdlp.ts              # 视频下载服务 (32KB)
+│       ├── 📄 endToEndPipeline.ts   # 全自动流水线 (16KB)
 │       └── 📄 storage.ts            # 存储服务
 │
 ├── 📂 resources/                    # 资源文件
@@ -721,37 +731,60 @@ stateDiagram-v2
     [*] --> Idle
 
     state "全自动处理流水线" as Pipeline {
-        state "1. 下载视频" as Download
-        state "2. 提取音频" as Extract
-        state "3. AI 转录/翻译" as Transcribe
-        state "4. 压制字幕" as Burn
+        state "1. downloading (15%)<br/>下载视频" as Download
+        state "2. extracting_audio (5%)<br/>提取音频" as Extract
+        state "3. transcribing (25%)<br/>语音转写" as Transcribe
+        state "4. extracting_glossary (10%)<br/>术语提取" as Glossary
+        state "5. extracting_speakers (5%)<br/>说话人识别" as Speakers
+        state "6. refining (15%)<br/>校正润色" as Refine
+        state "7. translating (15%)<br/>翻译" as Translate
+        state "8. exporting_subtitle (2%)<br/>导出字幕" as Export
+        state "9. compressing (8%)<br/>视频压制" as Compress
 
         Download --> Extract: 视频文件 (MP4)
         Extract --> Transcribe: 音频文件 (WAV)
-        Transcribe --> Burn: 字幕文件 (SRT/ASS) + 视频文件
+        Transcribe --> Glossary
+        Glossary --> Speakers
+        Speakers --> Refine
+        Refine --> Translate
+        Translate --> Export: 字幕内容
+        Export --> Compress: 字幕文件 (ASS/SRT)
     }
 
     Idle --> Pipeline: 用户输入 URL
-    Pipeline --> Computed: 输出最终视频
-    Computed --> Idle
+    Pipeline --> Completed: 成功
+    Pipeline --> Failed: 失败
 
     note right of Download
         调用 YtDlpService
-        支持断点续传
+        支持 YouTube/Bilibili
     end note
 
     note right of Transcribe
-        复用前台的 Pipeline 逻辑
-        (Transcription -> Refinement)
-        自动处理并发
+        渲染进程处理
+        使用 Whisper API
     end note
 
-    note right of Burn
-        调用 VideoCompressor
-        检测 GPU 加速
-        生成硬字幕
+    note right of Compress
+        可选阶段
+        根据配置跳过
+        支持 GPU 加速
     end note
 ```
+
+**阶段权重说明：**
+
+| 阶段                  | 权重 | 说明                   |
+| --------------------- | ---- | ---------------------- |
+| `downloading`         | 15%  | 视频下载 (yt-dlp)      |
+| `extracting_audio`    | 5%   | FFmpeg 音频提取        |
+| `transcribing`        | 25%  | Whisper 语音转写       |
+| `extracting_glossary` | 10%  | Gemini Pro 术语提取    |
+| `extracting_speakers` | 5%   | Gemini Pro 说话人识别  |
+| `refining`            | 15%  | Gemini Flash 校正润色  |
+| `translating`         | 15%  | Gemini Flash 翻译      |
+| `exporting_subtitle`  | 2%   | 保存字幕文件           |
+| `compressing`         | 8%   | FFmpeg 视频压制 (可选) |
 
 ---
 
@@ -767,8 +800,10 @@ stateDiagram-v2
 | `prompts.ts`        | 所有 AI Prompt 模板，包含翻译、校对、术语提取等           |
 | `schemas.ts`        | JSON Schema 定义，用于结构化输出                          |
 | `glossary.ts`       | 术语表提取，使用 Search Grounding 功能                    |
+| `glossary-state.ts` | 术语表状态管理，非阻塞 Promise 包装器                     |
 | `speakerProfile.ts` | 说话人档案提取与识别                                      |
 | `pricing.ts`        | API 费用计算                                              |
+| `usage.ts`          | Token 用量追踪与统计                                      |
 
 ### 2. 音频处理模块 (`src/services/audio/`)
 
