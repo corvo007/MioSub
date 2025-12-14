@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.9.0] - 2025-12-14
+
+### Features
+
+- **Full Auto Mode**: Implemented complete End-to-End pipeline with new wizard UI (`EndToEndWizard`), core service (`EndToEndPipelineService`), and main process integration.
+- **Security**: Implemented high-risk security fixes based on Electron best practices audit.
+- **Error Handling**: Added graceful warning for thumbnail download failures.
+
+### Fixes
+
+- **Core**: Miscellaneous improvements to audio decoding, timing accuracy, and UI stability.
+- **Build**: Fixed `ytdlp` compilation issues.
+
+### Documentation
+
+- **Guides**: Added documentation for Full Auto / End-to-End mode.
+
 ## [2.8.5] - 2025-12-12
 
 ### Features
