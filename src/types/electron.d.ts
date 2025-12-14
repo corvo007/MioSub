@@ -224,6 +224,60 @@ export interface ElectronAPI {
 
   // Events
   onShowAbout: (callback: () => void) => () => void;
+
+  // End-to-End Pipeline APIs
+  endToEnd: {
+    start: (config: any) => Promise<{
+      success: boolean;
+      finalStage: string;
+      outputs: {
+        videoPath?: string;
+        audioPath?: string;
+        thumbnailPath?: string;
+        subtitles?: any[];
+        subtitlePath?: string;
+        outputVideoPath?: string;
+      };
+      duration: number;
+      error?: string;
+      errorDetails?: {
+        stage: string;
+        message: string;
+        originalError?: string;
+        retryable?: boolean;
+      };
+    }>;
+    abort: () => Promise<{ success: boolean }>;
+    getStatus: () => Promise<{
+      stage: string;
+      outputs: any;
+      isRunning: boolean;
+    }>;
+    onProgress: (
+      callback: (progress: {
+        stage: string;
+        stageProgress: number;
+        overallProgress: number;
+        message: string;
+        videoInfo?: any;
+        downloadProgress?: any;
+        transcribeProgress?: any;
+        compressProgress?: any;
+      }) => void
+    ) => () => void;
+    onGenerateSubtitles: (
+      callback: (data: { config: any; videoPath: string; audioPath: string }) => void
+    ) => () => void;
+    sendSubtitleResult: (result: {
+      success: boolean;
+      subtitles?: any[];
+      subtitlePath?: string;
+      subtitleContent?: string;
+      subtitleFormat?: string;
+      error?: string;
+    }) => void;
+    sendSubtitleProgress: (progress: any) => void;
+  };
 }
 
 declare global {
