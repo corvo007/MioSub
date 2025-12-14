@@ -14,7 +14,7 @@ export function StepInput({
 }: {
   url: string;
   onUrlChange: (url: string) => void;
-  onParse: () => void;
+  onParse: (url?: string) => void;
   isParsing: boolean;
   parseError?: string;
   videoInfo?: any;
@@ -36,9 +36,10 @@ export function StepInput({
   }, [inputUrl]);
 
   const handleParse = () => {
-    if (!inputUrl.trim()) return;
-    onUrlChange(inputUrl.trim());
-    onParse();
+    const trimmedUrl = inputUrl.trim();
+    if (!trimmedUrl) return;
+    onUrlChange(trimmedUrl);
+    onParse(trimmedUrl); // 直接传递 URL，不依赖状态更新
   };
 
   return (

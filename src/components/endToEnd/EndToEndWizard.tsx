@@ -86,9 +86,10 @@ export function EndToEndWizard({
     }
   };
 
-  const handleParseUrl = async () => {
-    if (state.config.url) {
-      await parseUrl(state.config.url);
+  const handleParseUrl = async (url?: string) => {
+    const urlToUse = url || state.config.url;
+    if (urlToUse) {
+      await parseUrl(urlToUse);
     }
   };
 
