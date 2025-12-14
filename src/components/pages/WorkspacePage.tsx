@@ -25,6 +25,7 @@ import { HistoryPanel } from '@/components/layout/HistoryPanel';
 import { FileUploader } from '@/components/upload/FileUploader';
 import { SubtitleEditor } from '@/components/editor/SubtitleEditor';
 import { CustomSelect } from '@/components/settings';
+import { formatDuration } from '@/services/subtitle/time';
 
 interface WorkspacePageProps {
   activeTab: 'new' | 'import';
@@ -284,9 +285,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                 <FileUploader
                   hasFile={true}
                   fileName={file.name}
-                  fileInfo={`${Math.floor(duration / 60)}:${Math.floor(duration % 60)
-                    .toString()
-                    .padStart(2, '0')} · ${(file.size / (1024 * 1024)).toFixed(1)}MB`}
+                  fileInfo={`${formatDuration(duration)} · ${(file.size / (1024 * 1024)).toFixed(1)}MB`}
                   onFileSelect={onFileChange}
                   onFileSelectNative={onFileChangeNative}
                   useNativeDialog={isElectron}

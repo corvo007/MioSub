@@ -46,7 +46,19 @@ export const decodeAudio = async (
   const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
   if (!AudioContext) throw new Error('不支持 Web Audio API');
   const ctx = new AudioContext();
-  return await ctx.decodeAudioData(arrayBuffer);
+
+  try {
+    return await ctx.decodeAudioData(arrayBuffer);
+  } catch (e: any) {
+    // Provide user-friendly error messages for common audio decoding failures
+    if (e.name === 'EncodingError' || e.message?.includes('Unable to decode')) {
+      throw new Error('不支持的音频格式，请尝试转换为 WAV 或 MP3 格式后重试');
+    }
+    if (e.name === 'NotSupportedError') {
+      throw new Error('浏览器不支持此音频编码，请尝试其他格式');
+    }
+    throw new Error(`音频解码失败: ${e.message || '未知错误'}`);
+  }
 };
 
 /**

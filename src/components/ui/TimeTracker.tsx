@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GenerationStatus } from '@/types/api';
+import { formatDuration } from '@/services/subtitle/time';
 
 interface TimeTrackerProps {
   startTime: number;
@@ -27,7 +28,7 @@ export const TimeTracker: React.FC<TimeTrackerProps> = ({
 
   return (
     <div className="flex justify-between text-xs text-slate-400 mb-4 px-1">
-      <span>用时: {elapsed}s</span>
+      <span>用时: {formatDuration(elapsed)}</span>
     </div>
   );
 };

@@ -22,6 +22,7 @@ import { generateAssContent } from '../../services/subtitle/generator';
 import { SubtitleItem } from '../../types/subtitle';
 import { CustomSelect } from '../settings/CustomSelect';
 import { generateOutputPath, getPathSeparator, removeExtension } from '../../services/utils/path';
+import { formatDuration } from '../../services/subtitle/time';
 
 interface CompressionPageProps {
   onGoBack?: () => void;
@@ -62,6 +63,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Update elapsed time every second during compression
+
   useEffect(() => {
     if (!compressionStartTime) {
       setElapsedTime('00:00');
@@ -69,9 +71,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
     }
     const interval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - compressionStartTime) / 1000);
-      const mins = Math.floor(elapsed / 60);
-      const secs = elapsed % 60;
-      setElapsedTime(`${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`);
+      setElapsedTime(formatDuration(elapsed));
     }, 1000);
     return () => clearInterval(interval);
   }, [compressionStartTime]);

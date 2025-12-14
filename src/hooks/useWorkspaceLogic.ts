@@ -200,6 +200,7 @@ export const useWorkspaceLogic = ({
         URL.revokeObjectURL(url);
       };
       element.onerror = () => {
+        logger.warn('Failed to get file duration via DOM, using default value 0');
         resolve(0);
         URL.revokeObjectURL(url);
       };
