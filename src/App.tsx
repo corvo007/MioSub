@@ -15,6 +15,7 @@ import { ToastContainer, ProgressOverlay } from '@/components/ui';
 
 // Custom Hooks
 import { useSettings, useToast, useSnapshots, useGlossaryFlow, useWorkspaceLogic } from '@/hooks';
+import { useEndToEndSubtitleGeneration } from '@/hooks/useEndToEndSubtitleGeneration';
 
 // Page Components
 import { LogViewerModal } from '@/components/layout/LogViewerModal';
@@ -22,12 +23,15 @@ import { HomePage } from '@/components/pages/HomePage';
 import { WorkspacePage } from '@/components/pages/WorkspacePage';
 import { DownloadPage } from '@/components/download';
 import { CompressionPage } from '@/components/compression/CompressionPage';
+import { EndToEndWizard } from '@/components/endToEnd';
 
 import { ENV } from '@/config/env';
 
 export default function App() {
   // View State
-  const [view, setView] = useState<'home' | 'workspace' | 'download' | 'compression'>('home');
+  const [view, setView] = useState<'home' | 'workspace' | 'download' | 'compression' | 'endToEnd'>(
+    'home'
+  );
   const [activeTab, setActiveTab] = useState<'new' | 'import'>('new');
   const [settingsTab, setSettingsTab] = useState('general');
 
@@ -46,6 +50,10 @@ export default function App() {
   const { toasts, addToast, removeToast } = useToast();
   const snapshotsValues = useSnapshots();
   const glossaryFlow = useGlossaryFlow();
+
+  // End-to-End Subtitle Generation Handler
+  // This hook listens for IPC requests from main process and executes generation
+  useEndToEndSubtitleGeneration({ settings });
 
   // Confirmation Modal State
   const [confirmation, setConfirmation] = useState<{
@@ -270,6 +278,7 @@ export default function App() {
           onShowGlossary={() => setShowGlossaryManager(true)}
           onShowSettings={() => setShowSettings(true)}
           onStartCompression={() => setView('compression')}
+          onStartEndToEnd={() => setView('endToEnd')}
         />
       )}
       {view === 'download' && (
@@ -296,6 +305,16 @@ export default function App() {
           workspaceVideoFile={workspace.file}
           downloadedVideoPath={downloadedVideoPath}
           onShowLogs={() => setShowLogs(true)}
+          onShowSettings={() => setShowSettings(true)}
+        />
+      )}
+      {view === 'endToEnd' && (
+        <EndToEndWizard
+          settings={settings}
+          onComplete={() => setView('home')}
+          onCancel={() => setView('home')}
+          onShowLogs={() => setShowLogs(true)}
+          onShowGlossary={() => setShowGlossaryManager(true)}
           onShowSettings={() => setShowSettings(true)}
         />
       )}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileVideo, FileText, Download, ArrowRight, Scissors } from 'lucide-react';
+import { FileVideo, FileText, Download, ArrowRight, Scissors, Wand2, Sparkles } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 
 interface HomePageProps {
@@ -10,6 +10,7 @@ interface HomePageProps {
   onShowGlossary: () => void;
   onShowSettings: () => void;
   onStartCompression: () => void;
+  onStartEndToEnd?: () => void;
 }
 
 /**
@@ -23,6 +24,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   onShowGlossary,
   onShowSettings,
   onStartCompression,
+  onStartEndToEnd,
 }) => {
   const isElectron = typeof window !== 'undefined' && !!window.electronAPI?.isElectron;
 
@@ -62,6 +64,32 @@ export const HomePage: React.FC<HomePageProps> = ({
               支持视频下载、字幕生成、翻译润色、压制导出全流程
             </p>
           </div>
+
+          {/* One-Click End-to-End Button */}
+          {isElectron && onStartEndToEnd && (
+            <div className="w-full mb-8">
+              <button
+                onClick={onStartEndToEnd}
+                className="group w-full relative overflow-hidden bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-500 hover:via-indigo-500 hover:to-purple-500 rounded-2xl p-6 transition-all duration-300 shadow-lg shadow-violet-500/20 hover:shadow-xl hover:shadow-violet-500/30 hover:-translate-y-0.5"
+              >
+                {/* Animated background pattern */}
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-50" />
+                <div className="relative flex items-center justify-center gap-4">
+                  <div className="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                    <Wand2 className="w-7 h-7 text-white group-hover:rotate-12 transition-transform duration-300" />
+                  </div>
+                  <div className="text-left">
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                      一键生成熟肉（全自动模式）
+                      <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
+                    </h2>
+                    <p className="text-white/70 text-sm">输入链接，自动下载、生成字幕、压制视频</p>
+                  </div>
+                  <ArrowRight className="w-6 h-6 text-white/50 group-hover:text-white group-hover:translate-x-1 transition-all ml-auto" />
+                </div>
+              </button>
+            </div>
+          )}
 
           {/* Subtitle Workspace Section */}
           <div className="w-full mb-6">
@@ -155,7 +183,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             </div>
             {!isElectron && (
               <p className="text-center text-amber-500/80 text-sm mt-4">
-                ⚠️ 以上功能在网页版不可用，请使用桌面版以获得最佳体验
+                ⚠️ 以上功能及全自动模式在网页版不可用，请使用桌面版以获得最佳体验
               </p>
             )}
           </div>
