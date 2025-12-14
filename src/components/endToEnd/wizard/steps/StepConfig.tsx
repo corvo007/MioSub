@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Download, FileText, Film, Zap, Cpu, Loader2 } from 'lucide-react';
 import type { HardwareAccelInfo } from '@/services/compression/types';
+import type { AppSettings } from '@/types/settings';
 import { CustomSelect } from '@/components/settings/CustomSelect';
 import { ConfigSection } from '@/components/endToEnd/wizard/shared/ConfigSection';
 import { ToggleOptionInline } from '@/components/endToEnd/wizard/shared/ToggleOption';
@@ -11,10 +12,12 @@ export function StepConfig({
   config,
   onConfigChange,
   videoInfo,
+  settings,
 }: {
   config: any;
   onConfigChange: (updates: any) => void;
   videoInfo?: any;
+  settings?: AppSettings;
 }) {
   const [hwAccelInfo, setHwAccelInfo] = useState<HardwareAccelInfo | null>(null);
 
@@ -144,6 +147,36 @@ export function StepConfig({
               checked={config.enableGlossary !== false}
               onChange={(v) => onConfigChange({ enableGlossary: v })}
             />
+
+            {/* Glossary Selection */}
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <span className="text-sm text-white/90">使用术语表</span>
+                <p className="text-xs text-white/50">选择已有的术语表辅助翻译</p>
+              </div>
+              <div className="w-40">
+                <CustomSelect
+                  value={config.selectedGlossaryId || ''}
+                  onChange={(val: string) => onConfigChange({ selectedGlossaryId: val || null })}
+                  options={[
+                    { value: '', label: '(无)' },
+                    ...(settings?.glossaries?.map((g) => ({
+                      value: g.id,
+                      label: (
+                        <div className="flex items-center justify-between w-full min-w-0">
+                          <span className="truncate mr-2">{g.name}</span>
+                          <span className="text-slate-500 text-xs flex-shrink-0">
+                            ({g.terms?.length || 0})
+                          </span>
+                        </div>
+                      ),
+                    })) || []),
+                  ]}
+                  placeholder="(无)"
+                />
+              </div>
+            </div>
+
             <ToggleOptionInline
               label="说话人识别"
               description="识别音频中的不同说话人"
@@ -152,7 +185,7 @@ export function StepConfig({
             />
             {/* Speaker Options */}
             {config.enableSpeakerDetection !== false && (
-              <div className="ml-8 mt-1 space-y-1 border-l-2 border-white/10 pl-3">
+              <div className="ml-8 mt-1 space-y-2 border-l-2 border-white/10 pl-3">
                 <ToggleOptionInline
                   label="显示说话人名称"
                   description="在字幕文本中包含说话人名字"
@@ -165,6 +198,40 @@ export function StepConfig({
                   checked={!!config.useSpeakerColors}
                   onChange={(v) => onConfigChange({ useSpeakerColors: v })}
                 />
+                {/* Min/Max Speaker Count */}
+                <div className="pt-3">
+                  <span className="text-sm text-white/90 block mb-2">说话人数量 (可选)</span>
+                  <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-white/70">最少说话人</span>
+                      <input
+                        type="text"
+                        value={config.minSpeakers ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          const num = val ? Math.min(99, Math.max(1, parseInt(val))) : undefined;
+                          onConfigChange({ minSpeakers: num });
+                        }}
+                        placeholder="-"
+                        className="w-12 px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm text-center focus:outline-none focus:border-violet-500/50 transition-colors"
+                      />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-white/70">最多说话人</span>
+                      <input
+                        type="text"
+                        value={config.maxSpeakers ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/[^0-9]/g, '');
+                          const num = val ? Math.min(99, Math.max(1, parseInt(val))) : undefined;
+                          onConfigChange({ maxSpeakers: num });
+                        }}
+                        placeholder="-"
+                        className="w-12 px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm text-center focus:outline-none focus:border-violet-500/50 transition-colors"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -185,7 +252,7 @@ export function StepConfig({
             <div className="mt-6 space-y-6 pl-2">
               {/* Hardware Acceleration (Reused from CompressionPage) */}
               <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <label className="w-24 text-xs font-medium text-white/70 shrink-0">硬件加速</label>
+                <label className="w-24 text-sm font-medium text-white/70 shrink-0">硬件加速</label>
                 <div className="flex-1 space-y-2">
                   <button
                     onClick={() =>
@@ -294,7 +361,7 @@ export function StepConfig({
 
               {/* Encoder */}
               <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <label className="w-24 text-xs font-medium text-white/70 shrink-0">编码器</label>
+                <label className="w-24 text-sm font-medium text-white/70 shrink-0">编码器</label>
                 <div className="flex-1">
                   <CustomSelect
                     value={config.compressionEncoder || 'libx264'}
@@ -327,7 +394,7 @@ export function StepConfig({
 
               {/* Resolution Select */}
               <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <label className="w-24 text-xs font-medium text-white/70 shrink-0">分辨率</label>
+                <label className="w-24 text-sm font-medium text-white/70 shrink-0">分辨率</label>
                 <div className="flex-1">
                   <CustomSelect
                     value={config.compressionResolution || 'original'}
@@ -338,13 +405,14 @@ export function StepConfig({
                       { value: '720p', label: '720p (高清)' },
                       { value: '480p', label: '480p (标清)' },
                     ]}
+                    forceDropUp={true}
                   />
                 </div>
               </div>
 
               {/* CRF Input (Reused from CompressionPage) */}
               <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <label className="w-24 text-xs font-medium text-white/70 shrink-0">
+                <label className="w-24 text-sm font-medium text-white/70 shrink-0">
                   质量 (CRF)
                 </label>
                 <div className="flex-1 space-y-2">

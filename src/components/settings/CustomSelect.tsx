@@ -11,6 +11,7 @@ interface CustomSelectProps {
   className?: string;
   icon?: React.ReactNode;
   placeholder?: string;
+  forceDropUp?: boolean; // Force dropdown to always expand upward
 }
 
 export const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -20,6 +21,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   className = '',
   icon,
   placeholder,
+  forceDropUp,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [dropUp, setDropUp] = useState(false);
@@ -28,8 +30,10 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   // Toggle open with smart direction detection
   const toggleOpen = () => {
     if (!isOpen) {
-      // Check position before opening
-      if (containerRef.current) {
+      // If forceDropUp is set, use it; otherwise auto-detect
+      if (forceDropUp !== undefined) {
+        setDropUp(forceDropUp);
+      } else if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom;
         // If less than MIN_SPACE_BELOW below, open upwards
