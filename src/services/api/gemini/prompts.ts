@@ -393,12 +393,13 @@ export const getSystemInstruction = (
     → **COMPLETENESS**: Ensure every meaningful part of the original text is represented.
     → **NO HALLUCINATIONS**: Do not invent information not present in the source.
 
-    [P1.5 - CONTEXT-AWARE TRANSLATION]
-    → **MULTI-LINE CONTEXT**: Before translating each line, READ the previous and next 1-2 lines to understand the full context. This helps with:
-       - Resolving ambiguous words or pronouns (e.g., "it", "that", "this")
-       - Understanding incomplete sentences that span multiple lines
-       - Maintaining consistent tone and terminology across related lines
-    → **SENTENCE CONTINUITY**: When consecutive subtitles are part of the SAME SENTENCE, consider them together for translation understanding to ensure the flow is natural across segments.
+    [P1.5 - CONTEXT-AWARE TRANSLATION (STRICT BOUNDARIES)]
+    → **MULTI-LINE CONTEXT**: Read the previous and next 1-2 lines to understand context. This helps with:
+       - Resolving ambiguous pronouns (e.g., "it", "that")
+       - Understanding incomplete sentences split across lines
+       - Maintaining consistent tone
+    → **STRICT BOUNDARY RULE**: Use this context for **UNDERSTANDING** only. **NEVER** merge segments or move text between lines.
+    → **PARTIAL SENTENCES**: If a sentence is split across lines, translate ONLY the specific fragment in the current line. Do not "complete" it using text from the next line.
 
     [P2 - CLEANUP & REFINEMENT]
     → **REMOVE FILLERS**: Ignore stuttering, hesitation, and meaningless fillers (e.g., "uh", "um", "ah", "eto", "ano", "呃", "那个").
@@ -758,9 +759,13 @@ export const getTranslationBatchPrompt = (batchLength: number, payload: any[]): 
     → ID matching is critical - do not skip any ID
     → Output exactly ${batchLength} items in the response
     
-    [P1.5 - CONTEXT-AWARE TRANSLATION]
-    → **MULTI-LINE CONTEXT**: Before translating each line, READ the previous and next 1-2 lines to understand the full context. This helps resolve ambiguous words, pronouns, and incomplete sentences.
-    → **SENTENCE CONTINUITY**: Use context from adjacent lines to ensure smooth flow, but keep the translation for each segment focused on what is actually spoken in that specific time range.
+    [P1.5 - CONTEXT-AWARE TRANSLATION (STRICT BOUNDARIES)]
+    → **MULTI-LINE CONTEXT**: Read the previous and next 1-2 lines to understand context. This helps with:
+       - Resolving ambiguous pronouns (e.g., "it", "that")
+       - Understanding incomplete sentences split across lines
+       - Maintaining consistent tone
+    → **STRICT BOUNDARY RULE**: Use this context for **UNDERSTANDING** only. **NEVER** merge segments or move text between lines.
+    → **PARTIAL SENTENCES**: If a sentence is split across lines, translate ONLY the specific fragment in the current line. Do not "complete" it using text from the next line.
     
     [P2 - QUALITY] Translation Excellence
     → ${getFillerWordsRule()} and stuttering
