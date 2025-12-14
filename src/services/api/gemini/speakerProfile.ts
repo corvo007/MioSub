@@ -47,6 +47,8 @@ export interface SpeakerProfileSet {
  * @param timeoutMs Timeout in milliseconds
  * @param onUsage Callback for token usage tracking
  * @param signal AbortSignal for cancellation
+ * @param minSpeakers Minimum expected speaker count (optional hint)
+ * @param maxSpeakers Maximum expected speaker count (optional hint)
  */
 export async function extractSpeakerProfiles(
   ai: GoogleGenAI,
@@ -55,10 +57,12 @@ export async function extractSpeakerProfiles(
   genre: string,
   timeoutMs: number = 300000,
   onUsage?: (usage: TokenUsage) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  minSpeakers?: number,
+  maxSpeakers?: number
 ): Promise<SpeakerProfileSet> {
   const base64Audio = await blobToBase64(audioBlob);
-  const prompt = getSpeakerProfileExtractionPrompt(genre);
+  const prompt = getSpeakerProfileExtractionPrompt(genre, minSpeakers, maxSpeakers);
 
   logger.debug('Speaker Profile Request:', {
     promptLength: prompt.length,

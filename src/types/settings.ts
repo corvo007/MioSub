@@ -50,6 +50,8 @@ export interface AppSettings {
   includeSpeakerInExport?: boolean; // Include speaker names in exported subtitles (default: false)
   useSpeakerColors?: boolean; // Apply different colors for each speaker in ASS export (default: false)
   useSpeakerStyledTranslation?: boolean; // Use speaker characteristics to guide translation style (default: false)
+  minSpeakers?: number; // Minimum expected speaker count (optional hint for LLM)
+  maxSpeakers?: number; // Maximum expected speaker count (optional hint for LLM)
 
   // Batch Operation Settings
   conservativeBatchMode?: boolean; // Conservative mode for fix_timestamps/proofread (default: false)

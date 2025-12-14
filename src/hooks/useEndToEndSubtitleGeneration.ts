@@ -179,12 +179,23 @@ export function useEndToEndSubtitleGeneration({ settings }: UseEndToEndSubtitleG
           }
         };
 
+        // Lookup selected glossary terms if a glossary is selected in config
+        const selectedGlossary = config.selectedGlossaryId
+          ? settings.glossaries?.find((g) => g.id === config.selectedGlossaryId)
+          : null;
+        const selectedGlossaryTerms = selectedGlossary?.terms || [];
+
         // Merge config with settings, applying end-to-end specific overrides
         const mergedSettings: AppSettings = {
           ...settings,
           // Apply any config overrides from the wizard
           enableAutoGlossary: config.enableGlossary ?? settings.enableAutoGlossary,
           enableDiarization: config.enableDiarization ?? settings.enableDiarization,
+          minSpeakers: config.minSpeakers ?? settings.minSpeakers,
+          maxSpeakers: config.maxSpeakers ?? settings.maxSpeakers,
+          // Use the selected glossary terms if available, otherwise fall back to settings.glossary
+          glossary: selectedGlossaryTerms.length > 0 ? selectedGlossaryTerms : settings.glossary,
+          activeGlossaryId: config.selectedGlossaryId ?? settings.activeGlossaryId,
           // For end-to-end mode, always auto-confirm glossary
           glossaryAutoConfirm: true,
         };

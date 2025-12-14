@@ -105,7 +105,9 @@ export const getSystemInstructionWithDiarization = (
   mode: 'refinement' | 'translation' | 'proofread' | 'fix_timestamps',
   glossary?: GlossaryItem[],
   enableDiarization?: boolean,
-  speakerProfiles?: SpeakerProfile[]
+  speakerProfiles?: SpeakerProfile[],
+  minSpeakers?: number,
+  maxSpeakers?: number
 ): string => {
   // For non-supported modes or disabled diarization, delegate to original function
   if ((mode !== 'fix_timestamps' && mode !== 'refinement') || !enableDiarization) {
@@ -117,13 +119,23 @@ export const getSystemInstructionWithDiarization = (
 
   let diarizationSection = '';
   if (enableDiarization) {
+    // Build speaker count hint (shared by both scenarios)
+    let speakerCountHint = '';
+    if (minSpeakers && maxSpeakers) {
+      speakerCountHint = `\n→ **USER HINT - EXPECTED SPEAKER COUNT**: The user has specified there are between ${minSpeakers} and ${maxSpeakers} speakers.`;
+    } else if (minSpeakers) {
+      speakerCountHint = `\n→ **USER HINT - EXPECTED SPEAKER COUNT**: The user has specified there are at least ${minSpeakers} speakers.`;
+    } else if (maxSpeakers) {
+      speakerCountHint = `\n→ **USER HINT - EXPECTED SPEAKER COUNT**: The user has specified there are at most ${maxSpeakers} speakers.`;
+    }
+
     if (speakerProfiles && speakerProfiles.length > 0) {
       // **SCENARIO A: WITH PRE-ANALYZED PROFILES**
       diarizationSection = `
 [P1.5 - SPEAKER IDENTIFICATION] Diarization (ENABLED - WITH PROFILE DATABASE)
 
 **IMPORTANT**: A senior AI (${SENIOR_MODEL_NAME}) has pre-analyzed this audio and identified ${speakerProfiles.length} speakers.
-Your task is to MATCH voices to these profiles.
+Your task is to MATCH voices to these profiles.${speakerCountHint}
 
 **KNOWN SPEAKER PROFILES**:
 ${speakerProfiles
@@ -198,7 +210,7 @@ If you encounter a voice that does NOT match ANY profile AND you are >90% confid
 [P1.5 - SPEAKER IDENTIFICATION] Audio Diarization
 → **CRITICAL TASK**: Identify and label DISTINCT SPEAKERS in the audio
 → **OUTPUT FORMAT**: Add "speaker" field to EVERY subtitle entry
-→ **LABELING**: Use "Speaker 1", "Speaker 2", "Speaker 3", etc.
+→ **LABELING**: Use "Speaker 1", "Speaker 2", "Speaker 3", etc.${speakerCountHint}
 
 **VOICE CHARACTERISTICS TO ANALYZE**:
 → Pitch: Fundamental frequency and tonal range
@@ -592,14 +604,29 @@ FINAL VERIFICATION:
 ✓ Notes added where helpful for consistency
 `;
 
-export const getSpeakerProfileExtractionPrompt = (genre: string) => `
+export const getSpeakerProfileExtractionPrompt = (
+  genre: string,
+  minSpeakers?: number,
+  maxSpeakers?: number
+) => {
+  // Build speaker count hint if provided
+  let speakerCountHint = '';
+  if (minSpeakers && maxSpeakers) {
+    speakerCountHint = `\n- **USER HINT - EXPECTED SPEAKER COUNT**: Between ${minSpeakers} and ${maxSpeakers} speakers`;
+  } else if (minSpeakers) {
+    speakerCountHint = `\n- **USER HINT - EXPECTED SPEAKER COUNT**: At least ${minSpeakers} speakers`;
+  } else if (maxSpeakers) {
+    speakerCountHint = `\n- **USER HINT - EXPECTED SPEAKER COUNT**: At most ${maxSpeakers} speakers`;
+  }
+
+  return `
 **TASK**: Extract comprehensive speaker profiles from audio samples for downstream voice matching.
 
 **CONTEXT**:
 - Genre: ${genre}
 - Audio: Representative samples from different time periods
 - Purpose: Create voice fingerprint database for Gemini 2.5 Flash to identify speakers
-- **Tools Available**: Google Search (use to verify public figures if names are mentioned)
+- **Tools Available**: Google Search (use to verify public figures if names are mentioned)${speakerCountHint}
 
 **SPEAKER PROFILE EXTRACTION**:
 1. Identify ALL distinct speakers (missing a speaker is critical failure)
@@ -713,6 +740,7 @@ export const getSpeakerProfileExtractionPrompt = (genre: string) => `
 }
 \`\`\`
 `;
+};
 
 /**
  * Generate translation batch prompt

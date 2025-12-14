@@ -381,7 +381,9 @@ export const generateSubtitles = async (
           settings.genre,
           (settings.requestTimeout || 600) * 1000, // Use configured timeout
           trackUsage,
-          signal
+          signal,
+          settings.minSpeakers,
+          settings.maxSpeakers
         );
 
         logger.info(
@@ -593,7 +595,9 @@ export const generateSubtitles = async (
           'refinement',
           chunkSettings.glossary,
           chunkSettings.enableDiarization,
-          speakerProfiles
+          speakerProfiles,
+          chunkSettings.minSpeakers,
+          chunkSettings.maxSpeakers
         );
         // For refinement, only show original terms (without translations) to prevent language mixing
         const glossaryInfo =

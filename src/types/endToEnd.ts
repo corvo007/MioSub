@@ -72,6 +72,8 @@ export interface EndToEndConfig {
   // 高级选项
   enableGlossary: boolean; // 启用术语提取 (自动确认)
   enableSpeakerDetection: boolean; // 启用说话人识别
+  minSpeakers?: number; // 最少说话人数 (可选)
+  maxSpeakers?: number; // 最多说话人数 (可选)
 
   // 压制选项
   enableCompression: boolean; // 是否启用压制
