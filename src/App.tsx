@@ -21,11 +21,11 @@ import { useEndToEndSubtitleGeneration } from '@/hooks/useEndToEndSubtitleGenera
 import { LogViewerModal } from '@/components/layout/LogViewerModal';
 import { HomePage } from '@/components/pages/HomePage';
 import { WorkspacePage } from '@/components/pages/WorkspacePage';
-import { DownloadPage } from '@/components/download';
-import { CompressionPage } from '@/components/compression/CompressionPage';
+import { DownloadPage } from '@/components/pages';
+import { CompressionPage } from '@/components/pages/CompressionPage';
 import { EndToEndWizard } from '@/components/endToEnd';
 
-import { ENV } from '@/config/env';
+import { ENV } from '@/config';
 
 export default function App() {
   // View State

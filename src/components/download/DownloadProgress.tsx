@@ -3,7 +3,7 @@
  */
 import React from 'react';
 import { X } from 'lucide-react';
-import type { DownloadProgress as Progress } from '@/services/download/types';
+import type { DownloadProgress as Progress } from '@/types/download';
 
 interface DownloadProgressProps {
   progress: Progress | null;

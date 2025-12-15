@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChevronDown, Users } from 'lucide-react';
 import { SpeakerUIProfile } from '@/types/speaker';
-import { getSpeakerColor } from '@/utils/colors';
+import { getSpeakerColor } from '@/services/utils/colors';
 
 interface SpeakerSelectProps {
   currentSpeaker?: string;

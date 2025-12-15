@@ -1,6 +1,6 @@
 import { SubtitleItem, GeminiSubtitleSchema } from '@/types/subtitle';
 import { timeToSeconds, normalizeTimestamp, formatTime } from '@/services/subtitle/time';
-import { generateSubtitleId } from '@/utils/id';
+import { generateSubtitleId } from '@/services/utils/id';
 
 /**
  * Known non-speech annotations from Whisper transcription

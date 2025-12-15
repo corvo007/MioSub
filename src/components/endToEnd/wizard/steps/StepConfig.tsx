@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Download, FileText, Film, Zap, Cpu, Loader2 } from 'lucide-react';
-import type { HardwareAccelInfo } from '@/services/compression/types';
+import type { HardwareAccelInfo } from '@/types/compression';
 import type { AppSettings } from '@/types/settings';
 import { CustomSelect } from '@/components/settings/CustomSelect';
 import { ConfigSection } from '@/components/endToEnd/wizard/shared/ConfigSection';

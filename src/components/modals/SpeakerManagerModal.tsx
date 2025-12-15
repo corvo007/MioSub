@@ -13,7 +13,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { SpeakerUIProfile } from '@/types/speaker';
-import { getSpeakerColor } from '@/utils/colors';
+import { getSpeakerColor } from '@/services/utils/colors';
 import { SimpleConfirmationModal } from '@/components/modals/SimpleConfirmationModal';
 
 interface SpeakerManagerModalProps {

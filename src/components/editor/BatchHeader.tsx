@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { SubtitleItem } from '@/types';
 import { SpeakerUIProfile } from '@/types/speaker';
-import { getSpeakerColor } from '@/utils/colors';
+import { getSpeakerColor } from '@/services/utils/colors';
 
 // Multi-select filter type
 export interface SubtitleFilters {

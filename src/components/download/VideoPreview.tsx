@@ -2,7 +2,7 @@
  * Video Preview Component - Tailwind CSS Version
  */
 import React from 'react';
-import type { VideoInfo } from '@/services/download/types';
+import type { VideoInfo } from '@/types/download';
 import { formatDuration } from '@/services/subtitle/time';
 
 interface VideoPreviewProps {

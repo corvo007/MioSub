@@ -30,7 +30,7 @@ import {
   formatGeminiError,
   getActionableErrorMessage,
 } from '@/services/api/gemini/client';
-import { MODELS } from '@/constants/models';
+import { MODELS } from '@/config';
 
 export async function processTranslationBatchWithRetry(
   ai: GoogleGenAI,
@@ -440,7 +440,7 @@ async function processBatch(
   return batch;
 }
 
-import { ENV } from '@/config/env';
+import { ENV } from '@/config';
 
 export const runBatchOperation = async (
   file: File | null,

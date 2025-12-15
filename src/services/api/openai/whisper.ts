@@ -1,5 +1,5 @@
 import { SubtitleItem, OpenAIWhisperSegment } from '@/types/subtitle';
-import { generateSubtitleId } from '@/utils/id';
+import { generateSubtitleId } from '@/services/utils/id';
 import { formatTime } from '@/services/subtitle/time';
 import { logger } from '@/services/utils/logger';
 

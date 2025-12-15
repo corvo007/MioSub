@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { SubtitleItem } from '@/types/subtitle';
-import { generateSubtitleId } from '@/utils/id';
+import { generateSubtitleId } from '@/services/utils/id';
 
 interface UseSubtitleCRUDProps {
   setSubtitles: React.Dispatch<React.SetStateAction<SubtitleItem[]>>;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link2, Loader2, AlertCircle, Sparkles, CheckCircle } from 'lucide-react';
 import { formatDuration } from '@/services/subtitle/time';
-import { isValidVideoUrl } from '@/components/endToEnd/wizard/utils/validation';
+import { isValidVideoUrl } from '@/components/endToEnd/wizard/shared/validation';
 
 /** 步骤 1: 输入链接 */
 export function StepInput({

@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  CompressionOptions,
-  CompressionProgress,
-  HardwareAccelInfo,
-} from '@/services/compression/types';
+import { CompressionOptions, CompressionProgress, HardwareAccelInfo } from '@/types/compression';
 import {
   FileVideo,
   Settings,

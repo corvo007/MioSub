@@ -2,12 +2,7 @@
  * useDownload Hook - Video Download State Management
  */
 import { useState, useEffect, useCallback } from 'react';
-import type {
-  VideoInfo,
-  DownloadProgress,
-  DownloadStatus,
-  DownloadError,
-} from '@/services/download/types';
+import type { VideoInfo, DownloadProgress, DownloadStatus, DownloadError } from '@/types/download';
 import {
   parseVideoUrl,
   startDownload,

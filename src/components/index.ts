@@ -3,6 +3,5 @@ export * from './upload';
 export * from './editor';
 export * from './settings';
 export * from './glossary';
-export * from './progress';
 export * from './modals';
 export * from './common';

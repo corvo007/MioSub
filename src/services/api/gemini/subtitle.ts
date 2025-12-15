@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { SubtitleItem } from '@/types/subtitle';
-import { generateSubtitleId } from '@/utils/id';
+import { generateSubtitleId } from '@/services/utils/id';
 import { AppSettings } from '@/types/settings';
 import { ChunkStatus, TokenUsage } from '@/types/api';
 import {
@@ -39,9 +39,7 @@ import {
   getActionableErrorMessage,
 } from '@/services/api/gemini/client';
 import { translateBatch } from '@/services/api/gemini/batch';
-import { MODELS } from '@/constants/models';
-
-import { ENV } from '@/config/env';
+import { MODELS, ENV } from '@/config';
 
 export const generateSubtitles = async (
   audioSource: File | AudioBuffer,

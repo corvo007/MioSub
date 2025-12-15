@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { SubtitleSnapshot, SubtitleItem } from '@/types/subtitle';
-import { snapshotStorage } from '@/services/storage/snapshotStorage';
+import { snapshotStorage } from '@/services/utils/snapshotStorage';
 
 /**
  * Simple hash function for comparing subtitle and batch content

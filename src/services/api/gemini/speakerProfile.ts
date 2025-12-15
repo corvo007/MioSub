@@ -5,7 +5,7 @@ import { TokenUsage } from '@/types/api';
 import { SPEAKER_PROFILE_SCHEMA } from '@/services/api/gemini/schemas';
 import { getSpeakerProfileExtractionPrompt } from '@/services/api/gemini/prompts';
 import { generateContentWithRetry, formatGeminiError } from '@/services/api/gemini/client';
-import { MODELS } from '@/constants/models';
+import { MODELS } from '@/config';
 
 export interface SpeakerProfile {
   id: string;

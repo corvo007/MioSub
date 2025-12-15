@@ -4,7 +4,7 @@ import { blobToBase64 } from '@/services/audio/converter';
 import { logger } from '@/services/utils/logger';
 import { extractJsonArray } from '@/services/subtitle/parser';
 
-import { generateSubtitleId } from '@/utils/id';
+import { generateSubtitleId } from '@/services/utils/id';
 
 export const transcribeWithOpenAIChat = async (
   audioBlob: Blob,

@@ -2,7 +2,7 @@
  * Quality Selector Component - Tailwind CSS Version
  */
 import React from 'react';
-import type { VideoFormat } from '@/services/download/types';
+import type { VideoFormat } from '@/types/download';
 
 interface QualitySelectorProps {
   formats: VideoFormat[];

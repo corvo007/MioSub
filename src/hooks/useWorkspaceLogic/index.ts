@@ -20,8 +20,8 @@ import { runBatchOperation } from '@/services/api/gemini/batch';
 import { retryGlossaryExtraction } from '@/services/api/gemini/glossary';
 import { useFileParserWorker } from '@/hooks/useFileParserWorker';
 import { decodeAudioWithRetry } from '@/services/audio/decoder';
-import { getSpeakerColor } from '@/utils/colors';
-import { ENV } from '@/config/env';
+import { getSpeakerColor } from '@/services/utils/colors';
+import { ENV } from '@/config';
 
 interface UseWorkspaceLogicProps {
   settings: AppSettings;

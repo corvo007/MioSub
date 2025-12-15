@@ -1,6 +1,6 @@
 import { SubtitleItem } from '@/types/subtitle';
 import { logger } from '@/services/utils/logger';
-import { generateSubtitleId } from '@/utils/id';
+import { generateSubtitleId } from '@/services/utils/id';
 
 // Error types
 class WhisperLocalError extends Error {

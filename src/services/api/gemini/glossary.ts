@@ -13,7 +13,7 @@ import {
 } from '@/services/api/gemini/client';
 import { GLOSSARY_EXTRACTION_PROMPT } from '@/services/api/gemini/prompts';
 import { extractJsonArray } from '@/services/subtitle/parser';
-import { MODELS } from '@/constants/models';
+import { MODELS } from '@/config';
 
 export const extractGlossaryFromAudio = async (
   ai: GoogleGenAI,

@@ -1,6 +1,6 @@
 import { SubtitleItem } from '@/types/subtitle';
 import { toAssTime } from '@/services/subtitle/time';
-import { getSpeakerColor } from '@/utils/colors';
+import { getSpeakerColor } from '@/services/utils/colors';
 
 // Helper to convert Hex (#RRGGBB) to ASS BGR (&HBBGGRR)
 const hexToAssBgr = (hex: string): string => {
