@@ -87,7 +87,7 @@ export const transcribeWithOpenAIChat = async (
       const parsed = JSON.parse(textToParse);
       segments = parsed.segments || parsed.items || parsed;
     } catch (e) {
-      console.warn('Failed to parse GPT-4o JSON response', content);
+      logger.warn('Failed to parse GPT-4o JSON response', { error: e, responseText: content });
       // Fallback simple line parsing could go here, but avoiding for brevity
     }
 

@@ -483,7 +483,8 @@ export async function generateContentWithLongOutput(
         } catch (e) {
           // Parse failed, likely truncated
           logger.warn(
-            `JSON parse failed (attempt ${attempts + 1}). FinishReason: ${finishReason}. Assuming truncation. Fetching more...`
+            `JSON parse failed (attempt ${attempts + 1}). FinishReason: ${finishReason}. Assuming truncation. Fetching more...`,
+            { error: e, partialText: fullText.slice(-500) } // Log tail of text
           );
         }
       }
@@ -544,7 +545,7 @@ export async function generateContentWithLongOutput(
     } catch (e) {
       logger.error('Final JSON validation failed after 3 continuation attempts', {
         fullTextLength: fullText.length,
-        preview: fullText.substring(0, 200),
+        preview: fullText.substring(0, 1000), // Increased preview to 1000 chars
         error: e,
       });
       throw new Error(`Gemini响应格式错误：经过3次续写尝试后JSON仍然无效。请稍后重试。`);

@@ -5,6 +5,7 @@ import { TokenUsage } from '@/types/api';
 import { SPEAKER_PROFILE_SCHEMA } from '@/services/api/gemini/schemas';
 import { getSpeakerProfileExtractionPrompt } from '@/services/api/gemini/prompts';
 import { generateContentWithRetry, formatGeminiError } from '@/services/api/gemini/client';
+import { extractJsonObject } from '@/services/subtitle/parser';
 import { MODELS } from '@/config';
 
 export interface SpeakerProfile {
@@ -106,9 +107,25 @@ export async function extractSpeakerProfiles(
 
     let data;
     try {
-      data = JSON.parse(text);
+      // Clean markdown code blocks first
+      const cleanText = text
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
+
+      // Extract JSON object using state machine
+      const extracted = extractJsonObject(cleanText);
+      if (extracted) {
+        data = JSON.parse(extracted);
+      } else {
+        // Fallback to direct parse
+        data = JSON.parse(cleanText);
+      }
     } catch (e) {
-      logger.error('Failed to parse speaker profile JSON', e);
+      logger.error('Failed to parse speaker profile JSON', {
+        error: e,
+        responseText: text.slice(0, 500),
+      });
       data = { profiles: [] };
     }
 

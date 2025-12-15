@@ -72,7 +72,16 @@ export const extractGlossaryFromAudio = async (
         .trim();
       const extracted = extractJsonArray(clean);
       const textToParse = extracted || clean;
-      const terms = JSON.parse(textToParse);
+      let terms;
+      try {
+        terms = JSON.parse(textToParse);
+      } catch (e) {
+        logger.warn(`Glossary JSON parse failed (Attempt ${attemptNumber})`, {
+          error: e,
+          responseText: text.slice(0, 1000),
+        });
+        throw e;
+      }
 
       const termCount = Array.isArray(terms) ? terms.length : 0;
       logger.info(`[Chunk ${index}] Extracted ${termCount} terms (Attempt ${attemptNumber})`);

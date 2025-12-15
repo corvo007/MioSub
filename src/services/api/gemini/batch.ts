@@ -88,7 +88,10 @@ export async function processTranslationBatchWithRetry(
         if (!Array.isArray(translatedData) && (translatedData as any).items)
           translatedData = (translatedData as any).items;
       } catch (e) {
-        logger.warn(`Translation JSON parse error (Attempt ${attempt + 1}/${maxRetries})`);
+        logger.warn(`Translation JSON parse error (Attempt ${attempt + 1}/${maxRetries})`, {
+          error: e,
+          responseText: text.slice(0, 1000), // Log first 1000 chars
+        });
         throw e;
       }
 
@@ -106,6 +109,7 @@ export async function processTranslationBatchWithRetry(
         logger.info(`Retrying ${missingItems.length} missing translations...`);
         onStatusUpdate?.({ message: `重试 ${missingItems.length} 条漏翻...` });
 
+        let retryResponse;
         try {
           const retryPayload = missingItems.map((item) => ({
             id: item.id,
@@ -114,7 +118,7 @@ export async function processTranslationBatchWithRetry(
           }));
           const retryPrompt = getTranslationBatchPrompt(missingItems.length, retryPayload);
 
-          const retryResponse = await generateContentWithRetry(
+          retryResponse = await generateContentWithRetry(
             ai,
             {
               model: 'gemini-2.5-flash',
@@ -154,7 +158,10 @@ export async function processTranslationBatchWithRetry(
             logger.info(`Recovered ${recoveredCount}/${missingItems.length} translations on retry`);
           }
         } catch (retryError) {
-          logger.warn(`Retry failed for missing translations`, formatGeminiError(retryError));
+          logger.warn(`Retry failed for missing translations`, {
+            error: formatGeminiError(retryError),
+            responseText: retryResponse?.text?.slice(0, 500),
+          });
         }
       }
 

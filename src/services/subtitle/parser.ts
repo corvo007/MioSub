@@ -1,6 +1,7 @@
 import { SubtitleItem, GeminiSubtitleSchema } from '@/types/subtitle';
 import { timeToSeconds, normalizeTimestamp, formatTime } from '@/services/subtitle/time';
 import { generateSubtitleId } from '@/services/utils/id';
+import { logger } from '@/services/utils/logger';
 
 /**
  * Known non-speech annotations from Whisper transcription
@@ -372,6 +373,52 @@ export const extractJsonArray = (text: string): string | null => {
   return null;
 };
 
+/**
+ * Extract a JSON object from text that may contain markdown code blocks or extra text.
+ * Uses the same state machine approach as extractJsonArray.
+ */
+export const extractJsonObject = (text: string): string | null => {
+  const firstBrace = text.indexOf('{');
+  if (firstBrace === -1) return null;
+
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+
+  // Start scanning from the first brace
+  for (let i = firstBrace; i < text.length; i++) {
+    const char = text[i];
+
+    if (escape) {
+      escape = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      escape = true;
+      continue;
+    }
+
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (!inString) {
+      if (char === '{') {
+        depth++;
+      } else if (char === '}') {
+        depth--;
+        if (depth === 0) {
+          return text.substring(firstBrace, i + 1);
+        }
+      }
+    }
+  }
+
+  return null;
+};
+
 export const parseGeminiResponse = (
   jsonResponse: string | null | undefined,
   maxDuration?: number
@@ -470,7 +517,10 @@ export const parseGeminiResponse = (
       })
       .filter((item) => item !== null) as SubtitleItem[];
   } catch (e) {
-    console.error('Failed to parse JSON from Gemini', e);
+    logger.error('Failed to parse JSON from Gemini', {
+      error: e,
+      responseText: jsonResponse?.slice(0, 1000),
+    });
     return [];
   }
 };
