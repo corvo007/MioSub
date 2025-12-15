@@ -29,6 +29,15 @@ export function useEndToEndSubtitleGeneration({
   const isProcessingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Use refs to store settings and updateSetting to prevent infinite loop
+  // These refs always have the latest values without triggering re-renders
+  const settingsRef = useRef(settings);
+  const updateSettingRef = useRef(updateSetting);
+
+  // Keep refs in sync with props
+  settingsRef.current = settings;
+  updateSettingRef.current = updateSetting;
+
   /**
    * Load audio file from path and decode it
    */
@@ -97,9 +106,10 @@ export function useEndToEndSubtitleGeneration({
       try {
         logger.info('[EndToEnd] Starting subtitle generation', { audioPath, config });
 
-        // Validate API keys before starting
-        const hasGeminiKey = settings.geminiKey?.trim() || process.env.VITE_GEMINI_API_KEY;
-        const hasOpenAIKey = settings.openaiKey?.trim() || process.env.VITE_OPENAI_API_KEY;
+        // Validate API keys before starting (use ref to access latest settings)
+        const currentSettings = settingsRef.current;
+        const hasGeminiKey = currentSettings.geminiKey?.trim() || process.env.VITE_GEMINI_API_KEY;
+        const hasOpenAIKey = currentSettings.openaiKey?.trim() || process.env.VITE_OPENAI_API_KEY;
 
         if (!hasGeminiKey) {
           return {
@@ -108,7 +118,7 @@ export function useEndToEndSubtitleGeneration({
             errorCode: 'MISSING_API_KEY',
           };
         }
-        if (!hasOpenAIKey && !settings.useLocalWhisper) {
+        if (!hasOpenAIKey && !currentSettings.useLocalWhisper) {
           return {
             success: false,
             error: '缺少 OpenAI API 密钥或未配置本地 Whisper',
@@ -186,22 +196,23 @@ export function useEndToEndSubtitleGeneration({
 
         // Lookup selected glossary terms if a glossary is selected in config
         const selectedGlossary = config.selectedGlossaryId
-          ? settings.glossaries?.find((g) => g.id === config.selectedGlossaryId)
+          ? currentSettings.glossaries?.find((g) => g.id === config.selectedGlossaryId)
           : null;
         const selectedGlossaryTerms = selectedGlossary?.terms || [];
 
         // Merge config with settings, applying end-to-end specific overrides
         const mergedSettings: AppSettings = {
-          ...settings,
+          ...currentSettings,
           // Apply any config overrides from the wizard
-          genre: config.genre ?? settings.genre,
-          enableAutoGlossary: config.enableGlossary ?? settings.enableAutoGlossary,
-          enableDiarization: config.enableDiarization ?? settings.enableDiarization,
-          minSpeakers: config.minSpeakers ?? settings.minSpeakers,
-          maxSpeakers: config.maxSpeakers ?? settings.maxSpeakers,
-          // Use the selected glossary terms if available, otherwise fall back to settings.glossary
-          glossary: selectedGlossaryTerms.length > 0 ? selectedGlossaryTerms : settings.glossary,
-          activeGlossaryId: config.selectedGlossaryId ?? settings.activeGlossaryId,
+          genre: config.genre ?? currentSettings.genre,
+          enableAutoGlossary: config.enableGlossary ?? currentSettings.enableAutoGlossary,
+          enableDiarization: config.enableDiarization ?? currentSettings.enableDiarization,
+          minSpeakers: config.minSpeakers ?? currentSettings.minSpeakers,
+          maxSpeakers: config.maxSpeakers ?? currentSettings.maxSpeakers,
+          // Use the selected glossary terms if available, otherwise fall back to currentSettings.glossary
+          glossary:
+            selectedGlossaryTerms.length > 0 ? selectedGlossaryTerms : currentSettings.glossary,
+          activeGlossaryId: config.selectedGlossaryId ?? currentSettings.activeGlossaryId,
           // For end-to-end mode, always auto-confirm glossary
           glossaryAutoConfirm: true,
         };
@@ -221,8 +232,8 @@ export function useEndToEndSubtitleGeneration({
 
             const result = autoConfirmGlossaryTerms({
               metadata,
-              settings,
-              updateSetting,
+              settings: settingsRef.current,
+              updateSetting: updateSettingRef.current,
               targetGlossaryId: config.selectedGlossaryId,
               fallbackTerms: mergedSettings.glossary || [],
               logPrefix: '[EndToEnd]',
@@ -302,7 +313,7 @@ export function useEndToEndSubtitleGeneration({
         abortControllerRef.current = null;
       }
     },
-    [settings, loadAudioFromPath, updateSetting]
+    [loadAudioFromPath] // Only depends on loadAudioFromPath; settings/updateSetting accessed via refs
   );
 
   /**
@@ -340,7 +351,7 @@ export function useEndToEndSubtitleGeneration({
         abortControllerRef.current.abort();
       }
     };
-  }, [handleGenerateRequest]);
+  }, []); // Empty dependency - listener should only be set up once
 
   return {
     isProcessing: isProcessingRef.current,
