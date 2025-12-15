@@ -207,8 +207,14 @@ export function useEndToEndSubtitleGeneration({
           genre: config.genre ?? currentSettings.genre,
           enableAutoGlossary: config.enableGlossary ?? currentSettings.enableAutoGlossary,
           enableDiarization: config.enableDiarization ?? currentSettings.enableDiarization,
+          enableSpeakerPreAnalysis:
+            config.enableSpeakerPreAnalysis ?? currentSettings.enableSpeakerPreAnalysis,
           minSpeakers: config.minSpeakers ?? currentSettings.minSpeakers,
           maxSpeakers: config.maxSpeakers ?? currentSettings.maxSpeakers,
+          useSpeakerColors: config.useSpeakerColors ?? currentSettings.useSpeakerColors,
+          useSpeakerStyledTranslation:
+            config.useSpeakerStyledTranslation ?? currentSettings.useSpeakerStyledTranslation,
+          includeSpeakerInExport: config.includeSpeaker ?? currentSettings.includeSpeakerInExport,
           // Use the selected glossary terms if available, otherwise fall back to currentSettings.glossary
           glossary:
             selectedGlossaryTerms.length > 0 ? selectedGlossaryTerms : currentSettings.glossary,

@@ -117,6 +117,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </SettingRow>
 
                     {settings.enableDiarization && (
+                      <SettingRow
+                        label="启用说话人预分析 (实验性)"
+                        description="在生成字幕前预先分析音频以识别说话人数量和声音特征，可提高区分准确度，但会增加耗时"
+                        indented
+                      >
+                        <Toggle
+                          checked={settings.enableSpeakerPreAnalysis || false}
+                          onChange={(v) => updateSetting('enableSpeakerPreAnalysis', v)}
+                        />
+                      </SettingRow>
+                    )}
+
+                    {settings.enableDiarization && (
                       <div className="space-y-3 animate-fade-in">
                         <SettingRow
                           label="导出时包含说话人名称"

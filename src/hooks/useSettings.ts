@@ -25,6 +25,11 @@ const DEFAULT_SETTINGS: AppSettings = {
   glossaries: [],
   activeGlossaryId: null,
   requestTimeout: 600,
+  enableDiarization: true,
+  enableSpeakerPreAnalysis: true,
+  includeSpeakerInExport: false,
+  useSpeakerColors: true,
+  useSpeakerStyledTranslation: true,
 };
 
 /**

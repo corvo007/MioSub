@@ -351,7 +351,8 @@ export const generateSubtitles = async (
 
   // --- SPEAKER PROFILE EXTRACTION (Parallel) ---
   let speakerProfilePromise: Promise<SpeakerProfile[]> | null = null;
-  if (settings.enableDiarization) {
+  // Only run pre-analysis if both Diarization AND Pre-analysis are enabled
+  if (settings.enableDiarization && settings.enableSpeakerPreAnalysis) {
     logger.info('Starting parallel speaker profile extraction...');
     onProgress?.({
       id: 'diarization',

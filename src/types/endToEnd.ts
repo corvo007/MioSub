@@ -74,6 +74,7 @@ export interface EndToEndConfig {
   enableDiarization: boolean; // 启用说话人识别
   minSpeakers?: number; // 最少说话人数 (可选)
   maxSpeakers?: number; // 最多说话人数 (可选)
+  enableSpeakerPreAnalysis?: boolean; // 启用说话人预分析 (提高质量)
 
   // 压制选项
   enableCompression: boolean; // 是否启用压制
@@ -88,6 +89,7 @@ export interface EndToEndConfig {
   subtitleFormat: 'srt' | 'ass'; // 字幕格式
   includeSpeaker?: boolean; // 在字幕文本中显示说话人名称
   useSpeakerColors?: boolean; // 使用不同颜色区分说话人 (仅 ASS)
+  useSpeakerStyledTranslation?: boolean; // 根据说话人特征调整翻译语气
 }
 
 /** 默认配置 */
@@ -99,6 +101,7 @@ export const DEFAULT_END_TO_END_CONFIG: Partial<EndToEndConfig> = {
   useLocalWhisper: false,
   enableGlossary: true,
   enableDiarization: true,
+  enableSpeakerPreAnalysis: false,
   enableCompression: true,
   compressionEncoder: 'libx264',
   compressionCrf: 23,

@@ -142,8 +142,8 @@ export function StepConfig({
           {/* Glossary & Speaker Detection */}
           <div className="space-y-2">
             <ToggleOptionInline
-              label="启用术语提取"
-              description="自动识别并提取专有名词"
+              label="启用自动术语表"
+              description="自动识别并提取专业术语，提升翻译准确性和一致性"
               checked={config.enableGlossary !== false}
               onChange={(v) => onConfigChange({ enableGlossary: v })}
             />
@@ -178,25 +178,37 @@ export function StepConfig({
             </div>
 
             <ToggleOptionInline
-              label="说话人识别"
-              description="识别音频中的不同说话人"
+              label="启用说话人区分"
+              description="识别音频或视频中的不同说话人，打上标签"
               checked={config.enableDiarization !== false}
               onChange={(v) => onConfigChange({ enableDiarization: v })}
             />
-            {/* Speaker Options */}
+
             {config.enableDiarization !== false && (
               <div className="ml-8 mt-1 space-y-2 border-l-2 border-white/10 pl-3">
                 <ToggleOptionInline
-                  label="显示说话人名称"
-                  description="在字幕文本中包含说话人名字"
+                  label="启用说话人预分析 (实验性)"
+                  description="在生成字幕前预先分析音频以识别说话人数量和声音特征，可提高区分准确度，但会增加耗时"
+                  checked={!!config.enableSpeakerPreAnalysis}
+                  onChange={(v) => onConfigChange({ enableSpeakerPreAnalysis: v })}
+                />
+                <ToggleOptionInline
+                  label="导出时包含说话人名称"
+                  description="在字幕文件中显示说话人（如：羊宫妃那：对话内容）"
                   checked={!!config.includeSpeaker}
                   onChange={(v) => onConfigChange({ includeSpeaker: v })}
                 />
                 <ToggleOptionInline
-                  label="使用说话人颜色"
-                  description="为不同说话人使用不同颜色 (仅ASS)"
+                  label="使用说话人颜色 (ASS)"
+                  description="为不同说话人分配不同颜色（仅 ASS 格式有效）"
                   checked={!!config.useSpeakerColors}
                   onChange={(v) => onConfigChange({ useSpeakerColors: v })}
+                />
+                <ToggleOptionInline
+                  label="角色风格化翻译"
+                  description="根据说话人特征调整翻译语气（正式/口语）"
+                  checked={!!config.useSpeakerStyledTranslation}
+                  onChange={(v) => onConfigChange({ useSpeakerStyledTranslation: v })}
                 />
                 {/* Min/Max Speaker Count */}
                 <div className="pt-3">
@@ -243,7 +255,7 @@ export function StepConfig({
         <ConfigSection title="视频压制配置" icon={<Film className="w-4 h-4" />}>
           <ToggleOptionInline
             label="启用视频压制"
-            description="将字幕内嵌到视频中生成成品"
+            description="高性能 H.264/H.265 视频编码与字幕内嵌"
             checked={config.enableCompression !== false}
             onChange={(v) => onConfigChange({ enableCompression: v })}
           />
@@ -372,9 +384,7 @@ export function StepConfig({
                         label: (
                           <div>
                             <div className="font-medium text-slate-200">H.264 (AVC)</div>
-                            <div className="text-xs text-slate-500">
-                              兼容性最好，适合大多数播放器
-                            </div>
+                            <div className="text-xs text-slate-500">兼容性最好，适合大多数场景</div>
                           </div>
                         ),
                       },
@@ -400,10 +410,10 @@ export function StepConfig({
                     value={config.compressionResolution || 'original'}
                     onChange={(v: string) => onConfigChange({ compressionResolution: v })}
                     options={[
-                      { value: 'original', label: '原画 (保持一致)' },
-                      { value: '1080p', label: '1080p (全高清)' },
-                      { value: '720p', label: '720p (高清)' },
-                      { value: '480p', label: '480p (标清)' },
+                      { value: 'original', label: '原始分辨率 (保持一致)' },
+                      { value: '1080p', label: '1080P (1920x1080 - 全高清)' },
+                      { value: '720p', label: '720P (1280x720 - 高清)' },
+                      { value: '480p', label: '480P (854x480 - 标清)' },
                     ]}
                     forceDropUp={true}
                   />

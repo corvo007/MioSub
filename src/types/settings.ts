@@ -60,6 +60,7 @@ export interface AppSettings {
   useSpeakerStyledTranslation?: boolean; // Use speaker characteristics to guide translation style (default: false)
   minSpeakers?: number; // Minimum expected speaker count (optional hint for LLM)
   maxSpeakers?: number; // Maximum expected speaker count (optional hint for LLM)
+  enableSpeakerPreAnalysis?: boolean; // Perform an initial pass to analyze speakers (quality improvement)
 
   // Batch Operation Settings
   conservativeBatchMode?: boolean; // Conservative mode for fix_timestamps/proofread (default: false)
