@@ -1,15 +1,7 @@
 import React, { useState } from 'react';
 import { Film } from 'lucide-react';
-
-/** 内容类型选择器 - 复刻自 GenreSettingsDialog */
-export const GENRE_PRESETS = ['general', 'anime', 'movie', 'news', 'tech'];
-export const GENRE_LABELS: Record<string, string> = {
-  general: '通用',
-  anime: '动漫',
-  movie: '电影/剧集',
-  news: '新闻',
-  tech: '科技',
-};
+import { GENRE_PRESETS, GENRE_LABELS } from '@/types/settings';
+import { OptionButton } from '@/components/ui/OptionButton';
 
 export function GenreSelector({
   currentGenre,
@@ -47,28 +39,18 @@ export function GenreSelector({
       </label>
       <div className="grid grid-cols-3 gap-2">
         {GENRE_PRESETS.map((genre) => (
-          <button
+          <OptionButton
             key={genre}
+            selected={currentGenre === genre && !showCustomInput}
             onClick={() => handlePresetClick(genre)}
-            className={`px-3 py-2 rounded-lg text-sm border transition-all ${
-              currentGenre === genre && !showCustomInput
-                ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
-                : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white/80'
-            }`}
+            color="violet"
           >
             {GENRE_LABELS[genre] || genre}
-          </button>
+          </OptionButton>
         ))}
-        <button
-          onClick={handleCustomClick}
-          className={`px-3 py-2 rounded-lg text-sm border transition-all ${
-            showCustomInput
-              ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
-              : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white/80'
-          }`}
-        >
+        <OptionButton selected={showCustomInput} onClick={handleCustomClick} color="violet">
           自定义...
-        </button>
+        </OptionButton>
       </div>
       {showCustomInput && (
         <div className="mt-3">
@@ -102,31 +84,25 @@ export function GenreSelectorInline({
     <>
       <div className="grid grid-cols-3 gap-2">
         {GENRE_PRESETS.map((genre) => (
-          <button
+          <OptionButton
             key={genre}
+            selected={currentGenre === genre && !showCustomInput}
             onClick={() => {
               setShowCustomInput(false);
               onGenreChange(genre);
             }}
-            className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${
-              currentGenre === genre && !showCustomInput
-                ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
-                : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
-            }`}
+            color="violet"
           >
             {GENRE_LABELS[genre] || genre}
-          </button>
+          </OptionButton>
         ))}
-        <button
+        <OptionButton
+          selected={showCustomInput}
           onClick={() => setShowCustomInput(true)}
-          className={`px-3 py-1.5 rounded-lg text-sm border transition-all ${
-            showCustomInput
-              ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
-              : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
-          }`}
+          color="violet"
         >
           自定义...
-        </button>
+        </OptionButton>
       </div>
       {showCustomInput && (
         <input

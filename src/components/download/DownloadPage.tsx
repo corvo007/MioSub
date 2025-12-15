@@ -3,7 +3,6 @@
  */
 import React, { useState } from 'react';
 import {
-  ArrowLeft,
   FileText,
   Settings,
   Download,
@@ -19,6 +18,7 @@ import { UrlInput } from '@/components/download/UrlInput';
 import { VideoPreview } from '@/components/download/VideoPreview';
 import { QualitySelector } from '@/components/download/QualitySelector';
 import { DownloadProgress } from '@/components/download/DownloadProgress';
+import { PageHeader, HeaderButton } from '@/components/layout/PageHeader';
 
 interface DownloadPageProps {
   onDownloadComplete?: (videoPath: string) => void;
@@ -116,46 +116,32 @@ export function DownloadPage({
     <div className="min-h-screen bg-slate-950 flex flex-col p-4 md:p-8">
       <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
         {/* Header */}
-        <header
-          className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800 shrink-0 window-drag-region"
-          style={{ WebkitAppRegion: 'drag' } as any}
-        >
-          <div className="flex items-center space-x-4">
-            {onGoBack && (
-              <button
-                onClick={onGoBack}
-                className="p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-            )}
-            <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">视频下载</h1>
-              <p className="text-xs text-slate-400">支持 YouTube 和 Bilibili 视频下载</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            {onShowLogs && (
-              <button
-                onClick={onShowLogs}
-                className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm font-medium group"
-                title="查看日志"
-              >
-                <FileText className="w-4 h-4 text-slate-400 group-hover:text-blue-400 transition-colors" />
-                <span className="hidden sm:inline text-slate-300 group-hover:text-white">日志</span>
-              </button>
-            )}
-            {onShowSettings && (
-              <button
-                onClick={onShowSettings}
-                className="flex items-center space-x-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm font-medium group"
-              >
-                <Settings className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" />
-                <span className="hidden sm:inline text-slate-300 group-hover:text-white">设置</span>
-              </button>
-            )}
-          </div>
-        </header>
+        <PageHeader
+          title="视频下载"
+          subtitle="支持 YouTube 和 Bilibili 视频下载"
+          onBack={onGoBack}
+          actions={
+            <>
+              {onShowLogs && (
+                <HeaderButton
+                  onClick={onShowLogs}
+                  icon={<FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                  label="日志"
+                  title="查看日志"
+                  hoverColor="blue"
+                />
+              )}
+              {onShowSettings && (
+                <HeaderButton
+                  onClick={onShowSettings}
+                  icon={<Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                  label="设置"
+                  hoverColor="emerald"
+                />
+              )}
+            </>
+          }
+        />
 
         <div className="max-w-3xl mx-auto w-full mt-6">
           <UrlInput

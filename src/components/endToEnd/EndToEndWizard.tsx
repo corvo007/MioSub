@@ -22,6 +22,7 @@ import { StepIndicator } from '@/components/endToEnd/wizard/shared/StepIndicator
 import { StepInput } from '@/components/endToEnd/wizard/steps/StepInput';
 import { StepConfig } from '@/components/endToEnd/wizard/steps/StepConfig';
 import { StepResult } from '@/components/endToEnd/wizard/steps/StepResult';
+import { PageHeader, HeaderButton } from '@/components/layout/PageHeader';
 
 interface EndToEndWizardProps {
   settings: AppSettings;
@@ -112,147 +113,129 @@ export function EndToEndWizard({
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
-      {/* Header */}
-      <header
-        className="flex items-center justify-between px-6 py-4 border-b border-white/10 shrink-0 window-drag-region"
-        style={{ WebkitAppRegion: 'drag' } as any}
-      >
-        <div
-          className="flex items-center space-x-3 sm:space-x-4 min-w-0"
-          style={{ WebkitAppRegion: 'no-drag' } as any}
-        >
-          <button
-            onClick={onCancel}
-            className="p-1.5 sm:p-2 hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-white flex-shrink-0"
-          >
-            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-          <div className="min-w-0">
-            <h1 className="text-lg sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2 flex-wrap">
+    <div className="h-screen overflow-hidden bg-slate-950 flex flex-col p-4 md:p-8">
+      <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col min-h-0">
+        {/* Header */}
+        <PageHeader
+          title={
+            <>
               <span className="truncate">全自动模式</span>
               <span className="text-[10px] sm:text-xs font-normal text-slate-500 bg-slate-900 border border-slate-800 px-1.5 sm:px-2 py-0.5 rounded whitespace-nowrap">
                 端到端模式
               </span>
-            </h1>
-            <p className="text-xs text-slate-400 truncate max-w-[200px] sm:max-w-[300px]">
-              输入链接，自动生成字幕视频
-            </p>
-          </div>
-        </div>
-        {/* Header Actions */}
-        <div
-          className="flex items-center space-x-1.5 sm:space-x-2"
-          style={{ WebkitAppRegion: 'no-drag' } as any}
-        >
-          {onShowLogs && (
-            <button
-              onClick={onShowLogs}
-              className="flex items-center space-x-1.5 sm:space-x-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-xs sm:text-sm font-medium group"
-              title="查看日志"
-            >
-              <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-blue-400 transition-colors" />
-              <span className="hidden sm:inline text-slate-300 group-hover:text-white">日志</span>
-            </button>
-          )}
-          {onShowGlossary && (
-            <button
-              onClick={onShowGlossary}
-              className="flex items-center space-x-1.5 sm:space-x-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-xs sm:text-sm font-medium group"
-              title="术语表管理"
-            >
-              <Book className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-indigo-400 transition-colors" />
-              <span className="hidden sm:inline text-slate-300 group-hover:text-white">术语表</span>
-            </button>
-          )}
-          {onShowSettings && (
-            <button
-              onClick={onShowSettings}
-              className="flex items-center space-x-1.5 sm:space-x-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-xs sm:text-sm font-medium group"
-            >
-              <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-emerald-400 transition-colors" />
-              <span className="hidden sm:inline text-slate-300 group-hover:text-white">设置</span>
-            </button>
-          )}
-        </div>
-      </header>
+            </>
+          }
+          subtitle="输入链接，自动生成字幕视频"
+          onBack={onCancel}
+          actions={
+            <>
+              {onShowLogs && (
+                <HeaderButton
+                  onClick={onShowLogs}
+                  icon={<FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                  label="日志"
+                  title="查看日志"
+                  hoverColor="blue"
+                />
+              )}
+              {onShowGlossary && (
+                <HeaderButton
+                  onClick={onShowGlossary}
+                  icon={<Book className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                  label="术语表"
+                  title="术语表管理"
+                  hoverColor="indigo"
+                />
+              )}
+              {onShowSettings && (
+                <HeaderButton
+                  onClick={onShowSettings}
+                  icon={<Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                  label="设置"
+                  hoverColor="emerald"
+                />
+              )}
+            </>
+          }
+        />
 
-      {/* Step Indicator */}
-      <div className="px-6 pt-8">
-        <StepIndicator currentStep={currentStepIndex} steps={steps} />
-      </div>
+        {/* Step Indicator */}
+        <div className="pt-8">
+          <StepIndicator currentStep={currentStepIndex} steps={steps} />
+        </div>
 
-      {/* Content */}
-      <div className="flex-1 px-6 py-8 overflow-y-auto">
-        {state.currentStep === 'input' && (
-          <StepInput
-            url={state.config.url || ''}
-            onUrlChange={(url) => updateConfig({ url })}
-            onParse={handleParseUrl}
-            isParsing={state.isParsing}
-            parseError={state.parseError}
-            videoInfo={videoInfo}
-          />
-        )}
+        {/* Content */}
+        <div className="flex-1 py-8 overflow-y-auto">
+          {state.currentStep === 'input' && (
+            <StepInput
+              url={state.config.url || ''}
+              onUrlChange={(url) => updateConfig({ url })}
+              onParse={handleParseUrl}
+              isParsing={state.isParsing}
+              parseError={state.parseError}
+              videoInfo={videoInfo}
+            />
+          )}
+          {state.currentStep === 'config' && (
+            <StepConfig
+              config={state.config}
+              onConfigChange={updateConfig}
+              videoInfo={videoInfo}
+              settings={settings}
+            />
+          )}
+          {state.currentStep === 'progress' && (
+            <EndToEndProgress
+              progress={state.progress}
+              onAbort={abortPipeline}
+              onRetry={retryPipeline}
+            />
+          )}
+          {state.currentStep === 'result' && (
+            <StepResult
+              result={state.result}
+              onReset={resetConfig}
+              onClose={onComplete || onCancel}
+            />
+          )}
+        </div>
+
+        {/* Footer Navigation - 仅在配置页显示，输入页解析成功后自动跳转 */}
         {state.currentStep === 'config' && (
-          <StepConfig
-            config={state.config}
-            onConfigChange={updateConfig}
-            videoInfo={videoInfo}
-            settings={settings}
-          />
-        )}
-        {state.currentStep === 'progress' && (
-          <EndToEndProgress
-            progress={state.progress}
-            onAbort={abortPipeline}
-            onRetry={retryPipeline}
-          />
-        )}
-        {state.currentStep === 'result' && (
-          <StepResult
-            result={state.result}
-            onReset={resetConfig}
-            onClose={onComplete || onCancel}
-          />
+          <footer className="py-4 border-t border-slate-800 shrink-0">
+            <div className="max-w-3xl mx-auto flex justify-between">
+              <button
+                onClick={currentStepIndex > 0 ? goBack : onCancel}
+                className="px-6 py-3 bg-white/10 border border-white/20 rounded-xl text-white font-medium transition-colors hover:bg-white/15"
+              >
+                <span className="flex items-center gap-2">
+                  <ArrowLeft className="w-4 h-4" />
+                  {currentStepIndex > 0 ? '上一步' : '取消'}
+                </span>
+              </button>
+              <button
+                onClick={handleNext}
+                disabled={!canProceed()}
+                className="px-6 py-3 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-xl text-white font-medium transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+              >
+                <span className="flex items-center gap-2">
+                  {state.currentStep === 'config' ? (
+                    <>
+                      <Play className="w-4 h-4" />
+                      开始处理
+                    </>
+                  ) : (
+                    <>
+                      下一步
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </span>
+              </button>
+            </div>
+          </footer>
         )}
       </div>
-
-      {/* Footer Navigation */}
-      {state.currentStep !== 'progress' && state.currentStep !== 'result' && (
-        <footer className="px-6 py-4 border-t border-white/10 shrink-0">
-          <div className="max-w-3xl mx-auto flex justify-between">
-            <button
-              onClick={currentStepIndex > 0 ? goBack : onCancel}
-              className="px-6 py-3 bg-white/10 border border-white/20 rounded-xl text-white font-medium transition-colors hover:bg-white/15"
-            >
-              <span className="flex items-center gap-2">
-                <ArrowLeft className="w-4 h-4" />
-                {currentStepIndex > 0 ? '上一步' : '取消'}
-              </span>
-            </button>
-            <button
-              onClick={handleNext}
-              disabled={!canProceed()}
-              className="px-6 py-3 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-xl text-white font-medium transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
-            >
-              <span className="flex items-center gap-2">
-                {state.currentStep === 'config' ? (
-                  <>
-                    <Play className="w-4 h-4" />
-                    开始处理
-                  </>
-                ) : (
-                  <>
-                    下一步
-                    <ArrowRight className="w-4 h-4" />
-                  </>
-                )}
-              </span>
-            </button>
-          </div>
-        </footer>
-      )}
     </div>
   );
 }
