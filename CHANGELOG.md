@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.9.3] - 2025-12-16
+
+### Features
+
+- **Speaker Analysis**: Enhanced speaker analysis and synchronized settings for better diarization control.
+
+### Fixes
+
+- **End-to-End**: Resolved critical infinite loop in `useEndToEndSubtitleGeneration` hook.
+- **Robustness**: Improved JSON parsing reliability and error logging.
+
+### Refactor
+
+- **Cleanup**: Repository structure cleanup (Phases 1-2, 5, 7, 9).
+
+### Documentation
+
+- **Architecture**: Updated diagrams for the End-to-End pipeline.
+
 ## [2.9.2] - 2025-12-15
 
 ### Features
