@@ -53,7 +53,7 @@ export default function App() {
 
   // End-to-End Subtitle Generation Handler
   // This hook listens for IPC requests from main process and executes generation
-  useEndToEndSubtitleGeneration({ settings });
+  useEndToEndSubtitleGeneration({ settings, updateSetting });
 
   // Confirmation Modal State
   const [confirmation, setConfirmation] = useState<{

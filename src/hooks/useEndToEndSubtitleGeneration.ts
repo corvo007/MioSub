@@ -7,20 +7,27 @@ import { useEffect, useCallback, useRef } from 'react';
 import { generateSubtitles } from '@/services/api/gemini/subtitle';
 import { generateAssContent, generateSrtContent } from '@/services/subtitle/generator';
 import { decodeAudioWithRetry } from '@/services/audio/decoder';
+import { createGlossary } from '@/services/glossary/manager';
+import { mergeGlossaryResults } from '@/services/glossary/merger';
 import { logger } from '@/services/utils/logger';
 import type { AppSettings } from '@/types/settings';
 import type { SubtitleItem } from '@/types/subtitle';
 import type { ChunkStatus } from '@/types/api';
+import type { GlossaryItem } from '@/types/glossary';
 
 interface UseEndToEndSubtitleGenerationProps {
   settings: AppSettings;
+  updateSetting: <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void;
 }
 
 /**
  * Hook that listens for end-to-end subtitle generation requests from main process
  * and executes the generation pipeline
  */
-export function useEndToEndSubtitleGeneration({ settings }: UseEndToEndSubtitleGenerationProps) {
+export function useEndToEndSubtitleGeneration({
+  settings,
+  updateSetting,
+}: UseEndToEndSubtitleGenerationProps) {
   const isProcessingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -189,6 +196,7 @@ export function useEndToEndSubtitleGeneration({ settings }: UseEndToEndSubtitleG
         const mergedSettings: AppSettings = {
           ...settings,
           // Apply any config overrides from the wizard
+          genre: config.genre ?? settings.genre,
           enableAutoGlossary: config.enableGlossary ?? settings.enableAutoGlossary,
           enableDiarization: config.enableDiarization ?? settings.enableDiarization,
           minSpeakers: config.minSpeakers ?? settings.minSpeakers,
@@ -207,17 +215,66 @@ export function useEndToEndSubtitleGeneration({ settings }: UseEndToEndSubtitleG
           mergedSettings,
           sendProgress,
           undefined, // No intermediate result callback needed
-          // Auto-confirm glossary callback for end-to-end mode
+          // Auto-confirm glossary callback for end-to-end mode (with persistence)
           async (metadata) => {
             logger.info('[EndToEnd] Auto-accepting glossary terms', {
               totalTerms: metadata.totalTerms,
             });
-            // Auto-accept: merge extracted terms with existing glossary
-            const extractedTerms =
-              metadata.results
-                ?.flatMap((r) => r.terms || [])
-                .filter((t) => t.term && t.translation) || [];
-            return [...(mergedSettings.glossary || []), ...extractedTerms];
+
+            // Use mergeGlossaryResults to properly handle conflicts
+            const { unique, conflicts } = mergeGlossaryResults(metadata.results || []);
+
+            // For conflicts, auto-select the first new option
+            const autoResolvedConflicts = conflicts.map((c) => {
+              const newOption = c.options.find((opt) => !c.hasExisting || opt !== c.options[0]);
+              return newOption || c.options[0];
+            });
+
+            // Combine unique terms and auto-resolved conflicts
+            const allTerms: GlossaryItem[] = [...unique, ...autoResolvedConflicts];
+
+            if (allTerms.length === 0) {
+              logger.info('[EndToEnd] No new terms extracted');
+              return mergedSettings.glossary || [];
+            }
+
+            // Persist to settings (same logic as useWorkspaceLogic)
+            const currentGlossaries = settings.glossaries || [];
+            let targetGlossaryId = config.selectedGlossaryId || settings.activeGlossaryId;
+            let updatedGlossaries = [...currentGlossaries];
+
+            // If no active glossary, create a new one for auto-extracted terms
+            if (!targetGlossaryId || !currentGlossaries.find((g) => g.id === targetGlossaryId)) {
+              const newGlossary = createGlossary('自动提取术语');
+              newGlossary.terms = [];
+              updatedGlossaries = [...currentGlossaries, newGlossary];
+              targetGlossaryId = newGlossary.id;
+              logger.info('[EndToEnd] Auto-created new glossary for extracted terms');
+            }
+
+            const activeG = updatedGlossaries.find((g) => g.id === targetGlossaryId);
+            const activeTerms = activeG?.terms || [];
+            const existingTerms = new Set(activeTerms.map((g) => g.term.toLowerCase()));
+            const newTerms = allTerms.filter((t) => !existingTerms.has(t.term.toLowerCase()));
+
+            if (newTerms.length > 0 || updatedGlossaries !== currentGlossaries) {
+              const finalGlossaries = updatedGlossaries.map((g) => {
+                if (g.id === targetGlossaryId) {
+                  const currentTerms = g.terms || [];
+                  return { ...g, terms: [...currentTerms, ...newTerms] };
+                }
+                return g;
+              });
+              updateSetting('glossaries', finalGlossaries);
+              updateSetting('activeGlossaryId', targetGlossaryId);
+              logger.info(
+                `[EndToEnd] Auto-added ${newTerms.length} terms to glossary "${activeG?.name || targetGlossaryId}"`
+              );
+              const updatedActive = finalGlossaries.find((g) => g.id === targetGlossaryId);
+              return updatedActive?.terms || [];
+            }
+
+            return activeTerms;
           },
           signal
         );
@@ -291,7 +348,7 @@ export function useEndToEndSubtitleGeneration({ settings }: UseEndToEndSubtitleG
         abortControllerRef.current = null;
       }
     },
-    [settings, loadAudioFromPath]
+    [settings, loadAudioFromPath, updateSetting]
   );
 
   /**
