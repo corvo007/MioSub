@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Plus, Merge, X, CheckCircle } from 'lucide-react';
 import { Glossary } from '@/types/glossary';
 import { CustomSelect } from '@/components/settings';
+import { cn } from '@/lib/cn';
 
 export type ImportMode = 'create' | 'merge';
 export type ConflictMode = 'skip' | 'overwrite';
@@ -91,15 +92,19 @@ export const GlossaryImportDialog: React.FC<GlossaryImportDialogProps> = ({
               {/* Option 1: Create New */}
               <div
                 onClick={() => setMode('create')}
-                className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                className={cn(
+                  'p-4 rounded-xl border cursor-pointer transition-all',
                   mode === 'create'
                     ? 'bg-indigo-600/20 border-indigo-500 ring-1 ring-indigo-500'
                     : 'bg-slate-800 border-slate-700 hover:border-slate-600'
-                }`}
+                )}
               >
                 <div className="flex items-center space-x-3">
                   <div
-                    className={`w-5 h-5 rounded-full border flex items-center justify-center ${mode === 'create' ? 'border-indigo-500' : 'border-slate-500'}`}
+                    className={cn(
+                      'w-5 h-5 rounded-full border flex items-center justify-center',
+                      mode === 'create' ? 'border-indigo-500' : 'border-slate-500'
+                    )}
                   >
                     {mode === 'create' && (
                       <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
@@ -130,15 +135,19 @@ export const GlossaryImportDialog: React.FC<GlossaryImportDialogProps> = ({
               {/* Option 2: Merge */}
               <div
                 onClick={() => setMode('merge')}
-                className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                className={cn(
+                  'p-4 rounded-xl border cursor-pointer transition-all',
                   mode === 'merge'
                     ? 'bg-indigo-600/20 border-indigo-500 ring-1 ring-indigo-500'
                     : 'bg-slate-800 border-slate-700 hover:border-slate-600'
-                }`}
+                )}
               >
                 <div className="flex items-center space-x-3">
                   <div
-                    className={`w-5 h-5 rounded-full border flex items-center justify-center ${mode === 'merge' ? 'border-indigo-500' : 'border-slate-500'}`}
+                    className={cn(
+                      'w-5 h-5 rounded-full border flex items-center justify-center',
+                      mode === 'merge' ? 'border-indigo-500' : 'border-slate-500'
+                    )}
                   >
                     {mode === 'merge' && <div className="w-2.5 h-2.5 rounded-full bg-indigo-500" />}
                   </div>
@@ -169,7 +178,10 @@ export const GlossaryImportDialog: React.FC<GlossaryImportDialogProps> = ({
                       <div className="flex space-x-4">
                         <label className="flex items-center space-x-2 cursor-pointer">
                           <div
-                            className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${conflictMode === 'skip' ? 'border-indigo-500' : 'border-slate-500'}`}
+                            className={cn(
+                              'w-4 h-4 rounded-full border flex items-center justify-center transition-all',
+                              conflictMode === 'skip' ? 'border-indigo-500' : 'border-slate-500'
+                            )}
                           >
                             {conflictMode === 'skip' && (
                               <div className="w-2 h-2 rounded-full bg-indigo-500" />
@@ -179,7 +191,12 @@ export const GlossaryImportDialog: React.FC<GlossaryImportDialogProps> = ({
                         </label>
                         <label className="flex items-center space-x-2 cursor-pointer">
                           <div
-                            className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${conflictMode === 'overwrite' ? 'border-indigo-500' : 'border-slate-500'}`}
+                            className={cn(
+                              'w-4 h-4 rounded-full border flex items-center justify-center transition-all',
+                              conflictMode === 'overwrite'
+                                ? 'border-indigo-500'
+                                : 'border-slate-500'
+                            )}
                           >
                             {conflictMode === 'overwrite' && (
                               <div className="w-2 h-2 rounded-full bg-indigo-500" />

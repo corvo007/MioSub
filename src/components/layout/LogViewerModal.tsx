@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { X, FileText, Download, Filter } from 'lucide-react';
 import type { LogEntry } from '@/services/utils/logger';
 import { CustomSelect } from '@/components/settings/CustomSelect';
+import { cn } from '@/lib/cn';
 
 interface LogViewerModalProps {
   isOpen: boolean;
@@ -134,28 +135,30 @@ export const LogViewerModal: React.FC<LogViewerModalProps> = ({ isOpen, logs, on
               {filteredLogs.map((log, idx) => (
                 <div
                   key={idx}
-                  className={`p-3 rounded-lg border ${
-                    log.level === 'ERROR'
-                      ? 'bg-red-500/10 border-red-500/30 text-red-300'
-                      : log.level === 'WARN'
-                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-300'
-                        : log.level === 'INFO'
-                          ? 'bg-blue-500/10 border-blue-500/30 text-blue-300'
-                          : 'bg-slate-800/50 border-slate-700 text-slate-400'
-                  }`}
+                  className={cn(
+                    'p-3 rounded-lg border',
+                    log.level === 'ERROR' && 'bg-red-500/10 border-red-500/30 text-red-300',
+                    log.level === 'WARN' && 'bg-amber-500/10 border-amber-500/30 text-amber-300',
+                    log.level === 'INFO' && 'bg-blue-500/10 border-blue-500/30 text-blue-300',
+                    log.level !== 'ERROR' &&
+                      log.level !== 'WARN' &&
+                      log.level !== 'INFO' &&
+                      'bg-slate-800/50 border-slate-700 text-slate-400'
+                  )}
                 >
                   <div className="flex items-start gap-3">
                     <span className="text-xs opacity-70 whitespace-nowrap">{log.timestamp}</span>
                     <span
-                      className={`text-xs font-bold px-1.5 py-0.5 rounded ${
-                        log.level === 'ERROR'
-                          ? 'bg-red-500 text-white'
-                          : log.level === 'WARN'
-                            ? 'bg-amber-500 text-white'
-                            : log.level === 'INFO'
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-slate-600 text-slate-200'
-                      }`}
+                      className={cn(
+                        'text-xs font-bold px-1.5 py-0.5 rounded',
+                        log.level === 'ERROR' && 'bg-red-500 text-white',
+                        log.level === 'WARN' && 'bg-amber-500 text-white',
+                        log.level === 'INFO' && 'bg-blue-500 text-white',
+                        log.level !== 'ERROR' &&
+                          log.level !== 'WARN' &&
+                          log.level !== 'INFO' &&
+                          'bg-slate-600 text-slate-200'
+                      )}
                     >
                       {log.level}
                     </span>

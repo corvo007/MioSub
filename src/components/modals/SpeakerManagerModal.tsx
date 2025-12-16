@@ -15,6 +15,7 @@ import {
 import { SpeakerUIProfile } from '@/types/speaker';
 import { getSpeakerColor } from '@/services/utils/colors';
 import { SimpleConfirmationModal } from '@/components/modals/SimpleConfirmationModal';
+import { cn } from '@/lib/cn';
 
 interface SpeakerManagerModalProps {
   isOpen: boolean;
@@ -169,11 +170,12 @@ export const SpeakerManagerModal: React.FC<SpeakerManagerModalProps> = ({
               {speakerProfiles.map((profile) => (
                 <div
                   key={profile.id}
-                  className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                  className={cn(
+                    'flex items-center justify-between p-3 rounded-lg border transition-all',
                     selectedForMerge.has(profile.id)
                       ? 'bg-indigo-500/20 border-indigo-500'
                       : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
-                  }`}
+                  )}
                 >
                   {editingId === profile.id ? (
                     <div className="flex-1 flex items-center gap-2">

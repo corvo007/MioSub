@@ -4,6 +4,7 @@ import { GlossaryItem, GlossaryExtractionResult, AppSettings } from '@/types';
 import { mergeGlossaryResults } from '@/services/glossary/merger';
 import { CustomSelect } from '@/components/settings';
 import { createGlossary } from '@/services/glossary/manager';
+import { cn } from '@/lib/cn';
 
 interface GlossaryConfirmationModalProps {
   isOpen: boolean;
@@ -276,11 +277,12 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                 [conflict.term]: option,
                               }));
                             }}
-                            className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                            className={cn(
+                              'p-3 rounded-lg border cursor-pointer transition-all',
                               resolvedConflicts[conflict.term] === option
                                 ? 'bg-indigo-500/20 border-indigo-500 ring-1 ring-indigo-500'
                                 : 'bg-slate-800 border-slate-700 hover:border-slate-600'
-                            }`}
+                            )}
                           >
                             <div className="flex items-center justify-between">
                               <div>
@@ -307,11 +309,12 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                 [conflict.term]: existingOption,
                               }));
                             }}
-                            className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                            className={cn(
+                              'p-3 rounded-lg border cursor-pointer transition-all',
                               resolvedConflicts[conflict.term] === existingOption
                                 ? 'bg-indigo-500/20 border-indigo-500 ring-1 ring-indigo-500'
                                 : 'bg-slate-800 border-slate-700 hover:border-slate-600'
-                            }`}
+                            )}
                           >
                             <div className="flex items-center justify-between">
                               <div>
@@ -336,7 +339,12 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
 
                         {/* +2: Custom Option */}
                         <div
-                          className={`p-3 rounded-lg border cursor-pointer transition-all ${isCustomSelected ? 'bg-indigo-500/20 border-indigo-500 ring-1 ring-indigo-500' : 'bg-slate-800 border-slate-700 hover:border-slate-600'}`}
+                          className={cn(
+                            'p-3 rounded-lg border cursor-pointer transition-all',
+                            isCustomSelected
+                              ? 'bg-indigo-500/20 border-indigo-500 ring-1 ring-indigo-500'
+                              : 'bg-slate-800 border-slate-700 hover:border-slate-600'
+                          )}
                         >
                           {isCustomEditing ? (
                             <div className="space-y-2">
@@ -439,11 +447,12 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                             onClick={() => {
                               setResolvedConflicts((prev) => ({ ...prev, [conflict.term]: null }));
                             }}
-                            className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                            className={cn(
+                              'p-3 rounded-lg border cursor-pointer transition-all',
                               resolvedConflicts[conflict.term] === null
                                 ? 'bg-red-500/10 border-red-500/50 text-red-400'
                                 : 'bg-slate-800 border-slate-700 hover:border-slate-600 text-slate-400'
-                            }`}
+                            )}
                           >
                             <div className="flex items-center gap-2">
                               <X className="w-4 h-4" />
@@ -485,21 +494,23 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                   return (
                     <div
                       key={idx}
-                      className={`p-3 rounded-xl border transition-all ${
+                      className={cn(
+                        'p-3 rounded-xl border transition-all',
                         isSelected
                           ? 'bg-indigo-500/10 border-indigo-500/30'
                           : 'bg-slate-800/50 border-slate-700 opacity-60'
-                      }`}
+                      )}
                     >
                       <div className="flex items-start gap-3">
                         <div className="pt-1">
                           <div
                             onClick={() => toggleTerm(term.term)}
-                            className={`w-5 h-5 rounded border flex items-center justify-center cursor-pointer transition-colors ${
+                            className={cn(
+                              'w-5 h-5 rounded border flex items-center justify-center cursor-pointer transition-colors',
                               isSelected
                                 ? 'bg-indigo-500 border-indigo-500'
                                 : 'border-slate-600 bg-slate-700/50 hover:border-slate-500'
-                            }`}
+                            )}
                           >
                             {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
                           </div>

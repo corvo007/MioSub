@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
+import { cn } from '@/lib/cn';
 
 interface SimpleConfirmationModalProps {
   isOpen: boolean;
@@ -65,13 +66,12 @@ export const SimpleConfirmationModal: React.FC<SimpleConfirmationModalProps> = (
             onConfirm();
             onClose();
           }}
-          className={`px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors shadow-lg ${
-            type === 'danger'
-              ? 'bg-red-600 hover:bg-red-500 shadow-red-500/20'
-              : type === 'warning'
-                ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-500/20'
-                : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/20'
-          }`}
+          className={cn(
+            'px-4 py-2 rounded-lg text-white text-sm font-medium transition-colors shadow-lg',
+            type === 'danger' && 'bg-red-600 hover:bg-red-500 shadow-red-500/20',
+            type === 'warning' && 'bg-amber-600 hover:bg-amber-500 shadow-amber-500/20',
+            type === 'info' && 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/20'
+          )}
         >
           {confirmText}
         </button>
