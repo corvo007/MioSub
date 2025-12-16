@@ -23,6 +23,7 @@ import { StepInput } from '@/components/endToEnd/wizard/steps/StepInput';
 import { StepConfig } from '@/components/endToEnd/wizard/steps/StepConfig';
 import { StepResult } from '@/components/endToEnd/wizard/steps/StepResult';
 import { PageHeader, HeaderButton } from '@/components/layout/PageHeader';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 
 interface EndToEndWizardProps {
   settings: AppSettings;
@@ -213,25 +214,20 @@ export function EndToEndWizard({
                   {currentStepIndex > 0 ? '上一步' : '取消'}
                 </span>
               </button>
-              <button
+              <PrimaryButton
                 onClick={handleNext}
                 disabled={!canProceed()}
-                className="px-6 py-3 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-xl text-white font-medium transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                icon={state.currentStep === 'config' ? <Play className="w-4 h-4" /> : undefined}
               >
-                <span className="flex items-center gap-2">
-                  {state.currentStep === 'config' ? (
-                    <>
-                      <Play className="w-4 h-4" />
-                      开始处理
-                    </>
-                  ) : (
-                    <>
-                      下一步
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </span>
-              </button>
+                {state.currentStep === 'config' ? (
+                  '开始处理'
+                ) : (
+                  <>
+                    下一步
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </PrimaryButton>
             </div>
           </footer>
         )}

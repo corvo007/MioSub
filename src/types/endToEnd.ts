@@ -80,7 +80,9 @@ export interface EndToEndConfig {
   enableCompression: boolean; // 是否启用压制
   compressionEncoder: 'libx264' | 'libx265'; // 编码器
   compressionCrf: number; // CRF 质量值 (0-51, 越小越好)
-  compressionResolution: 'original' | '1080p' | '720p' | '480p'; // 分辨率
+  compressionResolution: 'original' | '1080p' | '720p' | '480p' | 'custom'; // 分辨率
+  compressionWidth?: number; // 自定义宽度
+  compressionHeight?: number; // 自定义高度
   useHardwareAccel: boolean; // 使用 GPU 加速
   embedSubtitle: boolean; // 内嵌字幕到视频
 

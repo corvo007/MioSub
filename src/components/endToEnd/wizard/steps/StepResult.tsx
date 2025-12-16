@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle, XCircle, Film, FileText, Wand2, RefreshCw } from 'lucide-react';
 import { OutputItem } from '@/components/endToEnd/wizard/shared/OutputItem';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 
 /** 步骤 4: 结果展示 */
 export function StepResult({
@@ -97,12 +98,7 @@ export function StepResult({
             处理新视频
           </span>
         </button>
-        <button
-          onClick={onClose}
-          className="px-6 py-3 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-xl text-white font-medium transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/30"
-        >
-          完成
-        </button>
+        <PrimaryButton onClick={onClose}>完成</PrimaryButton>
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link2, Loader2, AlertCircle, Sparkles, CheckCircle } from 'lucide-react';
 import { formatDuration } from '@/services/subtitle/time';
-import { isValidVideoUrl } from '@/components/endToEnd/wizard/shared/validation';
+import { isValidVideoUrl } from '@/services/utils/url';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 
 /** 步骤 1: 输入链接 */
 export function StepInput({
@@ -76,24 +77,6 @@ export function StepInput({
           </div>
         </div>
 
-        {/* Platform indicator - shown below input when valid */}
-        {validationResult?.platform && validationResult.valid && !isParsing && (
-          <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-emerald-400" />
-            <span className="text-sm text-emerald-300">
-              已识别: <span className="font-medium">{validationResult.platform}</span>
-            </span>
-          </div>
-        )}
-
-        {/* Validation warning (not error) */}
-        {validationResult?.error && validationResult.valid && (
-          <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-200 text-sm">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{validationResult.error}</span>
-          </div>
-        )}
-
         {/* Validation error */}
         {validationResult?.error && !validationResult.valid && (
           <div className="flex items-start gap-3 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-200 text-sm">
@@ -143,23 +126,17 @@ export function StepInput({
           </div>
         )}
 
-        <button
+        <PrimaryButton
           onClick={handleParse}
           disabled={isParsing || !inputUrl.trim() || validationResult?.valid === false}
-          className="w-full py-4 bg-gradient-to-r from-violet-500 to-indigo-500 rounded-xl text-white font-medium transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-violet-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+          loading={isParsing}
+          loadingText="正在解析..."
+          icon={<Sparkles className="w-5 h-5" />}
+          size="lg"
+          fullWidth
         >
-          {isParsing ? (
-            <span className="flex items-center justify-center gap-2">
-              <Loader2 className="w-5 h-5 animate-spin" />
-              正在解析...
-            </span>
-          ) : (
-            <span className="flex items-center justify-center gap-2">
-              <Sparkles className="w-5 h-5" />
-              解析视频
-            </span>
-          )}
-        </button>
+          解析视频
+        </PrimaryButton>
       </div>
     </div>
   );

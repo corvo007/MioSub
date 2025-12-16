@@ -1,11 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Settings, Download, FileText, Film, Zap, Cpu, Loader2 } from 'lucide-react';
-import type { HardwareAccelInfo } from '@/types/compression';
+import React from 'react';
+import { Settings, Download, FileText, Film } from 'lucide-react';
 import type { AppSettings } from '@/types/settings';
+import { HardwareAccelerationSelector } from '@/components/settings/HardwareAccelerationSelector';
+import { ResolutionSelector } from '@/components/settings/ResolutionSelector';
+import { EncoderSelector } from '@/components/settings/EncoderSelector';
+import { useHardwareAcceleration } from '@/hooks/useHardwareAcceleration';
 import { CustomSelect } from '@/components/settings/CustomSelect';
-import { ConfigSection } from '@/components/endToEnd/wizard/shared/ConfigSection';
+import { Card } from '@/components/ui/Card';
+import { NumberInput } from '@/components/ui/NumberInput';
 import { ToggleOptionInline } from '@/components/endToEnd/wizard/shared/ToggleOption';
 import { GenreSelectorInline } from '@/components/endToEnd/wizard/shared/GenreSelector';
+import { DirectorySelector } from '@/components/ui/DirectorySelector';
+import { QualitySelector } from '@/components/download/QualitySelector';
 
 /** 步骤 2: 配置选项 */
 export function StepConfig({
@@ -19,20 +25,7 @@ export function StepConfig({
   videoInfo?: any;
   settings?: AppSettings;
 }) {
-  const [hwAccelInfo, setHwAccelInfo] = useState<HardwareAccelInfo | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      if (window.electronAPI?.compression?.getHwAccelInfo) {
-        try {
-          const info = await window.electronAPI.compression.getHwAccelInfo();
-          setHwAccelInfo(info);
-        } catch (err) {
-          console.error('Failed to get hw info', err);
-        }
-      }
-    })();
-  }, []);
+  const { hwAccelInfo } = useHardwareAcceleration();
 
   const handleSelectDir = async () => {
     if (window.electronAPI?.download?.selectDir) {
@@ -55,7 +48,7 @@ export function StepConfig({
 
       {/* Video Info Card */}
       {videoInfo && (
-        <div className="p-4 bg-white/5 border border-white/10 rounded-xl mb-6">
+        <Card className="mb-6">
           <div className="flex items-center gap-4">
             {videoInfo.thumbnail && (
               <img
@@ -69,54 +62,58 @@ export function StepConfig({
               <p className="text-sm text-white/50">{videoInfo.uploader}</p>
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
       <div className="space-y-6">
         {/* ================================ */}
         {/* Section 1: 下载配置 */}
         {/* ================================ */}
-        <ConfigSection title="下载配置" icon={<Download className="w-4 h-4" />}>
+        <Card title="下载配置" icon={<Download className="w-4 h-4" />}>
           {/* Output Directory */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-white/70 mb-2">输出目录</label>
-            <div className="flex items-center gap-3">
-              <span className="flex-1 px-3 py-2 bg-white/5 rounded-lg text-white/70 text-sm truncate">
-                {config.outputDir || '未选择'}
-              </span>
-              <button
-                onClick={handleSelectDir}
-                className="px-4 py-2 bg-violet-500/20 border border-violet-500/30 rounded-lg text-violet-300 text-sm transition-colors hover:bg-violet-500/30"
-              >
-                选择
-              </button>
-            </div>
+            <DirectorySelector
+              value={config.outputDir || ''}
+              placeholder="未选择"
+              onSelect={handleSelectDir}
+              variant="accent"
+            />
           </div>
 
           {/* Video Quality */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-white/70 mb-2">下载清晰度</label>
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { value: 'best', label: '最佳' },
-                { value: '1080p', label: '1080p' },
-                { value: '720p', label: '720p' },
-                { value: '480p', label: '480p' },
-              ].map((quality) => (
-                <button
-                  key={quality.value}
-                  onClick={() => onConfigChange({ downloadFormat: quality.value })}
-                  className={`px-3 py-2 rounded-lg text-sm border transition-all ${
-                    (config.downloadFormat || 'best') === quality.value
-                      ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
-                      : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
-                  }`}
-                >
-                  {quality.label}
-                </button>
-              ))}
+          {videoInfo?.formats?.length > 0 ? (
+            <QualitySelector
+              formats={videoInfo.formats}
+              selectedFormat={config.downloadFormat || videoInfo.formats[0]?.formatId}
+              onSelect={(formatId) => onConfigChange({ downloadFormat: formatId })}
+              className="mb-4"
+            />
+          ) : (
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-white/70 mb-2">画质选择</label>
+              <div className="flex flex-wrap gap-3">
+                {[
+                  { value: 'best', label: '最佳' },
+                  { value: '1080p', label: '1080p' },
+                  { value: '720p', label: '720p' },
+                  { value: '480p', label: '480p' },
+                ].map((quality) => (
+                  <button
+                    key={quality.value}
+                    onClick={() => onConfigChange({ downloadFormat: quality.value })}
+                    className={`px-4 py-2 rounded-lg text-sm transition-colors border ${
+                      (config.downloadFormat || 'best') === quality.value
+                        ? 'bg-violet-500/20 border-violet-500/50 text-violet-400'
+                        : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10'
+                    }`}
+                  >
+                    {quality.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Download Thumbnail */}
           <ToggleOptionInline
@@ -124,12 +121,12 @@ export function StepConfig({
             checked={config.downloadThumbnail !== false}
             onChange={(v) => onConfigChange({ downloadThumbnail: v })}
           />
-        </ConfigSection>
+        </Card>
 
         {/* ================================ */}
         {/* Section 2: 字幕生成配置 */}
         {/* ================================ */}
-        <ConfigSection title="字幕生成配置" icon={<FileText className="w-4 h-4" />}>
+        <Card title="字幕生成配置" icon={<FileText className="w-4 h-4" />}>
           {/* Genre Selection */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-white/70 mb-2">内容类型</label>
@@ -216,30 +213,24 @@ export function StepConfig({
                   <div className="flex items-center gap-6">
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-white/70">最少说话人</span>
-                      <input
-                        type="text"
-                        value={config.minSpeakers ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, '');
-                          const num = val ? Math.min(99, Math.max(1, parseInt(val))) : undefined;
-                          onConfigChange({ minSpeakers: num });
-                        }}
+                      <NumberInput
+                        value={config.minSpeakers}
+                        onChange={(v) => onConfigChange({ minSpeakers: v })}
+                        min={1}
+                        max={99}
                         placeholder="-"
-                        className="w-12 px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm text-center focus:outline-none focus:border-violet-500/50 transition-colors"
+                        className="w-12 text-center bg-white/5 border-white/10 focus:border-violet-500/50"
                       />
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-white/70">最多说话人</span>
-                      <input
-                        type="text"
-                        value={config.maxSpeakers ?? ''}
-                        onChange={(e) => {
-                          const val = e.target.value.replace(/[^0-9]/g, '');
-                          const num = val ? Math.min(99, Math.max(1, parseInt(val))) : undefined;
-                          onConfigChange({ maxSpeakers: num });
-                        }}
+                      <NumberInput
+                        value={config.maxSpeakers}
+                        onChange={(v) => onConfigChange({ maxSpeakers: v })}
+                        min={1}
+                        max={99}
                         placeholder="-"
-                        className="w-12 px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-white text-sm text-center focus:outline-none focus:border-violet-500/50 transition-colors"
+                        className="w-12 text-center bg-white/5 border-white/10 focus:border-violet-500/50"
                       />
                     </div>
                   </div>
@@ -247,12 +238,12 @@ export function StepConfig({
               </div>
             )}
           </div>
-        </ConfigSection>
+        </Card>
 
         {/* ================================ */}
         {/* Section 3: 压制配置 */}
         {/* ================================ */}
-        <ConfigSection title="视频压制配置" icon={<Film className="w-4 h-4" />}>
+        <Card title="视频压制配置" icon={<Film className="w-4 h-4" />}>
           <ToggleOptionInline
             label="启用视频压制"
             description="高性能 H.264/H.265 视频编码与字幕内嵌"
@@ -262,112 +253,18 @@ export function StepConfig({
 
           {config.enableCompression !== false && (
             <div className="mt-6 space-y-6 pl-2">
-              {/* Hardware Acceleration (Reused from CompressionPage) */}
+              {/* Hardware Acceleration */}
               <div className="flex flex-col md:flex-row md:items-center gap-4">
                 <label className="w-24 text-sm font-medium text-white/70 shrink-0">硬件加速</label>
-                <div className="flex-1 space-y-2">
-                  <button
-                    onClick={() =>
-                      hwAccelInfo?.available &&
+                <div className="flex-1">
+                  <HardwareAccelerationSelector
+                    hwAccelInfo={hwAccelInfo}
+                    enabled={config.useHardwareAccel !== false}
+                    onToggle={() =>
                       onConfigChange({ useHardwareAccel: !(config.useHardwareAccel !== false) })
                     }
-                    disabled={!hwAccelInfo || !hwAccelInfo.available}
-                    className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
-                      !hwAccelInfo
-                        ? 'bg-slate-800/50 border-slate-700/50 cursor-wait opacity-70'
-                        : !hwAccelInfo.available
-                          ? 'bg-slate-800/50 border-slate-700/50 cursor-not-allowed opacity-60'
-                          : config.useHardwareAccel !== false
-                            ? 'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20'
-                            : 'bg-slate-800 border-slate-700 hover:bg-slate-700'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {!hwAccelInfo ? (
-                        <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
-                      ) : !hwAccelInfo.available ? (
-                        <Cpu className="w-5 h-5 text-slate-500" />
-                      ) : config.useHardwareAccel !== false ? (
-                        <Zap className="w-5 h-5 text-emerald-400" />
-                      ) : (
-                        <Cpu className="w-5 h-5 text-slate-400" />
-                      )}
-
-                      <div className="text-left">
-                        <div
-                          className={`font-medium ${
-                            !hwAccelInfo
-                              ? 'text-slate-400'
-                              : !hwAccelInfo.available
-                                ? 'text-slate-500'
-                                : config.useHardwareAccel !== false
-                                  ? 'text-emerald-300'
-                                  : 'text-slate-300'
-                          }`}
-                        >
-                          {!hwAccelInfo
-                            ? '正在检测...'
-                            : !hwAccelInfo.available
-                              ? '硬件加速不可用'
-                              : config.useHardwareAccel !== false
-                                ? 'GPU 加速已开启'
-                                : 'CPU 模式'}
-                        </div>
-                        <div className="text-xs text-slate-500">
-                          {!hwAccelInfo
-                            ? '正在检测硬件加速支持情况'
-                            : !hwAccelInfo.available
-                              ? '未检测到可以使用硬件加速的 GPU'
-                              : config.useHardwareAccel !== false
-                                ? `将使用 ${
-                                    (config.compressionEncoder || 'libx264') === 'libx264'
-                                      ? hwAccelInfo.preferredH264
-                                      : hwAccelInfo.preferredH265
-                                  }`
-                                : '强制使用 CPU 编码'}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      className={`w-10 h-5 rounded-full relative transition-colors ${
-                        !hwAccelInfo || !hwAccelInfo.available
-                          ? 'bg-slate-700'
-                          : config.useHardwareAccel !== false
-                            ? 'bg-emerald-500'
-                            : 'bg-slate-600'
-                      }`}
-                    >
-                      <div
-                        className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-md transition-all ${
-                          config.useHardwareAccel !== false && hwAccelInfo?.available
-                            ? 'left-5'
-                            : 'left-0.5'
-                        }`}
-                      />
-                    </div>
-                  </button>
-
-                  {hwAccelInfo?.available && config.useHardwareAccel !== false && (
-                    <div className="text-xs text-slate-500 flex items-center gap-2 flex-wrap">
-                      <span>可用编码器:</span>
-                      {hwAccelInfo.encoders.h264_nvenc && (
-                        <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded">
-                          NVENC
-                        </span>
-                      )}
-                      {hwAccelInfo.encoders.h264_qsv && (
-                        <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">
-                          QSV
-                        </span>
-                      )}
-                      {hwAccelInfo.encoders.h264_amf && (
-                        <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 rounded">
-                          AMF
-                        </span>
-                      )}
-                    </div>
-                  )}
+                    encoder={config.compressionEncoder || 'libx264'}
+                  />
                 </div>
               </div>
 
@@ -375,29 +272,9 @@ export function StepConfig({
               <div className="flex flex-col md:flex-row md:items-center gap-4">
                 <label className="w-24 text-sm font-medium text-white/70 shrink-0">编码器</label>
                 <div className="flex-1">
-                  <CustomSelect
+                  <EncoderSelector
                     value={config.compressionEncoder || 'libx264'}
                     onChange={(v: string) => onConfigChange({ compressionEncoder: v })}
-                    options={[
-                      {
-                        value: 'libx264',
-                        label: (
-                          <div>
-                            <div className="font-medium text-slate-200">H.264 (AVC)</div>
-                            <div className="text-xs text-slate-500">兼容性最好，适合大多数场景</div>
-                          </div>
-                        ),
-                      },
-                      {
-                        value: 'libx265',
-                        label: (
-                          <div>
-                            <div className="font-medium text-slate-200">H.265 (HEVC)</div>
-                            <div className="text-xs text-slate-500">高压缩率，同画质体积更小</div>
-                          </div>
-                        ),
-                      },
-                    ]}
                   />
                 </div>
               </div>
@@ -406,47 +283,34 @@ export function StepConfig({
               <div className="flex flex-col md:flex-row md:items-center gap-4">
                 <label className="w-24 text-sm font-medium text-white/70 shrink-0">分辨率</label>
                 <div className="flex-1">
-                  <CustomSelect
-                    value={config.compressionResolution || 'original'}
-                    onChange={(v: string) => onConfigChange({ compressionResolution: v })}
-                    options={[
-                      { value: 'original', label: '原始分辨率 (保持一致)' },
-                      { value: '1080p', label: '1080P (1920x1080 - 全高清)' },
-                      { value: '720p', label: '720P (1280x720 - 高清)' },
-                      { value: '480p', label: '480P (854x480 - 标清)' },
-                    ]}
-                    forceDropUp={true}
+                  <ResolutionSelector
+                    resolution={config.compressionResolution || 'original'}
+                    width={config.compressionWidth}
+                    height={config.compressionHeight}
+                    onChange={(res, w, h) =>
+                      onConfigChange({
+                        compressionResolution: res,
+                        compressionWidth: w,
+                        compressionHeight: h,
+                      })
+                    }
                   />
                 </div>
               </div>
 
-              {/* CRF Input (Reused from CompressionPage) */}
+              {/* CRF Input */}
               <div className="flex flex-col md:flex-row md:items-center gap-4">
                 <label className="w-24 text-sm font-medium text-white/70 shrink-0">
                   质量 (CRF)
                 </label>
                 <div className="flex-1 space-y-2">
-                  <input
-                    type="text"
+                  <NumberInput
                     value={config.compressionCrf ?? 23}
-                    onChange={(e) => {
-                      const input = e.target.value;
-                      if (input === '' || /^\d*\.?\d*$/.test(input)) {
-                        const val = parseFloat(input);
-                        if (!isNaN(val) && val >= 0 && val <= 51) {
-                          onConfigChange({ compressionCrf: val });
-                        }
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const val = parseFloat(e.target.value);
-                      if (isNaN(val) || val < 0) {
-                        onConfigChange({ compressionCrf: 0 });
-                      } else if (val > 51) {
-                        onConfigChange({ compressionCrf: 51 });
-                      }
-                    }}
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 font-mono text-sm"
+                    onChange={(v) => onConfigChange({ compressionCrf: v ?? 23 })}
+                    min={0}
+                    max={51}
+                    allowDecimals={true}
+                    className="w-full font-mono"
                   />
                   <div className="text-xs text-slate-500">
                     范围 0-51，数值越小画质越高。推荐：H.264 (23), H.265 (28)
@@ -455,7 +319,7 @@ export function StepConfig({
               </div>
             </div>
           )}
-        </ConfigSection>
+        </Card>
       </div>
     </div>
   );
