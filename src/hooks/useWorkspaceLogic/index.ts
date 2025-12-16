@@ -91,6 +91,9 @@ export const useWorkspaceLogic = ({
   }, [subtitles]);
   const [error, setError] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<number | null>(null);
+  const [isLoadingFile, setIsLoadingFile] = useState(false);
+  const [isLoadingSubtitle, setIsLoadingSubtitle] = useState(false);
+  const [subtitleFileName, setSubtitleFileName] = useState<string | null>(null);
 
   // Batch & View State (extracted to useBatchSelection)
   const {
@@ -176,7 +179,9 @@ export const useWorkspaceLogic = ({
   const getFileDuration = async (f: File): Promise<number> => {
     // Electron Optimization: Use FFmpeg via Main Process
     if (window.electronAPI && window.electronAPI.getAudioInfo) {
-      const path = window.electronAPI.getFilePath(f);
+      // First check if we have a path property attached (our stub File objects)
+      // Then try webUtils.getPathForFile for real File objects
+      const path = (f as File & { path?: string }).path || window.electronAPI.getFilePath(f);
       if (path) {
         try {
           const result = await window.electronAPI.getAudioInfo(path);
@@ -216,76 +221,124 @@ export const useWorkspaceLogic = ({
   };
 
   // Handlers
-  // Common file processing logic
-  const processFileInternal = React.useCallback(
-    async (selectedFile: File) => {
-      const process = async () => {
-        logger.info('File selected', {
-          name: selectedFile.name,
-          size: selectedFile.size,
-          type: selectedFile.type,
-        });
-        setFile(selectedFile);
-        audioCacheRef.current = null;
-        setError(null);
+  // Common file processing logic - confirmation is handled by callers
+  const processFileInternal = React.useCallback(async (selectedFile: File) => {
+    setIsLoadingFile(true);
+    try {
+      logger.info('File selected', {
+        name: selectedFile.name,
+        size: selectedFile.size,
+        type: selectedFile.type,
+      });
+      setFile(selectedFile);
+      audioCacheRef.current = null;
+      setError(null);
+      try {
+        const d = await getFileDuration(selectedFile);
+        setDuration(d);
+      } catch (e) {
+        logger.warn('Failed to get file duration, defaulting to 0', e);
+        setDuration(0);
+      }
+    } finally {
+      setIsLoadingFile(false);
+    }
+  }, []);
+
+  // Handlers - Web file input (non-native)
+  const handleFileChange = React.useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>, _activeTab: 'new' | 'import') => {
+      if (e.target.files && e.target.files[0]) {
+        const selectedFile = e.target.files[0];
+
+        // Check if confirmation is needed BEFORE processing
+        if (file && subtitles.length > 0 && status === GenerationStatus.COMPLETED) {
+          showConfirm(
+            '确认替换文件',
+            '替换文件后将清空当前字幕。建议先导出字幕（SRT/ASS）再操作。是否继续？',
+            async () => {
+              setSubtitles([]);
+              setStatus(GenerationStatus.IDLE);
+              snapshotsValues.setSnapshots([]);
+              setBatchComments({});
+              await processFileInternal(selectedFile);
+            },
+            'warning'
+          );
+        } else {
+          await processFileInternal(selectedFile);
+        }
+      }
+    },
+    [file, subtitles.length, status, snapshotsValues, showConfirm, processFileInternal]
+  );
+
+  const handleFileSelectNative = React.useCallback(
+    async (fileStub: File & { path?: string; _needsRead?: boolean }) => {
+      // Helper to read the full file and process it
+      const readAndProcessFile = async () => {
+        const filePath = fileStub.path || window.electronAPI?.getFilePath?.(fileStub);
+        if (!filePath) {
+          // Already a full File object, process directly
+          await processFileInternal(fileStub);
+          return;
+        }
+
+        setIsLoadingFile(true);
+        // Give React time to render the loading indicator
+        await new Promise((resolve) => setTimeout(resolve, 50));
+
         try {
-          const d = await getFileDuration(selectedFile);
-          setDuration(d);
-        } catch (e) {
-          logger.warn('Failed to get file duration, defaulting to 0', e);
-          setDuration(0);
+          // In Electron, we don't need to read the entire file into memory!
+          // FFmpeg and other operations use the file path directly.
+          // Just create a File-like object with the path and size attached.
+          const file = new File([], fileStub.name, {
+            type: fileStub.type || 'application/octet-stream',
+          });
+
+          // Attach path and size to file for Electron/FFmpeg usage
+          Object.defineProperty(file, 'path', {
+            value: filePath,
+            writable: false,
+            enumerable: false,
+            configurable: false,
+          });
+          // Override size since empty File always has size 0
+          Object.defineProperty(file, 'size', {
+            value: fileStub.size || 0,
+            writable: false,
+            enumerable: true,
+            configurable: false,
+          });
+
+          // processFileInternal will set isLoadingFile = false
+          await processFileInternal(file);
+        } catch (err) {
+          logger.error('Failed to process file', err);
+          setError('文件处理失败');
+          setIsLoadingFile(false);
         }
       };
 
-      // Only warn if we are REPLACING an existing file (and have subtitles)
-      // If we just have subtitles but no file (e.g. imported SRT first), just load the file
+      // Check if confirmation is needed BEFORE reading file
       if (file && subtitles.length > 0 && status === GenerationStatus.COMPLETED) {
         showConfirm(
           '确认替换文件',
           '替换文件后将清空当前字幕。建议先导出字幕（SRT/ASS）再操作。是否继续？',
-          () => {
+          async () => {
             setSubtitles([]);
             setStatus(GenerationStatus.IDLE);
             snapshotsValues.setSnapshots([]);
             setBatchComments({});
-            process();
+            await readAndProcessFile();
           },
           'warning'
         );
       } else {
-        await process();
+        await readAndProcessFile();
       }
     },
-    [file, subtitles.length, status, snapshotsValues, showConfirm]
-  );
-
-  // Handlers
-  const handleFileChange = React.useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>, activeTab: 'new' | 'import') => {
-      if (e.target.files && e.target.files[0]) {
-        // Only use confirmation logic for 'new' tab if needed, but logic is now inside processFileInternal which checks subtitles/status
-        // However, the original code only checked activeTab === 'new' before prompting.
-        // Let's preserve that logic slightly differently:
-        // Actually, simply calling processFileInternal is fine, as it checks subtitles/status.
-        // The original code only prompted if activeTab === 'new'. If activeTab === 'import' (which doesn't exist anymore for file selection, only for subtitle import?),
-        // wait, useWorkspaceLogic doesn't know about UI tabs.
-        // Looking at usage in WorkspacePage, handleFileChange is called with 'new' or 'import'.
-
-        // If we are in 'import' tab (importing subtitle), we use handleSubtitleImport.
-        // So handleFileChange is only for media file.
-        // The activeTab arg seems to differentiate where the file input is.
-
-        await processFileInternal(e.target.files[0]);
-      }
-    },
-    [processFileInternal]
-  );
-
-  const handleFileSelectNative = React.useCallback(
-    async (file: File) => {
-      await processFileInternal(file);
-    },
-    [processFileInternal]
+    [file, subtitles.length, status, snapshotsValues, showConfirm, processFileInternal]
   );
 
   const handleSubtitleImport = React.useCallback(
@@ -294,9 +347,9 @@ export const useWorkspaceLogic = ({
         const subFile = e.target.files[0];
         logger.info('Subtitle file imported', { name: subFile.name });
 
+        setIsLoadingSubtitle(true);
         try {
-          addToast('正在解析字幕...', 'info', 2000);
-          // Allow toast to render before heavy parsing
+          // Allow UI to update before heavy parsing
           await new Promise((resolve) => setTimeout(resolve, 50));
 
           const content = await subFile.text();
@@ -305,6 +358,7 @@ export const useWorkspaceLogic = ({
           const parsed = await parseSubtitle(content, fileType);
 
           setSubtitles(parsed);
+          setSubtitleFileName(subFile.name);
 
           // Extract and set speaker profiles
           const uniqueSpeakers = Array.from(
@@ -328,6 +382,8 @@ export const useWorkspaceLogic = ({
           logger.error('Failed to parse subtitle', error);
           setError(`字幕解析失败: ${error.message}`);
           setStatus(GenerationStatus.ERROR);
+        } finally {
+          setIsLoadingSubtitle(false);
         }
       }
     },
@@ -342,14 +398,16 @@ export const useWorkspaceLogic = ({
       const result = await window.electronAPI.selectSubtitleFile();
       if (!result.success || !result.content || !result.fileName) return;
 
+      // Set loading immediately after file is selected (before parsing)
+      setIsLoadingSubtitle(true);
       logger.info('Subtitle file imported (native)', { name: result.fileName });
-      addToast('正在解析字幕...', 'info', 2000);
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       const fileType = result.fileName.endsWith('.ass') ? 'ass' : 'srt';
       const parsed = await parseSubtitle(result.content, fileType);
 
       setSubtitles(parsed);
+      setSubtitleFileName(result.fileName);
 
       // Extract and set speaker profiles
       const uniqueSpeakers = Array.from(
@@ -371,8 +429,10 @@ export const useWorkspaceLogic = ({
       logger.error('Failed to parse subtitle (native)', error);
       setError(`字幕解析失败: ${error.message}`);
       setStatus(GenerationStatus.ERROR);
+    } finally {
+      setIsLoadingSubtitle(false);
     }
-  }, [snapshotsValues, parseSubtitle, addToast]);
+  }, [snapshotsValues, parseSubtitle]);
 
   const handleGenerate = React.useCallback(async () => {
     if (!file) {
@@ -815,6 +875,10 @@ export const useWorkspaceLogic = ({
       setShowSourceText,
       editingCommentId,
       setEditingCommentId,
+      isLoadingFile,
+      isLoadingSubtitle,
+      subtitleFileName,
+      setIsLoadingFile,
 
       // Handlers
       handleFileChange,
@@ -861,6 +925,9 @@ export const useWorkspaceLogic = ({
       batchComments,
       showSourceText,
       editingCommentId,
+      isLoadingFile,
+      isLoadingSubtitle,
+      subtitleFileName,
       handleFileChange,
       handleFileSelectNative,
       handleSubtitleImport,

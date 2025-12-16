@@ -44,10 +44,14 @@ interface WorkspacePageProps {
   batchComments: Record<string, string>;
   showSourceText: boolean;
   editingCommentId: string | null;
+  isLoadingFile?: boolean;
+  isLoadingSubtitle?: boolean;
+  subtitleFileName?: string | null;
 
   // Handlers
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onFileChangeNative?: (file: File) => void;
+  onFileLoadingStart?: () => void;
   onSubtitleImport: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onSubtitleImportNative?: () => void;
   onGenerate: () => void;
@@ -99,6 +103,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   editingCommentId,
   onFileChange,
   onFileChangeNative,
+  onFileLoadingStart,
   onSubtitleImport,
   onSubtitleImportNative,
   onGenerate,
@@ -131,6 +136,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   addSubtitle,
   onStartCompression,
   onDeleteSnapshot,
+  isLoadingFile = false,
+  isLoadingSubtitle = false,
+  subtitleFileName,
 }) => {
   const subtitleListRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -300,40 +308,58 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
             <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-3 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="fluid-heading font-semibold text-slate-300">项目文件</h3>
+                {isLoadingFile && (
+                  <span className="flex items-center text-xs text-indigo-400">
+                    <Loader2 className="w-3 h-3 animate-spin mr-1.5" />
+                    加载中
+                  </span>
+                )}
               </div>
-              {file ? (
-                <FileUploader
-                  hasFile={true}
-                  fileName={file.name}
-                  fileInfo={`${formatDuration(duration)} · ${(file.size / (1024 * 1024)).toFixed(1)}MB`}
-                  onFileSelect={onFileChange}
-                  onFileSelectNative={onFileChangeNative}
-                  useNativeDialog={isElectron}
-                  disabled={isProcessing}
-                  accept="video/*,audio/*"
-                  icon={<FileVideo className="text-indigo-400" />}
-                  uploadTitle=""
-                />
-              ) : (
-                <FileUploader
-                  hasFile={false}
-                  onFileSelect={onFileChange}
-                  onFileSelectNative={onFileChangeNative}
-                  useNativeDialog={isElectron}
-                  accept="video/*,audio/*"
-                  icon={
-                    activeTab === 'new' ? (
-                      <Upload className="text-indigo-400" />
-                    ) : (
-                      <Plus className="text-slate-500 group-hover:text-indigo-400" />
-                    )
-                  }
-                  uploadTitle={activeTab === 'new' ? '上传视频 / 音频' : '附加媒体 (可选)'}
-                  uploadDescription={activeTab === 'new' ? '开始转录' : undefined}
-                  heightClass={activeTab === 'new' ? 'h-32' : 'h-20'}
-                  error={!!error && !file}
-                />
-              )}
+              <div className={cn(isLoadingFile && 'opacity-60 pointer-events-none')}>
+                {isLoadingFile && !file ? (
+                  <div className="flex items-center justify-center h-32 border-2 border-dashed border-indigo-500/50 rounded-lg bg-indigo-500/5">
+                    <div className="flex flex-col items-center">
+                      <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mb-2" />
+                      <span className="text-sm text-slate-400">正在读取文件...</span>
+                    </div>
+                  </div>
+                ) : file ? (
+                  <FileUploader
+                    hasFile={true}
+                    fileName={file.name}
+                    fileInfo={`${formatDuration(duration)} · ${(file.size / (1024 * 1024)).toFixed(1)}MB`}
+                    onFileSelect={onFileChange}
+                    onFileSelectNative={onFileChangeNative}
+                    onLoadingStart={onFileLoadingStart}
+                    useNativeDialog={isElectron}
+                    disabled={isProcessing || isLoadingFile}
+                    accept="video/*,audio/*"
+                    icon={<FileVideo className="text-indigo-400" />}
+                    uploadTitle=""
+                  />
+                ) : (
+                  <FileUploader
+                    hasFile={false}
+                    onFileSelect={onFileChange}
+                    onFileSelectNative={onFileChangeNative}
+                    onLoadingStart={onFileLoadingStart}
+                    useNativeDialog={isElectron}
+                    disabled={isLoadingFile}
+                    accept="video/*,audio/*"
+                    icon={
+                      activeTab === 'new' ? (
+                        <Upload className="text-indigo-400" />
+                      ) : (
+                        <Plus className="text-slate-500 group-hover:text-indigo-400" />
+                      )
+                    }
+                    uploadTitle={activeTab === 'new' ? '上传视频 / 音频' : '附加媒体 (可选)'}
+                    uploadDescription={activeTab === 'new' ? '开始转录' : undefined}
+                    heightClass={activeTab === 'new' ? 'h-32' : 'h-20'}
+                    error={!!error && !file}
+                  />
+                )}
+              </div>
               {activeTab === 'import' && (
                 <div className="pt-2 border-t border-slate-800">
                   <div className="flex items-center justify-between mb-2">
@@ -343,31 +369,51 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                         {subtitles.length} 行
                       </span>
                     )}
+                    {isLoadingSubtitle && (
+                      <span className="flex items-center text-xs text-emerald-400">
+                        <Loader2 className="w-3 h-3 animate-spin mr-1.5" />
+                        解析中
+                      </span>
+                    )}
                   </div>
-                  {subtitles.length === 0 ? (
-                    <FileUploader
-                      hasFile={false}
-                      onFileSelect={onSubtitleImport}
-                      onNativeClick={onSubtitleImportNative}
-                      useNativeDialog={isElectron}
-                      accept=".srt,.ass"
-                      icon={<FileText className="text-emerald-500 group-hover:text-emerald-400" />}
-                      uploadTitle="导入 .SRT / .ASS"
-                      heightClass="h-24"
-                      error={!!error && activeTab === 'import'}
-                    />
-                  ) : (
-                    <FileUploader
-                      hasFile={true}
-                      fileInfo="字幕已加载"
-                      onFileSelect={onSubtitleImport}
-                      onNativeClick={onSubtitleImportNative}
-                      useNativeDialog={isElectron}
-                      accept=".srt,.ass"
-                      icon={<FileText className="text-emerald-500" />}
-                      uploadTitle=""
-                    />
-                  )}
+                  <div className={cn(isLoadingSubtitle && 'opacity-60 pointer-events-none')}>
+                    {isLoadingSubtitle && subtitles.length === 0 ? (
+                      <div className="flex items-center justify-center h-24 border-2 border-dashed border-emerald-500/50 rounded-lg bg-emerald-500/5">
+                        <div className="flex flex-col items-center">
+                          <Loader2 className="w-6 h-6 text-emerald-400 animate-spin mb-2" />
+                          <span className="text-sm text-slate-400">正在解析字幕...</span>
+                        </div>
+                      </div>
+                    ) : subtitles.length === 0 ? (
+                      <FileUploader
+                        hasFile={false}
+                        onFileSelect={onSubtitleImport}
+                        onNativeClick={onSubtitleImportNative}
+                        useNativeDialog={isElectron}
+                        disabled={isLoadingSubtitle}
+                        accept=".srt,.ass"
+                        icon={
+                          <FileText className="text-emerald-500 group-hover:text-emerald-400" />
+                        }
+                        uploadTitle="导入 .SRT / .ASS"
+                        heightClass="h-24"
+                        error={!!error && activeTab === 'import'}
+                      />
+                    ) : (
+                      <FileUploader
+                        hasFile={true}
+                        fileName={subtitleFileName || undefined}
+                        fileInfo={`${subtitles.length} 行`}
+                        onFileSelect={onSubtitleImport}
+                        onNativeClick={onSubtitleImportNative}
+                        useNativeDialog={isElectron}
+                        disabled={isLoadingSubtitle}
+                        accept=".srt,.ass"
+                        icon={<FileText className="text-emerald-500" />}
+                        uploadTitle=""
+                      />
+                    )}
+                  </div>
                   <div className="mt-1.5 fluid-small text-amber-300 bg-amber-500/10 px-2 py-1.5 rounded border border-amber-500/30">
                     <span className="font-medium">💡 提示：</span>
                     仅完全支持本程序生成的字幕格式

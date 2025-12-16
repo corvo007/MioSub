@@ -318,8 +318,12 @@ export default function App() {
           batchComments={workspace.batchComments}
           showSourceText={workspace.showSourceText}
           editingCommentId={workspace.editingCommentId}
+          isLoadingFile={workspace.isLoadingFile}
+          isLoadingSubtitle={workspace.isLoadingSubtitle}
+          subtitleFileName={workspace.subtitleFileName}
           onFileChange={(e) => workspace.handleFileChange(e, activeTab)}
           onFileChangeNative={workspace.handleFileSelectNative}
+          onFileLoadingStart={() => workspace.setIsLoadingFile(true)}
           onSubtitleImport={workspace.handleSubtitleImport}
           onSubtitleImportNative={workspace.handleSubtitleImportNative}
           onGenerate={workspace.handleGenerate}

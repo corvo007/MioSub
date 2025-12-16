@@ -9,6 +9,7 @@ interface FileUploaderProps {
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onFileSelectNative?: (file: File) => void; // Callback for native dialog (receives File with path)
   onNativeClick?: () => void; // Generic callback for native dialog click (no File returned)
+  onLoadingStart?: () => void; // Called before file reading starts (for loading indicators)
   disabled?: boolean;
   accept: string;
   icon: React.ReactNode;
@@ -27,6 +28,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   onFileSelect,
   onFileSelectNative,
   onNativeClick,
+  onLoadingStart,
   disabled = false,
   accept,
   icon,
@@ -53,21 +55,17 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
     try {
       const result = await window.electronAPI.selectMediaFile();
       if (result.success && result.filePath && result.fileName) {
-        // Read file buffer and create File object with path attached
-        const buffer = await window.electronAPI.readLocalFile(result.filePath);
-        const file = new File([buffer], result.fileName, {
+        // Create a minimal File-like object with path for parent to handle
+        // Parent (useWorkspaceLogic) will check for confirmation first, then process
+        const fileStub = {
+          name: result.fileName,
+          path: result.filePath,
           type: result.type || 'application/octet-stream',
-        });
+          size: result.size || 0,
+          _needsRead: true, // Flag to indicate this is a stub with path
+        } as unknown as File & { path: string; _needsRead?: boolean };
 
-        // Attach path to file for Electron/FFmpeg usage
-        Object.defineProperty(file, 'path', {
-          value: result.filePath,
-          writable: false,
-          enumerable: false,
-          configurable: false,
-        });
-
-        onFileSelectNative(file);
+        onFileSelectNative(fileStub);
       }
     } catch (err) {
       console.error('Failed to select media file:', err);
