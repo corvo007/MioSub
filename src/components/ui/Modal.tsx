@@ -1,5 +1,6 @@
 import React, { useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
+import { cn } from '@/lib/cn';
 
 interface ModalProps {
   isOpen: boolean;
@@ -56,7 +57,10 @@ export const Modal: React.FC<ModalProps> = ({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className={`bg-slate-900 border border-slate-700 rounded-xl p-6 ${maxWidthClasses[maxWidth]} w-full shadow-2xl max-h-[90vh] overflow-y-auto`}
+        className={cn(
+          'bg-slate-900 border border-slate-700 rounded-xl p-6 w-full shadow-2xl max-h-[90vh] overflow-y-auto',
+          maxWidthClasses[maxWidth]
+        )}
         onClick={(e) => e.stopPropagation()}
       >
         {title && (

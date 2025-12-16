@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/cn';
 
 interface CardProps {
   children: React.ReactNode;
@@ -29,13 +30,14 @@ export const Card: React.FC<CardProps> = ({
   onClick,
   padding = 'md',
 }) => {
-  const baseClasses = `bg-white/5 border border-white/10 rounded-xl ${paddingClasses[padding]}`;
-  const interactiveClasses =
-    variant === 'interactive' ? 'cursor-pointer transition-colors hover:bg-white/8' : '';
-
   return (
     <div
-      className={`${baseClasses} ${interactiveClasses} ${className}`}
+      className={cn(
+        'bg-white/5 border border-white/10 rounded-xl',
+        paddingClasses[padding],
+        variant === 'interactive' && 'cursor-pointer transition-colors hover:bg-white/8',
+        className
+      )}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}

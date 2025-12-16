@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/cn';
 
 interface ProgressBarProps {
   percent: number;
@@ -35,15 +36,25 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
 
   return (
     <div
-      className={`w-full bg-white/10 rounded-full overflow-hidden ${sizeClasses[size]} ${className}`}
+      className={cn(
+        'w-full bg-white/10 rounded-full overflow-hidden',
+        sizeClasses[size],
+        className
+      )}
     >
       {indeterminate ? (
         <div
-          className={`h-full w-full ${variantClasses[variant]} opacity-50 rounded-full animate-pulse`}
+          className={cn(
+            'h-full w-full opacity-50 rounded-full animate-pulse',
+            variantClasses[variant]
+          )}
         />
       ) : (
         <div
-          className={`h-full ${variantClasses[variant]} rounded-full transition-all duration-300 ease-out relative overflow-hidden`}
+          className={cn(
+            'h-full rounded-full transition-all duration-300 ease-out relative overflow-hidden',
+            variantClasses[variant]
+          )}
           style={{ width: `${clampedPercent}%` }}
         >
           {showShimmer && <div className="absolute inset-0 bg-white/20 animate-shimmer" />}

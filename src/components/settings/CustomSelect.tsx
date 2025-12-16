@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, CheckCircle } from 'lucide-react';
+import { cn } from '@/lib/cn';
 
 // Minimum space required below to open downward (in pixels)
 const MIN_SPACE_BELOW = 200;
@@ -56,7 +57,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   const selectedLabel = options.find((opt) => opt.value === value)?.label || placeholder || value;
 
   return (
-    <div className={`relative ${className}`} ref={containerRef}>
+    <div className={cn('relative', className)} ref={containerRef}>
       <button
         type="button"
         onClick={toggleOpen}
@@ -67,15 +68,19 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           <span className="block truncate">{selectedLabel}</span>
         </div>
         <ChevronDown
-          className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          className={cn(
+            'w-4 h-4 text-slate-500 transition-transform duration-200',
+            isOpen && 'rotate-180'
+          )}
         />
       </button>
 
       {isOpen && (
         <div
-          className={`absolute z-50 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto custom-scrollbar animate-fade-in ${
+          className={cn(
+            'absolute z-50 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-60 overflow-y-auto custom-scrollbar animate-fade-in',
             dropUp ? 'bottom-full mb-1' : 'mt-1'
-          }`}
+          )}
         >
           <div className="p-1">
             {options.map((option) => (
@@ -88,13 +93,14 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                     setIsOpen(false);
                   }
                 }}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between ${
-                  option.disabled
-                    ? 'opacity-40 cursor-not-allowed text-slate-500'
-                    : value === option.value
-                      ? 'bg-indigo-600/20 text-indigo-300'
-                      : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                }`}
+                className={cn(
+                  'w-full text-left px-3 py-2 rounded-md text-sm transition-colors flex items-center justify-between',
+                  option.disabled && 'opacity-40 cursor-not-allowed text-slate-500',
+                  !option.disabled && value === option.value && 'bg-indigo-600/20 text-indigo-300',
+                  !option.disabled &&
+                    value !== option.value &&
+                    'text-slate-300 hover:bg-slate-700 hover:text-white'
+                )}
               >
                 <div className={typeof option.label === 'string' ? 'truncate' : ''}>
                   {option.label}

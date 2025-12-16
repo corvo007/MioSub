@@ -1,4 +1,5 @@
 import React from 'react';
+import { cn } from '@/lib/cn';
 
 interface SectionHeaderProps {
   children: React.ReactNode;
@@ -14,7 +15,10 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   withDivider = false,
 }) => (
   <h3
-    className={`text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2 ${className}`}
+    className={cn(
+      'text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2',
+      className
+    )}
   >
     {withDivider && <span className="w-8 h-px bg-slate-800" />}
     {icon}

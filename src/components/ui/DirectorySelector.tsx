@@ -1,5 +1,6 @@
 import React from 'react';
 import { FolderOpen } from 'lucide-react';
+import { cn } from '@/lib/cn';
 
 interface DirectorySelectorProps {
   value: string;
@@ -28,13 +29,16 @@ export const DirectorySelector: React.FC<DirectorySelectorProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
+    <div className={cn('flex items-center gap-3', className)}>
       <span className="flex-1 px-3 py-2 bg-white/5 rounded-lg text-white/70 text-sm truncate">
         {value || placeholder}
       </span>
       <button
         onClick={onSelect}
-        className={`px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-1.5 ${buttonVariants[variant]}`}
+        className={cn(
+          'px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-1.5',
+          buttonVariants[variant]
+        )}
       >
         <FolderOpen className="w-4 h-4" />
         {buttonText}
