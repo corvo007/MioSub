@@ -1,6 +1,7 @@
 import React from 'react';
 import { Zap, Cpu, Loader2 } from 'lucide-react';
 import type { HardwareAccelInfo } from '@/types/compression';
+import { cn } from '@/lib/cn';
 
 interface HardwareAccelerationSelectorProps {
   hwAccelInfo: HardwareAccelInfo | null;
@@ -33,15 +34,21 @@ export const HardwareAccelerationSelector: React.FC<HardwareAccelerationSelector
       <button
         onClick={() => isAvailable && onToggle()}
         disabled={isLoading || !isAvailable}
-        className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
-          isLoading
-            ? 'bg-slate-800/50 border-slate-700/50 cursor-wait opacity-70'
-            : !isAvailable
-              ? 'bg-slate-800/50 border-slate-700/50 cursor-not-allowed opacity-60'
-              : isEnabled
-                ? 'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20'
-                : 'bg-slate-800 border-slate-700 hover:bg-slate-700'
-        }`}
+        className={cn(
+          'w-full flex items-center justify-between p-3 rounded-lg border transition-all',
+          isLoading && 'bg-slate-800/50 border-slate-700/50 cursor-wait opacity-70',
+          !isLoading &&
+            !isAvailable &&
+            'bg-slate-800/50 border-slate-700/50 cursor-not-allowed opacity-60',
+          !isLoading &&
+            isAvailable &&
+            isEnabled &&
+            'bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20',
+          !isLoading &&
+            isAvailable &&
+            !isEnabled &&
+            'bg-slate-800 border-slate-700 hover:bg-slate-700'
+        )}
       >
         <div className="flex items-center gap-3">
           {isLoading ? (
@@ -56,15 +63,13 @@ export const HardwareAccelerationSelector: React.FC<HardwareAccelerationSelector
 
           <div className="text-left">
             <div
-              className={`font-medium ${
-                isLoading
-                  ? 'text-slate-400'
-                  : !isAvailable
-                    ? 'text-slate-500'
-                    : isEnabled
-                      ? 'text-emerald-300'
-                      : 'text-slate-300'
-              }`}
+              className={cn(
+                'font-medium',
+                isLoading && 'text-slate-400',
+                !isLoading && !isAvailable && 'text-slate-500',
+                !isLoading && isAvailable && isEnabled && 'text-emerald-300',
+                !isLoading && isAvailable && !isEnabled && 'text-slate-300'
+              )}
             >
               {isLoading
                 ? '正在检测...'
@@ -88,18 +93,18 @@ export const HardwareAccelerationSelector: React.FC<HardwareAccelerationSelector
 
         {/* Toggle Switch */}
         <div
-          className={`w-10 h-5 rounded-full relative transition-colors ${
-            isLoading || !isAvailable
-              ? 'bg-slate-700'
-              : isEnabled
-                ? 'bg-emerald-500'
-                : 'bg-slate-600'
-          }`}
+          className={cn(
+            'w-10 h-5 rounded-full relative transition-colors',
+            (isLoading || !isAvailable) && 'bg-slate-700',
+            !isLoading && isAvailable && isEnabled && 'bg-emerald-500',
+            !isLoading && isAvailable && !isEnabled && 'bg-slate-600'
+          )}
         >
           <div
-            className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-md transition-all ${
+            className={cn(
+              'absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-md transition-all',
               isEnabled ? 'left-5' : 'left-0.5'
-            }`}
+            )}
           />
         </div>
       </button>

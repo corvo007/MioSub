@@ -21,6 +21,7 @@ import type { PipelineProgress, PipelineStage } from '@/types/endToEnd';
 import type { ChunkStatus } from '@/types/api';
 
 import { formatDuration } from '@/services/subtitle/time';
+import { cn } from '@/lib/cn';
 
 /** Elapsed time display component */
 function ElapsedTime({ startTime }: { startTime: number }) {
@@ -95,15 +96,16 @@ function TranscribeChunkList({ chunks }: { chunks: ChunkStatus[] }) {
           >
             <div className="flex items-center gap-2">
               <div
-                className={`w-1.5 h-1.5 rounded-full ${
-                  chunk.status === 'completed'
-                    ? 'bg-emerald-500'
-                    : chunk.status === 'error'
-                      ? 'bg-red-500'
-                      : chunk.status === 'processing'
-                        ? 'bg-blue-500 animate-pulse'
-                        : 'bg-white/20'
-                }`}
+                className={cn(
+                  'w-1.5 h-1.5 rounded-full',
+                  chunk.status === 'completed' && 'bg-emerald-500',
+                  chunk.status === 'error' && 'bg-red-500',
+                  chunk.status === 'processing' && 'bg-blue-500 animate-pulse',
+                  chunk.status !== 'completed' &&
+                    chunk.status !== 'error' &&
+                    chunk.status !== 'processing' &&
+                    'bg-white/20'
+                )}
               />
               <span className="text-white/60">
                 {CHUNK_LABELS[String(chunk.id)] || `片段 ${chunk.id}`}
@@ -221,7 +223,10 @@ function StageIndicator({
   return (
     <div className="flex flex-col items-center">
       <div
-        className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all ${statusStyles[status]}`}
+        className={cn(
+          'w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all',
+          statusStyles[status]
+        )}
       >
         {status === 'active' ? (
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -233,7 +238,7 @@ function StageIndicator({
           config.icon
         )}
       </div>
-      <span className={`mt-2 text-xs font-medium ${isCurrent ? 'text-white' : 'text-white/50'}`}>
+      <span className={cn('mt-2 text-xs font-medium', isCurrent ? 'text-white' : 'text-white/50')}>
         {config.label}
       </span>
     </div>
@@ -245,9 +250,10 @@ function StageConnector({ completed }: { completed: boolean }) {
   return (
     <div className="flex-1 h-0.5 mx-2 mt-5">
       <div
-        className={`h-full rounded transition-colors ${
+        className={cn(
+          'h-full rounded transition-colors',
           completed ? 'bg-emerald-500/50' : 'bg-white/10'
-        }`}
+        )}
       />
     </div>
   );
@@ -349,13 +355,15 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
       {/* Header */}
       <div className="text-center mb-8">
         <div
-          className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl border mb-4 ${
-            isError
-              ? 'bg-gradient-to-br from-red-500/20 to-orange-500/20 border-red-500/30'
-              : isCompleted
-                ? 'bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-emerald-500/30'
-                : 'bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-blue-500/30'
-          }`}
+          className={cn(
+            'inline-flex items-center justify-center w-16 h-16 rounded-2xl border mb-4',
+            isError && 'bg-gradient-to-br from-red-500/20 to-orange-500/20 border-red-500/30',
+            isCompleted &&
+              'bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-emerald-500/30',
+            !isError &&
+              !isCompleted &&
+              'bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-blue-500/30'
+          )}
         >
           {isError ? (
             <XCircle className="w-8 h-8 text-red-400" />
@@ -403,13 +411,12 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
         </div>
         <div className="h-3 bg-white/10 rounded-full overflow-hidden">
           <div
-            className={`h-full transition-all duration-500 ${
-              isError
-                ? 'bg-red-500'
-                : isCompleted
-                  ? 'bg-emerald-500'
-                  : 'bg-gradient-to-r from-violet-500 to-indigo-500'
-            }`}
+            className={cn(
+              'h-full transition-all duration-500',
+              isError && 'bg-red-500',
+              isCompleted && 'bg-emerald-500',
+              !isError && !isCompleted && 'bg-gradient-to-r from-violet-500 to-indigo-500'
+            )}
             style={{ width: `${progress?.overallProgress || 0}%` }}
           />
         </div>
@@ -506,11 +513,12 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
         )}
         <button
           onClick={handleCancelClick}
-          className={`px-6 py-3 border rounded-xl font-medium transition-colors ${
+          className={cn(
+            'px-6 py-3 border rounded-xl font-medium transition-colors',
             isCompleted || isError
               ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700'
               : 'bg-red-500/20 border-red-500/30 text-red-300 hover:bg-red-500/30'
-          }`}
+          )}
         >
           {isCompleted || isError ? '关闭' : '取消处理'}
         </button>

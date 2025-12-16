@@ -71,6 +71,9 @@ export default defineConfig(({ mode }) => {
       'process.env.OPENAI_API_KEY': JSON.stringify(env.OPENAI_API_KEY),
       __APP_VERSION__: JSON.stringify(packageJson.version),
     },
+    optimizeDeps: {
+      include: ['async-sema'],
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
