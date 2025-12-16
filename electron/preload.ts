@@ -120,13 +120,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Logs APIs
   getMainLogs: () => ipcRenderer.invoke('log:get-history'),
-  onShowAbout: (callback: () => void) => {
-    const subscription = () => callback();
-    ipcRenderer.on('show-about', subscription);
-    return () => {
-      ipcRenderer.removeListener('show-about', subscription);
-    };
-  },
 
   // End-to-End Pipeline APIs
   endToEnd: {

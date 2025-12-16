@@ -795,20 +795,6 @@ const createMenu = () => {
         { label: '关闭', accelerator: 'CmdOrCtrl+W', role: 'close' },
       ],
     },
-    {
-      label: '帮助',
-      submenu: [
-        {
-          label: '关于',
-          click: () => {
-            const win = BrowserWindow.getFocusedWindow();
-            if (win) {
-              win.webContents.send('show-about');
-            }
-          },
-        },
-      ],
-    },
   ];
 
   if (!app.isPackaged) {

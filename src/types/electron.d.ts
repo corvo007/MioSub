@@ -224,9 +224,6 @@ export interface ElectronAPI {
 
   getMainLogs: () => Promise<string[]>;
 
-  // Events
-  onShowAbout: (callback: () => void) => () => void;
-
   // End-to-End Pipeline APIs
   endToEnd: {
     start: (config: any) => Promise<{

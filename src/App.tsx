@@ -9,7 +9,6 @@ import {
   GlossaryConfirmationModal,
   SimpleConfirmationModal,
   SpeakerManagerModal,
-  AboutModal,
 } from '@/components/modals';
 import { ToastContainer, ProgressOverlay } from '@/components/ui';
 
@@ -40,7 +39,6 @@ export default function App() {
   const [showGenreSettings, setShowGenreSettings] = useState(false);
   const [showGlossaryManager, setShowGlossaryManager] = useState(false);
   const [showSpeakerManager, setShowSpeakerManager] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
 
   // Downloaded video path - for passing to compression page
   const [downloadedVideoPath, setDownloadedVideoPath] = useState<string | null>(null);
@@ -97,19 +95,6 @@ export default function App() {
   // Import log parser
   // Note: We need to import this at the top, but for this replace block we'll assume it's available or add import separately if needed.
   // Since I can't easily add import at top with this block, I will add a separate replace for imports.
-
-  // IPC Listeners
-  useEffect(() => {
-    let unsubscribeAbout: (() => void) | undefined;
-    if (window.electronAPI?.onShowAbout) {
-      unsubscribeAbout = window.electronAPI.onShowAbout(() => {
-        setShowAbout(true);
-      });
-    }
-    return () => {
-      if (unsubscribeAbout) unsubscribeAbout();
-    };
-  }, []);
 
   useEffect(() => {
     // Initial load of frontend logs
@@ -424,7 +409,6 @@ export default function App() {
         message={confirmation.message}
         type={confirmation.type}
       />
-      <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
     </>
   );
 }
