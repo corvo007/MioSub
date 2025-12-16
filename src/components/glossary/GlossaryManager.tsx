@@ -23,6 +23,7 @@ import {
   ImportMode,
   ConflictMode,
 } from '@/components/modals/GlossaryImportDialog';
+import { cn } from '@/lib/cn';
 
 interface GlossaryManagerProps {
   glossaries: Glossary[];
@@ -218,7 +219,12 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
               <div
                 key={glossary.id}
                 onClick={() => setSelectedGlossaryId(glossary.id)}
-                className={`group relative flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${selectedGlossaryId === glossary.id ? 'bg-indigo-600/20 border border-indigo-500/50' : 'hover:bg-slate-800 border border-transparent'}`}
+                className={cn(
+                  'group relative flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all',
+                  selectedGlossaryId === glossary.id
+                    ? 'bg-indigo-600/20 border border-indigo-500/50'
+                    : 'hover:bg-slate-800 border border-transparent'
+                )}
               >
                 {showDeleteConfirm === glossary.id ? (
                   <div className="absolute inset-0 bg-slate-900 flex items-center justify-between px-3 rounded-lg z-10 border border-red-500/30">
@@ -262,7 +268,10 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                   ) : (
                     <div className="flex items-center">
                       <span
-                        className={`text-sm font-medium truncate ${selectedGlossaryId === glossary.id ? 'text-white' : 'text-slate-300'}`}
+                        className={cn(
+                          'text-sm font-medium truncate',
+                          selectedGlossaryId === glossary.id ? 'text-white' : 'text-slate-300'
+                        )}
                       >
                         {glossary.name}
                       </span>
@@ -279,7 +288,12 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                 </div>
 
                 <div
-                  className={`flex items-center space-x-1 ${selectedGlossaryId === glossary.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity`}
+                  className={cn(
+                    'flex items-center space-x-1 transition-opacity',
+                    selectedGlossaryId === glossary.id
+                      ? 'opacity-100'
+                      : 'opacity-0 group-hover:opacity-100'
+                  )}
                 >
                   <button
                     onClick={(e) => {
@@ -457,7 +471,12 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                       .map(({ item, originalIndex }) => (
                         <div
                           key={originalIndex}
-                          className={`flex items-start space-x-2 p-3 rounded-lg border transition-all ${editingTermIndex === originalIndex ? 'bg-indigo-900/20 border-indigo-500/50' : 'hover:bg-slate-800/50 border-transparent hover:border-slate-700/50 group'}`}
+                          className={cn(
+                            'flex items-start space-x-2 p-3 rounded-lg border transition-all',
+                            editingTermIndex === originalIndex
+                              ? 'bg-indigo-900/20 border-indigo-500/50'
+                              : 'hover:bg-slate-800/50 border-transparent hover:border-slate-700/50 group'
+                          )}
                         >
                           {editingTermIndex === originalIndex && editTermData ? (
                             // EDIT MODE
