@@ -27,6 +27,7 @@ import { FileUploader } from '@/components/upload/FileUploader';
 import { SubtitleEditor } from '@/components/editor/SubtitleEditor';
 import { CustomSelect } from '@/components/settings';
 import { formatDuration } from '@/services/subtitle/time';
+import { cn } from '@/lib/cn';
 
 interface WorkspacePageProps {
   activeTab: 'new' | 'import';
@@ -243,10 +244,13 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
           onShowSettings={onShowSettings}
         />
         <div
-          className={`flex-1 flex flex-col gap-3 sm:gap-6 workspace-grid ${forceVerticalLayout ? '' : 'md:grid md:grid-cols-12 md:min-h-0'}`}
+          className={cn(
+            'flex-1 flex flex-col gap-3 sm:gap-6 workspace-grid',
+            !forceVerticalLayout && 'md:grid md:grid-cols-12 md:min-h-0'
+          )}
         >
           {/* Mobile/Compact: Collapsible Sidebar Toggle */}
-          <div className={forceVerticalLayout ? '' : 'md:hidden'}>
+          <div className={cn(!forceVerticalLayout && 'md:hidden')}>
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               className="w-full flex items-center justify-between px-4 py-3 bg-slate-900/80 border border-slate-800 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800 transition-colors"
@@ -271,11 +275,19 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
           {/* Sidebar: Hidden on mobile/compact when collapsed */}
           <div
             ref={sidebarRef}
-            className={`workspace-sidebar ${sidebarCollapsed && forceVerticalLayout ? 'hidden' : sidebarCollapsed ? 'hidden' : 'block'} ${forceVerticalLayout ? '' : 'md:block md:col-span-4 lg:col-span-3 md:h-full md:min-h-0'} max-h-[60vh] ${forceVerticalLayout ? '' : 'md:max-h-none'} h-auto overflow-y-auto custom-scrollbar space-y-2 sm:space-y-3`}
+            className={cn(
+              'workspace-sidebar max-h-[60vh] h-auto overflow-y-auto custom-scrollbar space-y-2 sm:space-y-3',
+              (sidebarCollapsed && forceVerticalLayout) || sidebarCollapsed ? 'hidden' : 'block',
+              !forceVerticalLayout &&
+                'md:block md:col-span-4 lg:col-span-3 md:h-full md:min-h-0 md:max-h-none'
+            )}
           >
             {/* Desktop Spacer for Alignment */}
             <div
-              className={`${forceVerticalLayout ? 'hidden' : 'hidden md:block'} h-6 mb-1 shrink-0`}
+              className={cn(
+                'h-6 mb-1 shrink-0',
+                !forceVerticalLayout ? 'hidden md:block' : 'hidden'
+              )}
             ></div>
 
             <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-3 shadow-sm space-y-3">
@@ -475,7 +487,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
               <button
                 onClick={onGenerate}
                 disabled={isProcessing || !file}
-                className={`w-full py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all flex items-center justify-center space-x-2 ${isProcessing || !file ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700' : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-indigo-500/25 hover:shadow-indigo-500/40 cursor-pointer'}`}
+                className={cn(
+                  'w-full py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all flex items-center justify-center space-x-2',
+                  isProcessing || !file
+                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                    : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-indigo-500/25 hover:shadow-indigo-500/40 cursor-pointer'
+                )}
               >
                 {isProcessing ? (
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -549,11 +566,17 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
           </div>
 
           <div
-            className={`flex flex-col h-[60vh] sm:h-[70vh] min-h-0 ${forceVerticalLayout ? '' : 'md:col-span-8 lg:col-span-9 md:h-full'}`}
+            className={cn(
+              'flex flex-col h-[60vh] sm:h-[70vh] min-h-0',
+              !forceVerticalLayout && 'md:col-span-8 lg:col-span-9 md:h-full'
+            )}
           >
             {/* Desktop Spacer for Alignment - matches sidebar spacer */}
             <div
-              className={`${forceVerticalLayout ? 'hidden' : 'hidden md:block'} h-6 mb-1 shrink-0`}
+              className={cn(
+                'h-6 mb-1 shrink-0',
+                !forceVerticalLayout ? 'hidden md:block' : 'hidden'
+              )}
             ></div>
             <div className="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl overflow-hidden flex flex-col shadow-2xl relative flex-1 min-h-0">
               {showSnapshots ? (
