@@ -30,7 +30,7 @@ export const DirectorySelector: React.FC<DirectorySelectorProps> = ({
 }) => {
   return (
     <div className={cn('flex items-center gap-3', className)}>
-      <span className="flex-1 px-3 py-2 bg-white/5 rounded-lg text-white/70 text-sm truncate">
+      <span className="flex-1 px-3 py-2 bg-white/5 rounded-lg text-white/70 text-sm truncate min-w-0">
         {value || placeholder}
       </span>
       <button

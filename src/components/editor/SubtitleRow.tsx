@@ -328,7 +328,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
     return (
       <div
         className={cn(
-          'p-2 sm:p-3 hover:bg-slate-800/30 transition-colors flex items-start space-x-2 sm:space-x-4 group/row',
+          'p-2 sm:p-3 md:p-4 hover:bg-slate-800/30 transition-colors flex items-start space-x-2 sm:space-x-4 group/row',
           getRowBackgroundClass(),
           isDeleteMode && isSelectedForDelete && 'bg-red-900/20'
         )}

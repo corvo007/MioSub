@@ -194,7 +194,7 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="搜索..."
-              className="w-full min-w-[80px] max-w-[120px] focus:max-w-[150px] sm:min-w-[100px] sm:max-w-[140px] sm:focus:max-w-[180px] md:max-w-[180px] bg-slate-900 border border-slate-700 rounded-md pl-7 sm:pl-9 pr-7 sm:pr-8 py-1 sm:py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
+              className="w-full min-w-[80px] max-w-[120px] focus:max-w-[150px] sm:min-w-[100px] sm:max-w-[140px] sm:focus:max-w-[180px] md:max-w-[240px] md:focus:max-w-[300px] bg-slate-900 border border-slate-700 rounded-md pl-7 sm:pl-9 pr-7 sm:pr-8 py-1 sm:py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
             />
             {searchQuery && (
               <button

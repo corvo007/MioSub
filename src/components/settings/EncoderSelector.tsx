@@ -17,7 +17,7 @@ export const EncoderSelector: React.FC<EncoderSelectorProps> = ({ value, onChang
         {
           value: 'libx264',
           label: (
-            <div className="text-left">
+            <div className="text-left whitespace-normal break-words">
               <div className="font-medium text-slate-200">H.264 (AVC)</div>
               <div className="text-xs text-slate-500">兼容性最好，适合大多数场景</div>
             </div>
@@ -26,7 +26,7 @@ export const EncoderSelector: React.FC<EncoderSelectorProps> = ({ value, onChang
         {
           value: 'libx265',
           label: (
-            <div className="text-left">
+            <div className="text-left whitespace-normal break-words">
               <div className="font-medium text-slate-200">H.265 (HEVC)</div>
               <div className="text-xs text-slate-500">高压缩率，同画质体积更小</div>
             </div>

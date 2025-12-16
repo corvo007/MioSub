@@ -98,7 +98,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             <SectionHeader withDivider className="mb-4">
               字幕工作台
             </SectionHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
               <button
                 onClick={onStartNew}
                 className="group relative bg-slate-900 border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-800/50 rounded-2xl p-5 transition-all duration-300 flex items-center gap-4 text-left"
@@ -131,7 +131,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             <SectionHeader withDivider className="mb-4">
               工具箱
             </SectionHeader>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
               <button
                 onClick={isElectron ? onStartDownload : undefined}
                 disabled={!isElectron}

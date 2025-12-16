@@ -32,7 +32,7 @@ export function QualitySelector({
   return (
     <div className={className}>
       <label className="block text-sm text-white/60 mb-3">{label}</label>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-2 md:gap-3">
         {formats.map((format) => (
           <button
             key={format.formatId}

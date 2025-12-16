@@ -85,7 +85,7 @@ export function StepConfig({
           ) : (
             <div className="mb-4">
               <label className="block text-sm font-medium text-white/70 mb-2">画质选择</label>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2 md:gap-3">
                 {[
                   { value: 'best', label: '最佳' },
                   { value: '1080p', label: '1080p' },
@@ -204,7 +204,7 @@ export function StepConfig({
                 {/* Min/Max Speaker Count */}
                 <div className="pt-3">
                   <span className="text-sm text-white/90 block mb-2">说话人数量 (可选)</span>
-                  <div className="flex items-center gap-6">
+                  <div className="flex flex-wrap items-center gap-4 md:gap-6">
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-white/70">最少说话人</span>
                       <NumberInput

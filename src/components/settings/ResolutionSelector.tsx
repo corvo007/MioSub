@@ -21,7 +21,7 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
   className = '',
 }) => {
   return (
-    <div className={cn('space-y-3', className)}>
+    <div className={cn('space-y-3 md:space-y-4', className)}>
       <CustomSelect
         value={resolution}
         onChange={(val) => {
@@ -78,7 +78,7 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
       />
 
       {resolution === 'custom' && (
-        <div className="flex gap-4 animate-fade-in">
+        <div className="flex flex-row gap-4 animate-fade-in">
           <div className="relative flex-1">
             <NumberInput
               value={width}

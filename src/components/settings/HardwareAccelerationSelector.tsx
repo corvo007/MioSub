@@ -35,7 +35,7 @@ export const HardwareAccelerationSelector: React.FC<HardwareAccelerationSelector
         onClick={() => isAvailable && onToggle()}
         disabled={isLoading || !isAvailable}
         className={cn(
-          'w-full flex items-center justify-between p-3 rounded-lg border transition-all',
+          'w-full flex flex-col md:flex-row items-start md:items-center justify-between p-3 md:p-4 rounded-lg border transition-all gap-4 md:gap-0',
           isLoading && 'bg-slate-800/50 border-slate-700/50 cursor-wait opacity-70',
           !isLoading &&
             !isAvailable &&
@@ -91,10 +91,9 @@ export const HardwareAccelerationSelector: React.FC<HardwareAccelerationSelector
           </div>
         </div>
 
-        {/* Toggle Switch */}
         <div
           className={cn(
-            'w-10 h-5 rounded-full relative transition-colors',
+            'w-10 h-5 rounded-full relative transition-colors shrink-0 self-end md:self-auto',
             (isLoading || !isAvailable) && 'bg-slate-700',
             !isLoading && isAvailable && isEnabled && 'bg-emerald-500',
             !isLoading && isAvailable && !isEnabled && 'bg-slate-600'

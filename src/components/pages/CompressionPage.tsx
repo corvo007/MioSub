@@ -199,7 +199,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
         />
 
         <div className="flex-1 overflow-y-auto mt-8 pr-2">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6 md:gap-8 pb-4">
             {/* Left Column: Input & Settings */}
             <div className="space-y-6">
               {/* File Input */}
