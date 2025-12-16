@@ -1,9 +1,8 @@
 /**
  * Concurrency Utilities
- * Uses p-map for parallel mapping and async-sema for semaphore control
+ * Uses p-map for parallel mapping with custom Semaphore implementation
  */
 import pMap from 'p-map';
-import { Sema } from 'async-sema';
 
 /**
  * Map over items with limited concurrency.
@@ -20,20 +19,33 @@ export async function mapInParallel<T, R>(
 
 /**
  * Semaphore for controlling concurrent access to resources.
- * Wrapper around async-sema's Sema to maintain existing API.
+ * Custom implementation for browser compatibility.
  */
 export class Semaphore {
-  private sema: Sema;
+  private tasks: (() => void)[] = [];
+  private count: number;
 
-  constructor(max: number) {
-    this.sema = new Sema(max);
+  constructor(public max: number) {
+    this.count = max;
   }
 
   async acquire(): Promise<void> {
-    await this.sema.acquire();
+    if (this.count > 0) {
+      this.count--;
+      return;
+    }
+
+    return new Promise<void>((resolve) => {
+      this.tasks.push(resolve);
+    });
   }
 
   release(): void {
-    this.sema.release();
+    if (this.tasks.length > 0) {
+      const next = this.tasks.shift();
+      if (next) next();
+    } else {
+      this.count++;
+    }
   }
 }
