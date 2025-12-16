@@ -344,7 +344,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
             )}
           </button>
         )}
-        <div className="flex flex-col text-[11px] sm:text-sm font-mono text-slate-400 min-w-[65px] sm:min-w-[85px] pt-1">
+        <div className="flex flex-col text-[11px] sm:text-sm font-mono text-slate-400 min-w-[75px] sm:min-w-[95px] pt-1">
           {editing ? (
             // Editable time inputs - compact style matching display
             <>
@@ -354,7 +354,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 onChange={(e) => setTempStartTime(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="00:00:00"
-                className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-[11px] sm:text-sm text-white placeholder-slate-600 focus:outline-none leading-tight w-[70px] sm:w-[100px]"
+                className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-[11px] sm:text-sm text-white placeholder-slate-600 focus:outline-none leading-tight w-full"
               />
               <input
                 type="text"
@@ -362,7 +362,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 onChange={(e) => setTempEndTime(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="00:00:00"
-                className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-[11px] sm:text-sm text-white/70 placeholder-slate-600 focus:outline-none leading-tight w-[70px] sm:w-[100px]"
+                className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-[11px] sm:text-sm text-white/70 placeholder-slate-600 focus:outline-none leading-tight w-full"
               />
             </>
           ) : (

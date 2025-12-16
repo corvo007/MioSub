@@ -30,6 +30,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   includeSpeakerInExport: false,
   useSpeakerColors: true,
   useSpeakerStyledTranslation: true,
+  // Smart default: If high DPI (e.g. 200% scale), default to 80% zoom to fit more content
+  zoomLevel: typeof window !== 'undefined' && window.devicePixelRatio >= 2 ? 0.8 : 1.0,
 };
 
 /**
@@ -39,6 +41,16 @@ const DEFAULT_SETTINGS: AppSettings = {
 export const useSettings = () => {
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
+
+  // Effect: Apply Zoom Level
+  useEffect(() => {
+    if (isSettingsLoaded && window.electronAPI?.setZoomFactor) {
+      // Default to 1.0 if undefined
+      const zoom = settings.zoomLevel || 1.0;
+      window.electronAPI.setZoomFactor(zoom);
+      logger.info(`Applied zoom factor: ${zoom}`);
+    }
+  }, [settings.zoomLevel, isSettingsLoaded]);
 
   // Initialize: Load from storage (Electron or localStorage)
   useEffect(() => {

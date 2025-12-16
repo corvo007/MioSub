@@ -26,6 +26,8 @@ export interface AudioInfo {
 export interface ElectronAPI {
   isElectron: boolean;
   isDebug: boolean;
+  setZoomFactor: (factor: number) => void;
+  getZoomFactor: () => number;
   // 现有方法
   getFilePath: (file: File) => string;
   selectMediaFile: () => Promise<{

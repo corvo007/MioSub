@@ -80,6 +80,36 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           <div className="space-y-6 min-h-[400px]">
             {activeTab === 'general' && (
               <div className="space-y-6 animate-fade-in">
+                {/* Interface Zoom Settings */}
+                <div className="space-y-3">
+                  <SectionHeader>显示设置</SectionHeader>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-1.5">
+                      界面缩放
+                    </label>
+                    <CustomSelect
+                      value={settings.zoomLevel?.toString() || '1'}
+                      onChange={(val) => updateSetting('zoomLevel', parseFloat(val))}
+                      options={[
+                        { value: '0.5', label: '50% (极小)' },
+                        { value: '0.67', label: '67% (小)' },
+                        { value: '0.75', label: '75% (较小)' },
+                        { value: '0.8', label: '80% (适中)' },
+                        { value: '0.9', label: '90%' },
+                        { value: '1', label: '100% (默认)' },
+                        { value: '1.1', label: '110%' },
+                        { value: '1.25', label: '125% (较大)' },
+                        { value: '1.5', label: '150% (极大)' },
+                      ]}
+                      icon={<Type className="w-4 h-4" />}
+                    />
+                    <p className="text-xs text-slate-500 mt-2">
+                      调整界面元素的大小。如果您使用的是高分辨率屏幕且设置了系统缩放，界面看起来太窄，可以尝试调低此数值（如
+                      80%）。
+                    </p>
+                  </div>
+                </div>
+
                 {/* Output Settings */}
                 <div className="space-y-3">
                   <SectionHeader>输出设置</SectionHeader>

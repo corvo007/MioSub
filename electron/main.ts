@@ -1,5 +1,5 @@
 import { mainLogger } from './logger.ts'; // Must be first!
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell, session } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell, session, screen } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -728,11 +728,21 @@ ipcMain.handle('open-external', async (_event, url: string) => {
 });
 
 const createWindow = () => {
+  const { width: screenWidth, height: screenHeight } = screen.getPrimaryDisplay().workAreaSize;
+
+  // Calculate generic 80% size or fallback to hardcoded
+  const defaultWidth = 1400;
+  const defaultHeight = 900;
+
+  // Ensure window fits on screen (important for high DPI / high scaling)
+  const width = Math.min(defaultWidth, Math.floor(screenWidth * 0.9));
+  const height = Math.min(defaultHeight, Math.floor(screenHeight * 0.9));
+
   const mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
+    width,
+    height,
     minWidth: 800,
-    minHeight: 800,
+    minHeight: 600, // Reduced min height to be safer on small logic screens
     icon: path.join(__dirname, '../resources/icon.png'),
     backgroundColor: '#1a0f2e', // 深紫色背景，与主界面协调
     webPreferences: {
@@ -741,6 +751,7 @@ const createWindow = () => {
       contextIsolation: true,
       sandbox: true, // Explicitly enable sandbox for renderer process isolation
     },
+    useContentSize: true, // Ensure content fits within the window
   });
 
   if (app.isPackaged) {

@@ -64,4 +64,5 @@ export interface AppSettings {
 
   // Batch Operation Settings
   conservativeBatchMode?: boolean; // Conservative mode for fix_timestamps/proofread (default: false)
+  zoomLevel?: number; // UI Zoom level (0.5 - 2.0)
 }

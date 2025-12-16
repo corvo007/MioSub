@@ -1,12 +1,17 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 
-import { contextBridge, ipcRenderer, webUtils } from 'electron';
+import { contextBridge, ipcRenderer, webUtils, webFrame } from 'electron';
 
 contextBridge.exposeInMainWorld('electronAPI', {
+  // ... existing fields
   isElectron: true,
   isDebug: process.env.DEBUG_BUILD === 'true' || process.env.NODE_ENV === 'development',
+  setZoomFactor: (factor: number) => webFrame.setZoomFactor(factor),
+  getZoomFactor: () => webFrame.getZoomFactor(),
   getFilePath: (file: File) => webUtils.getPathForFile(file),
+  // ... rest of API
+
   selectMediaFile: () => ipcRenderer.invoke('select-media-file'),
   selectSubtitleFile: () => ipcRenderer.invoke('select-subtitle-file'),
   selectJsonFile: () => ipcRenderer.invoke('select-json-file'),

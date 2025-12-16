@@ -26,6 +26,7 @@ import { HistoryPanel } from '@/components/layout/HistoryPanel';
 import { FileUploader } from '@/components/upload/FileUploader';
 import { SubtitleEditor } from '@/components/editor/SubtitleEditor';
 import { CustomSelect } from '@/components/settings';
+import { Modal } from '@/components/ui/Modal';
 import { formatDuration } from '@/services/subtitle/time';
 import { cn } from '@/lib/cn';
 
@@ -144,7 +145,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
 
   // Collapsible section states
   const [settingsExpanded, setSettingsExpanded] = useState(true);
-  const [exportExpanded, setExportExpanded] = useState(true);
+
+  // Export modal state
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // Force vertical layout when viewport is too small (height or width)
   const [forceVerticalLayout, setForceVerticalLayout] = useState(false);
@@ -188,7 +191,6 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
       // On compact screens, collapse settings but keep file sections expanded
       if (isCompact) {
         setSettingsExpanded(false);
-        setExportExpanded(false);
       }
     }, 100);
 
@@ -229,11 +231,11 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   return (
     <div
       className={cn(
-        'h-screen bg-slate-950 text-slate-200 p-4 md:p-8 flex flex-col overflow-y-auto',
+        'h-screen bg-slate-950 text-slate-200 p-2 md:p-4 flex flex-col overflow-y-auto',
         !forceVerticalLayout && 'md:overflow-hidden'
       )}
     >
-      <div className="max-w-screen-2xl mx-auto w-full flex-1 flex flex-col space-y-4 sm:space-y-6">
+      <div className="max-w-screen-2xl mx-auto w-full flex-1 flex flex-col space-y-2 sm:space-y-4">
         <WorkspaceHeader
           title={activeTab === 'new' ? '新建项目' : '字幕编辑器'}
           modeLabel={activeTab === 'new' ? '生成模式' : '导入模式'}
@@ -250,7 +252,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         />
         <div
           className={cn(
-            'flex-1 flex flex-col gap-3 sm:gap-6 workspace-grid',
+            'flex-1 flex flex-col gap-2 sm:gap-4 workspace-grid',
             !forceVerticalLayout && 'md:grid md:grid-cols-12 md:min-h-0'
           )}
         >
@@ -514,51 +516,25 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                 </span>
               </button>
             )}
+
             {error && (
               <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400 flex items-start space-x-2 animate-fade-in">
                 <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <span className="break-words w-full">{error}</span>
               </div>
             )}
+
             {(status === GenerationStatus.COMPLETED || status === GenerationStatus.PROOFREADING) &&
               subtitles.length > 0 && (
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl shadow-sm animate-fade-in overflow-hidden">
-                  <button
-                    onClick={() => setExportExpanded(!exportExpanded)}
-                    className="w-full flex items-center justify-between p-3 hover:bg-slate-800/50 transition-colors"
-                  >
-                    <h3 className="fluid-heading font-semibold text-white flex items-center">
-                      <Download className="w-4 h-4 mr-2 text-emerald-400" /> 导出
-                    </h3>
-                    {exportExpanded ? (
-                      <ChevronUp className="w-4 h-4 text-slate-500" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-slate-500" />
-                    )}
-                  </button>
-                  {exportExpanded && (
-                    <div className="px-3 pb-3">
-                      <div className="grid grid-cols-2 gap-1.5">
-                        <button
-                          onClick={() => onDownload('srt')}
-                          className="flex flex-col items-center justify-center py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded transition-all"
-                        >
-                          <span className="font-bold text-slate-200 text-xs">.SRT</span>
-                        </button>
-                        <button
-                          onClick={() => onDownload('ass')}
-                          className="flex flex-col items-center justify-center py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded transition-all"
-                        >
-                          <span className="font-bold text-slate-200 text-xs">.ASS</span>
-                        </button>
-                      </div>
-                      <div className="mt-1.5 text-[10px] text-center text-slate-500">
-                        输出: {settings.outputMode === 'bilingual' ? '双语' : '译文'}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <button
+                  onClick={() => setShowExportModal(true)}
+                  className="w-full py-2 px-3 rounded-lg font-semibold text-white text-sm shadow-lg transition-all flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-500/25 hover:shadow-emerald-500/40 animate-fade-in"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>导出字幕...</span>
+                </button>
               )}
+
             {canShowCompression && (
               <button
                 onClick={onStartCompression}
@@ -569,6 +545,54 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
               </button>
             )}
           </div>
+
+          {/* Export Modal */}
+          <Modal
+            isOpen={showExportModal}
+            onClose={() => setShowExportModal(false)}
+            title="导出字幕"
+            icon={<Download className="w-5 h-5 mr-2 text-emerald-400" />}
+            maxWidth="sm"
+          >
+            <p className="text-slate-400 text-sm mb-6">
+              选择您需要的字幕文件格式。当前输出模式:{' '}
+              {settings.outputMode === 'bilingual' ? '双语' : '仅译文'}
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => {
+                  onDownload('srt');
+                  setShowExportModal(false);
+                }}
+                className="flex flex-col items-center justify-center p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-xl transition-all group"
+              >
+                <span className="text-2xl font-bold text-slate-200 group-hover:text-emerald-400 mb-1">
+                  .SRT
+                </span>
+                <span className="text-xs text-slate-500 mt-1">通用格式</span>
+              </button>
+              <button
+                onClick={() => {
+                  onDownload('ass');
+                  setShowExportModal(false);
+                }}
+                className="flex flex-col items-center justify-center p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-xl transition-all group"
+              >
+                <span className="text-2xl font-bold text-slate-200 group-hover:text-emerald-400 mb-1">
+                  .ASS
+                </span>
+                <span className="text-xs text-slate-500 mt-1">高级样式</span>
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowExportModal(false)}
+              className="w-full mt-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 text-sm font-medium transition-colors"
+            >
+              取消
+            </button>
+          </Modal>
 
           <div
             className={cn(
