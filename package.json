@@ -94,8 +94,8 @@
       "dist/*.js"
     ],
     "extraResources": [],
-    "portable": {
-      "artifactName": "Gemini-Subtitle-Pro-${version}.${ext}"
+    "zip": {
+      "artifactName": "Gemini-Subtitle-Pro-${version}-win-x64.${ext}"
     },
     "mac": {
       "target": "dmg",
@@ -111,7 +111,7 @@
     },
     "win": {
       "target": [
-        "portable"
+        "zip"
       ],
       "extraResources": [
         {
