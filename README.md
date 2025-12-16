@@ -28,15 +28,16 @@
 
 1.  访问项目的 [Releases](https://github.com/corvo007/gemini-subtitle-pro/releases) 页面。
 2.  下载最新版本：
-    - **便携版**: `Gemini-Subtitle-Pro-x.x.x.exe` (单文件，即点即用)
-3.  运行程序，打开设置，填写 Gemini 及 OpenAI API KEY，及配置其他选项。
+    - **便携版**: `Gemini-Subtitle-Pro-x.x.x-win-x64.zip`
+3.  解压到任意位置，双击 `Gemini Subtitle Pro.exe` 启动程序。
+4.  打开设置，填写 Gemini 及 OpenAI API KEY，及配置其他选项。
 
     **⚠️ 注意事项：**
     1. 如果需要使用本地 Whisper 模型的话，请参考下一节进行配置。
     2. 你需要保证你的 API KEY 能请求 **Gemini 2.5 Flash** 及 **Gemini 3 Pro** 模型。推荐使用公益站/中转站的API KEY（个人推荐：[云雾API](https://yunwu.ai/register?aff=wmHr)）。
     3. 为了保证翻译质量，目前暂不支持自定义模型。
 
-4.  Enjoy！
+5.  Enjoy！
 
 ---
 
@@ -360,11 +361,11 @@
    # 开发模式
    npm run electron:dev
 
-   # 打包 (生成便携版程序)
+   # 打包 (生成 zip 压缩包)
    npm run electron:build
    ```
 
-   打包完成后，您可以在 `release` 目录下找到单文件便携版程序 (`.exe`)。
+   打包完成后，您可以在 `release` 目录下找到便携版压缩包 (`.zip`)。解压后即可运行。
 
 ---
 
