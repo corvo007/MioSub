@@ -227,7 +227,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   }, [subtitles, status]);
 
   return (
-    <div className="h-screen bg-slate-950 text-slate-200 p-4 md:p-8 flex flex-col overflow-y-auto md:overflow-hidden">
+    <div
+      className={cn(
+        'h-screen bg-slate-950 text-slate-200 p-4 md:p-8 flex flex-col overflow-y-auto',
+        !forceVerticalLayout && 'md:overflow-hidden'
+      )}
+    >
       <div className="max-w-screen-2xl mx-auto w-full flex-1 flex flex-col space-y-4 sm:space-y-6">
         <WorkspaceHeader
           title={activeTab === 'new' ? '新建项目' : '字幕编辑器'}

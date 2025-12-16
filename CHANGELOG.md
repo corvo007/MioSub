@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.9.5] - 2025-12-16
+
+### Features
+
+- **UI**: Implemented desktop fluid layout updates for better responsiveness.
+
 ## [2.9.4] - 2025-12-16
 
 ### Features
