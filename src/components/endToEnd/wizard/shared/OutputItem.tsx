@@ -1,5 +1,6 @@
 import React from 'react';
 import { FolderOpen } from 'lucide-react';
+import { getFilename } from '@/services/utils/path';
 
 /** 输出项组件 */
 export function OutputItem({
@@ -15,7 +16,7 @@ export function OutputItem({
   onOpen: () => void;
   highlight?: boolean;
 }) {
-  const filename = path.split(/[/\\]/).pop() || path;
+  const filename = getFilename(path) || path;
 
   return (
     <div

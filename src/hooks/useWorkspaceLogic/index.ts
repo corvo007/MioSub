@@ -21,6 +21,7 @@ import { retryGlossaryExtraction } from '@/services/api/gemini/glossary';
 import { useFileParserWorker } from '@/hooks/useFileParserWorker';
 import { decodeAudioWithRetry } from '@/services/audio/decoder';
 import { getSpeakerColor } from '@/services/utils/colors';
+import { getFilename } from '@/services/utils/path';
 import { ENV } from '@/config';
 
 interface UseWorkspaceLogicProps {
@@ -745,7 +746,7 @@ export const useWorkspaceLogic = ({
         const buffer = await window.electronAPI.readLocalFile(path);
 
         // Create a File object
-        const filename = path.split(/[\\/]/).pop() || 'video.mp4';
+        const filename = getFilename(path) || 'video.mp4';
         // Determine mime type based on extension
         const ext = filename.split('.').pop()?.toLowerCase();
         const type =

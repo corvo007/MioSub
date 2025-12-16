@@ -3,6 +3,7 @@ import { Link2, Loader2, AlertCircle, Sparkles, CheckCircle } from 'lucide-react
 import { formatDuration } from '@/services/subtitle/time';
 import { isValidVideoUrl } from '@/services/utils/url';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { cn } from '@/lib/cn';
 
 /** 步骤 1: 输入链接 */
 export function StepInput({
@@ -63,13 +64,15 @@ export function StepInput({
               e.key === 'Enter' && !isParsing && validationResult?.valid && handleParse()
             }
             placeholder="粘贴视频链接，如 https://www.youtube.com/watch?v=..."
-            className={`w-full px-4 py-4 bg-white/5 border rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 transition-all ${
-              validationResult?.valid === false
-                ? 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20'
-                : validationResult?.valid
-                  ? 'border-emerald-500/30 focus:border-emerald-500/50 focus:ring-emerald-500/20'
-                  : 'border-white/10 focus:border-violet-500/50 focus:ring-violet-500/20'
-            }`}
+            className={cn(
+              'w-full px-4 py-4 bg-white/5 border rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 transition-all',
+              validationResult?.valid === false &&
+                'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20',
+              validationResult?.valid === true &&
+                'border-emerald-500/30 focus:border-emerald-500/50 focus:ring-emerald-500/20',
+              validationResult === null &&
+                'border-white/10 focus:border-violet-500/50 focus:ring-violet-500/20'
+            )}
             disabled={isParsing}
           />
           <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
