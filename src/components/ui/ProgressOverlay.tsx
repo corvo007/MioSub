@@ -134,7 +134,7 @@ export const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
                         : chunk.id === 'glossary'
                           ? '提取术语'
                           : chunk.id === 'diarization'
-                            ? '说话人分析'
+                            ? '说话人预分析'
                             : chunk.id}
                 </span>
               </div>

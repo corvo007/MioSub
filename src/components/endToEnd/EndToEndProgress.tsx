@@ -41,7 +41,7 @@ const CHUNK_LABELS: Record<string, string> = {
   decoding: '解码音频',
   segmenting: '分段处理',
   glossary: '提取术语',
-  diarization: '说话人分析',
+  diarization: '说话人预分析',
 };
 
 /** Transcription chunk list display */
@@ -157,7 +157,7 @@ const stageConfig: Record<
   },
   extracting_speakers: {
     icon: <FileText className="w-4 h-4" />,
-    label: '说话人分析',
+    label: '说话人预分析',
     description: '识别音频中的说话人',
   },
   refining: {

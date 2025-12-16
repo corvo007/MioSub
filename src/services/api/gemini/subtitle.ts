@@ -405,7 +405,7 @@ export const generateSubtitles = async (
         logger.error('Speaker profile extraction failed', e);
         // Use actionable error message if available
         const actionableMsg = getActionableErrorMessage(e);
-        const errorMsg = actionableMsg || '说话人分析失败';
+        const errorMsg = actionableMsg || '说话人预分析失败';
         onProgress?.({ id: 'diarization', total: 1, status: 'error', message: errorMsg });
         return [];
       }
@@ -547,7 +547,7 @@ export const generateSubtitles = async (
           total: totalChunks,
           status: 'processing',
           stage: 'waiting_speakers',
-          message: '等待说话人分析...',
+          message: '等待说话人预分析...',
         });
         try {
           // Race with signal to ensure immediate response even if promise hangs
