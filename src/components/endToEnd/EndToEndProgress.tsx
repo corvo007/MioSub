@@ -353,31 +353,6 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
   return (
     <div className="max-w-3xl mx-auto">
       {/* Header */}
-      <div className="text-center mb-8">
-        <div
-          className={cn(
-            'inline-flex items-center justify-center w-16 h-16 rounded-2xl border mb-4',
-            isError && 'bg-gradient-to-br from-red-500/20 to-orange-500/20 border-red-500/30',
-            isCompleted &&
-              'bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-emerald-500/30',
-            !isError &&
-              !isCompleted &&
-              'bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border-blue-500/30'
-          )}
-        >
-          {isError ? (
-            <XCircle className="w-8 h-8 text-red-400" />
-          ) : isCompleted ? (
-            <CheckCircle className="w-8 h-8 text-emerald-400" />
-          ) : (
-            <Loader2 className="w-8 h-8 text-blue-400 animate-spin" />
-          )}
-        </div>
-        <h2 className="text-2xl font-bold text-white mb-2">
-          {isError ? '处理失败' : isCompleted ? '处理完成' : '正在处理'}
-        </h2>
-        <p className="text-white/60">{progress?.message || config.description}</p>
-      </div>
 
       {/* Stage Timeline */}
       <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6">

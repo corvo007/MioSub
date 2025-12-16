@@ -630,7 +630,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
                     <SettingRow
                       label="自动确认术语表"
-                      description="提取术语后直接应用，无需人工确认"
+                      description="提取术语后直接应用，无需人工确认。新术语将自动合并至当前激活的术语表（如当前无术语表，则自动新建）。"
                     >
                       <Toggle
                         checked={settings.glossaryAutoConfirm || false}

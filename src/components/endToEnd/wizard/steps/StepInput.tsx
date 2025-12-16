@@ -63,7 +63,7 @@ export function StepInput({
             onKeyDown={(e) =>
               e.key === 'Enter' && !isParsing && validationResult?.valid && handleParse()
             }
-            placeholder="粘贴视频链接，如 https://www.youtube.com/watch?v=..."
+            placeholder="粘贴 YouTube / Bilibili 视频链接..."
             className={cn(
               'w-full px-4 py-4 bg-white/5 border rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 transition-all',
               validationResult?.valid === false &&

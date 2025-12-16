@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Download, FileText, Film } from 'lucide-react';
+import { Download, FileText, Film } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import type { AppSettings } from '@/types/settings';
 import { HardwareAccelerationSelector } from '@/components/settings/HardwareAccelerationSelector';
@@ -39,14 +39,6 @@ export function StepConfig({
 
   return (
     <div className="max-w-3xl mx-auto">
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/30 mb-4">
-          <Settings className="w-8 h-8 text-emerald-400" />
-        </div>
-        <h2 className="text-2xl font-bold text-white mb-2">配置参数</h2>
-        <p className="text-white/60">设置下载、字幕和压制选项</p>
-      </div>
-
       {/* Video Info Card */}
       {videoInfo && (
         <Card className="mb-6">
@@ -142,7 +134,7 @@ export function StepConfig({
           <div className="space-y-2">
             <ToggleOptionInline
               label="启用自动术语表"
-              description="自动识别并提取专业术语，提升翻译准确性和一致性"
+              description="提取术语后直接应用，无需人工确认。新术语将自动合并至当前激活的术语表（如当前无术语表，则自动新建）。"
               checked={config.enableGlossary !== false}
               onChange={(v) => onConfigChange({ enableGlossary: v })}
             />
