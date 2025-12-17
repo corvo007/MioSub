@@ -189,24 +189,29 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     return () => window.removeEventListener('resize', checkViewportSize);
   }, [settings.zoomLevel]);
 
-  // Auto-detect available height on mount and collapse sections if needed
+  // Auto-detect available height and collapse sections if needed
   useEffect(() => {
     const sidebar = sidebarRef.current;
     if (!sidebar) return;
 
-    // Small delay to let layout settle, then check height ONLY ONCE
+    // Small delay to let layout settle
     const timeoutId = setTimeout(() => {
       const availableHeight = sidebar.clientHeight;
       const isCompact = availableHeight > 0 && availableHeight < COMPACT_HEIGHT_THRESHOLD;
 
-      // On compact screens, collapse settings but keep file sections expanded
+      // On compact screens, collapse settings
       if (isCompact) {
         setSettingsExpanded(false);
+      } else {
+        // Optional: Auto-expand if plenty of space?
+        // For now, let's keep it sticky if user expanded it, but we could enforce expand:
+        // setSettingsExpanded(true);
+        // Decided to only auto-collapse to avoid overriding user preference aggressively.
       }
     }, 100);
 
     return () => clearTimeout(timeoutId);
-  }, []);
+  }, [settings.zoomLevel, forceVerticalLayout]);
 
   // Check if file is video (not audio)
   const isVideoFile = (f: File | null): boolean => {
