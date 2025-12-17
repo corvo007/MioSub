@@ -53,7 +53,18 @@ export const useSettings = () => {
       window.electronAPI.setZoomFactor(zoom);
     } else {
       // Web fallback: Use CSS Variable for transform scaling
-      document.documentElement.style.setProperty('--zoom-level', zoom.toString());
+      if (zoom === 1) {
+        // Reset to default (none) to avoid stacking context issues
+        document.documentElement.style.removeProperty('--app-transform');
+        document.documentElement.style.removeProperty('--app-width');
+        document.documentElement.style.removeProperty('--app-height');
+        document.documentElement.style.removeProperty('--app-height-safe');
+      } else {
+        document.documentElement.style.setProperty('--app-transform', `scale(${zoom})`);
+        document.documentElement.style.setProperty('--app-width', `calc(100% / ${zoom})`);
+        document.documentElement.style.setProperty('--app-height', `calc(100% / ${zoom})`);
+        document.documentElement.style.setProperty('--app-height-safe', `calc(100dvh / ${zoom})`);
+      }
     }
     logger.info(`Applied zoom factor: ${zoom}`);
   }, [settings.zoomLevel, isSettingsLoaded]);

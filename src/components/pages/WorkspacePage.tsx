@@ -168,12 +168,15 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   // Detect viewport dimensions and switch layout accordingly
   useEffect(() => {
     const checkViewportSize = () => {
-      const viewportHeight = window.innerHeight;
-      const viewportWidth = window.innerWidth;
+      // Calculate effective viewport size by compensating for zoom
+      // If zoom is 0.5, the effective viewport is 2x larger
+      const zoom = settings.zoomLevel || 1;
+      const effectiveHeight = window.innerHeight / zoom;
+      const effectiveWidth = window.innerWidth / zoom;
 
       // Force vertical layout if either dimension is too small
       const shouldForceVertical =
-        viewportHeight < MIN_HEIGHT_FOR_TWO_COLUMN || viewportWidth < MIN_WIDTH_FOR_TWO_COLUMN;
+        effectiveHeight < MIN_HEIGHT_FOR_TWO_COLUMN || effectiveWidth < MIN_WIDTH_FOR_TWO_COLUMN;
 
       setForceVerticalLayout(shouldForceVertical);
     };
@@ -184,7 +187,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     // Listen for resize
     window.addEventListener('resize', checkViewportSize);
     return () => window.removeEventListener('resize', checkViewportSize);
-  }, []);
+  }, [settings.zoomLevel]);
 
   // Auto-detect available height on mount and collapse sections if needed
   useEffect(() => {

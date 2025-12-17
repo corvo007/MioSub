@@ -164,15 +164,19 @@ body {
    ======================================== */
 
 :root {
-  --zoom-level: 1;
+  /* Default: No transform (Electron / Native / Zoom 100%) */
+  --app-transform: none;
+  --app-width: 100%;
+  --app-height: 100%;
+  --app-height-safe: 100dvh;
 }
 
 #root {
   /* Using transform for web-based zoom */
-  transform: scale(var(--zoom-level));
+  transform: var(--app-transform);
   transform-origin: 0 0;
-  width: calc(100% / var(--zoom-level));
-  height: calc(100% / var(--zoom-level));
+  width: var(--app-width);
+  height: var(--app-height);
   transition:
     transform 0.2s ease-out,
     width 0.2s ease-out,
@@ -180,13 +184,13 @@ body {
 }
 
 .h-screen-safe {
-  height: calc(100dvh / var(--zoom-level));
+  height: var(--app-height-safe);
 }
 
 .min-h-screen-safe {
-  min-height: calc(100dvh / var(--zoom-level));
+  min-height: var(--app-height-safe);
 }
 
 .max-h-screen-safe {
-  max-height: calc(100dvh / var(--zoom-level));
+  max-height: var(--app-height-safe);
 }
