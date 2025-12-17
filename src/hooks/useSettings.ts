@@ -59,11 +59,13 @@ export const useSettings = () => {
         document.documentElement.style.removeProperty('--app-width');
         document.documentElement.style.removeProperty('--app-height');
         document.documentElement.style.removeProperty('--app-height-safe');
+        document.documentElement.style.removeProperty('--app-zoom');
       } else {
         document.documentElement.style.setProperty('--app-transform', `scale(${zoom})`);
         document.documentElement.style.setProperty('--app-width', `calc(100% / ${zoom})`);
         document.documentElement.style.setProperty('--app-height', `calc(100% / ${zoom})`);
         document.documentElement.style.setProperty('--app-height-safe', `calc(100dvh / ${zoom})`);
+        document.documentElement.style.setProperty('--app-zoom', `${zoom}`);
       }
     }
     logger.info(`Applied zoom factor: ${zoom}`);

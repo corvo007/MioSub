@@ -26,7 +26,11 @@ export const SpeakerSelect: React.FC<SpeakerSelectProps> = ({
       // Check position before opening
       if (dropdownRef.current) {
         const rect = dropdownRef.current.getBoundingClientRect();
-        const spaceBelow = window.innerHeight - rect.bottom;
+        const zoom = parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue('--app-zoom') || '1'
+        );
+        const effectiveViewportHeight = window.innerHeight / zoom;
+        const spaceBelow = effectiveViewportHeight - rect.bottom;
         // If less than 250px below, open upwards
         setDropUp(spaceBelow < 250);
       }

@@ -36,7 +36,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         setDropUp(forceDropUp);
       } else if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
-        const spaceBelow = window.innerHeight - rect.bottom;
+        // Calculate effective viewport height based on zoom
+        const zoom = parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue('--app-zoom') || '1'
+        );
+        const effectiveViewportHeight = window.innerHeight / zoom;
+        const spaceBelow = effectiveViewportHeight - rect.bottom;
         // If less than MIN_SPACE_BELOW below, open upwards
         setDropUp(spaceBelow < MIN_SPACE_BELOW);
       }

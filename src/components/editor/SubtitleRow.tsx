@@ -200,7 +200,11 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
       if (!showAddMenu) {
         if (addMenuRef.current) {
           const rect = addMenuRef.current.getBoundingClientRect();
-          const spaceBelow = window.innerHeight - rect.bottom;
+          const zoom = parseFloat(
+            getComputedStyle(document.documentElement).getPropertyValue('--app-zoom') || '1'
+          );
+          const effectiveViewportHeight = window.innerHeight / zoom;
+          const spaceBelow = effectiveViewportHeight - rect.bottom;
           // If less than 220px below, open upwards
           setMenuDropUp(spaceBelow < 220);
         }

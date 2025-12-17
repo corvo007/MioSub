@@ -111,7 +111,11 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
     if (!isIssueFilterOpen) {
       if (issueFilterRef.current) {
         const rect = issueFilterRef.current.getBoundingClientRect();
-        const spaceBelow = window.innerHeight - rect.bottom;
+        const zoom = parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue('--app-zoom') || '1'
+        );
+        const effectiveViewportHeight = window.innerHeight / zoom;
+        const spaceBelow = effectiveViewportHeight - rect.bottom;
         setIssueDropUp(spaceBelow < MIN_SPACE_BELOW);
       }
     }
@@ -124,7 +128,11 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
     if (!isSpeakerFilterOpen) {
       if (speakerFilterRef.current) {
         const rect = speakerFilterRef.current.getBoundingClientRect();
-        const spaceBelow = window.innerHeight - rect.bottom;
+        const zoom = parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue('--app-zoom') || '1'
+        );
+        const effectiveViewportHeight = window.innerHeight / zoom;
+        const spaceBelow = effectiveViewportHeight - rect.bottom;
         setSpeakerDropUp(spaceBelow < MIN_SPACE_BELOW);
       }
     }
