@@ -6,6 +6,8 @@ interface NumberInputProps {
   onChange: (value: number | undefined) => void;
   min?: number;
   max?: number;
+  /** If set, use this value when input is empty on blur */
+  defaultOnBlur?: number;
   allowDecimals?: boolean;
   placeholder?: string;
   className?: string;
@@ -20,6 +22,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
   onChange,
   min,
   max,
+  defaultOnBlur,
   allowDecimals = false,
   placeholder = '',
   className = '',
@@ -73,9 +76,14 @@ export const NumberInput: React.FC<NumberInputProps> = ({
 
     // On blur, clamp and normalize the value
     if (displayValue === '' || displayValue === '.' || displayValue === '-') {
-      // Leave as undefined
-      setDisplayValue('');
-      onChange(undefined);
+      // Use defaultOnBlur if provided, otherwise leave as undefined
+      if (defaultOnBlur !== undefined) {
+        setDisplayValue(defaultOnBlur.toString());
+        onChange(defaultOnBlur);
+      } else {
+        setDisplayValue('');
+        onChange(undefined);
+      }
       return;
     }
 

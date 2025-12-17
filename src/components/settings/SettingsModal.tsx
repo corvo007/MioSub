@@ -1,9 +1,13 @@
 import React from 'react';
-import { Settings, X, CheckCircle, Languages, Type, Clock, Book, Bug } from 'lucide-react';
+import { Settings, X, Languages, Type, Clock, Book, Bug } from 'lucide-react';
 import { AppSettings } from '@/types/settings';
 import { CustomSelect } from '@/components/settings/CustomSelect';
 import { LocalWhisperSettings } from '@/components/settings/LocalWhisperSettings';
 import { Toggle } from '@/components/ui/Toggle';
+import { NumberInput } from '@/components/ui/NumberInput';
+import { PasswordInput } from '@/components/ui/PasswordInput';
+import { InputWithReset } from '@/components/ui/InputWithReset';
+import { EnvKeyHint } from '@/components/ui/EnvKeyHint';
 import { SettingRow } from '@/components/ui/SettingRow';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { OptionButton } from '@/components/ui/OptionButton';
@@ -219,47 +223,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         Gemini API 密钥
                       </label>
                       <div className="relative">
-                        <input
-                          type="password"
+                        <PasswordInput
                           value={settings.geminiKey}
                           onChange={(e) => updateSetting('geminiKey', e.target.value.trim())}
                           placeholder="请输入 Gemini API 密钥"
-                          className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
                         />
                       </div>
                       <p className="text-xs text-slate-500 mt-1">
                         翻译使用 <strong>Gemini 2.5 Flash</strong>，术语提取和润色使用{' '}
                         <strong>Gemini 3 Pro</strong>。
                       </p>
-                      {envGeminiKey && !settings.geminiKey && (
-                        <p className="text-xs text-emerald-400 mt-1 flex items-center">
-                          <CheckCircle className="w-3 h-3 mr-1" /> 正在使用环境变量配置的密钥
-                        </p>
-                      )}
-                      {envGeminiKey && settings.geminiKey && (
-                        <p className="text-xs text-amber-400 mt-1">已覆盖环境变量中的默认密钥</p>
-                      )}
+                      <EnvKeyHint envKey={envGeminiKey} userKey={settings.geminiKey} />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-300 mb-1.5">
                         Gemini 端点 (可选)
                       </label>
-                      <div className="relative flex gap-2">
-                        <input
-                          type="text"
-                          value={settings.geminiEndpoint || ''}
-                          onChange={(e) => updateSetting('geminiEndpoint', e.target.value.trim())}
-                          placeholder="https://generativelanguage.googleapis.com"
-                          className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
-                        />
-                        <button
-                          onClick={() => updateSetting('geminiEndpoint', undefined)}
-                          className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-700 transition-colors whitespace-nowrap"
-                          title="恢复默认"
-                        >
-                          重置
-                        </button>
-                      </div>
+                      <InputWithReset
+                        value={settings.geminiEndpoint || ''}
+                        onChange={(val) => updateSetting('geminiEndpoint', val)}
+                        onReset={() => updateSetting('geminiEndpoint', undefined)}
+                        placeholder="https://generativelanguage.googleapis.com"
+                      />
                       <p className="text-xs text-slate-500 mt-1">
                         自定义 API 端点，支持使用代理或第三方网关。
                       </p>
@@ -308,50 +293,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                               OpenAI API 密钥
                             </label>
                             <div className="relative">
-                              <input
-                                type="password"
+                              <PasswordInput
                                 value={settings.openaiKey}
                                 onChange={(e) => updateSetting('openaiKey', e.target.value.trim())}
                                 placeholder="输入 OpenAI API 密钥"
-                                className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
                               />
                             </div>
                             <p className="text-xs text-slate-500 mt-1">
                               使用 OpenAI 的 <strong>Whisper</strong> 模型进行高精度语音转文字。
                             </p>
-                            {envOpenaiKey && !settings.openaiKey && (
-                              <p className="text-xs text-emerald-400 mt-1 flex items-center">
-                                <CheckCircle className="w-3 h-3 mr-1" /> 正在使用环境变量配置的密钥
-                              </p>
-                            )}
-                            {envOpenaiKey && settings.openaiKey && (
-                              <p className="text-xs text-amber-400 mt-1">
-                                已覆盖环境变量中的默认密钥
-                              </p>
-                            )}
+                            <EnvKeyHint envKey={envOpenaiKey} userKey={settings.openaiKey} />
                           </div>
                           <div>
                             <label className="block text-sm font-medium text-slate-300 mb-1.5">
                               OpenAI 端点 (可选)
                             </label>
-                            <div className="relative flex gap-2">
-                              <input
-                                type="text"
-                                value={settings.openaiEndpoint || ''}
-                                onChange={(e) =>
-                                  updateSetting('openaiEndpoint', e.target.value.trim())
-                                }
-                                placeholder="https://api.openai.com/v1"
-                                className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
-                              />
-                              <button
-                                onClick={() => updateSetting('openaiEndpoint', undefined)}
-                                className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-700 transition-colors whitespace-nowrap"
-                                title="恢复默认"
-                              >
-                                重置
-                              </button>
-                            </div>
+                            <InputWithReset
+                              value={settings.openaiEndpoint || ''}
+                              onChange={(val) => updateSetting('openaiEndpoint', val)}
+                              onReset={() => updateSetting('openaiEndpoint', undefined)}
+                              placeholder="https://api.openai.com/v1"
+                            />
                             <p className="text-xs text-slate-500 mt-1">
                               自定义 API 端点，支持使用本地模型、代理或第三方网关。
                             </p>
@@ -366,46 +328,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           OpenAI API 密钥
                         </label>
                         <div className="relative">
-                          <input
-                            type="password"
+                          <PasswordInput
                             value={settings.openaiKey}
                             onChange={(e) => updateSetting('openaiKey', e.target.value.trim())}
                             placeholder="输入 OpenAI API 密钥"
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
                           />
                         </div>
                         <p className="text-xs text-slate-500 mt-1">
                           使用 OpenAI 的 <strong>Whisper</strong> 模型进行高精度语音转文字。
                         </p>
-                        {envOpenaiKey && !settings.openaiKey && (
-                          <p className="text-xs text-emerald-400 mt-1 flex items-center">
-                            <CheckCircle className="w-3 h-3 mr-1" /> 正在使用环境变量配置的密钥
-                          </p>
-                        )}
-                        {envOpenaiKey && settings.openaiKey && (
-                          <p className="text-xs text-amber-400 mt-1">已覆盖环境变量中的默认密钥</p>
-                        )}
+                        <EnvKeyHint envKey={envOpenaiKey} userKey={settings.openaiKey} />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-slate-300 mb-1.5">
                           OpenAI 端点 (可选)
                         </label>
-                        <div className="relative flex gap-2">
-                          <input
-                            type="text"
-                            value={settings.openaiEndpoint || ''}
-                            onChange={(e) => updateSetting('openaiEndpoint', e.target.value.trim())}
-                            placeholder="https://api.openai.com/v1"
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 text-slate-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-sm"
-                          />
-                          <button
-                            onClick={() => updateSetting('openaiEndpoint', undefined)}
-                            className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-400 hover:text-white hover:bg-slate-700 transition-colors whitespace-nowrap"
-                            title="恢复默认"
-                          >
-                            重置
-                          </button>
-                        </div>
+                        <InputWithReset
+                          value={settings.openaiEndpoint || ''}
+                          onChange={(val) => updateSetting('openaiEndpoint', val)}
+                          onReset={() => updateSetting('openaiEndpoint', undefined)}
+                          placeholder="https://api.openai.com/v1"
+                        />
                         <p className="text-xs text-slate-500 mt-1">
                           自定义 API 端点，支持使用本地模型、代理或第三方网关。
                         </p>
@@ -430,27 +373,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <label className="block text-sm font-medium text-slate-300 mb-1.5">
                           CPU 线程数
                         </label>
-                        <input
-                          type="text"
-                          value={settings.whisperThreads || ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === '')
-                              updateSetting('whisperThreads', undefined); // Set to undefined to trigger defaults
-                            else if (/^\d+$/.test(val)) {
-                              const num = parseInt(val);
-                              if (num > 16) updateSetting('whisperThreads', 16);
-                              else updateSetting('whisperThreads', num);
-                            }
-                          }}
-                          onBlur={() => {
-                            // Ensure min value on blur if user leaves it empty or invalid
-                            if (!settings.whisperThreads || settings.whisperThreads < 1) {
-                              updateSetting('whisperThreads', 4);
-                            }
-                          }}
+                        <NumberInput
+                          value={settings.whisperThreads}
+                          onChange={(v) => updateSetting('whisperThreads', v)}
+                          min={1}
+                          max={16}
+                          defaultOnBlur={4}
                           placeholder="4"
-                          className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm"
+                          className="w-full"
                         />
                         <p className="text-xs text-slate-500 mt-1">
                           每个转录任务使用的 CPU 线程数，范围 1-16
@@ -460,25 +390,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         <label className="block text-sm font-medium text-slate-300 mb-1.5">
                           最大并发数
                         </label>
-                        <input
-                          type="text"
-                          value={settings.whisperConcurrency || ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === '') updateSetting('whisperConcurrency', undefined);
-                            else if (/^\d+$/.test(val)) {
-                              const num = parseInt(val);
-                              if (num > 4) updateSetting('whisperConcurrency', 4);
-                              else updateSetting('whisperConcurrency', num);
-                            }
-                          }}
-                          onBlur={() => {
-                            if (!settings.whisperConcurrency || settings.whisperConcurrency < 1) {
-                              updateSetting('whisperConcurrency', 1);
-                            }
-                          }}
+                        <NumberInput
+                          value={settings.whisperConcurrency}
+                          onChange={(v) => updateSetting('whisperConcurrency', v)}
+                          min={1}
+                          max={4}
+                          defaultOnBlur={1}
                           placeholder="1"
-                          className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm"
+                          className="w-full"
                         />
                         <p className="text-xs text-slate-500 mt-1">
                           同时处理的转录任务数，范围 1-4
@@ -493,16 +412,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <label className="block text-sm font-medium text-slate-300 mb-1.5">
                       润色翻译批次大小
                     </label>
-                    <input
-                      type="text"
-                      value={settings.proofreadBatchSize === 0 ? '' : settings.proofreadBatchSize}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') updateSetting('proofreadBatchSize', 0);
-                        else if (/^\d+$/.test(val))
-                          updateSetting('proofreadBatchSize', parseInt(val));
-                      }}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm"
+                    <NumberInput
+                      value={settings.proofreadBatchSize || undefined}
+                      onChange={(v) => updateSetting('proofreadBatchSize', v ?? 0)}
+                      min={0}
+                      className="w-full"
                     />
                     <p className="text-xs text-slate-500 mt-1">
                       每次润色翻译的字幕条数。数值越大上下文越完整、质量越高，但会消耗更多 Token。
@@ -512,18 +426,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <label className="block text-sm font-medium text-slate-300 mb-1.5">
                       翻译批次大小
                     </label>
-                    <input
-                      type="text"
-                      value={
-                        settings.translationBatchSize === 0 ? '' : settings.translationBatchSize
-                      }
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') updateSetting('translationBatchSize', 0);
-                        else if (/^\d+$/.test(val))
-                          updateSetting('translationBatchSize', parseInt(val));
-                      }}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm"
+                    <NumberInput
+                      value={settings.translationBatchSize || undefined}
+                      onChange={(v) => updateSetting('translationBatchSize', v ?? 0)}
+                      min={0}
+                      className="w-full"
                     />
                     <p className="text-xs text-slate-500 mt-1">
                       每次翻译的字幕条数。数值越大上下文越完整、质量越高，但会消耗更多 Token。
@@ -533,15 +440,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <label className="block text-sm font-medium text-slate-300 mb-1.5">
                       分块时长 (秒)
                     </label>
-                    <input
-                      type="text"
-                      value={settings.chunkDuration === 0 ? '' : settings.chunkDuration}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') updateSetting('chunkDuration', 0);
-                        else if (/^\d+$/.test(val)) updateSetting('chunkDuration', parseInt(val));
-                      }}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm"
+                    <NumberInput
+                      value={settings.chunkDuration || undefined}
+                      onChange={(v) => updateSetting('chunkDuration', v ?? 0)}
+                      min={0}
+                      className="w-full"
                     />
                     <p className="text-xs text-slate-500 mt-1">
                       音频分段的目标长度（秒），影响转录的并行处理效率。
@@ -551,16 +454,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <label className="block text-sm font-medium text-slate-300 mb-1.5">
                       并发数 (Flash)
                     </label>
-                    <input
-                      type="text"
-                      value={settings.concurrencyFlash === 0 ? '' : settings.concurrencyFlash}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') updateSetting('concurrencyFlash', 0);
-                        else if (/^\d+$/.test(val))
-                          updateSetting('concurrencyFlash', parseInt(val));
-                      }}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm"
+                    <NumberInput
+                      value={settings.concurrencyFlash || undefined}
+                      onChange={(v) => updateSetting('concurrencyFlash', v ?? 0)}
+                      min={0}
+                      className="w-full"
                     />
                     <p className="text-xs text-slate-500 mt-1">
                       应用于 <strong>Gemini 2.5 Flash</strong> 翻译、优化和{' '}
@@ -571,15 +469,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <label className="block text-sm font-medium text-slate-300 mb-1.5">
                       并发数 (Pro)
                     </label>
-                    <input
-                      type="text"
-                      value={settings.concurrencyPro === 0 ? '' : settings.concurrencyPro}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') updateSetting('concurrencyPro', 0);
-                        else if (/^\d+$/.test(val)) updateSetting('concurrencyPro', parseInt(val));
-                      }}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm"
+                    <NumberInput
+                      value={settings.concurrencyPro || undefined}
+                      onChange={(v) => updateSetting('concurrencyPro', v ?? 0)}
+                      min={0}
+                      className="w-full"
                     />
                     <p className="text-xs text-slate-500 mt-1">
                       应用于 <strong>Gemini 3 Pro</strong> 术语提取和润色翻译。请根据账户限额调整。
@@ -589,15 +483,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <label className="block text-sm font-medium text-slate-300 mb-1.5">
                       请求超时 (秒)
                     </label>
-                    <input
-                      type="text"
-                      value={settings.requestTimeout === 0 ? '' : settings.requestTimeout || 600}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (val === '') updateSetting('requestTimeout', 0);
-                        else if (/^\d+$/.test(val)) updateSetting('requestTimeout', parseInt(val));
-                      }}
-                      className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm"
+                    <NumberInput
+                      value={settings.requestTimeout || undefined}
+                      onChange={(v) => updateSetting('requestTimeout', v ?? 600)}
+                      min={0}
+                      placeholder="600"
+                      className="w-full"
                     />
                     <p className="text-xs text-slate-500 mt-1">
                       单个 API 请求的最长等待时间。网络较慢或处理大批量时可适当增加。

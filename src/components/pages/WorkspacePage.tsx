@@ -27,7 +27,9 @@ import { FileUploader } from '@/components/upload/FileUploader';
 import { SubtitleEditor } from '@/components/editor/SubtitleEditor';
 import { CustomSelect } from '@/components/settings';
 import { Modal } from '@/components/ui/Modal';
+import { NumberInput } from '@/components/ui/NumberInput';
 import { formatDuration } from '@/services/subtitle/time';
+import { isVideoFile } from '@/services/utils/file';
 import { cn } from '@/lib/cn';
 
 interface WorkspacePageProps {
@@ -212,21 +214,6 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
 
     return () => clearTimeout(timeoutId);
   }, [settings.zoomLevel, forceVerticalLayout]);
-
-  // Check if file is video (not audio)
-  const isVideoFile = (f: File | null): boolean => {
-    if (!f) return false;
-    const ext = f.name.split('.').pop()?.toLowerCase() || '';
-    const audioExtensions = ['mp3', 'wav', 'flac', 'aac', 'm4a', 'ogg', 'wma', 'opus'];
-    return (
-      f.type.startsWith('video/') ||
-      (!audioExtensions.includes(ext) &&
-        (f.type.startsWith('video/') ||
-          ['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'webm', 'ts', 'm2ts', 'mts', 'vob'].includes(
-            ext
-          )))
-    );
-  };
 
   // Determine if compression button should show
   // For 'new' tab: requires video file
@@ -507,34 +494,24 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-slate-400">最少</span>
-                            <input
-                              type="text"
-                              value={settings.minSpeakers ?? ''}
-                              onChange={(e) => {
-                                const val = e.target.value.replace(/[^0-9]/g, '');
-                                const num = val
-                                  ? Math.min(99, Math.max(1, parseInt(val)))
-                                  : undefined;
-                                onUpdateSetting('minSpeakers', num);
-                              }}
+                            <NumberInput
+                              value={settings.minSpeakers}
+                              onChange={(num) => onUpdateSetting('minSpeakers', num)}
+                              min={1}
+                              max={99}
                               placeholder="-"
-                              className="w-12 px-1.5 py-1 bg-slate-800 border border-slate-700 rounded-md text-slate-200 text-xs text-center focus:outline-none focus:border-indigo-500 transition-colors"
+                              className="w-12 px-1.5 py-1 text-xs text-center"
                             />
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-slate-400">最多</span>
-                            <input
-                              type="text"
-                              value={settings.maxSpeakers ?? ''}
-                              onChange={(e) => {
-                                const val = e.target.value.replace(/[^0-9]/g, '');
-                                const num = val
-                                  ? Math.min(99, Math.max(1, parseInt(val)))
-                                  : undefined;
-                                onUpdateSetting('maxSpeakers', num);
-                              }}
+                            <NumberInput
+                              value={settings.maxSpeakers}
+                              onChange={(num) => onUpdateSetting('maxSpeakers', num)}
+                              min={1}
+                              max={99}
                               placeholder="-"
-                              className="w-12 px-1.5 py-1 bg-slate-800 border border-slate-700 rounded-md text-slate-200 text-xs text-center focus:outline-none focus:border-indigo-500 transition-colors"
+                              className="w-12 px-1.5 py-1 text-xs text-center"
                             />
                           </div>
                         </div>
