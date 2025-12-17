@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.9.8] - 2025-12-17
+
+### Features
+
+- **UI**: Implemented robust web zoom support using CSS transforms and safe layout classes.
+- **Core**: Updated FFmpeg, FFprobe, and yt-dlp executables.
+
+### Fixes
+
+- **UI**: Optimized web zoom safety for Electron and fixed layout responsiveness.
+- **UI**: Ensure correct dropdown positioning across all zoom levels.
+- **System**: Improved snapshot system reliability.
+
 ## [2.9.7] - 2025-12-16
 
 ### Features
