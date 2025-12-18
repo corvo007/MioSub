@@ -723,7 +723,8 @@ export const generateSubtitles = async (
                 }),
               signal,
               trackUsage,
-              (settings.requestTimeout || 600) * 1000 // Custom timeout in milliseconds
+              (settings.requestTimeout || 600) * 1000, // Custom timeout in milliseconds
+              !!chunkSettings.enableDiarization // Pass diarization flag
             );
           }
           logger.debug(`[Chunk ${index}] Translation complete. Items: ${translatedItems.length}`);

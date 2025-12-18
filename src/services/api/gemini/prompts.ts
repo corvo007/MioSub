@@ -409,16 +409,8 @@ export const getSystemInstruction = (
   // Use helper function to format glossary
   const glossaryText = formatGlossaryForPrompt(glossary, mode);
 
-  // If custom prompt is provided, usually we prepend/mix it, but for simplicity if a user overrides "Proofreading Prompt", we use it for "Deep Proofread" mode.
-  if (mode === 'proofread' && customPrompt && customPrompt.trim().length > 0) {
-    return customPrompt + glossaryText;
-  }
-  // We allow custom prompt override for translation phase too
-  if (mode === 'translation' && customPrompt && customPrompt.trim().length > 0) {
-    return customPrompt + glossaryText;
-  }
-
   // 1. Refinement Prompt (Flash 2.5) - Initial Pass
+
   if (mode === 'refinement') {
     return `You are a professional Subtitle QA Specialist. 
     You will receive an audio chunk and a raw JSON transcription.
@@ -510,7 +502,7 @@ export const getSystemInstruction = (
     ✓ Is the Chinese fluent and natural?
     ✓ Did I remove all filler words?
 
-    ${genreContext}${glossaryText}${
+    ${genreContext}${customPrompt ? `\n    ${customPrompt}\n` : ''}${glossaryText}${
       speakerProfiles && speakerProfiles.length > 0
         ? `
 
@@ -630,7 +622,7 @@ Speaker (formal): "すごいですね" → "真是令人印象深刻。"
     ✓ All 'text_translated' are fluent Simplified Chinese
     ✓ No missed speech from audio
     ✓ Translation quality significantly improved
-    ${getGenreSpecificGuidance(genre)}${glossaryText}`;
+    ${getGenreSpecificGuidance(genre)}${customPrompt ? `\n    ${customPrompt}\n` : ''}${glossaryText}`;
 };
 
 export const GLOSSARY_EXTRACTION_PROMPT = (genre: string) => `

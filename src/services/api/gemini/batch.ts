@@ -19,6 +19,7 @@ import {
 import { SpeakerProfile } from '@/services/api/gemini/speakerProfile';
 import {
   TRANSLATION_SCHEMA,
+  TRANSLATION_WITH_DIARIZATION_SCHEMA,
   BATCH_SCHEMA,
   BATCH_WITH_DIARIZATION_SCHEMA,
   SAFETY_SETTINGS,
@@ -43,12 +44,16 @@ export async function processTranslationBatchWithRetry(
   }) => void,
   signal?: AbortSignal,
   onUsage?: (usage: TokenUsage) => void,
-  timeoutMs?: number // Custom timeout in milliseconds
+  timeoutMs?: number, // Custom timeout in milliseconds
+  useDiarization: boolean = false
 ): Promise<any[]> {
+  const missingItemMap = new Map(); // Track missing items for logging
+
+  // 1. Initial Batch Processing
   const payload = batch.map((item) => ({
     id: item.id,
     text: item.original,
-    speaker: item.speaker,
+    ...(useDiarization ? { speaker: item.speaker } : {}),
   }));
 
   const prompt = getTranslationBatchPrompt(batch.length, payload);
@@ -62,7 +67,9 @@ export async function processTranslationBatchWithRetry(
           contents: { parts: [{ text: prompt }] },
           config: {
             responseMimeType: 'application/json',
-            responseSchema: TRANSLATION_SCHEMA,
+            responseSchema: useDiarization
+              ? TRANSLATION_WITH_DIARIZATION_SCHEMA
+              : TRANSLATION_SCHEMA,
             systemInstruction: systemInstruction,
             safetySettings: SAFETY_SETTINGS,
             ...buildStepConfig('translation'),
@@ -125,9 +132,10 @@ export async function processTranslationBatchWithRetry(
               contents: { parts: [{ text: retryPrompt }] },
               config: {
                 responseMimeType: 'application/json',
-                responseSchema: TRANSLATION_SCHEMA,
-                systemInstruction: systemInstruction,
                 safetySettings: SAFETY_SETTINGS,
+                responseSchema: useDiarization
+                  ? TRANSLATION_WITH_DIARIZATION_SCHEMA
+                  : TRANSLATION_SCHEMA,
                 ...buildStepConfig('translation'),
               },
             },
@@ -238,7 +246,8 @@ export async function translateBatch(
   }) => void,
   signal?: AbortSignal,
   onUsage?: (usage: TokenUsage) => void,
-  timeoutMs?: number // Custom timeout in milliseconds
+  timeoutMs?: number, // Custom timeout in milliseconds
+  useDiarization: boolean = false
 ): Promise<any[]> {
   const batches: any[][] = [];
   for (let i = 0; i < items.length; i += batchSize) {
@@ -257,7 +266,8 @@ export async function translateBatch(
         onStatusUpdate,
         signal,
         onUsage,
-        timeoutMs
+        timeoutMs,
+        useDiarization
       );
     },
     signal
