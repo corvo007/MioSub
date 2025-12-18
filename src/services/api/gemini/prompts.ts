@@ -483,9 +483,12 @@ export const getSystemInstruction = (
     → **CONTEXT AWARENESS**: Use the provided genre context to determine tone and style.
     → **COMPLETENESS**: Ensure every meaningful part of the original text is represented.
     → **NO HALLUCINATIONS**: Do not invent information not present in the source.
-    → **MULTI-LINE CONTEXT**: Read the previous and next 1-2 lines to understand context (for pronouns, incomplete sentences, tone consistency).
-    → **STRICT BOUNDARY RULE**: Use context for UNDERSTANDING only. NEVER merge segments or move text between lines.
-    → **PARTIAL SENTENCES**: If a sentence is split across lines, translate ONLY the fragment in the current line.${getSearchEnhancedTranslationPrompt('translation')}
+    → **MULTI-LINE CONTEXT**: Read the previous and next 1-2 lines to understand context. This helps with:
+       - Resolving ambiguous pronouns (e.g., "it", "that")
+       - Understanding incomplete sentences split across lines
+       - Maintaining consistent tone and terminology across related lines
+    → **STRICT BOUNDARY RULE**: Use this context for **UNDERSTANDING** only. **NEVER** merge segments or move text between lines.
+    → **PARTIAL SENTENCES**: If a sentence is split across lines, translate ONLY the specific fragment in the current line. Do not "complete" it using text from the next line.${getSearchEnhancedTranslationPrompt('translation')}
 
     [P2 - CLEANUP & REFINEMENT]
     → **REMOVE FILLERS**: Ignore stuttering, hesitation, and meaningless fillers (e.g., "uh", "um", "ah", "eto", "ano", "呃", "那个").
@@ -844,9 +847,12 @@ export const getTranslationBatchPrompt = (batchLength: number, payload: any[]): 
     → Ensure no meaning is lost from source text
     → ID matching is critical - do not skip any ID
     → Output exactly ${batchLength} items in the response
-    → **MULTI-LINE CONTEXT**: Read the previous and next 1-2 lines to understand context (for pronouns, incomplete sentences, tone consistency).
-    → **STRICT BOUNDARY RULE**: Use context for UNDERSTANDING only. NEVER merge segments or move text between lines.
-    → **PARTIAL SENTENCES**: If a sentence is split across lines, translate ONLY the fragment in the current line.
+    → **MULTI-LINE CONTEXT**: Read the previous and next 1-2 lines to understand context. This helps with:
+       - Resolving ambiguous pronouns (e.g., "it", "that")
+       - Understanding incomplete sentences split across lines
+       - Maintaining consistent tone
+    → **STRICT BOUNDARY RULE**: Use this context for **UNDERSTANDING** only. **NEVER** merge segments or move text between lines.
+    → **PARTIAL SENTENCES**: If a sentence is split across lines, translate ONLY the specific fragment in the current line. Do not "complete" it using text from the next line.
     
     [P2 - QUALITY] Translation Excellence
     → ${getFillerWordsRule()} and stuttering
