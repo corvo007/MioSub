@@ -10,11 +10,6 @@ export const REFINEMENT_SCHEMA = {
       start: { type: Type.STRING, description: 'HH:MM:SS,mmm' },
       end: { type: Type.STRING, description: 'HH:MM:SS,mmm' },
       text: { type: Type.STRING, description: 'Corrected original text' },
-      speaker: {
-        type: Type.STRING,
-        description: "Speaker identifier (e.g., 'Speaker 1')",
-        nullable: true,
-      },
     },
     required: ['start', 'end', 'text'],
   },
@@ -42,9 +37,22 @@ export const TRANSLATION_SCHEMA = {
       id: { type: Type.STRING },
       text_original: { type: Type.STRING },
       text_translated: { type: Type.STRING, description: 'Simplified Chinese translation' },
-      speaker: { type: Type.STRING, description: 'Speaker identifier', nullable: true },
     },
     required: ['id', 'text_translated'],
+  },
+};
+
+export const TRANSLATION_WITH_DIARIZATION_SCHEMA = {
+  type: Type.ARRAY,
+  items: {
+    type: Type.OBJECT,
+    properties: {
+      id: { type: Type.STRING },
+      text_original: { type: Type.STRING },
+      text_translated: { type: Type.STRING, description: 'Simplified Chinese translation' },
+      speaker: { type: Type.STRING, description: 'Speaker identifier' },
+    },
+    required: ['id', 'text_translated', 'speaker'],
   },
 };
 
@@ -58,12 +66,6 @@ export const BATCH_SCHEMA = {
       end: { type: Type.STRING, description: 'HH:MM:SS,mmm' },
       text_original: { type: Type.STRING },
       text_translated: { type: Type.STRING, description: 'Simplified Chinese translation' },
-      speaker: {
-        type: Type.STRING,
-        description:
-          "Speaker identifier (e.g., 'Speaker 1', 'Speaker 2'). Required when diarization is enabled.",
-        nullable: true,
-      },
     },
     required: ['id', 'start', 'end', 'text_original', 'text_translated'],
   },

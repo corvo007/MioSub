@@ -6,7 +6,7 @@ import { SPEAKER_PROFILE_SCHEMA } from '@/services/api/gemini/schemas';
 import { getSpeakerProfileExtractionPrompt } from '@/services/api/gemini/prompts';
 import { generateContentWithRetry, formatGeminiError } from '@/services/api/gemini/client';
 import { extractJsonObject } from '@/services/subtitle/parser';
-import { MODELS } from '@/config';
+import { STEP_MODELS, buildStepConfig } from '@/config';
 
 export interface SpeakerProfile {
   id: string;
@@ -74,7 +74,7 @@ export async function extractSpeakerProfiles(
     const response = await generateContentWithRetry(
       ai,
       {
-        model: MODELS.PRO,
+        model: STEP_MODELS.speakerProfile,
         contents: {
           parts: [
             { text: prompt },
@@ -89,11 +89,7 @@ export async function extractSpeakerProfiles(
         config: {
           responseMimeType: 'application/json',
           responseSchema: SPEAKER_PROFILE_SCHEMA,
-          maxOutputTokens: 8192,
-          tools: [{ googleSearch: {} }], // Enable Search Grounding
-          thinkingConfig: {
-            thinkingLevel: 'high' as any,
-          },
+          ...buildStepConfig('speakerProfile'),
         },
       },
       3, // retries
@@ -133,7 +129,7 @@ export async function extractSpeakerProfiles(
       profiles: data.profiles || [],
       extractedAt: new Date(),
       audioDuration: audioDuration,
-      modelVersion: MODELS.PRO,
+      modelVersion: STEP_MODELS.speakerProfile,
     };
   } catch (error) {
     logger.error('Speaker profile extraction failed', formatGeminiError(error));

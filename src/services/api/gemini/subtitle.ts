@@ -39,7 +39,7 @@ import {
   getActionableErrorMessage,
 } from '@/services/api/gemini/client';
 import { translateBatch } from '@/services/api/gemini/batch';
-import { MODELS, ENV } from '@/config';
+import { STEP_MODELS, buildStepConfig, ENV } from '@/config';
 
 export const generateSubtitles = async (
   audioSource: File | AudioBuffer,
@@ -623,7 +623,7 @@ export const generateSubtitles = async (
             const refineResponse = await generateContentWithRetry(
               ai,
               {
-                model: MODELS.FLASH,
+                model: STEP_MODELS.refinement,
                 contents: {
                   parts: [
                     { inlineData: { mimeType: 'audio/wav', data: base64Audio } },
@@ -637,7 +637,7 @@ export const generateSubtitles = async (
                     : REFINEMENT_SCHEMA,
                   systemInstruction: refineSystemInstruction,
                   safetySettings: SAFETY_SETTINGS,
-                  maxOutputTokens: 65536,
+                  ...buildStepConfig('refinement'),
                 },
               },
               3,
@@ -679,7 +679,7 @@ export const generateSubtitles = async (
             original: seg.original,
             start: seg.startTime,
             end: seg.endTime,
-            speaker: seg.speaker,
+            ...(chunkSettings.enableDiarization && seg.speaker ? { speaker: seg.speaker } : {}),
           }));
 
           // Pass speaker profiles to translation only if useSpeakerStyledTranslation is enabled
@@ -739,7 +739,7 @@ export const generateSubtitles = async (
             endTime: formatTime(timeToSeconds(item.end) + start),
             original: item.original,
             translated: item.translated,
-            speaker: item.speaker,
+            ...(chunkSettings.enableDiarization && item.speaker ? { speaker: item.speaker } : {}),
           }));
         }
 

@@ -29,11 +29,11 @@ export const GEMINI_PRICING: Record<string, ModelPricing> = {
   // Gemini 2.5 Flash - Standard Tier
   // Text/Image/Video: $0.30, Audio: $1.00, Output: $2.50
   // Cache: Text $0.03, Audio $0.10
-  'gemini-2.5-flash': {
-    textInput: 0.3,
+  'gemini-3-flash-preview': {
+    textInput: 0.5,
     audioInput: 1.0,
-    output: 2.5,
-    cacheText: 0.03,
+    output: 3.0,
+    cacheText: 0.05,
     cacheAudio: 0.1,
   },
 
@@ -84,7 +84,7 @@ export const calculateDetailedCost = (usage: {
   // Fallback to model family if exact match not found
   if (!pricing) {
     if (model.includes('flash')) {
-      pricing = GEMINI_PRICING['gemini-2.5-flash'];
+      pricing = GEMINI_PRICING['gemini-3-flash-preview'];
     } else if (model.includes('pro')) {
       pricing = GEMINI_PRICING['gemini-3-pro-preview'];
     } else {

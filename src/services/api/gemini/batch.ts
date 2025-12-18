@@ -30,7 +30,7 @@ import {
   formatGeminiError,
   getActionableErrorMessage,
 } from '@/services/api/gemini/client';
-import { MODELS } from '@/config';
+import { STEP_MODELS, STEP_CONFIGS, buildStepConfig } from '@/config';
 
 export async function processTranslationBatchWithRetry(
   ai: GoogleGenAI,
@@ -58,14 +58,14 @@ export async function processTranslationBatchWithRetry(
       const response = await generateContentWithRetry(
         ai,
         {
-          model: MODELS.FLASH,
+          model: STEP_MODELS.translation,
           contents: { parts: [{ text: prompt }] },
           config: {
             responseMimeType: 'application/json',
             responseSchema: TRANSLATION_SCHEMA,
             systemInstruction: systemInstruction,
             safetySettings: SAFETY_SETTINGS,
-            maxOutputTokens: 65536,
+            ...buildStepConfig('translation'),
           },
         },
         3,
@@ -121,14 +121,14 @@ export async function processTranslationBatchWithRetry(
           retryResponse = await generateContentWithRetry(
             ai,
             {
-              model: 'gemini-2.5-flash',
+              model: STEP_MODELS.translation,
               contents: { parts: [{ text: retryPrompt }] },
               config: {
                 responseMimeType: 'application/json',
                 responseSchema: TRANSLATION_SCHEMA,
                 systemInstruction: systemInstruction,
                 safetySettings: SAFETY_SETTINGS,
-                maxOutputTokens: 65536,
+                ...buildStepConfig('translation'),
               },
             },
             2,
@@ -315,7 +315,7 @@ async function processBatch(
     text_original: s.original,
     text_translated: s.translated,
     comment: s.comment, // Include user comment
-    speaker: s.speaker, // Include speaker for context and consistency
+    ...(settings.enableDiarization && s.speaker ? { speaker: s.speaker } : {}),
   }));
 
   let prompt = '';
@@ -392,8 +392,11 @@ async function processBatch(
     // Model Selection:
     // Proofread -> Gemini 3 Pro (Best quality) + Search Grounding
     // Fix Timestamps / Retranslate -> Gemini 2.5 Flash (Fast/Efficient)
-    const model = mode === 'proofread' ? MODELS.PRO : MODELS.FLASH;
-    const tools = mode === 'proofread' ? [{ googleSearch: {} }] : undefined;
+    const model =
+      mode === 'proofread' ? STEP_MODELS.batchProofread : STEP_MODELS.batchFixTimestamps;
+    const stepConfig =
+      mode === 'proofread' ? STEP_CONFIGS.batchProofread : STEP_CONFIGS.batchFixTimestamps;
+    const tools = stepConfig.useSearch ? [{ googleSearch: {} }] : undefined;
 
     // Use the new Long Output handler
     const text = await generateContentWithLongOutput(

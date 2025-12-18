@@ -13,7 +13,7 @@ import {
 } from '@/services/api/gemini/client';
 import { GLOSSARY_EXTRACTION_PROMPT } from '@/services/api/gemini/prompts';
 import { extractJsonArray } from '@/services/subtitle/parser';
-import { MODELS } from '@/config';
+import { STEP_MODELS, buildStepConfig } from '@/config';
 
 export const extractGlossaryFromAudio = async (
   ai: GoogleGenAI,
@@ -47,7 +47,7 @@ export const extractGlossaryFromAudio = async (
       const response = await generateContentWithRetry(
         ai,
         {
-          model: MODELS.PRO,
+          model: STEP_MODELS.glossaryExtraction,
           contents: {
             parts: [{ inlineData: { mimeType: 'audio/wav', data: base64Audio } }, { text: prompt }],
           },
@@ -55,8 +55,7 @@ export const extractGlossaryFromAudio = async (
             responseMimeType: 'application/json',
             responseSchema: GLOSSARY_SCHEMA,
             safetySettings: SAFETY_SETTINGS,
-            maxOutputTokens: 65536,
-            tools: [{ googleSearch: {} }],
+            ...buildStepConfig('glossaryExtraction'),
           },
         },
         3,

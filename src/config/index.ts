@@ -7,10 +7,13 @@ export const ENV = {
   OPENAI_API_KEY: getEnvVariable('OPENAI_API_KEY') || '',
 } as const;
 
-// Model constants
-export const MODELS = {
-  FLASH: 'gemini-2.5-flash',
-  PRO: 'gemini-3-pro-preview',
-} as const;
-
-export type ModelName = (typeof MODELS)[keyof typeof MODELS];
+// Re-export from models.ts for backward compatibility
+export {
+  MODELS,
+  STEP_MODELS,
+  STEP_CONFIGS,
+  buildStepConfig,
+  type ModelName,
+  type StepName,
+  type StepConfig,
+} from './models';
