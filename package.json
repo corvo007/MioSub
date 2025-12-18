@@ -4,7 +4,7 @@
   "author": "Corvo007",
   "license": "MIT",
   "private": true,
-  "version": "2.9.9",
+  "version": "2.9.10",
   "type": "module",
   "main": "dist-electron/main.cjs",
   "scripts": {

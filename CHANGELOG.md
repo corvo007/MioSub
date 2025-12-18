@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.9.10] - 2025-12-18
+
+### Features
+
+- **Prompts**: Added dynamic search-enhanced prompts and improved priority numbering.
+- **UI**: Improved disabled state visual feedback for Toggles.
+
+### Fixes
+
+- **Prompts**: Restored full context-aware translation rules with detailed examples.
+- **UI**: Fixed toggle UI consistency.
+- **Security**: Fixed prompt injection vulnerabilities.
+
+### Refactor
+
+- **Config**: Centralized Gemini model configuration.
+
 ## [2.9.9] - 2025-12-18
 
 ### Fixes
