@@ -641,6 +641,22 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       />
                     </SettingRow>
 
+                    <SettingRow
+                      label="保存中间结果"
+                      description="在日志目录下保存 Whisper 原始结果、润色结果、翻译结果等中间文件，用于调试分析"
+                    >
+                      <Toggle
+                        checked={settings.debug?.saveIntermediateArtifacts || false}
+                        onChange={(v) =>
+                          updateSetting('debug', {
+                            ...settings.debug,
+                            saveIntermediateArtifacts: v,
+                          })
+                        }
+                        color="amber"
+                      />
+                    </SettingRow>
+
                     <div className="pt-4 border-t border-slate-700">
                       <h4 className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider">
                         Custom Paths

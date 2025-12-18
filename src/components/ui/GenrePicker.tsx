@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/cn';
 import { GENRE_PRESETS, GENRE_LABELS } from '@/types/settings';
 import { OptionButton } from '@/components/ui/OptionButton';
@@ -24,6 +24,13 @@ export const GenrePicker: React.FC<GenrePickerProps> = ({
   const isCustom = !GENRE_PRESETS.includes(currentGenre);
   const [showCustomInput, setShowCustomInput] = useState(isCustom);
   const [customValue, setCustomValue] = useState(isCustom ? currentGenre : '');
+
+  // Sync internal state when currentGenre prop changes (e.g., dialog reopens with different value)
+  useEffect(() => {
+    const isCurrentCustom = !GENRE_PRESETS.includes(currentGenre);
+    setShowCustomInput(isCurrentCustom);
+    setCustomValue(isCurrentCustom ? currentGenre : '');
+  }, [currentGenre]);
 
   const handlePresetClick = (genre: string) => {
     setShowCustomInput(false);
