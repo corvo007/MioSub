@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.9.12] - 2025-12-19
+
+### Fixes
+
+- **Glossary (E2E Mode)**: Fixed issue where user's explicit glossary selection was not respected in End-to-End mode.
+- **Glossary (Runtime)**: Prioritized runtime glossary override in `getActiveGlossaryTerms` to ensure correct term resolution.
+- **Glossary (Settings)**: Restored glossary field as a runtime carrier in AppSettings for proper data flow.
+
+### Refactor
+
+- **Glossary**: Simplified glossary access logic and removed legacy items migration code.
+- **Glossary**: Removed deprecated glossary field and associated migration code for cleaner architecture.
+- **Logging**: Standardized log levels with `[DEBUG]`/`[WARN]`/`[ERROR]` prefixes for better troubleshooting.
+
+### Chore
+
+- **Cleanup**: Removed unused `electron/env.d.ts` type declaration.
+- **Cleanup**: Removed unused code and fixed deprecated patterns across the codebase.
+
 ## [2.9.11] - 2025-12-19
 
 ### Features
