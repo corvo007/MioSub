@@ -43,6 +43,9 @@ export interface WithPostCheckOptions {
   stepName?: string; // For logging (e.g., "Chunk 3")
 }
 
+// Post-process function signature - receives isFinalAttempt to know if markers should be applied
+export type PostProcessFn<T> = (result: T, isFinalAttempt: boolean) => PostProcessOutput<T>;
+
 // ===== Refinement Post-Processing =====
 
 /**
@@ -50,8 +53,14 @@ export interface WithPostCheckOptions {
  * 1. Clean non-speech annotations
  * 2. Filter empty segments
  * 3. Validate timeline
+ * 4. Apply issue markers (if validation fails and not retryable)
+ *
+ * Note: Markers are only applied when retryable=false (final result)
  */
-export function postProcessRefinement(segments: SubtitleItem[]): PostProcessOutput<SubtitleItem[]> {
+export function postProcessRefinement(
+  segments: SubtitleItem[],
+  isFinalAttempt: boolean = false
+): PostProcessOutput<SubtitleItem[]> {
   // Step 1: Clean non-speech annotations
   let processed = segments.map((seg) => ({
     ...seg,
@@ -67,30 +76,17 @@ export function postProcessRefinement(segments: SubtitleItem[]): PostProcessOutp
   // Step 4: Convert validation result to PostCheckResult
   const checkResult = mapValidationToCheckResult(validation);
 
+  // Step 5: Apply markers on final attempt (when no more retries)
+  if (isFinalAttempt && !checkResult.isValid) {
+    if (validation.independentAnomalies.length > 0) {
+      processed = markRegressionIssues(processed, validation.independentAnomalies);
+    }
+    if (validation.corruptedRanges.length > 0) {
+      processed = markCorruptedRange(processed, validation.corruptedRanges);
+    }
+  }
+
   return { result: processed, checkResult };
-}
-
-/**
- * Apply issue markers to segments based on check result
- */
-export function applyIssueMarkers(
-  segments: SubtitleItem[],
-  checkResult: PostCheckResult,
-  validation: TimelineValidationResult
-): SubtitleItem[] {
-  let result = segments;
-
-  // Mark regression issues
-  if (validation.independentAnomalies.length > 0) {
-    result = markRegressionIssues(result, validation.independentAnomalies);
-  }
-
-  // Mark corrupted ranges
-  if (validation.corruptedRanges.length > 0) {
-    result = markCorruptedRange(result, validation.corruptedRanges);
-  }
-
-  return result;
 }
 
 // ===== Translation Post-Processing (Placeholder) =====
@@ -104,7 +100,8 @@ export function applyIssueMarkers(
  * - Timeline validation (optional)
  */
 export function postProcessTranslation(
-  segments: SubtitleItem[]
+  segments: SubtitleItem[],
+  _isFinalAttempt: boolean = false
 ): PostProcessOutput<SubtitleItem[]> {
   // TODO: Implement translation-specific validation
   // For now, pass through without validation
@@ -130,18 +127,20 @@ export function postProcessTranslation(
  */
 export async function withPostCheck<T>(
   generate: () => Promise<T>,
-  postProcess: (result: T) => PostProcessOutput<T>,
+  postProcess: PostProcessFn<T>,
   options: WithPostCheckOptions
 ): Promise<PostProcessOutput<T>> {
   const { maxRetries, stepName = '' } = options;
   let lastOutput: PostProcessOutput<T> | null = null;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const isFinalAttempt = attempt === maxRetries;
+
     // Generate
     const rawResult = await generate();
 
-    // Post-process and validate
-    const output = postProcess(rawResult);
+    // Post-process and validate (pass isFinalAttempt to apply markers on final pass)
+    const output = postProcess(rawResult, isFinalAttempt);
     lastOutput = output;
 
     // Check if valid or not retryable

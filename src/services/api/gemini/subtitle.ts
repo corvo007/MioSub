@@ -30,9 +30,7 @@ import {
   withPostCheck,
   postProcessRefinement,
   postProcessTranslation,
-  applyIssueMarkers,
 } from '@/services/subtitle/postCheck';
-import { validateTimeline } from '@/services/subtitle/timelineValidator';
 import { generateSrtContent } from '@/services/subtitle/generator';
 import { mapInParallel, Semaphore } from '@/services/utils/concurrency';
 import { logger } from '@/services/utils/logger';
@@ -788,9 +786,8 @@ export const generateSubtitles = async (
             { maxRetries: 1, stepName: `[Chunk ${index}]` }
           );
 
-          // Apply issue markers if validation failed
-          const validation = validateTimeline(processedSegments);
-          refinedSegments = applyIssueMarkers(processedSegments, checkResult, validation);
+          // Use the post-processed result (markers already applied by postCheck)
+          refinedSegments = processedSegments;
 
           if (refinedSegments.length === 0) {
             refinedSegments = [...rawSegments];
