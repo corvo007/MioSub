@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.9.11] - 2025-12-19
+
+### Features
+
+- **Debug**: Added debug artifact saving functionality for troubleshooting and development.
+
+### Fixes
+
+- **Audio Processing**: Merged trailing audio chunks shorter than 30 seconds with the previous chunk to prevent incomplete transcription at the end of files.
+- **UI (GenrePicker)**: Fixed issue where the genre picker did not display the current value when first opened.
+- **Workspace**: Speaker count hints now only appear in new project mode, avoiding confusion in existing projects.
+- **Prompts**: Ensured glossary terms have absolute priority over web search results to maintain translation consistency.
+
+### Refactor
+
+- **API**: Updated Gemini API client implementation and revised pricing configuration for latest model tiers.
+- **Config**: Updated default model name configuration.
+
+### Documentation
+
+- **Architecture**: Updated architecture documentation with centralized model configuration and new UI components.
+- **AI Agents**: Added GitHub Copilot instructions for AI coding agents to improve development workflow.
+
 ## [2.9.10] - 2025-12-18
 
 ### Features
