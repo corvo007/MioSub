@@ -142,7 +142,7 @@ export class EndToEndPipeline {
         updateProgress('downloading', 0, '正在解析视频链接...');
         videoInfo = await ytDlpService.parseUrl(config.url);
       }
-      console.log(`[Pipeline] Video info: ${videoInfo.title}`);
+      console.log(`[DEBUG] [Pipeline] Video info: ${videoInfo.title}`);
 
       // Notify progress with video info
       onProgress({
@@ -184,7 +184,7 @@ export class EndToEndPipeline {
       });
 
       this.outputs.videoPath = videoPath;
-      console.log(`[Pipeline] Video downloaded: ${videoPath}`);
+      console.log(`[DEBUG] [Pipeline] Video downloaded: ${videoPath}`);
 
       // Download thumbnail if enabled
       if (config.downloadThumbnail && videoInfo.thumbnail) {
@@ -196,7 +196,7 @@ export class EndToEndPipeline {
             videoInfo.id
           );
           this.outputs.thumbnailPath = thumbnailPath;
-          console.log(`[Pipeline] Thumbnail downloaded: ${thumbnailPath}`);
+          console.log(`[DEBUG] [Pipeline] Thumbnail downloaded: ${thumbnailPath}`);
         } catch (err) {
           console.warn('[Pipeline] Thumbnail download failed:', err);
           // Non-fatal error, continue
@@ -233,7 +233,7 @@ export class EndToEndPipeline {
       );
 
       this.outputs.audioPath = audioPath;
-      console.log(`[Pipeline] Audio extracted: ${audioPath}`);
+      console.log(`[DEBUG] [Pipeline] Audio extracted: ${audioPath}`);
 
       if (this.isAborted) throw new Error('用户取消操作');
 
@@ -326,12 +326,12 @@ export class EndToEndPipeline {
         const subtitlePath = path.join(outputDir, `${videoName}.${ext}`);
         fs.writeFileSync(subtitlePath, subtitleResult.subtitleContent);
         this.outputs.subtitlePath = subtitlePath;
-        console.log(`[Pipeline] Subtitle file saved: ${subtitlePath}`);
+        console.log(`[DEBUG] [Pipeline] Subtitle file saved: ${subtitlePath}`);
       } else {
         this.outputs.subtitlePath = subtitleResult.subtitlePath;
       }
 
-      console.log(`[Pipeline] Subtitles generated: ${this.outputs.subtitlePath}`);
+      console.log(`[DEBUG] [Pipeline] Subtitles generated: ${this.outputs.subtitlePath}`);
 
       if (this.isAborted) throw new Error('用户取消操作');
 
@@ -356,7 +356,7 @@ export class EndToEndPipeline {
               const res = config.compressionResolution;
               if (!res || res === 'original') return undefined;
               const h = parseInt(String(res));
-              console.log(`[Pipeline] Compression resolution: ${res} -> ${h}`);
+              console.log(`[DEBUG] [Pipeline] Compression resolution: ${res} -> ${h}`);
               return isNaN(h) ? undefined : h;
             })(),
           },
@@ -377,7 +377,7 @@ export class EndToEndPipeline {
         );
 
         this.outputs.outputVideoPath = outputVideoPath;
-        console.log(`[Pipeline] Video compressed: ${outputVideoPath}`);
+        console.log(`[DEBUG] [Pipeline] Video compressed: ${outputVideoPath}`);
       }
 
       // ========================================
@@ -486,7 +486,7 @@ export class EndToEndPipeline {
    * 中止当前执行
    */
   abort(): void {
-    console.log('[Pipeline] Aborting...');
+    console.log('[DEBUG] [Pipeline] Aborting...');
     this.isAborted = true;
 
     // Abort sub-services

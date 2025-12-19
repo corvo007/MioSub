@@ -55,7 +55,7 @@ ipcMain.handle(
   ) => {
     try {
       console.log(
-        `[Main] Received local transcription request. Model: ${modelPath}, Lang: ${language}, Threads: ${threads}, CustomPath: ${customBinaryPath}`
+        `[DEBUG] [Main] Received local transcription request. Model: ${modelPath}, Lang: ${language}, Threads: ${threads}, CustomPath: ${customBinaryPath}`
       );
       const result = await localWhisperService.transcribe(
         audioData,
@@ -75,7 +75,7 @@ ipcMain.handle(
 
 // IPC Handler: Abort Local Whisper
 ipcMain.handle('local-whisper-abort', async () => {
-  console.log('[Main] Aborting all local whisper processes');
+  console.log('[DEBUG] [Main] Aborting all local whisper processes');
   localWhisperService.abort();
   return { success: true };
 });
@@ -86,8 +86,49 @@ ipcMain.handle('select-media-file', async () => {
     const result = await dialog.showOpenDialog({
       title: '选择媒体文件',
       filters: [
-        { name: '视频文件', extensions: ['mp4', 'mkv', 'avi', 'mov', 'webm', 'flv', 'wmv'] },
-        { name: '音频文件', extensions: ['mp3', 'wav', 'flac', 'aac', 'm4a', 'ogg', 'wma'] },
+        // 扩展视频格式列表以匹配浏览器 video/* 的范围
+        {
+          name: '视频文件',
+          extensions: [
+            'mp4',
+            'mkv',
+            'avi',
+            'mov',
+            'webm',
+            'flv',
+            'wmv',
+            'mpg',
+            'mpeg',
+            'm4v',
+            'ogv',
+            'ts',
+            '3gp',
+            'ogm',
+            'asf',
+            'vob',
+          ],
+        },
+        // 扩展音频格式列表以匹配浏览器 audio/* 的范围
+        {
+          name: '音频文件',
+          extensions: [
+            'mp3',
+            'wav',
+            'flac',
+            'aac',
+            'm4a',
+            'ogg',
+            'wma',
+            'opus',
+            'amr',
+            'mid',
+            'midi',
+            'ape',
+            'wv',
+            'ac3',
+            'dts',
+          ],
+        },
         { name: '所有文件', extensions: ['*'] },
       ],
       properties: ['openFile'],
@@ -101,8 +142,41 @@ ipcMain.handle('select-media-file', async () => {
       const ext = path.extname(filePath).toLowerCase();
 
       // Determine MIME type
-      const videoExts = ['.mp4', '.mkv', '.avi', '.mov', '.webm', '.flv', '.wmv'];
-      const audioExts = ['.mp3', '.wav', '.flac', '.aac', '.m4a', '.ogg', '.wma'];
+      const videoExts = [
+        '.mp4',
+        '.mkv',
+        '.avi',
+        '.mov',
+        '.webm',
+        '.flv',
+        '.wmv',
+        '.mpg',
+        '.mpeg',
+        '.m4v',
+        '.ogv',
+        '.ts',
+        '.3gp',
+        '.ogm',
+        '.asf',
+        '.vob',
+      ];
+      const audioExts = [
+        '.mp3',
+        '.wav',
+        '.flac',
+        '.aac',
+        '.m4a',
+        '.ogg',
+        '.wma',
+        '.opus',
+        '.amr',
+        '.mid',
+        '.midi',
+        '.ape',
+        '.wv',
+        '.ac3',
+        '.dts',
+      ];
       let mimeType = 'application/octet-stream';
       if (videoExts.includes(ext)) {
         mimeType =
@@ -328,13 +402,13 @@ ipcMain.handle(
           if (logMessage.startsWith('[DEBUG]')) {
             console.log(`[DEBUG] [FFmpeg] ${logMessage.replace('[DEBUG] ', '')}`);
           } else {
-            console.log(`[FFmpeg] ${logMessage}`);
+            console.log(`[DEBUG] [FFmpeg] ${logMessage}`);
           }
         }
       );
       return { success: true, audioPath };
     } catch (error: any) {
-      console.error('FFmpeg audio extraction failed:', error);
+      console.error('[Main] FFmpeg audio extraction failed:', error);
       return { success: false, error: error.message };
     }
   }
@@ -379,7 +453,7 @@ ipcMain.handle('get-audio-info', async (_event, videoPath: string) => {
     const info = await getAudioInfo(videoPath);
     return { success: true, info };
   } catch (error: any) {
-    console.error('Failed to get audio info:', error);
+    console.error('[Main] Failed to get audio info:', error);
     return { success: false, error: error.message };
   }
 });
@@ -465,7 +539,7 @@ ipcMain.handle('read-local-file', async (event, filePath) => {
     const buffer = await fs.promises.readFile(normalizedPath);
     return buffer;
   } catch (error) {
-    console.error('Failed to read file:', error);
+    console.error('[Main] Failed to read file:', error);
     throw error;
   }
 });
@@ -520,7 +594,7 @@ ipcMain.handle('video:get-info', async (_event, filePath: string) => {
 
 // IPC Handler: Video Compression Cancel
 ipcMain.handle('video:cancel', async () => {
-  console.log('[Main] Cancelling video compression');
+  console.log('[DEBUG] [Main] Cancelling video compression');
   const cancelled = videoCompressorService.cancel();
   return { success: cancelled };
 });
@@ -553,7 +627,7 @@ ipcMain.handle('shell:show-item-in-folder', async (_event, filePath: string) => 
     shell.showItemInFolder(filePath);
     return true;
   } catch (e) {
-    console.error('Failed to show item in folder:', e);
+    console.error('[Main] Failed to show item in folder:', e);
     return false;
   }
 });
@@ -561,7 +635,7 @@ ipcMain.handle('shell:show-item-in-folder', async (_event, filePath: string) => 
 // IPC Handler: Video Download - Parse URL
 ipcMain.handle('download:parse', async (_event, url: string) => {
   try {
-    console.log(`[Main] Parsing video URL: ${url}`);
+    console.log(`[DEBUG] [Main] Parsing video URL: ${url}`);
     const videoInfo = await ytDlpService.parseUrl(url);
     return { success: true, videoInfo };
   } catch (error: any) {
@@ -579,7 +653,7 @@ ipcMain.handle(
     { url, formatId, outputDir }: { url: string; formatId: string; outputDir: string }
   ) => {
     try {
-      console.log(`[Main] Starting download: ${url}, format: ${formatId}`);
+      console.log(`[DEBUG] [Main] Starting download: ${url}, format: ${formatId}`);
       const outputPath = await ytDlpService.download(url, formatId, outputDir, (progress) => {
         event.sender.send('download:progress', progress);
       });
@@ -594,7 +668,7 @@ ipcMain.handle(
 
 // IPC Handler: Video Download - Cancel
 ipcMain.handle('download:cancel', async () => {
-  console.log('[Main] Cancelling download');
+  console.log('[DEBUG] [Main] Cancelling download');
   ytDlpService.abort();
   return { success: true };
 });
@@ -639,7 +713,7 @@ ipcMain.handle(
     }
   ) => {
     try {
-      console.log(`[Main] Downloading thumbnail: ${videoTitle}`);
+      console.log(`[DEBUG] [Main] Downloading thumbnail: ${videoTitle}`);
       const thumbnailPath = await ytDlpService.downloadThumbnail(
         thumbnailUrl,
         outputDir,
@@ -669,7 +743,7 @@ let mainWindowRef: BrowserWindow | null = null;
 // IPC Handler: Start End-to-End Pipeline
 ipcMain.handle('end-to-end:start', async (event, config: EndToEndConfig) => {
   try {
-    console.log('[Main] Starting end-to-end pipeline:', config.url);
+    console.log(`[DEBUG] [Main] Starting end-to-end pipeline: ${config.url}`);
 
     // Get the main window from the event sender
     mainWindowRef = BrowserWindow.fromWebContents(event.sender);
@@ -697,7 +771,7 @@ ipcMain.handle('end-to-end:start', async (event, config: EndToEndConfig) => {
 
 // IPC Handler: Abort End-to-End Pipeline
 ipcMain.handle('end-to-end:abort', async () => {
-  console.log('[Main] Aborting end-to-end pipeline');
+  console.log('[DEBUG] [Main] Aborting end-to-end pipeline');
   endToEndPipeline.abort();
   return { success: true };
 });
@@ -747,7 +821,7 @@ ipcMain.handle('open-external', async (_event, url: string) => {
     }
 
     await shell.openExternal(url);
-    console.log(`[Security] Allowed shell.openExternal: ${url}`);
+    console.log(`[DEBUG] [Security] Allowed shell.openExternal: ${url}`);
     return { success: true };
   } catch (error: any) {
     console.error('[Security] shell.openExternal failed:', error);

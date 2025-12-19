@@ -661,8 +661,8 @@ class YtDlpService {
       this.quickjsPath = path.join(projectRoot, 'resources', quickjsName);
     }
 
-    console.log('[YtDlpService] Binary path:', this.binaryPath);
-    console.log('[YtDlpService] QuickJS path:', this.quickjsPath);
+    console.log('[DEBUG] [YtDlpService] Binary path:', this.binaryPath);
+    console.log('[DEBUG] [YtDlpService] QuickJS path:', this.quickjsPath);
   }
 
   private execute(args: string[], timeoutMs: number = 60000): Promise<string> {
@@ -705,7 +705,7 @@ class YtDlpService {
   }
 
   async parseUrl(url: string): Promise<VideoInfo> {
-    console.log(`[Download] 开始解析视频: ${url}`);
+    console.log(`[DEBUG] [Download] 开始解析视频: ${url}`);
 
     // Step 1: Validate URL first for instant feedback
     const validation = validateUrl(url);
@@ -733,7 +733,7 @@ class YtDlpService {
     // yt-dlp will return JSON array. We handle first part by default.
     args.push(url);
 
-    console.log(`[Download] 执行解析命令: yt-dlp ${args.join(' ')}`);
+    console.log(`[DEBUG] [Download] 执行解析命令: yt-dlp ${args.join(' ')}`);
 
     let output: string;
     try {
@@ -741,7 +741,7 @@ class YtDlpService {
     } catch (error: any) {
       // Reference: Youtube-dl-REST tries with ?p=1 for Bilibili multi-part videos
       if (isBilibili && !url.includes('?p=')) {
-        console.log(`[Download] 尝试解析分P视频: ${url}?p=1`);
+        console.log(`[DEBUG] [Download] 尝试解析分P视频: ${url}?p=1`);
         try {
           const argsWithPart = [...args.slice(0, -1), `${url}?p=1`];
           output = await this.execute(argsWithPart);
@@ -807,7 +807,7 @@ class YtDlpService {
     }
 
     console.log(
-      `[Download] 解析成功: ${data.title} (${formats.length} 种画质)${partNumber ? ` [P${partNumber}${totalParts ? `/${totalParts}` : ''}]` : ''}`
+      `[DEBUG] [Download] 解析成功: ${data.title} (${formats.length} 种画质)${partNumber ? ` [P${partNumber}${totalParts ? `/${totalParts}` : ''}]` : ''}`
     );
 
     return {
@@ -829,7 +829,7 @@ class YtDlpService {
     outputDir: string,
     onProgress: (progress: DownloadProgress) => void
   ): Promise<string> {
-    console.log(`[Download] 开始下载: formatId=${formatId}, 保存到: ${outputDir}`);
+    console.log(`[DEBUG] [Download] 开始下载: formatId=${formatId}, 保存到: ${outputDir}`);
     // Add video ID to filename to prevent overwriting different videos with same title
     const outputTemplate = path.join(outputDir, '%(title)s [%(id)s].%(ext)s');
     const baseArgs = fs.existsSync(this.quickjsPath)
@@ -882,7 +882,7 @@ class YtDlpService {
         if (destMatch) {
           fileCount++;
           outputPath = destMatch[1].trim();
-          console.log(`[Download] 目标文件 (${fileCount}): ${outputPath}`);
+          console.log(`[DEBUG] [Download] 目标文件 (${fileCount}): ${outputPath}`);
 
           // Heuristic: 1st file is usually video, 2nd is audio (if split)
           if (fileCount === 1) currentStage = 'video';
@@ -893,7 +893,7 @@ class YtDlpService {
         const mergeMatch = line.match(/\[Merger\] Merging formats into "(.+)"/);
         if (mergeMatch) {
           outputPath = mergeMatch[1].trim();
-          console.log(`[Download] 合并视频: ${outputPath}`);
+          console.log(`[DEBUG] [Download] 合并视频: ${outputPath}`);
           currentStage = 'merging';
           // Send a merging progress update
           onProgress({
@@ -929,7 +929,7 @@ class YtDlpService {
       this.process.on('close', (code) => {
         this.process = null;
         if (code === 0) {
-          console.log(`[Download] 下载完成: ${outputPath}`);
+          console.log(`[DEBUG] [Download] 下载完成: ${outputPath}`);
           resolve(outputPath);
         } else {
           console.error(`[Download] 下载失败: 退出码 ${code}`);
@@ -969,7 +969,7 @@ class YtDlpService {
     videoTitle: string,
     videoId: string
   ): Promise<string> {
-    console.log(`[Download] 开始下载封面: ${thumbnailUrl}`);
+    console.log(`[DEBUG] [Download] 开始下载封面: ${thumbnailUrl}`);
 
     // Sanitize title for use in filename
     const sanitizedTitle = videoTitle
@@ -993,7 +993,7 @@ class YtDlpService {
       const request = protocol.get(thumbnailUrl, (response: any) => {
         // Handle redirects
         if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-          console.log(`[Download] 封面重定向到: ${response.headers.location}`);
+          console.log(`[DEBUG] [Download] 封面重定向到: ${response.headers.location}`);
           this.downloadThumbnail(response.headers.location, outputDir, videoTitle, videoId)
             .then(resolve)
             .catch(reject);
@@ -1010,7 +1010,7 @@ class YtDlpService {
 
         fileStream.on('finish', () => {
           fileStream.close();
-          console.log(`[Download] 封面下载完成: ${outputPath}`);
+          console.log(`[DEBUG] [Download] 封面下载完成: ${outputPath}`);
           resolve(outputPath);
         });
 

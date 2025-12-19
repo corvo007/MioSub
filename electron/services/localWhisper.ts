@@ -28,10 +28,10 @@ export class LocalWhisperService {
     // 6. Dev mode: Project root 'resources'
     const possiblePaths: string[] = [];
 
-    console.log(`[LocalWhisper] app.getAppPath(): ${app.getAppPath()}`);
-    console.log(`[LocalWhisper] app.isPackaged: ${app.isPackaged}`);
+    console.log(`[DEBUG] [LocalWhisper] app.getAppPath(): ${app.getAppPath()}`);
+    console.log(`[DEBUG] [LocalWhisper] app.isPackaged: ${app.isPackaged}`);
     if (portableExeDir) {
-      console.log(`[LocalWhisper] Portable Executable Dir: ${portableExeDir}`);
+      console.log(`[DEBUG] [LocalWhisper] Portable Executable Dir: ${portableExeDir}`);
     }
 
     if (app.isPackaged) {
@@ -59,9 +59,9 @@ export class LocalWhisperService {
     }
 
     for (const p of possiblePaths) {
-      console.log(`[INFO] [LocalWhisper] Checking path: ${p}`);
+      console.log(`[DEBUG] [LocalWhisper] Checking path: ${p}`);
       if (fs.existsSync(p)) {
-        console.log(`[INFO] [LocalWhisper] Found binary at: ${p}`);
+        console.log(`[DEBUG] [LocalWhisper] Found binary at: ${p}`);
         return p;
       }
     }
@@ -86,10 +86,10 @@ export class LocalWhisperService {
 
     for (const p of possiblePaths) {
       if (fs.existsSync(p)) {
-        console.log(`[INFO] [LocalWhisper] Found VAD model at: ${p}`);
+        console.log(`[DEBUG] [LocalWhisper] Found VAD model at: ${p}`);
         return p;
       } else {
-        console.log(`[INFO] [LocalWhisper] VAD model not found at: ${p}`);
+        console.log(`[DEBUG] [LocalWhisper] VAD model not found at: ${p}`);
       }
     }
 
@@ -119,7 +119,7 @@ export class LocalWhisperService {
 
   abort() {
     this.activeProcesses.forEach((process, id) => {
-      console.log(`[LocalWhisper] Aborting process ${id}`);
+      console.log(`[DEBUG] [LocalWhisper] Aborting process ${id}`);
       process.kill();
     });
     this.activeProcesses.clear();
@@ -150,8 +150,8 @@ export class LocalWhisperService {
       let binaryPath: string;
       if (customBinaryPath && fs.existsSync(customBinaryPath)) {
         binaryPath = customBinaryPath;
-        if (onLog) onLog(`[INFO] [LocalWhisper] Using Custom Binary Path: ${binaryPath}`);
-        console.log(`[INFO] [LocalWhisper] Using Custom Binary Path: ${binaryPath}`);
+        if (onLog) onLog(`[DEBUG] [LocalWhisper] Using Custom Binary Path: ${binaryPath}`);
+        console.log(`[DEBUG] [LocalWhisper] Using Custom Binary Path: ${binaryPath}`);
       } else {
         if (customBinaryPath && onLog)
           onLog(
@@ -194,10 +194,11 @@ export class LocalWhisperService {
         args.push('--vad-model', vadModelPath);
         args.push('-vt', '0.50'); // VAD threshold (default 0.50)
         args.push('-vo', '0.10'); // VAD samples overlap (default 0.10)
-        if (onLog) onLog(`[LocalWhisper] VAD enabled with model: ${path.basename(vadModelPath)}`);
-        console.log(`[LocalWhisper] VAD enabled with model: ${vadModelPath}`);
+        if (onLog)
+          onLog(`[DEBUG] [LocalWhisper] VAD enabled with model: ${path.basename(vadModelPath)}`);
+        console.log(`[DEBUG] [LocalWhisper] VAD enabled with model: ${vadModelPath}`);
       } else {
-        if (onLog) onLog(`[LocalWhisper] VAD model not found, running without VAD.`);
+        if (onLog) onLog(`[WARN] [LocalWhisper] VAD model not found, running without VAD.`);
         console.warn(`[LocalWhisper] VAD model not found, running without VAD.`);
       }
 
@@ -254,8 +255,8 @@ export class LocalWhisperService {
           if (code !== 0) {
             const errorMsg = `Process exited with code ${code}`;
             console.error(`[LocalWhisper] ${errorMsg}`);
-            if (onLog) onLog(`[LocalWhisper] Error: ${errorMsg}`);
-            if (onLog) onLog(`[LocalWhisper] Stderr: ${stderr}`);
+            if (onLog) onLog(`[ERROR] [LocalWhisper] Error: ${errorMsg}`);
+            if (onLog) onLog(`[ERROR] [LocalWhisper] Stderr: ${stderr}`);
             reject(new Error(`Whisper CLI failed with code ${code}: ${stderr}`));
             return;
           }
@@ -273,8 +274,8 @@ export class LocalWhisperService {
             const jsonContent = await fs.promises.readFile(outputPath, 'utf-8');
 
             // Log the raw JSON content (or a summary if too large, but user asked for "all")
-            console.log(`[LocalWhisper] JSON Output: ${jsonContent}`);
-            if (onLog) onLog(`[LocalWhisper] JSON Output: ${jsonContent}`);
+            console.log(`[DEBUG] [LocalWhisper] JSON Output: ${jsonContent}`);
+            if (onLog) onLog(`[DEBUG] [LocalWhisper] JSON Output: ${jsonContent}`);
 
             const result = JSON.parse(jsonContent);
 

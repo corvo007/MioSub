@@ -52,21 +52,21 @@ const getBinaryPath = (binaryName: string) => {
 };
 
 // Set FFmpeg paths with null checks and logging
-console.log('[VideoCompressor] Initializing FFmpeg paths...');
+console.log('[DEBUG] [VideoCompressor] Initializing FFmpeg paths...');
 const ffmpegPath = getBinaryPath('ffmpeg.exe');
 const ffprobePath = getBinaryPath('ffprobe.exe');
-console.log('[VideoCompressor] ffmpegPath:', ffmpegPath);
-console.log('[VideoCompressor] ffprobePath:', ffprobePath);
+console.log('[DEBUG] [VideoCompressor] ffmpegPath:', ffmpegPath);
+console.log('[DEBUG] [VideoCompressor] ffprobePath:', ffprobePath);
 
 if (fs.existsSync(ffmpegPath)) {
-  console.log('[VideoCompressor] Setting FFmpeg path:', ffmpegPath);
+  console.log('[DEBUG] [VideoCompressor] Setting FFmpeg path:', ffmpegPath);
   ffmpeg.setFfmpegPath(ffmpegPath);
 } else {
   console.error('[VideoCompressor] ERROR: ffmpeg.exe not found at:', ffmpegPath);
 }
 
 if (fs.existsSync(ffprobePath)) {
-  console.log('[VideoCompressor] Setting FFprobe path:', ffprobePath);
+  console.log('[DEBUG] [VideoCompressor] Setting FFprobe path:', ffprobePath);
   ffmpeg.setFfprobePath(ffprobePath);
 } else {
   console.error('[VideoCompressor] ERROR: ffprobe.exe not found at:', ffprobePath);
@@ -116,7 +116,7 @@ export class VideoCompressorService {
       return this.hwAccelInfo;
     }
 
-    console.log('[VideoCompressor] Detecting hardware acceleration...');
+    console.log('[DEBUG] [VideoCompressor] Detecting hardware acceleration...');
 
     const encodersToCheck: (keyof HardwareAccelInfo['encoders'])[] = [
       'h264_nvenc',
@@ -159,10 +159,10 @@ export class VideoCompressorService {
           );
           // If we get here without exception, the encoder works!
           encoderStatus[encoder] = true;
-          console.log(`[VideoCompressor] GPU encoder available: ${encoder}`);
+          console.log(`[DEBUG] [VideoCompressor] GPU encoder available: ${encoder}`);
         } catch {
           // Encoder failed - not available on this system
-          console.log(`[VideoCompressor] GPU encoder not available: ${encoder}`);
+          console.log(`[DEBUG] [VideoCompressor] GPU encoder not available: ${encoder}`);
         }
       }
     } catch (error) {
@@ -198,7 +198,7 @@ export class VideoCompressorService {
       preferredH265,
     };
 
-    console.log('[VideoCompressor] Hardware acceleration info:', this.hwAccelInfo);
+    console.log('[DEBUG] [VideoCompressor] Hardware acceleration info:', this.hwAccelInfo);
     return this.hwAccelInfo;
   }
 
@@ -421,7 +421,7 @@ export class VideoCompressorService {
       command
         .on('start', (cmdLine) => {
           logMsg(`[DEBUG] [FFmpeg] Full command: ${cmdLine}`);
-          console.log('[FFmpeg] Command:', cmdLine);
+          console.log('[DEBUG] [FFmpeg] Command:', cmdLine);
         })
         .on('progress', (p) => {
           if (onProgress)
@@ -480,7 +480,7 @@ export class VideoCompressorService {
             return;
 
           // Log everything else (errors, warnings, etc.)
-          console.log('[FFmpeg stderr]', stderrLine);
+          console.log('[DEBUG] [FFmpeg stderr]', stderrLine);
           logMsg(`[FFmpeg] ${stderrLine}`);
         })
         .on('end', () => {

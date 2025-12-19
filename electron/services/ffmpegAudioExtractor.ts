@@ -65,7 +65,7 @@ export async function extractAudioFromVideo(
   // Set custom FFprobe path if provided
   if (customFfprobePath) {
     if (fs.existsSync(customFfprobePath)) {
-      if (onLog) onLog(`[INFO] Using Custom FFprobe Path: ${customFfprobePath}`);
+      if (onLog) onLog(`[DEBUG] Using Custom FFprobe Path: ${customFfprobePath}`);
       ffmpeg.setFfprobePath(customFfprobePath);
     } else {
       if (onLog)
@@ -76,7 +76,7 @@ export async function extractAudioFromVideo(
   // 如果提供了自定义路径，则设置
   if (customFfmpegPath) {
     if (fs.existsSync(customFfmpegPath)) {
-      if (onLog) onLog(`[INFO] Using Custom FFmpeg Path: ${customFfmpegPath}`);
+      if (onLog) onLog(`[DEBUG] Using Custom FFmpeg Path: ${customFfmpegPath}`);
       ffmpeg.setFfmpegPath(customFfmpegPath);
     } else {
       if (onLog) onLog(`[WARN] Custom FFmpeg Path not found: ${customFfmpegPath}, using default.`);
@@ -103,14 +103,14 @@ export async function extractAudioFromVideo(
 
     // Log FFmpeg path and command
     if (onLog) {
-      onLog(`[INFO] FFmpeg Path: ${getFFmpegPath()}`);
-      onLog(`[INFO] FFmpeg Probe Path: ${getFFprobePath()}`);
+      onLog(`[DEBUG] FFmpeg Path: ${getFFmpegPath()}`);
+      onLog(`[DEBUG] FFmpeg Probe Path: ${getFFprobePath()}`);
     }
 
     // 监听日志
     if (onLog) {
       command.on('start', (commandLine) => {
-        onLog(`[INFO] FFmpeg Start: ${commandLine}`);
+        onLog(`[DEBUG] FFmpeg Start: ${commandLine}`);
       });
       command.on('stderr', (stderrLine) => {
         onLog(`[DEBUG] FFmpeg: ${stderrLine}`);
