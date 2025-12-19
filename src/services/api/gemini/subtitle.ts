@@ -837,46 +837,65 @@ export const generateSubtitles = async (
               translated: `[Mock] Translated: ${t.original}`,
             }));
             logger.info(`⚠️ [MOCK] Translation Result for Chunk ${index}:`, translatedItems);
+
+            finalChunkSubs = translatedItems.map((item) => ({
+              id: item.id,
+              startTime: formatTime(timeToSeconds(item.start) + start),
+              endTime: formatTime(timeToSeconds(item.end) + start),
+              original: item.original,
+              translated: item.translated,
+              ...(chunkSettings.enableDiarization && item.speaker ? { speaker: item.speaker } : {}),
+            }));
           } else {
-            translatedItems = await translateBatch(
-              ai,
-              toTranslate,
-              translateSystemInstruction,
-              1, // Internal concurrency (we're already in refinementSemaphore)
-              chunkSettings.translationBatchSize || 20,
-              (update) =>
-                onProgress?.({
-                  id: index,
-                  total: totalChunks,
-                  status: 'processing',
-                  stage: 'translating',
-                  ...update,
-                }),
-              signal,
-              trackUsage,
-              (settings.requestTimeout || 600) * 1000, // Custom timeout in milliseconds
-              !!chunkSettings.enableDiarization // Pass diarization flag
-            );
-          }
-          logger.debug(`[Chunk ${index}] Translation complete. Items: ${translatedItems.length}`);
-          if (translatedItems.length > 0 && chunkSettings.enableDiarization) {
-            logger.debug(
-              `[Chunk ${index}] Translation first segment speaker: ${translatedItems[0].speaker}`
-            );
-          }
+            // ===== POST-CHECK PIPELINE (Translate + Validate + Retry if needed) =====
+            const { result: checkedSubs } = await withPostCheck(
+              async () => {
+                // Generate translation
+                const items = await translateBatch(
+                  ai,
+                  toTranslate,
+                  translateSystemInstruction,
+                  1, // Internal concurrency (we're already in refinementSemaphore)
+                  chunkSettings.translationBatchSize || 20,
+                  (update) =>
+                    onProgress?.({
+                      id: index,
+                      total: totalChunks,
+                      status: 'processing',
+                      stage: 'translating',
+                      ...update,
+                    }),
+                  signal,
+                  trackUsage,
+                  (settings.requestTimeout || 600) * 1000, // Custom timeout in milliseconds
+                  !!chunkSettings.enableDiarization // Pass diarization flag
+                );
 
-          finalChunkSubs = translatedItems.map((item) => ({
-            id: item.id,
-            startTime: formatTime(timeToSeconds(item.start) + start),
-            endTime: formatTime(timeToSeconds(item.end) + start),
-            original: item.original,
-            translated: item.translated,
-            ...(chunkSettings.enableDiarization && item.speaker ? { speaker: item.speaker } : {}),
-          }));
+                logger.debug(`[Chunk ${index}] Translation complete. Items: ${items.length}`);
+                if (items.length > 0 && chunkSettings.enableDiarization) {
+                  logger.debug(
+                    `[Chunk ${index}] Translation first segment speaker: ${items[0].speaker}`
+                  );
+                }
 
-          // ===== POST-CHECK: Translation (placeholder for future validation) =====
-          const { result: checkedSubs } = postProcessTranslation(finalChunkSubs);
-          finalChunkSubs = checkedSubs;
+                // Transform to SubtitleItem format
+                return items.map((item) => ({
+                  id: item.id,
+                  startTime: formatTime(timeToSeconds(item.start) + start),
+                  endTime: formatTime(timeToSeconds(item.end) + start),
+                  original: item.original,
+                  translated: item.translated,
+                  ...(chunkSettings.enableDiarization && item.speaker
+                    ? { speaker: item.speaker }
+                    : {}),
+                }));
+              },
+              postProcessTranslation,
+              { maxRetries: 1, stepName: `[Chunk ${index}]` }
+            );
+
+            finalChunkSubs = checkedSubs;
+          }
         }
 
         // DEBUG: Save Translation Artifact
