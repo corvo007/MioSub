@@ -107,15 +107,9 @@ export const useSettings = () => {
 
           let newSettings = { ...DEFAULT_SETTINGS, ...storedSettings };
 
-          // Ensure glossaries array exists and fix malformed data
+          // Ensure glossaries array exists
           if (!newSettings.glossaries) {
             newSettings.glossaries = [];
-          } else {
-            // Fix potential migration issues (items vs terms)
-            newSettings.glossaries = newSettings.glossaries.map((g: any) => ({
-              ...g,
-              terms: g.terms || g.items || [],
-            }));
           }
 
           setSettings(newSettings);

@@ -65,16 +65,13 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
     initialized.current = false;
   };
 
-  // Get active glossary terms
-  const activeGlossary =
-    targetGlossaryId === 'temporary'
+  // Get target glossary terms (may differ from settings.activeGlossaryId)
+  const targetGlossary =
+    targetGlossaryId === 'temporary' || !targetGlossaryId
       ? null
       : settings.glossaries?.find((g) => g.id === targetGlossaryId);
 
-  const activeTerms =
-    targetGlossaryId === 'temporary'
-      ? []
-      : activeGlossary?.terms || (activeGlossary as any)?.items || getActiveGlossaryTerms(settings);
+  const activeTerms = targetGlossary?.terms || [];
 
   // Memoize mergeGlossaryResults to prevent re-computing on every render
   const { unique, conflicts } = useMemo(
@@ -124,7 +121,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
       const updatedGlossaries = settings.glossaries.map((g) => {
         if (g.id === targetGlossaryId) {
           const uniqueMap = new Map<string, GlossaryItem>();
-          (g.terms || (g as any).items || []).forEach((item: GlossaryItem) =>
+          (g.terms || []).forEach((item: GlossaryItem) =>
             uniqueMap.set(item.term.toLowerCase(), item)
           );
           newTerms.forEach((item) => uniqueMap.set(item.term.toLowerCase(), item));

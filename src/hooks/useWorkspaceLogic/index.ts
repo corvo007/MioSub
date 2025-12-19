@@ -493,10 +493,9 @@ export const useWorkspaceLogic = ({
       setStatus(GenerationStatus.PROCESSING);
 
       // Prepare runtime settings with active glossary terms
-      const activeGlossary = settings.glossaries?.find((g) => g.id === settings.activeGlossaryId);
       const runtimeSettings = {
         ...settings,
-        glossary: activeGlossary?.terms || getActiveGlossaryTerms(settings),
+        glossary: getActiveGlossaryTerms(settings),
       };
 
       // Decode audio first to cache it for retries
