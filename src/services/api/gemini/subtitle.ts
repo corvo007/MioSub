@@ -722,72 +722,44 @@ export const generateSubtitles = async (
             await new Promise((resolve) => setTimeout(resolve, 500));
             refinedSegments = [...rawSegments];
           } else {
-            const refineResponse = await generateContentWithRetry(
-              ai,
-              {
-                model: STEP_MODELS.refinement,
-                contents: {
-                  parts: [
-                    { inlineData: { mimeType: 'audio/wav', data: base64Audio } },
-                    { text: refinePrompt },
-                  ],
-                },
-                config: {
-                  responseMimeType: 'application/json',
-                  responseSchema: chunkSettings.enableDiarization
-                    ? REFINEMENT_WITH_DIARIZATION_SCHEMA
-                    : REFINEMENT_SCHEMA,
-                  systemInstruction: refineSystemInstruction,
-                  safetySettings: SAFETY_SETTINGS,
-                  ...buildStepConfig('refinement'),
-                },
+            // ===== POST-CHECK PIPELINE (Generate + Validate + Retry if needed) =====
+            const { result: processedSegments, checkResult } = await withPostCheck(
+              async () => {
+                // Generate refinement content
+                const response = await generateContentWithRetry(
+                  ai,
+                  {
+                    model: STEP_MODELS.refinement,
+                    contents: {
+                      parts: [
+                        { inlineData: { mimeType: 'audio/wav', data: base64Audio } },
+                        { text: refinePrompt },
+                      ],
+                    },
+                    config: {
+                      responseMimeType: 'application/json',
+                      responseSchema: chunkSettings.enableDiarization
+                        ? REFINEMENT_WITH_DIARIZATION_SCHEMA
+                        : REFINEMENT_SCHEMA,
+                      systemInstruction: refineSystemInstruction,
+                      safetySettings: SAFETY_SETTINGS,
+                      ...buildStepConfig('refinement'),
+                    },
+                  },
+                  3,
+                  signal,
+                  trackUsage,
+                  (settings.requestTimeout || 600) * 1000
+                );
+                return parseGeminiResponse(response.text, chunkDuration);
               },
-              3,
-              signal,
-              trackUsage,
-              (settings.requestTimeout || 600) * 1000
+              postProcessRefinement,
+              { maxRetries: 1, stepName: `[Chunk ${index}]` }
             );
 
-            refinedSegments = parseGeminiResponse(refineResponse.text, chunkDuration);
+            // Use the post-processed result (markers already applied by postCheck)
+            refinedSegments = processedSegments;
           }
-
-          // ===== POST-CHECK PIPELINE (Regenerate on corruption) =====
-          const { result: processedSegments, checkResult } = await withPostCheck(
-            async () => {
-              // If this is a retry, regenerate from scratch
-              const response = await generateContentWithRetry(
-                ai,
-                {
-                  model: STEP_MODELS.refinement,
-                  contents: {
-                    parts: [
-                      { inlineData: { mimeType: 'audio/wav', data: base64Audio } },
-                      { text: refinePrompt },
-                    ],
-                  },
-                  config: {
-                    responseMimeType: 'application/json',
-                    responseSchema: chunkSettings.enableDiarization
-                      ? REFINEMENT_WITH_DIARIZATION_SCHEMA
-                      : REFINEMENT_SCHEMA,
-                    systemInstruction: refineSystemInstruction,
-                    safetySettings: SAFETY_SETTINGS,
-                    ...buildStepConfig('refinement'),
-                  },
-                },
-                3,
-                signal,
-                trackUsage,
-                (settings.requestTimeout || 600) * 1000
-              );
-              return parseGeminiResponse(response.text, chunkDuration);
-            },
-            postProcessRefinement,
-            { maxRetries: 1, stepName: `[Chunk ${index}]` }
-          );
-
-          // Use the post-processed result (markers already applied by postCheck)
-          refinedSegments = processedSegments;
 
           if (refinedSegments.length === 0) {
             refinedSegments = [...rawSegments];
