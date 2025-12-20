@@ -3,6 +3,9 @@ import { MockFactory } from '@/services/api/gemini/debug/mockFactory';
 import { ArtifactSaver } from '@/services/api/gemini/debug/artifactSaver';
 import { UsageReporter } from '@/services/api/gemini/pipeline/usageReporter';
 import { preprocessAudio } from '@/services/api/gemini/pipeline/preprocessor';
+import { SpeakerAnalyzer } from '@/services/api/gemini/pipeline/speakerAnalyzer';
+import { GlossaryHandler } from '@/services/api/gemini/pipeline/glossaryHandler';
+import { PipelineContext } from '@/services/api/gemini/pipeline/types';
 import { SubtitleItem } from '@/types/subtitle';
 import { AppSettings } from '@/types/settings';
 import { ChunkStatus } from '@/types/api';
@@ -15,12 +18,10 @@ import { formatTime, timeToSeconds } from '@/services/subtitle/time';
 import { selectChunksByDuration } from '@/services/glossary/selector';
 import { extractGlossaryFromAudio } from '@/services/api/gemini/glossary';
 import { GlossaryState } from '@/services/api/gemini/glossary-state';
-import { getActiveGlossaryTerms } from '@/services/glossary/utils';
 import { sliceAudioBuffer } from '@/services/audio/processor';
 import { transcribeAudio } from '@/services/api/openai/transcribe';
 import { blobToBase64 } from '@/services/audio/converter';
-import { intelligentAudioSampling } from '@/services/audio/sampler';
-import { extractSpeakerProfiles, SpeakerProfile } from '@/services/api/gemini/speakerProfile';
+import { SpeakerProfile } from '@/services/api/gemini/speakerProfile';
 import {
   getSystemInstruction,
   getSystemInstructionWithDiarization,
@@ -73,6 +74,18 @@ export const generateSubtitles = async (
   // Token Usage Tracking
   const usageReporter = new UsageReporter();
   const trackUsage = usageReporter.getTracker();
+  const isDebug = window.electronAPI?.isDebug ?? false;
+
+  const context: PipelineContext = {
+    ai,
+    settings,
+    signal,
+    trackUsage,
+    onProgress,
+    isDebug,
+    geminiKey,
+    openaiKey,
+  };
 
   // Preprocess: Decode audio and segment into chunks
   const { audioBuffer, chunksParams, vadSegments, chunkDuration } = await preprocessAudio(
@@ -111,8 +124,6 @@ export const generateSubtitles = async (
   // --- GLOSSARY EXTRACTION (Parallel) ---
   let glossaryPromise: Promise<GlossaryExtractionResult[]> | null = null;
   let glossaryChunks: { index: number; start: number; end: number }[] | undefined;
-
-  const isDebug = window.electronAPI?.isDebug;
 
   if (isDebug && settings.debug?.mockGemini) {
     logger.info('⚠️ [MOCK] Glossary Extraction ENABLED. Using MockFactory.');
@@ -156,105 +167,16 @@ export const generateSubtitles = async (
     );
   }
 
-  // --- GLOSSARY HANDLING (Parallel to chunk processing) ---
-  // Task: Extract glossary terms and wait for user confirmation
-  let glossaryHandlingPromise: Promise<GlossaryItem[]>;
-  let extractedGlossaryResults: GlossaryExtractionResult[] | undefined;
+  // --- GLOSSARY HANDLING ---
+  const glossaryTask = GlossaryHandler.handle(
+    context,
+    glossaryPromise,
+    glossaryChunks,
+    onGlossaryReady
+  );
 
-  if (glossaryPromise) {
-    glossaryHandlingPromise = (async () => {
-      let finalGlossary = getActiveGlossaryTerms(settings);
-
-      try {
-        logger.info('Waiting for glossary extraction...');
-        onProgress?.({
-          id: 'glossary',
-          total: 1,
-          status: 'processing',
-          message: '正在提取术语...',
-        });
-
-        extractedGlossaryResults = await glossaryPromise;
-
-        // Calculate metadata for UI decision making
-        const totalTerms = extractedGlossaryResults.reduce((sum, r) => sum + r.terms.length, 0);
-        const hasFailures = extractedGlossaryResults.some(
-          (r) => r.confidence === 'low' && r.terms.length === 0
-        );
-
-        if (onGlossaryReady && (totalTerms > 0 || hasFailures)) {
-          logger.info('Glossary extracted, waiting for user confirmation...', {
-            totalTerms,
-            hasFailures,
-            resultsCount: extractedGlossaryResults.length,
-            results: extractedGlossaryResults.map((r) => ({
-              idx: r.chunkIndex,
-              terms: r.terms.length,
-              conf: r.confidence,
-            })),
-          });
-          onProgress?.({
-            id: 'glossary',
-            total: 1,
-            status: 'processing',
-            message: '等待用户确认...',
-          });
-
-          // BLOCKING CALL (User Interaction) - Pass metadata for UI
-          logger.info('Calling onGlossaryReady with metadata...');
-
-          const confirmationPromise = onGlossaryReady({
-            results: extractedGlossaryResults,
-            totalTerms,
-            hasFailures,
-            glossaryChunks: glossaryChunks!,
-          });
-
-          // Wait indefinitely for user confirmation (no timeout)
-          finalGlossary = await confirmationPromise;
-          logger.info('onGlossaryReady returned.');
-
-          logger.info('Glossary confirmed/updated.', { count: finalGlossary.length });
-          onProgress?.({
-            id: 'glossary',
-            total: 1,
-            status: 'completed',
-            message: '术语表已应用。',
-          });
-        } else {
-          // No callback or truly empty results (not even failures)
-          logger.info('No glossary extraction needed', { totalTerms, hasFailures });
-          onProgress?.({ id: 'glossary', total: 1, status: 'completed', message: '未发现术语。' });
-        }
-      } catch (e: any) {
-        if (e.message === '操作已取消' || e.name === 'AbortError') {
-          logger.info('Glossary extraction cancelled');
-          onProgress?.({ id: 'glossary', total: 1, status: 'completed', message: '已取消' });
-        } else {
-          logger.warn('Glossary extraction failed or timed out', e);
-          // Use actionable error message if available, otherwise generic message
-          const actionableMsg = getActionableErrorMessage(e);
-          const errorMsg = actionableMsg || '术语提取失败';
-          onProgress?.({ id: 'glossary', total: 1, status: 'error', message: errorMsg });
-        }
-      }
-
-      return finalGlossary; // Return only the glossary, not a complex object
-    })();
-  } else {
-    // No glossary extraction configured
-    glossaryHandlingPromise = Promise.resolve(getActiveGlossaryTerms(settings));
-  }
-
-  // DEBUG: Save Glossary Artifact
-  if (settings.debug?.saveIntermediateArtifacts && window.electronAPI?.saveDebugArtifact) {
-    glossaryHandlingPromise.then(async (glossary) => {
-      await ArtifactSaver.saveGlossary(glossary, extractedGlossaryResults, settings);
-    });
-  }
-
-  // Wrap glossary promise with GlossaryState for non-blocking access
-  const glossaryState = new GlossaryState(glossaryHandlingPromise);
+  // Wrap promise for non-blocking access by chunks
+  const glossaryState = new GlossaryState(glossaryTask.then((r) => r.glossary));
   logger.info('🔄 GlossaryState created - chunks can now access glossary independently');
 
   // --- SPEAKER PROFILE EXTRACTION (Parallel) ---
@@ -269,60 +191,7 @@ export const generateSubtitles = async (
       message: '正在分析说话人...',
     });
 
-    speakerProfilePromise = (async () => {
-      try {
-        const isDebug = window.electronAPI?.isDebug;
-        if (isDebug && settings.debug?.mockGemini) {
-          return MockFactory.getMockSpeakerProfiles();
-        }
-
-        // 1. Intelligent Sampling (returns blob and duration)
-        const { blob: sampledAudioBlob, duration } = await intelligentAudioSampling(
-          audioBuffer,
-          480, // 8 minutes for comprehensive speaker coverage
-          8,
-          signal,
-          vadSegments // Pass cached VAD segments to avoid re-running VAD
-        );
-
-        // 2. Extract Profiles
-        const profileSet = await extractSpeakerProfiles(
-          ai,
-          sampledAudioBlob,
-          duration,
-          settings.genre,
-          (settings.requestTimeout || 600) * 1000, // Use configured timeout
-          trackUsage,
-          signal,
-          settings.minSpeakers,
-          settings.maxSpeakers
-        );
-
-        logger.info(
-          `Extracted ${profileSet.profiles.length} speaker profiles`,
-          profileSet.profiles
-        );
-        onProgress?.({
-          id: 'diarization',
-          total: 1,
-          status: 'completed',
-          message: `已识别 ${profileSet.profiles.length} 位说话人`,
-        });
-
-        // Swap ID with Name if available, so the AI uses the name in the output
-        return profileSet.profiles.map((p) => ({
-          ...p,
-          id: p.characteristics.name || p.id,
-        }));
-      } catch (e: any) {
-        logger.error('Speaker profile extraction failed', e);
-        // Use actionable error message if available
-        const actionableMsg = getActionableErrorMessage(e);
-        const errorMsg = actionableMsg || '说话人预分析失败';
-        onProgress?.({ id: 'diarization', total: 1, status: 'error', message: errorMsg });
-        return [];
-      }
-    })();
+    speakerProfilePromise = SpeakerAnalyzer.analyze(context, audioBuffer, vadSegments);
   }
 
   // DEBUG: Save Speaker Profile Artifact
@@ -728,5 +597,5 @@ export const generateSubtitles = async (
     settings
   );
 
-  return { subtitles: finalSubtitles, glossaryResults: extractedGlossaryResults };
+  return { subtitles: finalSubtitles, glossaryResults: (await glossaryTask).raw };
 };
