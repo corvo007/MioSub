@@ -184,7 +184,8 @@ export const generateSubtitles = async (
   // Each chunk proceeds independently without waiting for others
   logger.info('Starting Unified Pipeline: Each chunk will proceed independently');
 
-  const chunkResults: SubtitleItem[][] = new Array(totalChunks).fill([]);
+  // Ensure independent array references for each slot
+  const chunkResults: SubtitleItem[][] = Array.from({ length: totalChunks }, () => []);
 
   // Use a high concurrency limit for the main loop (buffer)
   // The actual resource usage is controlled by semaphores inside
@@ -210,8 +211,9 @@ export const generateSubtitles = async (
       if (result.refined.length > 0) refinedChunksMap.set(chunk.index, result.refined);
       if (result.translated.length > 0) translatedChunksMap.set(chunk.index, result.translated);
 
-      // Store final result (Translated by default, fallback handled in processor if needed, but we stick to translated)
-      chunkResults[i] = result.translated;
+      // Store final result (Uses 'final' which includes fallback logic: Translated > Refined > Whisper)
+      // This ensures that if translation fails, we at least fallback to the corrected original text.
+      chunkResults[i] = result.final;
 
       // Update total intermediate result
       const currentAll = chunkResults.flat();

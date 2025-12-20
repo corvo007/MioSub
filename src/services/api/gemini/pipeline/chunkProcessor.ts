@@ -289,94 +289,108 @@ export class ChunkProcessor {
 
         // ===== STEP 4: TRANSLATION =====
         if (refinedSegments.length > 0) {
-          onProgress?.({
-            id: index,
-            total: totalChunks,
-            status: 'processing',
-            stage: 'translating',
-            message: '正在翻译...',
-          });
+          try {
+            onProgress?.({
+              id: index,
+              total: totalChunks,
+              status: 'processing',
+              stage: 'translating',
+              message: '正在翻译...',
+            });
 
-          const toTranslate = refinedSegments.map((seg) => ({
-            id: seg.id,
-            original: seg.original,
-            start: seg.startTime,
-            end: seg.endTime,
-            ...(chunkSettings.enableDiarization && seg.speaker ? { speaker: seg.speaker } : {}),
-          }));
-
-          const profilesForTranslation =
-            chunkSettings.useSpeakerStyledTranslation && speakerProfiles
-              ? speakerProfiles
-              : undefined;
-
-          const translateSystemInstruction = getSystemInstruction(
-            chunkSettings.genre,
-            chunkSettings.customTranslationPrompt,
-            'translation',
-            chunkSettings.glossary,
-            profilesForTranslation
-          );
-
-          if (isDebug && settings.debug?.mockGemini) {
-            const translatedItems = await MockFactory.getMockTranslation(index, toTranslate);
-            finalChunkSubs = translatedItems.map((item: any) => ({
-              id: item.id,
-              startTime: formatTime(timeToSeconds(item.start) + start),
-              endTime: formatTime(timeToSeconds(item.end) + start),
-              original: item.original,
-              translated: item.translated,
-              ...(chunkSettings.enableDiarization && item.speaker ? { speaker: item.speaker } : {}),
+            const toTranslate = refinedSegments.map((seg) => ({
+              id: seg.id,
+              original: seg.original,
+              start: seg.startTime,
+              end: seg.endTime,
+              ...(chunkSettings.enableDiarization && seg.speaker ? { speaker: seg.speaker } : {}),
             }));
-          } else {
-            const { result: checkedSubs } = await withPostCheck(
-              async () => {
-                const items = await translateBatch(
-                  ai,
-                  toTranslate,
-                  translateSystemInstruction,
-                  1,
-                  chunkSettings.translationBatchSize || 20,
-                  (update) =>
-                    onProgress?.({
-                      id: index,
-                      total: totalChunks,
-                      status: 'processing',
-                      stage: 'translating',
-                      ...update,
-                    }),
-                  signal,
-                  trackUsage,
-                  (settings.requestTimeout || 600) * 1000,
-                  !!chunkSettings.enableDiarization
-                );
-                logger.debug(`[Chunk ${index}] Translation complete. Items: ${items.length}`);
-                if (items.length > 0 && chunkSettings.enableDiarization) {
-                  logger.debug(
-                    `[Chunk ${index}] Translation first segment speaker: ${items[0].speaker}`
-                  );
-                }
-                return items.map((item) => ({
-                  id: item.id,
-                  startTime: formatTime(timeToSeconds(item.start) + start),
-                  endTime: formatTime(timeToSeconds(item.end) + start),
-                  original: item.original,
-                  translated: item.translated,
-                  ...(chunkSettings.enableDiarization && item.speaker
-                    ? { speaker: item.speaker }
-                    : {}),
-                }));
-              },
-              postProcessTranslation,
-              { maxRetries: 1, stepName: `[Chunk ${index}]` }
+
+            const profilesForTranslation =
+              chunkSettings.useSpeakerStyledTranslation && speakerProfiles
+                ? speakerProfiles
+                : undefined;
+
+            const translateSystemInstruction = getSystemInstruction(
+              chunkSettings.genre,
+              chunkSettings.customTranslationPrompt,
+              'translation',
+              chunkSettings.glossary,
+              profilesForTranslation
             );
-            finalChunkSubs = checkedSubs;
+
+            if (isDebug && settings.debug?.mockGemini) {
+              const translatedItems = await MockFactory.getMockTranslation(index, toTranslate);
+              finalChunkSubs = translatedItems.map((item: any) => ({
+                id: item.id,
+                startTime: formatTime(timeToSeconds(item.start) + start),
+                endTime: formatTime(timeToSeconds(item.end) + start),
+                original: item.original,
+                translated: item.translated,
+                ...(chunkSettings.enableDiarization && item.speaker
+                  ? { speaker: item.speaker }
+                  : {}),
+              }));
+            } else {
+              const { result: checkedSubs } = await withPostCheck(
+                async () => {
+                  const items = await translateBatch(
+                    ai,
+                    toTranslate,
+                    translateSystemInstruction,
+                    1,
+                    chunkSettings.translationBatchSize || 20,
+                    (update) =>
+                      onProgress?.({
+                        id: index,
+                        total: totalChunks,
+                        status: 'processing',
+                        stage: 'translating',
+                        ...update,
+                      }),
+                    signal,
+                    trackUsage,
+                    (settings.requestTimeout || 600) * 1000,
+                    !!chunkSettings.enableDiarization
+                  );
+                  logger.debug(`[Chunk ${index}] Translation complete. Items: ${items.length}`);
+                  if (items.length > 0 && chunkSettings.enableDiarization) {
+                    logger.debug(
+                      `[Chunk ${index}] Translation first segment speaker: ${items[0].speaker}`
+                    );
+                  }
+                  return items.map((item) => ({
+                    id: item.id,
+                    startTime: formatTime(timeToSeconds(item.start) + start),
+                    endTime: formatTime(timeToSeconds(item.end) + start),
+                    original: item.original,
+                    translated: item.translated,
+                    ...(chunkSettings.enableDiarization && item.speaker
+                      ? { speaker: item.speaker }
+                      : {}),
+                  }));
+                },
+                postProcessTranslation,
+                { maxRetries: 1, stepName: `[Chunk ${index}]` }
+              );
+              finalChunkSubs = checkedSubs;
+            }
+
+            ArtifactSaver.saveChunkArtifact(index, 'translation', finalChunkSubs, settings);
+
+            onProgress?.({ id: index, total: totalChunks, status: 'completed', message: '完成' });
+          } catch (e: any) {
+            logger.error(`分段 ${index} 翻译失败，保留润色结果。`, formatGeminiError(e));
+            onProgress?.({
+              id: index,
+              total: totalChunks,
+              status: 'processing', // Still 'processing' context, but we are done with this chunk basically
+              message: '翻译失败，使用原文',
+            });
+            // finalChunkSubs remains empty (or partially filled if we had better granular handling, but here empty)
+            // The return statement will pick up refinedSegments as fallback.
           }
         }
-
-        ArtifactSaver.saveChunkArtifact(index, 'translation', finalChunkSubs, settings);
-
-        onProgress?.({ id: index, total: totalChunks, status: 'completed', message: '完成' });
       } finally {
         refinementSemaphore.release();
       }

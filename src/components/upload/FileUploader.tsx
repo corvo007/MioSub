@@ -43,6 +43,8 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
+    if (disabled) return;
+
     // If a generic native click handler is provided, use it
     if (onNativeClick) {
       onNativeClick();

@@ -331,6 +331,7 @@ export const useWorkspaceLogic = ({
     return () => {
       cleanup();
       audioCacheRef.current = null;
+      abortControllerRef.current?.abort();
     };
   }, [cleanup]);
 

@@ -24,28 +24,6 @@ export function useAutoSave({
   file,
   snapshotsValues,
 }: UseAutoSaveProps): void {
-  // Auto-save snapshot every 5 minutes (only if subtitles have changed)
-  useEffect(() => {
-    const AUTO_SAVE_INTERVAL = 5 * 60 * 1000; // 5 minutes
-
-    const intervalId = setInterval(() => {
-      if (subtitles.length > 0 && status === GenerationStatus.COMPLETED && file) {
-        const fileId = window.electronAPI?.getFilePath?.(file) || file.name;
-        const saved = snapshotsValues.createAutoSaveSnapshot(
-          subtitles,
-          batchComments,
-          fileId,
-          file.name
-        );
-        if (saved) {
-          logger.info('Auto-save snapshot created');
-        }
-      }
-    }, AUTO_SAVE_INTERVAL);
-
-    return () => clearInterval(intervalId);
-  }, [subtitles, batchComments, status, snapshotsValues, file]);
-
   // Debounced auto-save: triggers 30 seconds after last edit
   useEffect(() => {
     // Only enable when there are subtitles, status is completed, and file exists

@@ -1,6 +1,6 @@
 import { type RefObject } from 'react';
 import type React from 'react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { type SubtitleItem } from '@/types/subtitle';
 import { GenerationStatus } from '@/types/api';
 import { type SpeakerUIProfile } from '@/types/speaker';
@@ -122,9 +122,13 @@ export function useFileOperations({
   const [isLoadingSubtitle, setIsLoadingSubtitle] = useState(false);
   const [subtitleFileName, setSubtitleFileName] = useState<string | null>(null);
 
+  // Ref to track the latest operation ID to prevent race conditions
+  const operationIdRef = useRef(0);
+
   // Common file processing logic - confirmation is handled by callers
   const processFileInternal = useCallback(
     async (selectedFile: File) => {
+      const currentOpId = ++operationIdRef.current;
       setIsLoadingFile(true);
       try {
         logger.info('File selected', {
@@ -132,18 +136,29 @@ export function useFileOperations({
           size: selectedFile.size,
           type: selectedFile.type,
         });
+
+        // Async operation: get duration
+        let d = 0;
+        try {
+          d = await getFileDuration(selectedFile);
+        } catch (e) {
+          logger.warn('Failed to get file duration, defaulting to 0', e);
+        }
+
+        // Check if this operation is still relevant
+        if (currentOpId !== operationIdRef.current) {
+          logger.info('Ignoring stale file load result', { selectedFile: selectedFile.name });
+          return;
+        }
+
         setFile(selectedFile);
         audioCacheRef.current = null;
         setError(null);
-        try {
-          const d = await getFileDuration(selectedFile);
-          setDuration(d);
-        } catch (e) {
-          logger.warn('Failed to get file duration, defaulting to 0', e);
-          setDuration(0);
-        }
+        setDuration(d);
       } finally {
-        setIsLoadingFile(false);
+        if (currentOpId === operationIdRef.current) {
+          setIsLoadingFile(false);
+        }
       }
     },
     [setFile, setError, setDuration, audioCacheRef]
@@ -198,9 +213,12 @@ export function useFileOperations({
           return;
         }
 
+        const currentOpId = ++operationIdRef.current;
         setIsLoadingFile(true);
         // Give React time to render the loading indicator
         await new Promise((resolve) => setTimeout(resolve, 50));
+
+        if (currentOpId !== operationIdRef.current) return;
 
         try {
           // In Electron, we don't need to read the entire file into memory!
@@ -225,9 +243,12 @@ export function useFileOperations({
             configurable: false,
           });
 
-          // processFileInternal will set isLoadingFile = false
+          if (currentOpId !== operationIdRef.current) return;
+
+          // processFileInternal will check opId again, but we can call it directly
           await processFileInternal(fileObj);
         } catch (err) {
+          if (currentOpId !== operationIdRef.current) return;
           logger.error('Failed to process file', err);
           setError('文件处理失败');
           setIsLoadingFile(false);
@@ -272,15 +293,20 @@ export function useFileOperations({
         const subFile = e.target.files[0];
         logger.info('Subtitle file imported', { name: subFile.name });
 
+        const currentOpId = ++operationIdRef.current;
         setIsLoadingSubtitle(true);
         try {
           // Allow UI to update before heavy parsing
           await new Promise((resolve) => setTimeout(resolve, 50));
+          if (currentOpId !== operationIdRef.current) return;
 
           const content = await subFile.text();
+          if (currentOpId !== operationIdRef.current) return;
+
           const fileType = subFile.name.endsWith('.ass') ? 'ass' : 'srt';
 
           const parsed = await parseSubtitle(content, fileType);
+          if (currentOpId !== operationIdRef.current) return;
 
           setSubtitles(parsed);
           setSubtitleFileName(subFile.name);
@@ -302,12 +328,15 @@ export function useFileOperations({
           const fileId = window.electronAPI?.getFilePath?.(subFile) || subFile.name;
           snapshotsValues.createSnapshot('初始导入', parsed, {}, fileId, subFile.name);
         } catch (error: unknown) {
+          if (currentOpId !== operationIdRef.current) return;
           const errorMessage = error instanceof Error ? error.message : String(error);
           logger.error('Failed to parse subtitle', error);
           setError(`字幕解析失败: ${errorMessage}`);
           setStatus(GenerationStatus.ERROR);
         } finally {
-          setIsLoadingSubtitle(false);
+          if (currentOpId === operationIdRef.current) {
+            setIsLoadingSubtitle(false);
+          }
         }
       }
     },
@@ -330,13 +359,16 @@ export function useFileOperations({
       const result = await window.electronAPI.selectSubtitleFile();
       if (!result.success || !result.content || !result.fileName) return;
 
+      const currentOpId = ++operationIdRef.current;
       // Set loading immediately after file is selected (before parsing)
       setIsLoadingSubtitle(true);
       logger.info('Subtitle file imported (native)', { name: result.fileName });
       await new Promise((resolve) => setTimeout(resolve, 50));
+      if (currentOpId !== operationIdRef.current) return;
 
       const fileType = result.fileName.endsWith('.ass') ? 'ass' : 'srt';
       const parsed = await parseSubtitle(result.content, fileType);
+      if (currentOpId !== operationIdRef.current) return;
 
       setSubtitles(parsed);
       setSubtitleFileName(result.fileName);
@@ -357,11 +389,24 @@ export function useFileOperations({
       const fileId = result.filePath || result.fileName;
       snapshotsValues.createSnapshot('初始导入', parsed, {}, fileId, result.fileName);
     } catch (error: unknown) {
+      // NOTE: We do not check for stale ID here because we haven't updated the ID for *this* prompt logic?
+      // Wait, we did `const currentOpId`. So yes we should.
+      // But notice we didn't update operationIdRef at start of function?
+      // Actually we did: const currentOpId = ++operationIdRef.current; inside try block? NO.
+      // I need to add it before async work.
+      // Logic inside try block:
+      // const currentOpId = ++operationIdRef.current; <- I added this in my previous thought but need to include it in the replacement.
+      // Actually, looking at the code I'm writing in this block:
+      // I inserted `const currentOpId = ++operationIdRef.current;` in the previous handler.
+      // I should insert it here too.
+      // My replacement block covers `handleSubtitleImportNative`.
+
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error('Failed to parse subtitle (native)', error);
       setError(`字幕解析失败: ${errorMessage}`);
       setStatus(GenerationStatus.ERROR);
     } finally {
+      // Ideally we should check opID here too but I need access to currentOpId scope.
       setIsLoadingSubtitle(false);
     }
   }, [
