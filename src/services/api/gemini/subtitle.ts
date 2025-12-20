@@ -14,39 +14,14 @@ import {
   GlossaryExtractionResult,
   GlossaryExtractionMetadata,
 } from '@/types/glossary';
-import { formatTime, timeToSeconds } from '@/services/subtitle/time';
 import { selectChunksByDuration } from '@/services/glossary/selector';
 import { extractGlossaryFromAudio } from '@/services/api/gemini/glossary';
 import { GlossaryState } from '@/services/api/gemini/glossary-state';
-import { sliceAudioBuffer } from '@/services/audio/processor';
-import { transcribeAudio } from '@/services/api/openai/transcribe';
-import { blobToBase64 } from '@/services/audio/converter';
 import { SpeakerProfile } from '@/services/api/gemini/speakerProfile';
-import {
-  getSystemInstruction,
-  getSystemInstructionWithDiarization,
-  getRefinementPrompt,
-} from '@/services/api/gemini/prompts';
-import { parseGeminiResponse, cleanNonSpeechAnnotations } from '@/services/subtitle/parser';
-import {
-  withPostCheck,
-  postProcessRefinement,
-  postProcessTranslation,
-} from '@/services/subtitle/postCheck';
 import { mapInParallel, Semaphore } from '@/services/utils/concurrency';
 import { logger } from '@/services/utils/logger';
-import {
-  REFINEMENT_SCHEMA,
-  REFINEMENT_WITH_DIARIZATION_SCHEMA,
-  SAFETY_SETTINGS,
-} from '@/services/api/gemini/schemas';
-import {
-  generateContentWithRetry,
-  formatGeminiError,
-  getActionableErrorMessage,
-} from '@/services/api/gemini/client';
-import { translateBatch } from '@/services/api/gemini/batch';
-import { STEP_MODELS, buildStepConfig, ENV } from '@/config';
+import { ChunkProcessor } from '@/services/api/gemini/pipeline/chunkProcessor';
+import { ENV } from '@/config';
 
 export const generateSubtitles = async (
   audioSource: File | AudioBuffer,
@@ -216,373 +191,32 @@ export const generateSubtitles = async (
   const mainLoopConcurrency = Math.max(totalChunks, pipelineConcurrency, 20);
 
   await mapInParallel(chunksParams, mainLoopConcurrency, async (chunk, i) => {
-    const { index, start, end } = chunk;
-
     try {
-      // ===== STEP 1: TRANSCRIPTION =====
-      onProgress?.({
-        id: index,
-        total: totalChunks,
-        status: 'processing',
-        stage: 'transcribing',
-        message: '等待转录...',
+      // Delegate processing to ChunkProcessor
+      const result = await ChunkProcessor.process(chunk, context, {
+        glossaryState,
+        speakerProfilePromise,
+        transcriptionSemaphore,
+        refinementSemaphore,
+        audioBuffer,
+        chunkDuration,
+        totalChunks,
       });
 
-      let rawSegments: SubtitleItem[] = [];
+      // Update maps for artifact saving
+      if (result.whisper.length > 0) whisperChunksMap.set(chunk.index, result.whisper);
+      if (result.refined.length > 0) refinedChunksMap.set(chunk.index, result.refined);
+      if (result.translated.length > 0) translatedChunksMap.set(chunk.index, result.translated);
 
-      // Acquire Transcription Semaphore
-      await transcriptionSemaphore.acquire();
-      try {
-        if (signal?.aborted) throw new Error('操作已取消');
+      // Store final result (Translated by default, fallback handled in processor if needed, but we stick to translated)
+      chunkResults[i] = result.translated;
 
-        onProgress?.({
-          id: index,
-          total: totalChunks,
-          status: 'processing',
-          stage: 'transcribing',
-          message: '正在转录...',
-        });
-        logger.debug(`[Chunk ${index}] Starting transcription...`);
-
-        const shouldMockTranscription =
-          isDebug &&
-          (settings.useLocalWhisper
-            ? settings.debug?.mockLocalWhisper
-            : settings.debug?.mockOpenAI);
-
-        if (shouldMockTranscription) {
-          rawSegments = await MockFactory.getMockTranscription(index, start, end);
-        } else {
-          const wavBlob = await sliceAudioBuffer(audioBuffer, start, end);
-          rawSegments = await transcribeAudio(
-            wavBlob,
-            openaiKey,
-            settings.transcriptionModel,
-            settings.openaiEndpoint,
-            (settings.requestTimeout || 600) * 1000,
-            settings.useLocalWhisper,
-            settings.whisperModelPath,
-            settings.whisperThreads,
-            signal,
-            settings.debug?.whisperPath
-          );
-        }
-      } finally {
-        transcriptionSemaphore.release();
-      }
-
-      logger.debug(`[Chunk ${index}] Transcription complete. Segments: ${rawSegments.length}`);
-
-      // Clean non-speech annotations (e.g., "(laughter)", "[MUSIC]")
-      rawSegments = rawSegments
-        .map((seg) => ({
-          ...seg,
-          original: cleanNonSpeechAnnotations(seg.original),
-        }))
-        .filter((seg) => seg.original.length > 0);
-
-      ArtifactSaver.saveChunkArtifact(index, 'whisper', rawSegments, settings);
-      // Collect intermediate result
-      whisperChunksMap.set(
-        index,
-        rawSegments.map((seg) => ({
-          ...seg,
-          startTime: formatTime(timeToSeconds(seg.startTime) + start),
-          endTime: formatTime(timeToSeconds(seg.endTime) + start),
-        }))
-      ); // Adjust time to global for full SRT
-
-      // Skip if no segments (after cleaning)
-      if (rawSegments.length === 0) {
-        logger.warn(`[Chunk ${index}] No speech detected, skipping`);
-        chunkResults[i] = [];
-        onProgress?.({
-          id: index,
-          total: totalChunks,
-          status: 'completed',
-          message: '完成（无内容）',
-        });
-        return;
-      }
-
-      // ===== STEP 2: WAIT FOR GLOSSARY (Non-blocking for other chunks) =====
-      onProgress?.({
-        id: index,
-        total: totalChunks,
-        status: 'processing',
-        stage: 'waiting_glossary',
-        message: '等待术语表...',
-      });
-      logger.debug(`[Chunk ${index}] Waiting for glossary confirmation...`);
-
-      if (signal?.aborted) throw new Error('操作已取消');
-
-      const finalGlossary = await glossaryState.get();
-
-      if (signal?.aborted) throw new Error('操作已取消');
-
-      const chunkSettings = { ...settings, glossary: finalGlossary };
-
-      logger.debug(
-        `[Chunk ${index}] Glossary ready (${finalGlossary.length} terms), proceeding to refinement`
-      );
-
-      // Wait for speaker profiles if diarization is enabled (Before acquiring semaphore)
-      let speakerProfiles: SpeakerProfile[] | undefined;
-      if (speakerProfilePromise) {
-        onProgress?.({
-          id: index,
-          total: totalChunks,
-          status: 'processing',
-          stage: 'waiting_speakers',
-          message: '等待说话人预分析...',
-        });
-        try {
-          // Race with signal to ensure immediate response even if promise hangs
-          if (signal) {
-            speakerProfiles = await Promise.race([
-              speakerProfilePromise,
-              new Promise<never>((_, reject) => {
-                if (signal.aborted) reject(new Error('Operation cancelled'));
-                else
-                  signal.addEventListener('abort', () => reject(new Error('Operation cancelled')));
-              }),
-            ]);
-          } else {
-            speakerProfiles = await speakerProfilePromise;
-          }
-        } catch (e) {
-          if (signal?.aborted) throw new Error('操作已取消');
-          logger.warn('Failed to get speaker profiles, proceeding without them', e);
-        }
-      }
-
-      // ===== STEP 3: REFINEMENT =====
-      // Acquire Refinement Semaphore (Gemini API limit)
-      await refinementSemaphore.acquire();
-      try {
-        if (signal?.aborted) throw new Error('操作已取消');
-
-        // Re-slice audio for Gemini (Refine needs audio)
-        const refineWavBlob = await sliceAudioBuffer(audioBuffer, start, end);
-        const base64Audio = await blobToBase64(refineWavBlob);
-
-        let refinedSegments: SubtitleItem[] = [];
-        onProgress?.({
-          id: index,
-          total: totalChunks,
-          status: 'processing',
-          stage: 'refining',
-          message: '正在校对时间轴...',
-        });
-
-        const refineSystemInstruction = getSystemInstructionWithDiarization(
-          chunkSettings.genre,
-          undefined,
-          'refinement',
-          chunkSettings.glossary,
-          chunkSettings.enableDiarization,
-          speakerProfiles,
-          chunkSettings.minSpeakers,
-          chunkSettings.maxSpeakers
-        );
-        // For refinement, only show original terms (without translations) to prevent language mixing
-        const glossaryInfo =
-          chunkSettings.glossary && chunkSettings.glossary.length > 0
-            ? `\n\nKEY TERMINOLOGY (Listen for these terms in the audio and transcribe them accurately in the ORIGINAL LANGUAGE):\n${chunkSettings.glossary.map((g) => `- ${g.term}${g.notes ? ` (${g.notes})` : ''}`).join('\n')}`
-            : '';
-
-        const refinePrompt = getRefinementPrompt({
-          genre: chunkSettings.genre,
-          rawSegments,
-          glossaryInfo,
-          glossaryCount: chunkSettings.glossary?.length,
-          enableDiarization: chunkSettings.enableDiarization,
-        });
-
-        try {
-          if (isDebug && settings.debug?.mockGemini) {
-            refinedSegments = await MockFactory.getMockRefinement(index, rawSegments);
-          } else {
-            // ===== POST-CHECK PIPELINE (Generate + Validate + Retry if needed) =====
-            const { result: processedSegments, checkResult } = await withPostCheck(
-              async () => {
-                // Generate refinement content
-                const response = await generateContentWithRetry(
-                  ai,
-                  {
-                    model: STEP_MODELS.refinement,
-                    contents: {
-                      parts: [
-                        { inlineData: { mimeType: 'audio/wav', data: base64Audio } },
-                        { text: refinePrompt },
-                      ],
-                    },
-                    config: {
-                      responseMimeType: 'application/json',
-                      responseSchema: chunkSettings.enableDiarization
-                        ? REFINEMENT_WITH_DIARIZATION_SCHEMA
-                        : REFINEMENT_SCHEMA,
-                      systemInstruction: refineSystemInstruction,
-                      safetySettings: SAFETY_SETTINGS,
-                      ...buildStepConfig('refinement'),
-                    },
-                  },
-                  3,
-                  signal,
-                  trackUsage,
-                  (settings.requestTimeout || 600) * 1000
-                );
-                return parseGeminiResponse(response.text, chunkDuration);
-              },
-              postProcessRefinement,
-              { maxRetries: 1, stepName: `[Chunk ${index}]` }
-            );
-
-            // Use the post-processed result (markers already applied by postCheck)
-            refinedSegments = processedSegments;
-          }
-
-          if (refinedSegments.length === 0) {
-            refinedSegments = [...rawSegments];
-          }
-          logger.debug(`[Chunk ${index}] Refinement complete. Segments: ${refinedSegments.length}`);
-          if (refinedSegments.length > 0 && chunkSettings.enableDiarization) {
-            logger.debug(
-              `[Chunk ${index}] Refinement first segment speaker: ${refinedSegments[0].speaker}`
-            );
-          }
-        } catch (e) {
-          logger.error(`分段 ${index} 时间轴失败，将回退到原始结果。`, formatGeminiError(e));
-          refinedSegments = [...rawSegments];
-        }
-
-        ArtifactSaver.saveChunkArtifact(index, 'refinement', refinedSegments, settings);
-        // Collect intermediate result
-        refinedChunksMap.set(
-          index,
-          refinedSegments.map((seg) => ({
-            ...seg,
-            startTime: formatTime(timeToSeconds(seg.startTime) + start),
-            endTime: formatTime(timeToSeconds(seg.endTime) + start),
-          }))
-        ); // Adjust time to global
-
-        // ===== STEP 4: TRANSLATION =====
-        let finalChunkSubs: SubtitleItem[] = [];
-        if (refinedSegments.length > 0) {
-          onProgress?.({
-            id: index,
-            total: totalChunks,
-            status: 'processing',
-            stage: 'translating',
-            message: '正在翻译...',
-          });
-
-          const toTranslate = refinedSegments.map((seg, idx) => ({
-            id: seg.id,
-            original: seg.original,
-            start: seg.startTime,
-            end: seg.endTime,
-            ...(chunkSettings.enableDiarization && seg.speaker ? { speaker: seg.speaker } : {}),
-          }));
-
-          // Pass speaker profiles to translation only if useSpeakerStyledTranslation is enabled
-          const profilesForTranslation =
-            chunkSettings.useSpeakerStyledTranslation && speakerProfiles
-              ? speakerProfiles
-              : undefined;
-          const translateSystemInstruction = getSystemInstruction(
-            chunkSettings.genre,
-            chunkSettings.customTranslationPrompt,
-            'translation',
-            chunkSettings.glossary,
-            profilesForTranslation
-          );
-
-          let translatedItems: any[] = [];
-          if (isDebug && settings.debug?.mockGemini) {
-            translatedItems = await MockFactory.getMockTranslation(index, toTranslate);
-
-            finalChunkSubs = translatedItems.map((item) => ({
-              id: item.id,
-              startTime: formatTime(timeToSeconds(item.start) + start),
-              endTime: formatTime(timeToSeconds(item.end) + start),
-              original: item.original,
-              translated: item.translated,
-              ...(chunkSettings.enableDiarization && item.speaker ? { speaker: item.speaker } : {}),
-            }));
-          } else {
-            // ===== POST-CHECK PIPELINE (Translate + Validate + Retry if needed) =====
-            const { result: checkedSubs } = await withPostCheck(
-              async () => {
-                // Generate translation
-                const items = await translateBatch(
-                  ai,
-                  toTranslate,
-                  translateSystemInstruction,
-                  1, // Internal concurrency (we're already in refinementSemaphore)
-                  chunkSettings.translationBatchSize || 20,
-                  (update) =>
-                    onProgress?.({
-                      id: index,
-                      total: totalChunks,
-                      status: 'processing',
-                      stage: 'translating',
-                      ...update,
-                    }),
-                  signal,
-                  trackUsage,
-                  (settings.requestTimeout || 600) * 1000, // Custom timeout in milliseconds
-                  !!chunkSettings.enableDiarization // Pass diarization flag
-                );
-
-                logger.debug(`[Chunk ${index}] Translation complete. Items: ${items.length}`);
-                if (items.length > 0 && chunkSettings.enableDiarization) {
-                  logger.debug(
-                    `[Chunk ${index}] Translation first segment speaker: ${items[0].speaker}`
-                  );
-                }
-
-                // Transform to SubtitleItem format
-                return items.map((item) => ({
-                  id: item.id,
-                  startTime: formatTime(timeToSeconds(item.start) + start),
-                  endTime: formatTime(timeToSeconds(item.end) + start),
-                  original: item.original,
-                  translated: item.translated,
-                  ...(chunkSettings.enableDiarization && item.speaker
-                    ? { speaker: item.speaker }
-                    : {}),
-                }));
-              },
-              postProcessTranslation,
-              { maxRetries: 1, stepName: `[Chunk ${index}]` }
-            );
-
-            finalChunkSubs = checkedSubs;
-          }
-        }
-
-        ArtifactSaver.saveChunkArtifact(index, 'translation', finalChunkSubs, settings);
-        // Collect intermediate result
-        translatedChunksMap.set(index, finalChunkSubs);
-
-        chunkResults[i] = finalChunkSubs;
-
-        // Update Intermediate Result
-        const currentAll = chunkResults.flat();
-        onIntermediateResult?.(currentAll);
-
-        onProgress?.({ id: index, total: totalChunks, status: 'completed', message: '完成' });
-      } finally {
-        refinementSemaphore.release();
-      }
+      // Update total intermediate result
+      const currentAll = chunkResults.flat();
+      onIntermediateResult?.(currentAll);
     } catch (e: any) {
-      logger.error(`Chunk ${index} failed`, e);
-      const actionableMsg = getActionableErrorMessage(e);
-      const errorMsg = actionableMsg || '失败';
-      onProgress?.({ id: index, total: totalChunks, status: 'error', message: errorMsg });
+      // Should already be handled in ChunkProcessor, but safety net
+      logger.error(`Unexpected error in Chunk ${chunk.index}`, e);
     }
   });
 
