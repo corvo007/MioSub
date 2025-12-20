@@ -25,14 +25,11 @@ import {
   formatGeminiError,
   getActionableErrorMessage,
 } from '@/services/api/gemini/core/client';
-import { translateBatch } from '@/services/api/gemini/batch/operations';
+import { translateBatch } from '@/services/api/gemini/pipeline/translation';
 import { STEP_MODELS, buildStepConfig } from '@/config';
 import { parseGeminiResponse } from '@/services/subtitle/parser';
-import {
-  withPostCheck,
-  postProcessRefinement,
-  postProcessTranslation,
-} from '@/services/subtitle/postCheck';
+import { withPostCheck } from '@/services/subtitle/postCheck';
+import { createRefinementPostProcessor } from '@/services/api/gemini/pipeline/postProcessors';
 
 export interface ChunkDependencies {
   glossaryState: GlossaryState;
@@ -273,7 +270,7 @@ export class ChunkProcessor {
                 );
                 return parseGeminiResponse(response.text, chunkDuration);
               },
-              postProcessRefinement,
+              createRefinementPostProcessor(),
               { maxRetries: 1, stepName: `[Chunk ${index}]` }
             );
             refinedSegments = processedSegments;
@@ -340,48 +337,41 @@ export class ChunkProcessor {
                   : {}),
               }));
             } else {
-              const { result: checkedSubs } = await withPostCheck(
-                async () => {
-                  const items = await translateBatch(
-                    ai,
-                    toTranslate,
-                    translateSystemInstruction,
-                    1,
-                    chunkSettings.translationBatchSize || 20,
-                    (update) =>
-                      onProgress?.({
-                        id: index,
-                        total: totalChunks,
-                        status: 'processing',
-                        stage: 'translating',
-                        ...update,
-                      }),
-                    signal,
-                    trackUsage,
-                    (settings.requestTimeout || 600) * 1000,
-                    !!chunkSettings.enableDiarization
-                  );
-                  logger.debug(`[Chunk ${index}] Translation complete. Items: ${items.length}`);
-                  if (items.length > 0 && chunkSettings.enableDiarization) {
-                    logger.debug(
-                      `[Chunk ${index}] Translation first segment speaker: ${items[0].speaker}`
-                    );
-                  }
-                  return items.map((item) => ({
-                    id: item.id,
-                    startTime: formatTime(timeToSeconds(item.start) + start),
-                    endTime: formatTime(timeToSeconds(item.end) + start),
-                    original: item.original,
-                    translated: item.translated,
-                    ...(chunkSettings.enableDiarization && item.speaker
-                      ? { speaker: item.speaker }
-                      : {}),
-                  }));
-                },
-                postProcessTranslation,
-                { maxRetries: 1, stepName: `[Chunk ${index}]` }
+              const items = await translateBatch(
+                ai,
+                toTranslate,
+                translateSystemInstruction,
+                1,
+                chunkSettings.translationBatchSize || 20,
+                (update) =>
+                  onProgress?.({
+                    id: index,
+                    total: totalChunks,
+                    status: 'processing',
+                    stage: 'translating',
+                    ...update,
+                  }),
+                signal,
+                trackUsage,
+                (settings.requestTimeout || 600) * 1000,
+                !!chunkSettings.enableDiarization
               );
-              finalChunkSubs = checkedSubs;
+              logger.debug(`[Chunk ${index}] Translation complete. Items: ${items.length}`);
+              if (items.length > 0 && chunkSettings.enableDiarization) {
+                logger.debug(
+                  `[Chunk ${index}] Translation first segment speaker: ${items[0].speaker}`
+                );
+              }
+              finalChunkSubs = items.map((item) => ({
+                id: item.id,
+                startTime: formatTime(timeToSeconds(item.start) + start),
+                endTime: formatTime(timeToSeconds(item.end) + start),
+                original: item.original,
+                translated: item.translated,
+                ...(chunkSettings.enableDiarization && item.speaker
+                  ? { speaker: item.speaker }
+                  : {}),
+              }));
             }
 
             ArtifactSaver.saveChunkArtifact(index, 'translation', finalChunkSubs, settings);

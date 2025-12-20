@@ -1,21 +1,13 @@
 /**
- * PostCheck Module - Post-processing pipeline for subtitle generation
+ * PostCheck Module - Post-processing framework for subtitle generation
  *
  * Provides a unified pipeline for:
- * 1. Cleaning output (remove non-speech annotations, filter empty)
- * 2. Validating quality (timeline integrity)
- * 3. Marking issues for frontend display
- * 4. Retry logic for recoverable errors
+ * 1. Retry logic for recoverable errors
+ * 2. Quality validation framework
+ *
+ * Business-specific postprocessors are in pipeline/postProcessors.ts
  */
 
-import { type SubtitleItem } from '@/types/subtitle';
-import { cleanNonSpeechAnnotations } from '@/services/subtitle/parser';
-import {
-  validateTimeline,
-  markRegressionIssues,
-  markCorruptedRange,
-  type TimelineValidationResult,
-} from '@/services/subtitle/timelineValidator';
 import { logger } from '@/services/utils/logger';
 
 // ===== Interfaces =====
@@ -51,75 +43,6 @@ export type PostProcessFn<TInput, TOutput = TInput> = (
   result: TInput,
   isFinalAttempt: boolean
 ) => PostProcessOutput<TOutput> | Promise<PostProcessOutput<TOutput>>;
-
-// ===== Refinement Post-Processing =====
-
-/**
- * Post-process refinement output:
- * 1. Clean non-speech annotations
- * 2. Filter empty segments
- * 3. Validate timeline
- * 4. Apply issue markers (if validation fails and not retryable)
- *
- * Note: Markers are only applied when retryable=false (final result)
- */
-export function postProcessRefinement(
-  segments: SubtitleItem[],
-  isFinalAttempt: boolean = false
-): PostProcessOutput<SubtitleItem[]> {
-  // Step 1: Clean non-speech annotations
-  let processed = segments.map((seg) => ({
-    ...seg,
-    original: cleanNonSpeechAnnotations(seg.original),
-  }));
-
-  // Step 2: Filter empty segments
-  processed = processed.filter((seg) => seg.original.length > 0);
-
-  // Step 3: Validate timeline
-  const validation = validateTimeline(processed);
-
-  // Step 4: Convert validation result to PostCheckResult
-  const checkResult = mapValidationToCheckResult(validation);
-
-  // Step 5: Apply markers on final attempt (when no more retries)
-  if (isFinalAttempt && !checkResult.isValid) {
-    if (validation.independentAnomalies.length > 0) {
-      processed = markRegressionIssues(processed, validation.independentAnomalies);
-    }
-    if (validation.corruptedRanges.length > 0) {
-      processed = markCorruptedRange(processed, validation.corruptedRanges);
-    }
-  }
-
-  return { result: processed, checkResult };
-}
-
-// ===== Translation Post-Processing (Placeholder) =====
-
-/**
- * Post-process translation output (placeholder for future implementation)
- *
- * Potential checks:
- * - Missing translations
- * - Translation length vs original
- * - Timeline validation (optional)
- */
-export function postProcessTranslation(
-  segments: SubtitleItem[],
-  _isFinalAttempt: boolean = false
-): PostProcessOutput<SubtitleItem[]> {
-  // TODO: Implement translation-specific validation
-  // For now, pass through without validation
-  return {
-    result: segments,
-    checkResult: {
-      isValid: true,
-      issues: [],
-      retryable: false,
-    },
-  };
-}
 
 // ===== Retry Wrapper =====
 
@@ -173,36 +96,4 @@ export async function withPostCheck<TInput, TOutput = TInput>(
   // All retries exhausted
   logger.error(`${stepName} PostCheck: Issues persisted after ${maxRetries} retries`);
   return lastOutput!;
-}
-
-// ===== Internal Helpers =====
-
-function mapValidationToCheckResult(validation: TimelineValidationResult): PostCheckResult {
-  const issues: PostCheckIssue[] = [];
-
-  // Map corrupted ranges (retryable)
-  for (const range of validation.corruptedRanges) {
-    issues.push({
-      type: 'corrupted_range',
-      affectedIds: [], // Could populate with actual IDs if needed
-      details: `Range ${range.startId} → ${range.endId} (${range.affectedCount} segments)`,
-      retryable: true,
-    });
-  }
-
-  // Map independent anomalies (not retryable)
-  for (const anomaly of validation.independentAnomalies) {
-    issues.push({
-      type: anomaly.type === 'time_regression' ? 'regression' : 'excessive_duration',
-      affectedIds: [anomaly.id],
-      details: anomaly.details,
-      retryable: false,
-    });
-  }
-
-  return {
-    isValid: validation.isValid,
-    issues,
-    retryable: validation.corruptedRanges.length > 0,
-  };
 }

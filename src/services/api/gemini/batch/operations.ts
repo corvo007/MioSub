@@ -3,308 +3,32 @@ import { type SubtitleItem, type BatchOperationMode } from '@/types/subtitle';
 import { type AppSettings } from '@/types/settings';
 import { type ChunkStatus, type TokenUsage } from '@/types/api';
 import { parseGeminiResponse } from '@/services/subtitle/parser';
-import { formatTime, timeToSeconds } from '@/services/subtitle/time';
+import { timeToSeconds } from '@/services/subtitle/time';
 import { decodeAudio } from '@/services/audio/decoder';
 import { sliceAudioBuffer } from '@/services/audio/processor';
 import { blobToBase64 } from '@/services/audio/converter';
 import { mapInParallel } from '@/services/utils/concurrency';
 import { logger } from '@/services/utils/logger';
-import { calculateDetailedCost } from '@/services/api/gemini/utils/pricing';
 import {
   getSystemInstructionWithDiarization,
-  getTranslationBatchPrompt,
   getFixTimestampsPrompt,
   getProofreadPrompt,
 } from '@/services/api/gemini/core/prompts';
 import { type SpeakerProfile } from '@/services/api/gemini/extractors/speakerProfile';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
 import {
-  TRANSLATION_SCHEMA,
-  TRANSLATION_WITH_DIARIZATION_SCHEMA,
   BATCH_SCHEMA,
   BATCH_WITH_DIARIZATION_SCHEMA,
-  SAFETY_SETTINGS,
   PROOFREAD_BATCH_SIZE,
 } from '@/services/api/gemini/core/schemas';
+import { generateContentWithLongOutput } from '@/services/api/gemini/core/client';
+import { STEP_MODELS, STEP_CONFIGS } from '@/config';
+import { translateBatch } from '@/services/api/gemini/pipeline/translation';
+import { UsageReporter } from '@/services/api/gemini/pipeline/usageReporter';
 import {
-  generateContentWithRetry,
-  generateContentWithLongOutput,
-  formatGeminiError,
-  getActionableErrorMessage,
-} from '@/services/api/gemini/core/client';
-import { STEP_MODELS, STEP_CONFIGS, buildStepConfig } from '@/config';
-
-import {
-  withPostCheck,
-  type PostProcessOutput,
-  type PostCheckResult,
-} from '@/services/subtitle/postCheck';
-
-/** Raw translation result from API */
-interface RawTranslationResult {
-  transMap: Map<string, string>;
-  batch: any[];
-}
-
-/**
- * Create a post-processor for translation that handles:
- * 1. Missing translation detection
- * 2. Retry for missing items (via API call)
- * 3. Fallback to original text
- * 4. Result building
- */
-function createTranslationPostProcessor(
-  ai: GoogleGenAI,
-  systemInstruction: string,
-  onStatusUpdate?: (update: {
-    message?: string;
-    toast?: { message: string; type: 'info' | 'warning' | 'error' | 'success' };
-  }) => void,
-  signal?: AbortSignal,
-  onUsage?: (usage: TokenUsage) => void,
-  timeoutMs?: number,
-  useDiarization: boolean = false
-) {
-  return async (
-    rawResult: RawTranslationResult,
-    isFinalAttempt: boolean
-  ): Promise<PostProcessOutput<any[]>> => {
-    const { transMap, batch } = rawResult;
-
-    // Step 1: Check for missing translations
-    const missingItems = batch.filter((item) => {
-      const translated = transMap.get(String(item.id));
-      return !translated || translated.trim().length === 0;
-    });
-
-    // Step 2: Retry missing items if not final attempt and partial failure
-    if (!isFinalAttempt && missingItems.length > 0 && missingItems.length < batch.length) {
-      logger.info(`Retrying ${missingItems.length} missing translations...`);
-      onStatusUpdate?.({ message: `重试 ${missingItems.length} 条漏翻...` });
-
-      try {
-        const retryPayload = missingItems.map((item) => ({
-          id: item.id,
-          text: item.original,
-          speaker: item.speaker,
-        }));
-        const retryPrompt = getTranslationBatchPrompt(missingItems.length, retryPayload);
-
-        const retryData = await generateContentWithRetry<any[]>(
-          ai,
-          {
-            model: STEP_MODELS.translation,
-            contents: { parts: [{ text: retryPrompt }] },
-            config: {
-              responseMimeType: 'application/json',
-              safetySettings: SAFETY_SETTINGS,
-              responseSchema: useDiarization
-                ? TRANSLATION_WITH_DIARIZATION_SCHEMA
-                : TRANSLATION_SCHEMA,
-              ...buildStepConfig('translation'),
-            },
-          },
-          2,
-          signal,
-          onUsage,
-          timeoutMs,
-          'array'
-        );
-
-        // Merge retry results
-        let recoveredCount = 0;
-        retryData.forEach((t: any) => {
-          if (t.text_translated && t.text_translated.trim().length > 0) {
-            transMap.set(String(t.id), t.text_translated);
-            recoveredCount++;
-          }
-        });
-
-        if (recoveredCount > 0) {
-          logger.info(`Recovered ${recoveredCount}/${missingItems.length} translations on retry`);
-        }
-      } catch (retryError) {
-        logger.warn(`Retry failed for missing translations`, {
-          error: formatGeminiError(retryError),
-        });
-      }
-    }
-
-    // Step 3: Build final result with fallback to original text
-    let fallbackCount = 0;
-    const result = batch.map((item) => {
-      const translatedText = transMap.get(String(item.id));
-
-      if (!translatedText || translatedText.trim().length === 0) {
-        if (isFinalAttempt) {
-          logger.warn(`Translation missing for ID ${item.id}, using original text`, {
-            original: item.original.substring(0, 50),
-          });
-        }
-        fallbackCount++;
-      }
-
-      return {
-        ...item,
-        translated:
-          translatedText && translatedText.trim().length > 0 ? translatedText : item.original,
-      };
-    });
-
-    if (isFinalAttempt && fallbackCount > 0) {
-      logger.warn(
-        `Batch translation: ${fallbackCount}/${batch.length} items fallback to original text`
-      );
-    }
-
-    // Step 4: Build check result
-    const checkResult: PostCheckResult = {
-      isValid: fallbackCount === 0,
-      issues:
-        fallbackCount > 0
-          ? [
-              {
-                type: 'corrupted_range' as const,
-                affectedIds: missingItems.map((i) => String(i.id)),
-                details: `${fallbackCount} translations missing`,
-                retryable: fallbackCount < batch.length, // Retryable only if partial failure
-              },
-            ]
-          : [],
-      retryable: fallbackCount > 0 && fallbackCount < batch.length,
-    };
-
-    return { result, checkResult };
-  };
-}
-
-/**
- * Process a translation batch with post-check validation.
- * API-level retries are handled by generateContentWithRetry.
- * Missing translation retries are handled by the post-processor.
- */
-export async function processTranslationBatch(
-  ai: GoogleGenAI,
-  batch: any[],
-  systemInstruction: string,
-  onStatusUpdate?: (update: {
-    message?: string;
-    toast?: { message: string; type: 'info' | 'warning' | 'error' | 'success' };
-  }) => void,
-  signal?: AbortSignal,
-  onUsage?: (usage: TokenUsage) => void,
-  timeoutMs?: number,
-  useDiarization: boolean = false
-): Promise<any[]> {
-  const payload = batch.map((item) => ({
-    id: item.id,
-    text: item.original,
-    ...(useDiarization ? { speaker: item.speaker } : {}),
-  }));
-
-  const prompt = getTranslationBatchPrompt(batch.length, payload);
-
-  try {
-    const { result } = await withPostCheck(
-      // Generate function: call API and parse response
-      async (): Promise<RawTranslationResult> => {
-        const translatedData = await generateContentWithRetry<any[]>(
-          ai,
-          {
-            model: STEP_MODELS.translation,
-            contents: { parts: [{ text: prompt }] },
-            config: {
-              responseMimeType: 'application/json',
-              responseSchema: useDiarization
-                ? TRANSLATION_WITH_DIARIZATION_SCHEMA
-                : TRANSLATION_SCHEMA,
-              systemInstruction: systemInstruction,
-              safetySettings: SAFETY_SETTINGS,
-              ...buildStepConfig('translation'),
-            },
-          },
-          3,
-          signal,
-          onUsage,
-          timeoutMs,
-          'array'
-        );
-
-        const transMap = new Map<string, string>(
-          translatedData.map((t: any) => [String(t.id), t.text_translated as string])
-        );
-
-        return { transMap, batch };
-      },
-      // Post-process function: check missing, retry, build result
-      createTranslationPostProcessor(
-        ai,
-        systemInstruction,
-        onStatusUpdate,
-        signal,
-        onUsage,
-        timeoutMs,
-        useDiarization
-      ),
-      { maxRetries: 1, stepName: 'Translation' }
-    );
-
-    return result;
-  } catch (e: any) {
-    // API or parse error - log and fallback to original text
-    logger.error('Translation batch failed', formatGeminiError(e));
-    const actionableMsg = getActionableErrorMessage(e);
-    const errorMsg = actionableMsg ? `翻译失败：${actionableMsg}` : '翻译失败，将使用原文。';
-    onStatusUpdate?.({
-      toast: {
-        message: errorMsg,
-        type: 'error',
-      },
-    });
-    return batch.map((item) => ({ ...item, translated: item.original }));
-  }
-}
-
-export async function translateBatch(
-  ai: GoogleGenAI,
-  items: any[],
-  systemInstruction: string,
-  concurrency: number,
-  batchSize: number,
-  onStatusUpdate?: (update: {
-    message?: string;
-    toast?: { message: string; type: 'info' | 'warning' | 'error' | 'success' };
-  }) => void,
-  signal?: AbortSignal,
-  onUsage?: (usage: TokenUsage) => void,
-  timeoutMs?: number, // Custom timeout in milliseconds
-  useDiarization: boolean = false
-): Promise<any[]> {
-  const batches: any[][] = [];
-  for (let i = 0; i < items.length; i += batchSize) {
-    batches.push(items.slice(i, i + batchSize));
-  }
-
-  const batchResults = await mapInParallel(
-    batches,
-    concurrency,
-    async (batch) => {
-      return await processTranslationBatch(
-        ai,
-        batch,
-        systemInstruction,
-        onStatusUpdate,
-        signal,
-        onUsage,
-        timeoutMs,
-        useDiarization
-      );
-    },
-    signal
-  );
-
-  return batchResults.flat();
-}
+  adjustTimestampOffset,
+  preserveSpeakerInfo,
+} from '@/services/api/gemini/pipeline/resultTransformers';
 
 async function processBatch(
   ai: GoogleGenAI,
@@ -455,27 +179,8 @@ async function processBatch(
     let processedBatch = parseGeminiResponse(text, totalVideoDuration);
 
     if (processedBatch.length > 0) {
-      // Heuristic: Detect if Gemini returned relative timestamps (starting from ~0) or absolute
-      // We explicitly asked for relative (0-based) in the prompt.
-      // However, models sometimes ignore this and return absolute timestamps if the input had them.
-
-      const firstStart = timeToSeconds(processedBatch[0].startTime);
-      const expectedRelativeStart = 0; // We asked for 0-based
-      const expectedAbsoluteStart = startSec; // The actual start time in the video
-
-      const diffRelative = Math.abs(firstStart - expectedRelativeStart);
-      const diffAbsolute = Math.abs(firstStart - expectedAbsoluteStart);
-
-      // If the result is closer to 0 than to the absolute start, it's likely relative.
-      // If audioOffset is 0 (start of video), diffRelative == diffAbsolute, so we don't need to add offset.
-      if (audioOffset > 0 && diffRelative < diffAbsolute) {
-        processedBatch = processedBatch.map((item) => ({
-          ...item,
-          startTime: formatTime(timeToSeconds(item.startTime) + audioOffset),
-          endTime: formatTime(timeToSeconds(item.endTime) + audioOffset),
-        }));
-      }
-
+      // Adjust timestamp offset if needed (Gemini may return relative or absolute timestamps)
+      processedBatch = adjustTimestampOffset(processedBatch, audioOffset, startSec);
       return processedBatch;
     }
 
@@ -580,37 +285,9 @@ export const runBatchOperation = async (
   const concurrency =
     mode === 'proofread' ? settings.concurrencyPro || 2 : settings.concurrencyFlash || 5;
 
-  // Token Usage Tracking with modality breakdown
-  const usageReport: Record<
-    string,
-    {
-      prompt: number;
-      output: number;
-      total: number;
-      textInput: number;
-      audioInput: number;
-      thoughts: number;
-    }
-  > = {};
-  const trackUsage = (usage: TokenUsage) => {
-    const model = usage.modelName;
-    if (!usageReport[model]) {
-      usageReport[model] = {
-        prompt: 0,
-        output: 0,
-        total: 0,
-        textInput: 0,
-        audioInput: 0,
-        thoughts: 0,
-      };
-    }
-    usageReport[model].prompt += usage.promptTokens;
-    usageReport[model].output += usage.candidatesTokens;
-    usageReport[model].total += usage.totalTokens;
-    usageReport[model].textInput += usage.textInputTokens || 0;
-    usageReport[model].audioInput += usage.audioInputTokens || 0;
-    usageReport[model].thoughts += usage.thoughtsTokens || 0;
-  };
+  // Token Usage Tracking
+  const usageReporter = new UsageReporter();
+  const trackUsage = usageReporter.getTracker();
 
   await mapInParallel(
     groups,
@@ -696,13 +373,7 @@ export const runBatchOperation = async (
               currentSubtitles.slice(startIdx, endIdx + 1).map((s) => [s.id, s.speaker])
             );
 
-            const processedWithSpeakers = processed.map((p) => {
-              // If processed item has no speaker but original did, preserve it
-              if (!p.speaker && originalSpeakers.has(p.id)) {
-                return { ...p, speaker: originalSpeakers.get(p.id) };
-              }
-              return p;
-            });
+            const processedWithSpeakers = preserveSpeakerInfo(processed, originalSpeakers);
 
             // Replace the entire region [startIdx, endIdx] with processed results
             const itemsToRemove = endIdx - startIdx + 1;
@@ -803,34 +474,7 @@ export const runBatchOperation = async (
   }
 
   // Log Token Usage Report
-  let reportLog =
-    '\n📊 Token Usage Report (Batch Operation):\n----------------------------------------\n';
-  let grandTotal = 0;
-  let totalCost = 0;
-
-  for (const [model, usage] of Object.entries(usageReport)) {
-    const cost = calculateDetailedCost({
-      textInputTokens: usage.textInput,
-      audioInputTokens: usage.audioInput,
-      candidatesTokens: usage.output,
-      thoughtsTokens: usage.thoughts,
-      modelName: model,
-    });
-    totalCost += cost;
-
-    reportLog += `Model: ${model}\n`;
-    reportLog += `  - Text Input: ${usage.textInput.toLocaleString()}\n`;
-    reportLog += `  - Audio Input: ${usage.audioInput.toLocaleString()}\n`;
-    reportLog += `  - Output: ${usage.output.toLocaleString()}\n`;
-    reportLog += `  - Thoughts: ${usage.thoughts.toLocaleString()}\n`;
-    reportLog += `  - Total: ${usage.total.toLocaleString()}\n`;
-    reportLog += `  - Est. Cost: $${cost.toFixed(6)}\n`;
-    reportLog += `----------------------------------------\n`;
-    grandTotal += usage.total;
-  }
-  reportLog += `Grand Total Tokens: ${grandTotal.toLocaleString()}\n`;
-  reportLog += `Total Est. Cost: $${totalCost.toFixed(6)}\n`;
-  logger.info(reportLog);
+  usageReporter.logReport();
 
   return currentSubtitles;
 };
