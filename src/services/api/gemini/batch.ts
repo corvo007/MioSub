@@ -1,7 +1,7 @@
-import { GoogleGenAI, Part } from '@google/genai';
-import { SubtitleItem, BatchOperationMode } from '@/types/subtitle';
-import { AppSettings } from '@/types/settings';
-import { ChunkStatus, TokenUsage } from '@/types/api';
+import { GoogleGenAI, type Part } from '@google/genai';
+import { type SubtitleItem, type BatchOperationMode } from '@/types/subtitle';
+import { type AppSettings } from '@/types/settings';
+import { type ChunkStatus, type TokenUsage } from '@/types/api';
 import { parseGeminiResponse, extractJsonArray } from '@/services/subtitle/parser';
 import { formatTime, timeToSeconds } from '@/services/subtitle/time';
 import { decodeAudio } from '@/services/audio/decoder';
@@ -16,7 +16,7 @@ import {
   getFixTimestampsPrompt,
   getProofreadPrompt,
 } from '@/services/api/gemini/prompts';
-import { SpeakerProfile } from '@/services/api/gemini/speakerProfile';
+import { type SpeakerProfile } from '@/services/api/gemini/speakerProfile';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
 import {
   TRANSLATION_SCHEMA,

@@ -37,7 +37,7 @@ export function useHardwareAcceleration() {
       setIsLoading(false);
     };
 
-    fetchHwAccelInfo();
+    void fetchHwAccelInfo();
   }, []);
 
   return { hwAccelInfo, isLoading };

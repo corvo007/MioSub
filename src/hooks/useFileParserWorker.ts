@@ -1,6 +1,6 @@
 import { useRef, useCallback } from 'react';
 import FileParserWorker from '@/workers/fileParser.worker?worker';
-import { SubtitleItem } from '@/types/subtitle';
+import { type SubtitleItem } from '@/types/subtitle';
 
 export const useFileParserWorker = () => {
   const workerRef = useRef<Worker | null>(null);

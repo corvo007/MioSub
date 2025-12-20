@@ -1,6 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
-import { GlossaryExtractionResult, GlossaryExtractionMetadata } from '@/types/glossary';
-import { TokenUsage } from '@/types/api';
+import { type GlossaryExtractionResult, type GlossaryExtractionMetadata } from '@/types/glossary';
+import { type TokenUsage } from '@/types/api';
 import { blobToBase64 } from '@/services/audio/converter';
 import { sliceAudioBuffer } from '@/services/audio/processor';
 import { mapInParallel } from '@/services/utils/concurrency';

@@ -1,4 +1,4 @@
-import { SubtitleItem } from '@/types/subtitle';
+import { type SubtitleItem } from '@/types/subtitle';
 import { formatTime } from '@/services/subtitle/time';
 import { blobToBase64 } from '@/services/audio/converter';
 import { logger } from '@/services/utils/logger';

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { SpeakerUIProfile } from '@/types/speaker';
-import { SubtitleItem } from '@/types/subtitle';
+import { type SpeakerUIProfile } from '@/types/speaker';
+import { type SubtitleItem } from '@/types/subtitle';
 
 interface UseSpeakerProfilesProps {
   subtitles: SubtitleItem[];

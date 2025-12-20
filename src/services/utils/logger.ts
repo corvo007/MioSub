@@ -68,14 +68,15 @@ class Logger {
     const offsetHours = Math.floor(Math.abs(timezoneOffset) / 60);
     const offsetMinutes = Math.abs(timezoneOffset) % 60;
     const offsetSign = timezoneOffset >= 0 ? '+' : '-';
-    const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds} UTC${offsetSign}${offsetHours}`;
+    const offsetMinutesStr = offsetMinutes > 0 ? `:${String(offsetMinutes).padStart(2, '0')}` : '';
+    const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds} UTC${offsetSign}${offsetHours}${offsetMinutesStr}`;
 
     // Handle circular references or large objects if needed, but simple stringify is usually ok for debug
     let dataString = '';
     if (data !== undefined) {
       try {
         dataString = `\nData: ${JSON.stringify(data, null, 2)}`;
-      } catch (e) {
+      } catch {
         dataString = `\nData: [Circular or Non-Serializable Object]`;
       }
     }

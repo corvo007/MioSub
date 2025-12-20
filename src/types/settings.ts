@@ -1,4 +1,4 @@
-import { GlossaryItem, Glossary } from '@/types/glossary';
+import { type GlossaryItem, type Glossary } from '@/types/glossary';
 
 export const GENRE_PRESETS = ['general', 'anime', 'movie', 'news', 'tech'];
 export type Genre = 'general' | 'anime' | 'movie' | 'news' | 'tech';

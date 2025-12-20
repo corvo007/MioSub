@@ -1,4 +1,4 @@
-import { OutputFormat } from '@/types/subtitle';
+import { type OutputFormat } from '@/types/subtitle';
 import { isElectron } from '@/services/utils/env';
 
 export const downloadFile = async (filename: string, content: string, format: OutputFormat) => {

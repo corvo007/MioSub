@@ -1,10 +1,10 @@
-import { GoogleGenAI } from '@google/genai';
-import { TokenUsage } from '@/types/api';
-import { SubtitleItem } from '@/types/subtitle';
-import { AppSettings } from '@/types/settings';
-import { GlossaryItem, GlossaryExtractionResult } from '@/types/glossary';
-import { SpeakerProfile } from '@/services/api/gemini/speakerProfile';
-import { ChunkStatus } from '@/types/api';
+import { type GoogleGenAI } from '@google/genai';
+import { type TokenUsage } from '@/types/api';
+import { type SubtitleItem } from '@/types/subtitle';
+import { type AppSettings } from '@/types/settings';
+import { type GlossaryItem, type GlossaryExtractionResult } from '@/types/glossary';
+import { type SpeakerProfile } from '@/services/api/gemini/speakerProfile';
+import { type ChunkStatus } from '@/types/api';
 
 // Re-export common types for convenience
 export type {

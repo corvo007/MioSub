@@ -1,9 +1,9 @@
-import { SubtitleItem } from '@/types/subtitle';
-import { GlossaryExtractionResult, GlossaryItem } from '@/types/glossary';
-import { SpeakerProfile } from '@/services/api/gemini/speakerProfile';
+import { type SubtitleItem } from '@/types/subtitle';
+import { type GlossaryExtractionResult, type GlossaryItem } from '@/types/glossary';
+import { type SpeakerProfile } from '@/services/api/gemini/speakerProfile';
 import { generateSrtContent } from '@/services/subtitle/generator';
 import { logger } from '@/services/utils/logger';
-import { AppSettings } from '@/types/settings';
+import { type AppSettings } from '@/types/settings';
 
 /**
  * Centralized debug artifact saving utilities

@@ -12,7 +12,7 @@ import {
   CheckSquare,
   Loader2,
 } from 'lucide-react';
-import { SpeakerUIProfile } from '@/types/speaker';
+import { type SpeakerUIProfile } from '@/types/speaker';
 import { getSpeakerColor } from '@/services/utils/colors';
 import { SimpleConfirmationModal } from '@/components/modals/SimpleConfirmationModal';
 import { cn } from '@/lib/cn';

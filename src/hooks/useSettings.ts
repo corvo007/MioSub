@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AppSettings } from '@/types/settings';
+import { type AppSettings } from '@/types/settings';
 import { logger } from '@/services/utils/logger';
 
 const SETTINGS_KEY = 'gemini_subtitle_settings';
@@ -120,7 +120,7 @@ export const useSettings = () => {
       setIsSettingsLoaded(true);
     };
 
-    loadSettings();
+    void loadSettings();
   }, []);
 
   // Auto-save: Persist to storage when settings change

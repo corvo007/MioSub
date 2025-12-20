@@ -48,7 +48,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [containerRef]);
 
   const selectedLabel = options.find((opt) => opt.value === value)?.label || placeholder || value;
 

@@ -1,4 +1,4 @@
-import { GlossaryItem, GlossaryExtractionResult } from '@/types/glossary';
+import { type GlossaryItem, type GlossaryExtractionResult } from '@/types/glossary';
 
 /**
  * Merge and deduplicate glossary results from multiple extractions

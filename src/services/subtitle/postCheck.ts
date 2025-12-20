@@ -8,13 +8,13 @@
  * 4. Retry logic for recoverable errors
  */
 
-import { SubtitleItem } from '@/types/subtitle';
+import { type SubtitleItem } from '@/types/subtitle';
 import { cleanNonSpeechAnnotations } from '@/services/subtitle/parser';
 import {
   validateTimeline,
   markRegressionIssues,
   markCorruptedRange,
-  TimelineValidationResult,
+  type TimelineValidationResult,
 } from '@/services/subtitle/timelineValidator';
 import { logger } from '@/services/utils/logger';
 

@@ -5,19 +5,19 @@ import { UsageReporter } from '@/services/api/gemini/pipeline/usageReporter';
 import { preprocessAudio } from '@/services/api/gemini/pipeline/preprocessor';
 import { SpeakerAnalyzer } from '@/services/api/gemini/pipeline/speakerAnalyzer';
 import { GlossaryHandler } from '@/services/api/gemini/pipeline/glossaryHandler';
-import { PipelineContext } from '@/services/api/gemini/pipeline/types';
-import { SubtitleItem } from '@/types/subtitle';
-import { AppSettings } from '@/types/settings';
-import { ChunkStatus } from '@/types/api';
+import { type PipelineContext } from '@/services/api/gemini/pipeline/types';
+import { type SubtitleItem } from '@/types/subtitle';
+import { type AppSettings } from '@/types/settings';
+import { type ChunkStatus } from '@/types/api';
 import {
-  GlossaryItem,
-  GlossaryExtractionResult,
-  GlossaryExtractionMetadata,
+  type GlossaryItem,
+  type GlossaryExtractionResult,
+  type GlossaryExtractionMetadata,
 } from '@/types/glossary';
 import { selectChunksByDuration } from '@/services/glossary/selector';
 import { extractGlossaryFromAudio } from '@/services/api/gemini/glossary';
 import { GlossaryState } from '@/services/api/gemini/glossary-state';
-import { SpeakerProfile } from '@/services/api/gemini/speakerProfile';
+import { type SpeakerProfile } from '@/services/api/gemini/speakerProfile';
 import { mapInParallel, Semaphore } from '@/services/utils/concurrency';
 import { logger } from '@/services/utils/logger';
 import { ChunkProcessor } from '@/services/api/gemini/pipeline/chunkProcessor';
@@ -173,9 +173,11 @@ export const generateSubtitles = async (
   if (
     settings.debug?.saveIntermediateArtifacts &&
     window.electronAPI?.saveDebugArtifact &&
-    speakerProfilePromise
+    speakerProfilePromise !== null
   ) {
-    speakerProfilePromise.then((profiles) => ArtifactSaver.saveSpeakerProfiles(profiles, settings));
+    void speakerProfilePromise.then((profiles) =>
+      ArtifactSaver.saveSpeakerProfiles(profiles, settings)
+    );
   }
 
   // --- UNIFIED PARALLEL PIPELINE: Transcription → Wait for Glossary/Profiles → Refine & Translate ---

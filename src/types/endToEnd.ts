@@ -3,10 +3,10 @@
  * 端到端自动化流程的类型定义
  */
 
-import { ChunkStatus } from '@/types/api';
-import { SubtitleItem } from '@/types/subtitle';
-import { DownloadProgress, VideoInfo } from '@electron/services/ytdlp';
-import { CompressionProgress } from '@electron/services/videoCompressor';
+import { type ChunkStatus } from '@/types/api';
+import { type SubtitleItem } from '@/types/subtitle';
+import { type DownloadProgress, type VideoInfo } from '@electron/services/ytdlp';
+import { type CompressionProgress } from '@electron/services/videoCompressor';
 
 // ============================================================================
 // Pipeline Stage Definitions

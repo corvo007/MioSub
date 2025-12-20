@@ -15,8 +15,8 @@ import {
   AlertOctagon,
 } from 'lucide-react';
 import { Portal } from '@/components/ui/Portal';
-import { SubtitleItem } from '@/types';
-import { SpeakerUIProfile } from '@/types/speaker';
+import { type SubtitleItem } from '@/types';
+import { type SpeakerUIProfile } from '@/types/speaker';
 import { SpeakerSelect } from '@/components/editor/SpeakerSelect';
 import { cn } from '@/lib/cn';
 import { countCJKCharacters } from '@/lib/text';
@@ -162,7 +162,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
       };
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [showAddMenu]);
+    }, [showAddMenu, addMenuRef]);
 
     React.useEffect(() => {
       if (!showAddMenu) setShowAddSubmenu(false);

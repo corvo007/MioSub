@@ -1,5 +1,5 @@
-import { AppSettings } from '@/types/settings';
-import { GlossaryItem } from '@/types/glossary';
+import { type AppSettings } from '@/types/settings';
+import { type GlossaryItem } from '@/types/glossary';
 
 /**
  * Get terms from the active glossary

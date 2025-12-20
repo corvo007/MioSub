@@ -1,4 +1,4 @@
-import { SubtitleItem } from '@/types/subtitle';
+import { type SubtitleItem } from '@/types/subtitle';
 import { logger } from '@/services/utils/logger';
 import { transcribeWithWhisper } from '@/services/api/openai/whisper';
 import { transcribeWithOpenAIChat } from '@/services/api/openai/chat';

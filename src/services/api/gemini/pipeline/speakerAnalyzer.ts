@@ -1,5 +1,5 @@
-import { SpeakerProfile } from '@/services/api/gemini/speakerProfile';
-import { PipelineContext } from './types';
+import { type SpeakerProfile } from '@/services/api/gemini/speakerProfile';
+import { type PipelineContext } from './types';
 import { MockFactory } from '@/services/api/gemini/debug/mockFactory';
 import { intelligentAudioSampling } from '@/services/audio/sampler';
 import { extractSpeakerProfiles } from '@/services/api/gemini/speakerProfile';

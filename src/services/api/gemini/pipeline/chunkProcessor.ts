@@ -1,7 +1,7 @@
-import { Semaphore } from '@/services/utils/concurrency';
-import { ChunkParams } from './preprocessor';
-import { PipelineContext, SubtitleItem, SpeakerProfile } from './types';
-import { GlossaryState } from '../glossary-state';
+import { type Semaphore } from '@/services/utils/concurrency';
+import { type ChunkParams } from './preprocessor';
+import { type PipelineContext, type SubtitleItem, type SpeakerProfile } from './types';
+import { type GlossaryState } from '../glossary-state';
 import { ArtifactSaver } from '../debug/artifactSaver';
 import { MockFactory } from '../debug/mockFactory';
 import { logger } from '@/services/utils/logger';
@@ -162,7 +162,7 @@ export class ChunkProcessor {
 
       // Wait for speaker profiles
       let speakerProfiles: SpeakerProfile[] | undefined;
-      if (speakerProfilePromise) {
+      if (speakerProfilePromise !== null) {
         onProgress?.({
           id: index,
           total: totalChunks,

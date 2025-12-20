@@ -1,8 +1,8 @@
 import { useState, useCallback } from 'react';
 import {
-  GlossaryItem,
-  GlossaryExtractionResult,
-  GlossaryExtractionMetadata,
+  type GlossaryItem,
+  type GlossaryExtractionResult,
+  type GlossaryExtractionMetadata,
 } from '@/types/glossary';
 
 /**

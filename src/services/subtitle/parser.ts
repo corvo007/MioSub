@@ -1,4 +1,4 @@
-import { SubtitleItem, GeminiSubtitleSchema } from '@/types/subtitle';
+import type { SubtitleItem, GeminiSubtitleSchema } from '@/types/subtitle';
 import { timeToSeconds, normalizeTimestamp, formatTime } from '@/services/subtitle/time';
 import { generateSubtitleId } from '@/services/utils/id';
 import { logger } from '@/services/utils/logger';
@@ -488,7 +488,7 @@ export const parseGeminiResponse = (
     });
 
     return items
-      .map((item, index) => {
+      .map((item) => {
         if (!item.start || !item.end) return null;
 
         // Validate Timestamps against maxDuration if provided

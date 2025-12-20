@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { SubtitleItem } from '@/types/subtitle';
+import { type SubtitleItem } from '@/types/subtitle';
 
 export function useBatchSelection() {
   const [selectedBatches, setSelectedBatches] = useState<Set<number>>(new Set());

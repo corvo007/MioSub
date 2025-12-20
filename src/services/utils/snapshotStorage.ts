@@ -1,4 +1,4 @@
-import { SubtitleSnapshot } from '@/types/subtitle';
+import { type SubtitleSnapshot } from '@/types/subtitle';
 
 const STORAGE_KEY = 'gemini-subtitle-snapshots';
 

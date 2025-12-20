@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { GenerationStatus } from '@/types/api';
-import { logger, LogEntry } from '@/services/utils/logger';
+import { logger, type LogEntry } from '@/services/utils/logger';
 import { getSpeakerColor } from '@/services/utils/colors';
-import { SpeakerUIProfile } from '@/types/speaker';
+import { type SpeakerUIProfile } from '@/types/speaker';
 
 import { GlossaryManager } from '@/components/glossary/GlossaryManager';
 import { SettingsModal, GenreSettingsDialog } from '@/components/settings';
@@ -116,7 +116,7 @@ export default function App() {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [addToast]);
 
   // Backend logs handling - Global subscription
   useEffect(() => {
@@ -281,7 +281,7 @@ export default function App() {
             setView('workspace');
             workspace.resetWorkspace();
             // Load the downloaded video
-            workspace.loadFileFromPath(videoPath);
+            void workspace.loadFileFromPath(videoPath);
           }}
         />
       )}

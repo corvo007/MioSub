@@ -1,6 +1,6 @@
-import { SubtitleItem } from '@/types/subtitle';
-import { GlossaryExtractionResult } from '@/types/glossary';
-import { SpeakerProfile } from '@/services/api/gemini/speakerProfile';
+import { type SubtitleItem } from '@/types/subtitle';
+import { type GlossaryExtractionResult } from '@/types/glossary';
+import { type SpeakerProfile } from '@/services/api/gemini/speakerProfile';
 import { logger } from '@/services/utils/logger';
 import { generateSubtitleId } from '@/services/utils/id';
 import { formatTime } from '@/services/subtitle/time';

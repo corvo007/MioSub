@@ -1,11 +1,11 @@
 import React from 'react';
 import { Languages, Search } from 'lucide-react';
-import { SubtitleItem } from '@/types';
-import { SpeakerUIProfile } from '@/types/speaker';
+import { type SubtitleItem } from '@/types';
+import { type SpeakerUIProfile } from '@/types/speaker';
 import { GenerationStatus } from '@/types/api';
 import { SubtitleBatch } from '@/components/editor/SubtitleBatch';
 import { SubtitleRow, validateSubtitle } from '@/components/editor/SubtitleRow';
-import { BatchHeader, SubtitleFilters, defaultFilters } from '@/components/editor/BatchHeader';
+import { BatchHeader, type SubtitleFilters, defaultFilters } from '@/components/editor/BatchHeader';
 import { SimpleConfirmationModal } from '@/components/modals/SimpleConfirmationModal';
 import { Virtuoso } from 'react-virtuoso';
 

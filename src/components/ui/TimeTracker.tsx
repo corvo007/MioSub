@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GenerationStatus } from '@/types/api';
+import { type GenerationStatus } from '@/types/api';
 import { formatDuration } from '@/services/subtitle/time';
 
 interface TimeTrackerProps {

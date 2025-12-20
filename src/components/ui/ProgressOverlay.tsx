@@ -1,6 +1,6 @@
 import React from 'react';
 import { Loader2, Sparkles, CheckCircle, FileText, StopCircle } from 'lucide-react';
-import { GenerationStatus, ChunkStatus } from '@/types/api';
+import { GenerationStatus, type ChunkStatus } from '@/types/api';
 import { TimeTracker } from '@/components/ui/TimeTracker';
 import { cn } from '@/lib/cn';
 

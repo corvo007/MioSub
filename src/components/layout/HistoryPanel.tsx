@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { X, GitCommit, RotateCcw, Trash2, ChevronDown, ChevronRight, Search } from 'lucide-react';
-import { SubtitleSnapshot } from '@/types/subtitle';
+import { type SubtitleSnapshot } from '@/types/subtitle';
 
 interface HistoryPanelProps {
   isOpen: boolean;

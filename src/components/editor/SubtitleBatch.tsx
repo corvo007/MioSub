@@ -1,7 +1,7 @@
 import React from 'react';
 import { CheckSquare, Square, Wand2 } from 'lucide-react';
-import { SubtitleItem } from '@/types';
-import { SpeakerUIProfile } from '@/types/speaker';
+import { type SubtitleItem } from '@/types';
+import { type SpeakerUIProfile } from '@/types/speaker';
 import { SubtitleRow } from '@/components/editor/SubtitleRow';
 import { GenerationStatus } from '@/types/api';
 import { cn } from '@/lib/cn';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChevronDown, Users } from 'lucide-react';
-import { SpeakerUIProfile } from '@/types/speaker';
+import { type SpeakerUIProfile } from '@/types/speaker';
 import { getSpeakerColor } from '@/services/utils/colors';
 import { cn } from '@/lib/cn';
 import { useDropdownDirection } from '@/hooks/useDropdownDirection';
@@ -41,7 +41,7 @@ export const SpeakerSelect: React.FC<SpeakerSelectProps> = ({
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [dropdownRef]);
 
   const speakerColor = getSpeakerColor(currentSpeaker || '');
 

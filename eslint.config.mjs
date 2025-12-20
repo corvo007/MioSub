@@ -11,12 +11,13 @@ export default [
     ignores: ['dist/**', 'dist-electron/**', 'node_modules/**', 'release/**'],
   },
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['src/**/*.{ts,tsx}', 'electron/**/*.{ts,tsx}'],
     languageOptions: {
       parser: tsParser,
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',
+        project: './tsconfig.json',
         ecmaFeatures: {
           jsx: true,
         },
@@ -87,15 +88,37 @@ export default [
       // TypeScript rules
       '@typescript-eslint/no-unused-vars': [
         'warn',
-        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
       ],
-      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
+
+      // Deprecation detection (requires type-checking, built-in since typescript-eslint v8)
+      '@typescript-eslint/no-deprecated': 'warn',
+
+      // Promise handling (requires type-checking)
+      '@typescript-eslint/no-floating-promises': 'warn',
+      '@typescript-eslint/no-misused-promises': [
+        'warn',
+        { checksVoidReturn: false },
+      ],
+      '@typescript-eslint/await-thenable': 'warn',
+
+      // Type consistency
+      '@typescript-eslint/consistent-type-imports': [
+        'warn',
+        { prefer: 'type-imports', fixStyle: 'inline-type-imports' },
+      ],
 
       // React rules
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'warn',
+      'react/jsx-key': ['warn', { checkFragmentShorthand: true }],
 
       // General rules
       'no-console': 'off',
@@ -109,6 +132,27 @@ export default [
       react: {
         version: 'detect',
       },
+    },
+  },
+  {
+    // Configuration files and other TS files outside src/electron
+    files: ['*.ts', '*.tsx'],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tseslint,
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
 ];

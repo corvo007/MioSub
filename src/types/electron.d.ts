@@ -1,6 +1,6 @@
-import { AppSettings } from '@/types/settings';
-import { WorkspaceHistory } from '@/types/history';
-import { SubtitleSnapshot } from '@/types/subtitle';
+import { type AppSettings } from '@/types/settings';
+import { type WorkspaceHistory } from '@/types/history';
+import { type SubtitleSnapshot } from '@/types/subtitle';
 
 export interface AudioExtractionOptions {
   format?: 'wav' | 'mp3' | 'flac';

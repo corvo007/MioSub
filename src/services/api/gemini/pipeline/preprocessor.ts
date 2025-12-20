@@ -1,5 +1,5 @@
-import { AppSettings } from '@/types/settings';
-import { ChunkStatus } from '@/types/api';
+import { type AppSettings } from '@/types/settings';
+import { type ChunkStatus } from '@/types/api';
 import { decodeAudioWithRetry } from '@/services/audio/decoder';
 import { formatTime } from '@/services/subtitle/time';
 import { SmartSegmenter } from '@/services/audio/segmenter';

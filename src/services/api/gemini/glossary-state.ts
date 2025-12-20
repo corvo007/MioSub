@@ -1,4 +1,4 @@
-import { GlossaryItem } from '@/types/glossary';
+import { type GlossaryItem } from '@/types/glossary';
 import { logger } from '@/services/utils/logger';
 
 /**

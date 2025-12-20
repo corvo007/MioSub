@@ -1,4 +1,4 @@
-import { SubtitleItem } from '@/types/subtitle';
+import { type SubtitleItem } from '@/types/subtitle';
 import { logger } from '@/services/utils/logger';
 import { generateSubtitleId } from '@/services/utils/id';
 

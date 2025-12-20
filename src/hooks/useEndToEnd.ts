@@ -267,12 +267,12 @@ export function useEndToEnd(): UseEndToEndReturn {
 
       return errorResult;
     }
-  }, [isElectron, state.config]);
+  }, [isElectron, state.config, state.videoInfo]);
 
   const abortPipeline = useCallback(() => {
     if (!isElectron || !window.electronAPI?.endToEnd?.abort) return;
 
-    window.electronAPI.endToEnd.abort();
+    void window.electronAPI.endToEnd.abort();
     setState((prev) => ({
       ...prev,
       isExecuting: false,

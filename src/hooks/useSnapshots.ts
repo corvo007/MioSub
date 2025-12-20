@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { SubtitleSnapshot, SubtitleItem } from '@/types/subtitle';
+import { type SubtitleSnapshot, type SubtitleItem } from '@/types/subtitle';
 import { snapshotStorage } from '@/services/utils/snapshotStorage';
 
 /**
@@ -58,7 +58,7 @@ export const useSnapshots = () => {
       setSnapshots((prev) => {
         const updated = [newSnapshot, ...prev].slice(0, 20);
         // Save to persistent storage
-        snapshotStorage.save(updated);
+        void snapshotStorage.save(updated);
         return updated;
       });
       // Update last hash
@@ -93,7 +93,7 @@ export const useSnapshots = () => {
       };
       setSnapshots((prev) => {
         const updated = [newSnapshot, ...prev].slice(0, 20);
-        snapshotStorage.save(updated);
+        void snapshotStorage.save(updated);
         return updated;
       });
       lastSnapshotHashRef.current = currentHash;
@@ -105,7 +105,7 @@ export const useSnapshots = () => {
   const deleteSnapshot = useCallback((id: string) => {
     setSnapshots((prev) => {
       const updated = prev.filter((s) => s.id !== id);
-      snapshotStorage.save(updated);
+      void snapshotStorage.save(updated);
       return updated;
     });
   }, []);
@@ -113,7 +113,7 @@ export const useSnapshots = () => {
   const clearSnapshots = useCallback(() => {
     setSnapshots([]);
     lastSnapshotHashRef.current = '';
-    snapshotStorage.clear();
+    void snapshotStorage.clear();
   }, []);
 
   // Load snapshots from storage on mount
@@ -124,7 +124,7 @@ export const useSnapshots = () => {
         setSnapshots(loaded);
       }
     };
-    loadSnapshots();
+    void loadSnapshots();
   }, []);
 
   return {

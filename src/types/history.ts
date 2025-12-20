@@ -1,4 +1,4 @@
-import { SubtitleItem } from '@/types/subtitle';
+import { type SubtitleItem } from '@/types/subtitle';
 
 export interface WorkspaceHistory {
   id: string;

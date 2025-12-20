@@ -1,4 +1,4 @@
-import { SubtitleItem } from '@/types/subtitle';
+import { type SubtitleItem } from '@/types/subtitle';
 import { toAssTime } from '@/services/subtitle/time';
 import { getSpeakerColor } from '@/services/utils/colors';
 

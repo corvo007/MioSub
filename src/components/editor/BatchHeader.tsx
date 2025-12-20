@@ -18,8 +18,8 @@ import {
   Trash2,
   Shield,
 } from 'lucide-react';
-import { SubtitleItem } from '@/types';
-import { SpeakerUIProfile } from '@/types/speaker';
+import { type SubtitleItem } from '@/types';
+import { type SpeakerUIProfile } from '@/types/speaker';
 import { getSpeakerColor } from '@/services/utils/colors';
 import { cn } from '@/lib/cn';
 import { useDropdownDirection } from '@/hooks/useDropdownDirection';
@@ -144,7 +144,7 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [issueFilterRef, speakerFilterRef]);
 
   // Clear search
   const handleClearSearch = () => {

@@ -1,4 +1,4 @@
-import { TokenUsage } from '@/types/api';
+import { type TokenUsage } from '@/types/api';
 import { calculateDetailedCost } from '@/services/api/gemini/pricing';
 import { logger } from '@/services/utils/logger';
 

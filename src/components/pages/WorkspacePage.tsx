@@ -17,9 +17,13 @@ import {
   FolderOpen,
   Users,
 } from 'lucide-react';
-import { SubtitleItem, SubtitleSnapshot, BatchOperationMode } from '@/types/subtitle';
-import { SpeakerUIProfile } from '@/types/speaker';
-import { AppSettings } from '@/types/settings';
+import {
+  type SubtitleItem,
+  type SubtitleSnapshot,
+  type BatchOperationMode,
+} from '@/types/subtitle';
+import { type SpeakerUIProfile } from '@/types/speaker';
+import { type AppSettings } from '@/types/settings';
 import { GenerationStatus } from '@/types/api';
 import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
 import { HistoryPanel } from '@/components/layout/HistoryPanel';

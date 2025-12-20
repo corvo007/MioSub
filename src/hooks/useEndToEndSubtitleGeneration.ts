@@ -379,7 +379,7 @@ export function useEndToEndSubtitleGeneration({
         abortControllerRef.current.abort();
       }
     };
-  }, []); // Empty dependency - listener should only be set up once
+  }, [handleGenerateRequest]); // Depend on handleGenerateRequest which is memoized
 
   return {
     isProcessing: isProcessingRef.current,

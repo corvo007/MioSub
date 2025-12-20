@@ -1,4 +1,4 @@
-import { Glossary, GlossaryItem } from '@/types/glossary';
+import { type Glossary, type GlossaryItem } from '@/types/glossary';
 import { validateGlossaryItem } from '@/services/glossary/validator';
 
 /**

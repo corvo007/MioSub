@@ -1,9 +1,9 @@
 import {
-  GlossaryItem,
-  GlossaryExtractionResult,
-  GlossaryExtractionMetadata,
+  type GlossaryItem,
+  type GlossaryExtractionResult,
+  type GlossaryExtractionMetadata,
 } from '@/types/glossary';
-import { PipelineContext } from './types';
+import { type PipelineContext } from './types';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
 import { getActionableErrorMessage } from '@/services/api/gemini/client';
 import { ArtifactSaver } from '@/services/api/gemini/debug/artifactSaver';
@@ -22,7 +22,7 @@ export class GlossaryHandler {
     let extractedGlossaryResults: GlossaryExtractionResult[] | undefined;
 
     const handlerTask = async () => {
-      if (!glossaryPromise) {
+      if (glossaryPromise === null) {
         return { glossary: getActiveGlossaryTerms(settings) };
       }
 

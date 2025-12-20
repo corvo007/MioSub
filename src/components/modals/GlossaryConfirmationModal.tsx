@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Book, X, AlertCircle, CheckCircle, Sparkles, Edit2, Plus, Check } from 'lucide-react';
-import { GlossaryItem, GlossaryExtractionResult, AppSettings } from '@/types';
+import { type GlossaryItem, type GlossaryExtractionResult, type AppSettings } from '@/types';
 import { mergeGlossaryResults } from '@/services/glossary/merger';
 import { CustomSelect } from '@/components/settings';
 import { createGlossary } from '@/services/glossary/manager';
@@ -71,7 +71,10 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
       ? null
       : settings.glossaries?.find((g) => g.id === targetGlossaryId);
 
-  const activeTerms = targetGlossary?.terms || [];
+  // Memoize active terms to prevent re-creating on every render
+  const activeTerms = useMemo(() => {
+    return targetGlossary?.terms || [];
+  }, [targetGlossary]);
 
   // Memoize mergeGlossaryResults to prevent re-computing on every render
   const { unique, conflicts } = useMemo(

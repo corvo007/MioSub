@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { SubtitleItem } from '@/types/subtitle';
+import { type SubtitleItem } from '@/types/subtitle';
 import { generateSubtitleId } from '@/services/utils/id';
 
 interface UseSubtitleCRUDProps {

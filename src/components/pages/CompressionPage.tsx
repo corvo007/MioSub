@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { CompressionOptions, CompressionProgress } from '@/types/compression';
+import { type CompressionOptions, type CompressionProgress } from '@/types/compression';
 import { FileVideo, Settings, Play, FolderOpen, FileText, AlertCircle, X } from 'lucide-react';
 import { PageHeader, HeaderButton } from '@/components/layout/PageHeader';
 import { SimpleConfirmationModal } from '@/components/modals/SimpleConfirmationModal';
 import { generateAssContent } from '@/services/subtitle/generator';
-import { SubtitleItem } from '@/types/subtitle';
+import { type SubtitleItem } from '@/types/subtitle';
 import { CustomSelect } from '@/components/settings/CustomSelect';
 import { HardwareAccelerationSelector } from '@/components/settings/HardwareAccelerationSelector';
 import { ResolutionSelector } from '@/components/settings/ResolutionSelector';
@@ -80,7 +80,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
     if (workspaceVideoFile && !file) {
       setShowAutoLoadPrompt(true);
     }
-  }, [workspaceVideoFile]);
+  }, [workspaceVideoFile, file]);
 
   const handleAutoLoad = () => {
     if (workspaceVideoFile) {
@@ -100,7 +100,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
     if (downloadedVideoPath && !file && !workspaceVideoFile) {
       setShowDownloadedVideoPrompt(true);
     }
-  }, [downloadedVideoPath]);
+  }, [downloadedVideoPath, file, workspaceVideoFile]);
 
   const handleLoadDownloadedVideo = async () => {
     if (downloadedVideoPath) {
@@ -644,7 +644,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
         onClose={() => setShowSuccessModal(false)}
         onConfirm={() => {
           if (outputPath) {
-            window.electronAPI.showItemInFolder(outputPath);
+            void window.electronAPI.showItemInFolder(outputPath);
           }
         }}
         title="压制完成"

@@ -7,7 +7,7 @@
  * 3. Corrupted range - combination of excessive duration followed by regression
  */
 
-import { SubtitleItem } from '@/types/subtitle';
+import type { SubtitleItem } from '@/types/subtitle';
 import { timeToSeconds } from '@/services/subtitle/time';
 
 // Thresholds
@@ -183,6 +183,10 @@ export function markCorruptedRange(
  */
 export function stripValidationFields(segments: SubtitleItem[]): SubtitleItem[] {
   return segments.map(
-    ({ hasRegressionIssue, hasCorruptedRangeIssue, ...rest }) => rest as SubtitleItem
+    ({
+      hasRegressionIssue: _hasRegressionIssue,
+      hasCorruptedRangeIssue: _hasCorruptedRangeIssue,
+      ...rest
+    }) => rest as SubtitleItem
   );
 }

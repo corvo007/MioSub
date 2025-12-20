@@ -11,7 +11,7 @@ import {
   Search,
   AlertCircle,
 } from 'lucide-react';
-import { Glossary, GlossaryItem } from '@/types/glossary';
+import { type Glossary, type GlossaryItem } from '@/types/glossary';
 import {
   createGlossary,
   renameGlossary,
@@ -20,8 +20,8 @@ import {
 } from '@/services/glossary/manager';
 import {
   GlossaryImportDialog,
-  ImportMode,
-  ConflictMode,
+  type ImportMode,
+  type ConflictMode,
 } from '@/components/modals/GlossaryImportDialog';
 import { cn } from '@/lib/cn';
 

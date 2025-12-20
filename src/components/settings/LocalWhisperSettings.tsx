@@ -76,7 +76,9 @@ export const LocalWhisperSettings: React.FC<LocalWhisperSettingsProps> = ({
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                window.electronAPI?.openExternal('https://huggingface.co/ggerganov/whisper.cpp');
+                void window.electronAPI?.openExternal(
+                  'https://huggingface.co/ggerganov/whisper.cpp'
+                );
               }}
               className="text-blue-400 underline hover:text-blue-300 cursor-pointer"
             >

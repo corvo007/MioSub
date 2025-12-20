@@ -1,7 +1,7 @@
-import { GoogleGenAI } from '@google/genai';
+import { type GoogleGenAI } from '@google/genai';
 import { blobToBase64 } from '@/services/audio/converter';
 import { logger } from '@/services/utils/logger';
-import { TokenUsage } from '@/types/api';
+import { type TokenUsage } from '@/types/api';
 import { SPEAKER_PROFILE_SCHEMA } from '@/services/api/gemini/schemas';
 import { getSpeakerProfileExtractionPrompt } from '@/services/api/gemini/prompts';
 import { generateContentWithRetry, formatGeminiError } from '@/services/api/gemini/client';

@@ -1,4 +1,4 @@
-import { GlossaryItem } from '@/types/glossary';
+import { type GlossaryItem } from '@/types/glossary';
 
 /**
  * Validate and clean glossary item

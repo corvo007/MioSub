@@ -1,6 +1,6 @@
 import React from 'react';
 import { Settings, X, Languages, Type, Clock, Book, Bug } from 'lucide-react';
-import { AppSettings } from '@/types/settings';
+import { type AppSettings } from '@/types/settings';
 import { CustomSelect } from '@/components/settings/CustomSelect';
 import { LocalWhisperSettings } from '@/components/settings/LocalWhisperSettings';
 import { Toggle } from '@/components/ui/Toggle';

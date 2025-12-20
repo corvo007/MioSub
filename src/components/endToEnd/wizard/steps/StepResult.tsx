@@ -19,7 +19,7 @@ export function StepResult({
 
   const handleOpenFolder = (path: string) => {
     if (window.electronAPI?.showItemInFolder) {
-      window.electronAPI.showItemInFolder(path);
+      void window.electronAPI.showItemInFolder(path);
     }
   };
 
