@@ -126,15 +126,6 @@ export class ChunkProcessor {
 
       ArtifactSaver.saveChunkArtifact(index, 'whisper', rawSegments, settings);
 
-      // Calculate global time segments for result
-      const whisperGlobal = rawSegments
-        .map((seg) => ({
-          ...seg,
-          startTime: formatTime(timeToSeconds(seg.startTime) + start),
-          endTime: formatTime(timeToSeconds(seg.endTime) + start),
-        }))
-        .map((seg) => ({ ...seg })); // Ensure separate objects
-
       // Skip if no segments (after cleaning)
       if (rawSegments.length === 0) {
         logger.warn(`[Chunk ${index}] No speech detected, skipping`);
@@ -158,6 +149,7 @@ export class ChunkProcessor {
 
       if (signal?.aborted) throw new Error('操作已取消');
 
+      logger.debug(`[Chunk ${index}] Waiting for glossary confirmation...`);
       const finalGlossary = await glossaryState.get();
 
       if (signal?.aborted) throw new Error('操作已取消');
@@ -282,6 +274,7 @@ export class ChunkProcessor {
           if (refinedSegments.length === 0) {
             refinedSegments = [...rawSegments];
           }
+          logger.debug(`[Chunk ${index}] Refinement complete. Segments: ${refinedSegments.length}`);
           if (refinedSegments.length > 0 && chunkSettings.enableDiarization) {
             logger.debug(
               `[Chunk ${index}] Refinement first segment speaker: ${refinedSegments[0].speaker}`
@@ -357,6 +350,12 @@ export class ChunkProcessor {
                   (settings.requestTimeout || 600) * 1000,
                   !!chunkSettings.enableDiarization
                 );
+                logger.debug(`[Chunk ${index}] Translation complete. Items: ${items.length}`);
+                if (items.length > 0 && chunkSettings.enableDiarization) {
+                  logger.debug(
+                    `[Chunk ${index}] Translation first segment speaker: ${items[0].speaker}`
+                  );
+                }
                 return items.map((item) => ({
                   id: item.id,
                   startTime: formatTime(timeToSeconds(item.start) + start),
@@ -388,13 +387,6 @@ export class ChunkProcessor {
         startTime: formatTime(timeToSeconds(seg.startTime) + start),
         endTime: formatTime(timeToSeconds(seg.endTime) + start),
       }));
-
-      // Translation result is already in global time because we calculated it during MockFactory/translateBatch?
-      // Wait, let's check.
-      // In MockFactory: "start" is generated relative to chunk? No, in MockFactory it is `00:00:00,000`?
-      // Let's check original code:
-      // L509: startTime: formatTime(timeToSeconds(item.start) + start)
-      // Yes, I preserved this logic in my check.
 
       return {
         whisper: rawSegments.map((seg) => ({
