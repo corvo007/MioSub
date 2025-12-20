@@ -169,9 +169,16 @@ flowchart TB
 
         subgraph API_SVC["API 服务"]
             direction LR
-            GEMINI_SVC["gemini/<br/>subtitle.ts (30KB)<br/>batch.ts (27KB)<br/>client.ts (18KB)"]
+            GEMINI_CORE["gemini/core/<br/>client.ts (Client & Config)"]
             OPENAI_SVC2["openai/<br/>transcribe.ts"]
             WHISPER_SVC["whisper-local/<br/>transcribe.ts"]
+        end
+
+        subgraph GENERATION_SVC["生成服务 (New)"]
+            direction TB
+            PIPELINE["pipeline/<br/>index.ts (Orchestrator)<br/>chunkProcessor.ts"]
+            EXTRACTORS["extractors/<br/>glossary.ts<br/>speakerProfile.ts"]
+            BATCH_OPS["batch/<br/>operations.ts"]
         end
 
         subgraph AUDIO_SVC["音频服务"]
@@ -237,6 +244,7 @@ flowchart TB
             YTDLP_SVC["ytdlp.ts"]
             PIPELINE_SVC["endToEndPipeline.ts<br/>全自动流水线"]
             STORAGE_SVC["storage.ts"]
+            LOGGER_SVC["logger.ts (New)"]
         end
 
         MAIN_PROCESS --> ELECTRON_SVC
@@ -255,19 +263,19 @@ flowchart TB
 ```mermaid
 flowchart LR
     subgraph ENTRY["入口"]
-        SUBTITLE_TS["subtitle.ts<br/>generateSubtitles()"]
+        PIPELINE_IDX["generation/pipeline/index.ts<br/>generateSubtitles()"]
     end
 
-    subgraph PARALLEL_DEPS["并行依赖"]
-        GLOSSARY_TS["glossary.ts<br/>extractGlossary()"]
-        SPEAKER_TS["speakerProfile.ts<br/>extractSpeakerProfiles()"]
+    subgraph EXTRACTORS_DEPS["提取器"]
+        GLOSSARY_EXT["extractors/glossary.ts"]
+        SPEAKER_EXT["extractors/speakerProfile.ts"]
     end
 
     subgraph CORE_DEPS["核心依赖"]
-        BATCH_TS["batch.ts<br/>translateBatch()"]
-        CLIENT_TS["client.ts<br/>generateContentWithRetry()"]
-        PROMPTS_TS["prompts.ts<br/>Prompt 模板"]
-        SCHEMAS_TS["schemas.ts<br/>JSON Schema"]
+        BATCH_OPS["generation/batch/operations.ts"]
+        GEMINI_CLIENT["api/gemini/core/client.ts"]
+        PROMPTS_TS["api/gemini/core/prompts.ts"]
+        SCHEMAS_TS["api/gemini/core/schemas.ts"]
     end
 
     subgraph AUDIO_DEPS["音频依赖"]
@@ -296,16 +304,16 @@ flowchart LR
     DOWNLOAD_TS --> DOWNLOAD_UTILS
     DOWNLOAD_TS --> LOGGER_TS
 
-    SUBTITLE_TS --> PARALLEL_DEPS
-    SUBTITLE_TS --> BATCH_TS
-    SUBTITLE_TS --> SEGMENTER_TS
-    SUBTITLE_TS --> TRANSCRIBE_DEPS
+    PIPELINE_IDX --> EXTRACTORS_DEPS
+    PIPELINE_IDX --> BATCH_OPS
+    PIPELINE_IDX --> SEGMENTER_TS
+    PIPELINE_IDX --> TRANSCRIBE_DEPS
 
-    PARALLEL_DEPS --> CLIENT_TS
-    PARALLEL_DEPS --> SAMPLER_TS
-    BATCH_TS --> CLIENT_TS
-    CLIENT_TS --> PROMPTS_TS
-    CLIENT_TS --> SCHEMAS_TS
+    EXTRACTORS_DEPS --> GEMINI_CLIENT
+    EXTRACTORS_DEPS --> SAMPLER_TS
+    BATCH_OPS --> GEMINI_CLIENT
+    GEMINI_CLIENT --> PROMPTS_TS
+    GEMINI_CLIENT --> SCHEMAS_TS
 
     SEGMENTER_TS --> DECODER_TS
     SAMPLER_TS --> PROCESSOR_TS
@@ -347,10 +355,17 @@ Gemini-Subtitle-Pro/
 │   │   └── ...                      # 其他功能 Hooks
 │   │
 │   ├── 📂 services/                 # 服务层 (纯逻辑)
-│   │   ├── 📂 api/                  # API 集成 (Gemini, OpenAI)
+│   │   ├── 📂 api/                  # API 集成 (Gemini Core, OpenAI)
+│   │   │   └── 📂 gemini/           # Gemini 基础客户端与配置
+│   │   │       ├── 📂 core/         # 核心 API 逻辑
+│   │   │       └── 📂 utils/        # API 工具函数
+│   │   ├── 📂 generation/           # [NEW] 生成服务 (核心业务逻辑)
+│   │   │   ├── 📂 pipeline/         # 完整流水线 (Orchestrator, ChunkProcessor)
+│   │   │   ├── 📂 extractors/       # 信息提取 (Glossary, Speaker)
+│   │   │   ├── 📂 batch/            # 批量操作
+│   │   │   └── 📂 debug/            # 调试工具
 │   │   ├── 📂 audio/                # 音频处理 (Segmenter, Sampler)
 │   │   ├── 📂 subtitle/             # 字幕解析与生成 (Parser, Generator)
-│   │   ├── 📂 glossary/             # 术语处理服务
 │   │   ├── 📂 download/             # 下载服务逻辑
 │   │   └── 📂 utils/                # 通用服务工具 (Logger, URL 验证)
 │   │
@@ -371,6 +386,7 @@ Gemini-Subtitle-Pro/
 │   └── 📂 services/                 # 桌面端服务 (Node.js 环境)
 │       ├── 📄 localWhisper.ts       # 本地 Whisper 调用
 │       ├── 📄 videoCompressor.ts    # 视频压缩
+│       ├── 📄 logger.ts             # [NEW] 统一日志服务
 │       └── ...                      # 其他系统级服务
 │
 └── 📄 package.json                  # 项目配置
@@ -782,27 +798,31 @@ sequenceDiagram
 
 ## 🧩 核心模块说明
 
-### 1. Gemini API 模块 (`src/services/api/gemini/`)
+### 1. 生成服务模块 (`src/services/generation/`) [NEW]
 
-| 文件                   | 功能描述                                                                      |
-| ---------------------- | ----------------------------------------------------------------------------- |
-| `client.ts`            | Gemini API 客户端，包含重试逻辑、错误处理、Token 用量追踪                     |
-| `subtitle.ts`          | 字幕生成主逻辑，编排 Preprocessor, GlossaryHandler, ChunkProcessor 等模块工作 |
-| `batch.ts`             | 批量翻译/校对处理，支持并发控制                                               |
-| `prompts.ts`           | 所有 AI Prompt 模板，包含翻译、校对、术语提取等 (动态注入)                    |
-| `schemas.ts`           | JSON Schema 定义，用于结构化输出                                              |
-| `glossary.ts`          | 术语表提取，使用 Search Grounding 功能                                        |
-| `glossary-state.ts`    | 术语表状态管理，非阻塞 Promise 包装器                                         |
-| `speakerProfile.ts`    | 说话人档案提取与识别                                                          |
-| `pricing.ts`           | API 费用计算 (支持 Gemini 2.5/3 系列)                                         |
-| `pipeline/`            | **[NEW]** 流水线子模块目录                                                    |
-| ↳ `preprocessor.ts`    | 音频预处理与切分 (Extract & Segment)                                          |
-| ↳ `chunkProcessor.ts`  | 单个 Chunk 的完整处理流程 (Whisper -> Refine -> Translate)                    |
-| ↳ `glossaryHandler.ts` | 术语提取流程的封装与协调                                                      |
-| ↳ `speakerAnalyzer.ts` | 说话人分析流程的封装                                                          |
-| ↳ `usageReporter.ts`   | Token 用量追踪与日志报告                                                      |
+这是重构后的核心业务逻辑模块，将原有的 Gemini API 逻辑按职责拆分：
 
-### 2. 音频处理模块 (`src/services/audio/`)
+| 子模块       | 文件/目录            | 功能描述                                                |
+| ------------ | -------------------- | ------------------------------------------------------- |
+| `pipeline`   | `index.ts`           | 生成流程总管 (Orchestrator)，协调转写、提取、生成全流程 |
+|              | `chunkProcessor.ts`  | 单个 Chunk 的处理逻辑 (转写 -> 术语/说话人等待 -> 翻译) |
+|              | `translation.ts`     | 具体翻译执行逻辑                                        |
+|              | `glossaryHandler.ts` | 术语应用逻辑                                            |
+| `extractors` | `glossary.ts`        | 术语提取器 (Gemini Pro + Search)                        |
+|              | `speakerProfile.ts`  | 说话人档案提取器                                        |
+| `batch`      | `operations.ts`      | 批量校对与时间轴修复操作                                |
+
+### 2. Gemini API 核心 (`src/services/api/gemini/core/`)
+
+只保留最基础的 API 交互能力：
+
+| 文件         | 功能描述                                         |
+| ------------ | ------------------------------------------------ |
+| `client.ts`  | Gemini API 客户端封装，处理 auth、retry 和 quota |
+| `prompts.ts` | 基础 Prompt 模板库                               |
+| `schemas.ts` | 结构化输出的 Schema 定义                         |
+
+### 3. 音频处理模块 (`src/services/audio/`)
 
 | 文件           | 功能描述                                                             |
 | -------------- | -------------------------------------------------------------------- |
@@ -811,7 +831,7 @@ sequenceDiagram
 | `decoder.ts`   | 音频解码，支持多种格式                                               |
 | `processor.ts` | 音频预处理，归一化等                                                 |
 
-### 3. 字幕处理模块 (`src/services/subtitle/`)
+### 4. 字幕处理模块 (`src/services/subtitle/`)
 
 | 文件           | 功能描述                            |
 | -------------- | ----------------------------------- |
@@ -819,19 +839,20 @@ sequenceDiagram
 | `generator.ts` | 字幕导出，生成双语字幕文件          |
 | `time.ts`      | 时间码处理工具                      |
 
-### 4. 下载服务模块 (`src/services/download/`)
+### 5. 下载服务模块 (`src/services/download/`)
 
 | 文件          | 功能描述         |
 | ------------- | ---------------- |
 | `download.ts` | 视频下载逻辑封装 |
 | `utils.ts`    | 下载相关工具函数 |
 
-### 5. Electron 桌面端 (`electron/`)
+### 6. Electron 桌面端 (`electron/`)
 
 | 文件                               | 功能描述                                   |
 | ---------------------------------- | ------------------------------------------ |
 | `main.ts`                          | Electron 主进程，窗口管理、IPC 通信        |
 | `preload.ts`                       | 预加载脚本，暴露安全的 Node.js API         |
+| `logger.ts`                        | **统一日志系统**，支持文件轮转和多级别日志 |
 | `services/localWhisper.ts`         | 本地 Whisper 模型调用 (whisper.cpp)        |
 | `services/ffmpegAudioExtractor.ts` | FFmpeg 音频提取，支持视频文件              |
 | `services/ytdlp.ts`                | 视频下载服务 (YouTube/Bilibili)            |
