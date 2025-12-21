@@ -355,11 +355,15 @@ export function useFileOperations({
   const handleSubtitleImportNative = useCallback(async () => {
     if (!window.electronAPI?.selectSubtitleFile) return;
 
+    // Declare opId outside try/catch so it's available in catch block
+    const currentOpId = ++operationIdRef.current;
+
     try {
       const result = await window.electronAPI.selectSubtitleFile();
+      if (currentOpId !== operationIdRef.current) return;
+
       if (!result.success || !result.content || !result.fileName) return;
 
-      const currentOpId = ++operationIdRef.current;
       // Set loading immediately after file is selected (before parsing)
       setIsLoadingSubtitle(true);
       logger.info('Subtitle file imported (native)', { name: result.fileName });
@@ -389,25 +393,15 @@ export function useFileOperations({
       const fileId = result.filePath || result.fileName;
       snapshotsValues.createSnapshot('初始导入', parsed, {}, fileId, result.fileName);
     } catch (error: unknown) {
-      // NOTE: We do not check for stale ID here because we haven't updated the ID for *this* prompt logic?
-      // Wait, we did `const currentOpId`. So yes we should.
-      // But notice we didn't update operationIdRef at start of function?
-      // Actually we did: const currentOpId = ++operationIdRef.current; inside try block? NO.
-      // I need to add it before async work.
-      // Logic inside try block:
-      // const currentOpId = ++operationIdRef.current; <- I added this in my previous thought but need to include it in the replacement.
-      // Actually, looking at the code I'm writing in this block:
-      // I inserted `const currentOpId = ++operationIdRef.current;` in the previous handler.
-      // I should insert it here too.
-      // My replacement block covers `handleSubtitleImportNative`.
-
+      if (currentOpId !== operationIdRef.current) return;
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error('Failed to parse subtitle (native)', error);
       setError(`字幕解析失败: ${errorMessage}`);
       setStatus(GenerationStatus.ERROR);
     } finally {
-      // Ideally we should check opID here too but I need access to currentOpId scope.
-      setIsLoadingSubtitle(false);
+      if (currentOpId === operationIdRef.current) {
+        setIsLoadingSubtitle(false);
+      }
     }
   }, [
     snapshotsValues,
