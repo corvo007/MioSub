@@ -42,16 +42,22 @@ function ElapsedTime({ startTime }: { startTime: number }) {
   );
 }
 
-/** Chunk status labels */
-const CHUNK_LABELS: Record<string, string> = {
-  decoding: '解码音频',
-  segmenting: '分段处理',
-  glossary: '提取术语',
-  diarization: '说话人预分析',
-};
-
 /** Transcription chunk list display */
 function TranscribeChunkList({ chunks }: { chunks: ChunkStatus[] }) {
+  const { t } = useTranslation('endToEnd');
+
+  // Chunk labels - using translations
+  const getChunkLabel = (id: string | number): string => {
+    const labelKeys: Record<string, string> = {
+      decoding: 'progress.chunkLabels.decoding',
+      segmenting: 'progress.chunkLabels.segmenting',
+      glossary: 'progress.chunkLabels.glossary',
+      diarization: 'progress.chunkLabels.diarization',
+    };
+    const key = labelKeys[String(id)];
+    return key ? t(key) : t('progress.chunk', { id });
+  };
+
   // Sort chunks: system tasks first, then by id
   const sortedChunks = [...chunks].sort((a, b) => {
     const systemOrder: Record<string, number> = {
@@ -69,29 +75,29 @@ function TranscribeChunkList({ chunks }: { chunks: ChunkStatus[] }) {
     return String(a.id).localeCompare(String(b.id));
   });
 
-  // 前导环节
+  // Prep phase chunks
   const prepChunks = sortedChunks.filter((c) =>
     ['decoding', 'segmenting', 'glossary', 'diarization'].includes(String(c.id))
   );
   const prepCompleted = prepChunks.filter((c) => c.status === 'completed').length;
 
-  // 内容片段
+  // Content chunks
   const contentChunks = sortedChunks.filter(
     (c) => !['decoding', 'segmenting', 'glossary', 'diarization'].includes(String(c.id))
   );
   const contentCompleted = contentChunks.filter((c) => c.status === 'completed').length;
   const contentTotal = contentChunks.length > 0 ? contentChunks[0].total : 0;
 
-  // 总计：前导 + 内容
+  // Total: prep + content
   const totalCompleted = prepCompleted + contentCompleted;
   const totalCount = prepChunks.length + contentTotal;
 
   return (
     <div className="mt-4 pt-3 border-t border-white/10">
       <div className="flex justify-between text-sm text-white/40 mb-2">
-        <span>字幕生成进度</span>
+        <span>{t('progress.subtitleProgress')}</span>
         <span>
-          {totalCompleted}/{totalCount} 已完成
+          {totalCompleted}/{totalCount} {t('progress.completed')}
         </span>
       </div>
       <div className="max-h-32 overflow-y-auto space-y-1 custom-scrollbar">
@@ -113,9 +119,7 @@ function TranscribeChunkList({ chunks }: { chunks: ChunkStatus[] }) {
                     'bg-white/20'
                 )}
               />
-              <span className="text-white/60">
-                {CHUNK_LABELS[String(chunk.id)] || `片段 ${chunk.id}`}
-              </span>
+              <span className="text-white/60">{getChunkLabel(chunk.id)}</span>
             </div>
             <span className="text-white/40 text-xs">{chunk.message || chunk.status}</span>
           </div>
@@ -131,72 +135,28 @@ interface EndToEndProgressProps {
   onRetry?: () => void;
 }
 
-// Stage configuration with icons and labels
-const stageConfig: Record<
-  PipelineStage,
-  { icon: React.ReactNode; label: string; description: string }
-> = {
-  idle: {
-    icon: <Clock className="w-4 h-4" />,
-    label: '准备中',
-    description: '初始化任务...',
-  },
-  downloading: {
-    icon: <Download className="w-4 h-4" />,
-    label: '下载视频',
-    description: '正在从网络下载视频文件',
-  },
-  extracting_audio: {
-    icon: <Music2 className="w-4 h-4" />,
-    label: '提取音频',
-    description: '从视频中提取音频流',
-  },
-  transcribing: {
-    icon: <FileText className="w-4 h-4" />,
-    label: '生成字幕',
-    description: 'AI 转录与翻译',
-  },
-  extracting_glossary: {
-    icon: <FileText className="w-4 h-4" />,
-    label: '提取术语',
-    description: '生成专有词汇表',
-  },
-  extracting_speakers: {
-    icon: <FileText className="w-4 h-4" />,
-    label: '说话人预分析',
-    description: '识别音频中的说话人',
-  },
-  refining: {
-    icon: <Languages className="w-4 h-4" />,
-    label: '润色校对',
-    description: '校对并润色字幕内容',
-  },
-  translating: {
-    icon: <Languages className="w-4 h-4" />,
-    label: '翻译字幕',
-    description: '翻译字幕内容',
-  },
-  exporting_subtitle: {
-    icon: <FileText className="w-4 h-4" />,
-    label: '导出字幕',
-    description: '将字幕导出为文件',
-  },
-  compressing: {
-    icon: <Film className="w-4 h-4" />,
-    label: '压制视频',
-    description: '压缩视频并嵌入字幕',
-  },
-  completed: {
-    icon: <CheckCircle className="w-4 h-4" />,
-    label: '完成',
-    description: '所有处理已完成',
-  },
-  failed: {
-    icon: <XCircle className="w-4 h-4" />,
-    label: '失败',
-    description: '处理过程中发生错误',
-  },
+// Stage icons configuration
+const stageIcons: Record<PipelineStage, React.ReactNode> = {
+  idle: <Clock className="w-4 h-4" />,
+  downloading: <Download className="w-4 h-4" />,
+  extracting_audio: <Music2 className="w-4 h-4" />,
+  transcribing: <FileText className="w-4 h-4" />,
+  extracting_glossary: <FileText className="w-4 h-4" />,
+  extracting_speakers: <FileText className="w-4 h-4" />,
+  refining: <Languages className="w-4 h-4" />,
+  translating: <Languages className="w-4 h-4" />,
+  exporting_subtitle: <FileText className="w-4 h-4" />,
+  compressing: <Film className="w-4 h-4" />,
+  completed: <CheckCircle className="w-4 h-4" />,
+  failed: <XCircle className="w-4 h-4" />,
 };
+
+// Get stage config with translations
+const getStageConfig = (t: (key: string) => string) => (stage: PipelineStage) => ({
+  icon: stageIcons[stage],
+  label: t(`progress.stages.${stage}.label`),
+  description: t(`progress.stages.${stage}.description`),
+});
 
 // Processing stages in order (excluding terminal states) - simplified for UI
 const processingStages: PipelineStage[] = [
@@ -217,7 +177,8 @@ function StageIndicator({
   status: 'pending' | 'active' | 'completed' | 'error';
   isCurrent: boolean;
 }) {
-  const config = stageConfig[stage];
+  const { t } = useTranslation('endToEnd');
+  const config = getStageConfig(t)(stage);
 
   const statusStyles = {
     pending: 'bg-white/5 border-white/10 text-white/40',
@@ -273,6 +234,8 @@ function CancelConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation('endToEnd');
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md mx-4 shadow-2xl">
@@ -280,23 +243,21 @@ function CancelConfirmDialog({
           <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
             <AlertCircle className="w-5 h-5 text-amber-400" />
           </div>
-          <h3 className="text-lg font-semibold text-white">确认取消</h3>
+          <h3 className="text-lg font-semibold text-white">{t('progress.cancelConfirm.title')}</h3>
         </div>
-        <p className="text-slate-400 mb-6">
-          确定要取消当前处理吗？已完成的中间文件将被保留在临时目录中。
-        </p>
+        <p className="text-slate-400 mb-6">{t('progress.cancelConfirm.message')}</p>
         <div className="flex gap-3">
           <button
             onClick={onCancel}
             className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-white font-medium transition-colors"
           >
-            继续处理
+            {t('progress.cancelConfirm.continue')}
           </button>
           <button
             onClick={onConfirm}
             className="flex-1 px-4 py-2.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-red-300 font-medium transition-colors"
           >
-            确认取消
+            {t('progress.cancelConfirm.confirm')}
           </button>
         </div>
       </div>
@@ -354,7 +315,9 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
     onAbort();
   };
 
-  const config = stageConfig[uiStage] || stageConfig.idle;
+  const { t } = useTranslation('endToEnd');
+  const stageConfigFn = getStageConfig(t);
+  const config = stageConfigFn(uiStage);
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -381,7 +344,7 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
       {/* Overall Progress Bar */}
       <div className="mb-6">
         <div className="flex justify-between text-base mb-2">
-          <span className="text-white/60">总进度</span>
+          <span className="text-white/60">{t('progress.overallProgress')}</span>
           <div className="flex items-center gap-4">
             {/* Elapsed Time */}
             {progress?.pipelineStartTime && <ElapsedTime startTime={progress.pipelineStartTime} />}
@@ -440,7 +403,7 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
             {/* Compression details */}
             {currentStage === 'compressing' && progress?.compressProgress && (
               <div className="flex items-center justify-between">
-                <span>正在压制视频...</span>
+                <span>{t('progress.compressing')}</span>
                 <div className="flex items-center gap-4">
                   {progress.compressProgress.currentFps > 0 && (
                     <span>{progress.compressProgress.currentFps.toFixed(1)} fps</span>
@@ -474,7 +437,7 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
             <div>
-              <div className="font-medium text-red-300 mb-1">错误详情</div>
+              <div className="font-medium text-red-300 mb-1">{t('progress.errorDetails')}</div>
               <div className="text-sm text-red-200/70">{progress.message}</div>
             </div>
           </div>
@@ -489,7 +452,7 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
             className="flex items-center gap-2 px-6 py-3 bg-violet-500/20 border border-violet-500/30 rounded-xl text-violet-300 font-medium transition-colors hover:bg-violet-500/30"
           >
             <RefreshCw className="w-4 h-4" />
-            重试
+            {t('progress.retry')}
           </button>
         )}
         <button
@@ -501,7 +464,7 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
               : 'bg-red-500/20 border-red-500/30 text-red-300 hover:bg-red-500/30'
           )}
         >
-          {isCompleted || isError ? '关闭' : '取消处理'}
+          {isCompleted || isError ? t('progress.close') : t('progress.cancelProcessing')}
         </button>
       </div>
 
