@@ -1,0 +1,15 @@
+{
+  "confirmations": {
+    "switchToNew": {
+      "title": "Switch to New Project",
+      "message": "Subtitle data is currently loaded. Switching to a new project will clear this data. It's recommended to export subtitles (SRT/ASS) first. Continue?"
+    },
+    "restoreSnapshot": {
+      "title": "Restore Snapshot",
+      "messageWithFile": "Are you sure you want to restore to the {{timestamp}} version of file \"{{fileName}}\"? Current state will be automatically backed up.",
+      "messageGeneric": "Are you sure you want to restore to the {{timestamp}} version? Current state will be automatically backed up.",
+      "backupLabel": "Pre-restore backup",
+      "unknownFile": "Unknown file"
+    }
+  }
+}

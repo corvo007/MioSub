@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { GenerationStatus } from '@/types/api';
 import { logger, type LogEntry } from '@/services/utils/logger';
 import { getSpeakerColor } from '@/services/utils/colors';
@@ -30,6 +31,7 @@ import { EndToEndWizard } from '@/components/endToEnd';
 import { ENV } from '@/config';
 
 export default function App() {
+  const { t } = useTranslation('app');
   // View State
   const [view, setView] = useState<'home' | 'workspace' | 'download' | 'compression' | 'endToEnd'>(
     'home'
@@ -241,8 +243,8 @@ export default function App() {
             // If there are existing subtitles, ask user before clearing
             if (workspace.subtitles.length > 0) {
               showConfirm(
-                '切换到新建项目',
-                '当前有已加载的字幕数据，切换到新建项目将会清空这些数据。建议先导出字幕（SRT/ASS）再操作。是否继续？',
+                t('confirmations.switchToNew.title'),
+                t('confirmations.switchToNew.message'),
                 () => {
                   workspace.resetWorkspace();
                   setActiveTab('new');
@@ -345,21 +347,24 @@ export default function App() {
             const isCrossFile = currentFileId && currentFileId !== snap.fileId;
 
             const message = isCrossFile
-              ? `确定要恢复到文件 "${snap.fileName}" 的 ${snap.timestamp} 版本吗？当前状态将自动备份。`
-              : `确定要恢复到 ${snap.timestamp} 的版本吗？当前状态将自动备份。`;
+              ? t('confirmations.restoreSnapshot.messageWithFile', {
+                  fileName: snap.fileName,
+                  timestamp: snap.timestamp,
+                })
+              : t('confirmations.restoreSnapshot.messageGeneric', { timestamp: snap.timestamp });
 
             showConfirm(
-              '恢复快照',
+              t('confirmations.restoreSnapshot.title'),
               message,
               () => {
                 // 1. Backup current state (if there are subtitles)
                 if (workspace.subtitles.length > 0) {
                   snapshotsValues.createSnapshot(
-                    '恢复前备份',
+                    t('confirmations.restoreSnapshot.backupLabel'),
                     workspace.subtitles,
                     workspace.batchComments,
                     currentFileId || 'unknown',
-                    workspace.file?.name || '未知文件'
+                    workspace.file?.name || t('confirmations.restoreSnapshot.unknownFile')
                   );
                 }
 

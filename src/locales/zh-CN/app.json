@@ -1,0 +1,15 @@
+{
+  "confirmations": {
+    "switchToNew": {
+      "title": "切换到新建项目",
+      "message": "当前有已加载的字幕数据，切换到新建项目将会清空这些数据。建议先导出字幕（SRT/ASS）再操作。是否继续？"
+    },
+    "restoreSnapshot": {
+      "title": "恢复快照",
+      "messageWithFile": "确定要恢复到文件 \"{{fileName}}\" 的 {{timestamp}} 版本吗？当前状态将自动备份。",
+      "messageGeneric": "确定要恢复到 {{timestamp}} 的版本吗？当前状态将自动备份。",
+      "backupLabel": "恢复前备份",
+      "unknownFile": "未知文件"
+    }
+  }
+}
