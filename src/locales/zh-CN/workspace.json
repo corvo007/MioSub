@@ -1,0 +1,78 @@
+{
+  "header": {
+    "newProject": "新建项目",
+    "subtitleEditor": "字幕编辑器",
+    "generateMode": "生成模式",
+    "importMode": "导入模式",
+    "rowsLoaded": "{{count}} 行已加载",
+    "noFileSelected": "未选择文件"
+  },
+  "sidebar": {
+    "projectSettings": "项目设置",
+    "projectFile": "项目文件",
+    "loading": "加载中",
+    "readingFile": "正在读取文件...",
+    "uploadVideoNew": "上传视频 / 音频",
+    "startTranscription": "开始转录",
+    "attachMedia": "附加媒体 (可选)",
+    "subtitleFile": "字幕文件",
+    "rows": "{{count}} 行",
+    "parsing": "解析中",
+    "parsingSubtitles": "正在解析字幕...",
+    "importSrtAss": "导入 .SRT / .ASS",
+    "hint": "💡 提示：",
+    "hintText": "仅完全支持本程序生成的字幕格式",
+    "genre": "类型",
+    "editGenre": "编辑类型 / 上下文",
+    "glossary": "术语表",
+    "noGlossary": "(无)",
+    "speakerCount": "说话人数量 (可选)",
+    "speakerMin": "最少",
+    "speakerMax": "最多"
+  },
+  "genres": {
+    "general": "通用",
+    "anime": "动漫",
+    "movie": "电影",
+    "news": "新闻",
+    "tech": "科技"
+  },
+  "actions": {
+    "startProcessing": "开始处理",
+    "processing": "处理中...",
+    "exportSubtitles": "导出字幕...",
+    "compressVideo": "压制视频"
+  },
+  "export": {
+    "title": "导出字幕",
+    "description": "选择您需要的字幕文件格式。当前输出模式：",
+    "bilingual": "双语",
+    "translationOnly": "仅译文",
+    "srtFormat": "通用格式",
+    "assFormat": "高级样式",
+    "cancel": "取消"
+  },
+  "editor": {
+    "noSubtitles": "暂无生成字幕",
+    "emptyStateNew": "上传媒体文件开始生成。",
+    "emptyStateImport": "导入 SRT/ASS 文件开始编辑。",
+    "noMatchingSubtitles": "未找到匹配的字幕",
+    "foundResults": "找到 {{count}} 个结果",
+    "filtering": "筛选",
+    "filters": {
+      "durationTooLong": "时间过长",
+      "tooManyChars": "字符过多",
+      "timeOverlap": "时间重叠"
+    },
+    "deleteConfirm": {
+      "title": "删除字幕",
+      "message": "确定要删除这行字幕吗？此操作无法撤销。",
+      "confirm": "删除"
+    },
+    "batchDeleteConfirm": {
+      "title": "批量删除",
+      "message": "确定删除 {{count}} 条字幕吗？此操作无法撤销。",
+      "confirm": "删除"
+    }
+  }
+}

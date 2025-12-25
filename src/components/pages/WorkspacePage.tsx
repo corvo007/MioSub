@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   FileVideo,
   Download,
@@ -146,6 +147,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   isLoadingSubtitle = false,
   subtitleFileName,
 }) => {
+  const { t } = useTranslation('workspace');
   const subtitleListRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isProcessing =
@@ -244,10 +246,14 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     >
       <div className="max-w-screen-2xl mx-auto w-full flex-1 flex flex-col space-y-2 sm:space-y-4">
         <WorkspaceHeader
-          title={activeTab === 'new' ? '新建项目' : '字幕编辑器'}
-          modeLabel={activeTab === 'new' ? '生成模式' : '导入模式'}
+          title={activeTab === 'new' ? t('header.newProject') : t('header.subtitleEditor')}
+          modeLabel={activeTab === 'new' ? t('header.generateMode') : t('header.importMode')}
           subtitleInfo={
-            file ? file.name : subtitles.length > 0 ? `${subtitles.length} 行已加载` : '未选择文件'
+            file
+              ? file.name
+              : subtitles.length > 0
+                ? t('header.rowsLoaded', { count: subtitles.length })
+                : t('header.noFileSelected')
           }
           onBack={onGoBack}
           showSnapshots={showSnapshots}
@@ -271,7 +277,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
             >
               <span className="flex items-center gap-2">
                 <FolderOpen className="w-4 h-4 text-indigo-400" />
-                项目设置
+                {t('sidebar.projectSettings')}
                 {file && (
                   <span className="text-xs text-slate-500 truncate max-w-[150px]">
                     - {file.name}
@@ -306,11 +312,13 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
 
             <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-3 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="fluid-heading font-semibold text-slate-300">项目文件</h3>
+                <h3 className="fluid-heading font-semibold text-slate-300">
+                  {t('sidebar.projectFile')}
+                </h3>
                 {isLoadingFile && (
                   <span className="flex items-center text-xs text-indigo-400">
                     <Loader2 className="w-3 h-3 animate-spin mr-1.5" />
-                    加载中
+                    {t('sidebar.loading')}
                   </span>
                 )}
               </div>
@@ -319,7 +327,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                   <div className="flex items-center justify-center h-32 border-2 border-dashed border-indigo-500/50 rounded-lg bg-indigo-500/5">
                     <div className="flex flex-col items-center">
                       <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mb-2" />
-                      <span className="text-sm text-slate-400">正在读取文件...</span>
+                      <span className="text-sm text-slate-400">{t('sidebar.readingFile')}</span>
                     </div>
                   </div>
                 ) : file ? (
@@ -352,8 +360,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                         <Plus className="text-slate-500 group-hover:text-indigo-400" />
                       )
                     }
-                    uploadTitle={activeTab === 'new' ? '上传视频 / 音频' : '附加媒体 (可选)'}
-                    uploadDescription={activeTab === 'new' ? '开始转录' : undefined}
+                    uploadTitle={
+                      activeTab === 'new' ? t('sidebar.uploadVideoNew') : t('sidebar.attachMedia')
+                    }
+                    uploadDescription={
+                      activeTab === 'new' ? t('sidebar.startTranscription') : undefined
+                    }
                     heightClass={activeTab === 'new' ? 'h-32' : 'h-20'}
                     error={!!error && !file}
                   />
@@ -362,16 +374,18 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
               {activeTab === 'import' && (
                 <div className="pt-2 border-t border-slate-800">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="fluid-heading font-semibold text-slate-400">字幕文件</h3>
+                    <h3 className="fluid-heading font-semibold text-slate-400">
+                      {t('sidebar.subtitleFile')}
+                    </h3>
                     {subtitles.length > 0 && (
                       <span className="text-[10px] text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">
-                        {subtitles.length} 行
+                        {t('sidebar.rows', { count: subtitles.length })}
                       </span>
                     )}
                     {isLoadingSubtitle && (
                       <span className="flex items-center text-xs text-emerald-400">
                         <Loader2 className="w-3 h-3 animate-spin mr-1.5" />
-                        解析中
+                        {t('sidebar.parsing')}
                       </span>
                     )}
                   </div>
@@ -380,7 +394,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                       <div className="flex items-center justify-center h-24 border-2 border-dashed border-emerald-500/50 rounded-lg bg-emerald-500/5">
                         <div className="flex flex-col items-center">
                           <Loader2 className="w-6 h-6 text-emerald-400 animate-spin mb-2" />
-                          <span className="text-sm text-slate-400">正在解析字幕...</span>
+                          <span className="text-sm text-slate-400">
+                            {t('sidebar.parsingSubtitles')}
+                          </span>
                         </div>
                       </div>
                     ) : subtitles.length === 0 ? (
@@ -394,7 +410,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                         icon={
                           <FileText className="text-emerald-500 group-hover:text-emerald-400" />
                         }
-                        uploadTitle="导入 .SRT / .ASS"
+                        uploadTitle={t('sidebar.importSrtAss')}
                         heightClass="h-24"
                         error={!!error && activeTab === 'import'}
                       />
@@ -402,7 +418,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                       <FileUploader
                         hasFile={true}
                         fileName={subtitleFileName || undefined}
-                        fileInfo={`${subtitles.length} 行`}
+                        fileInfo={t('sidebar.rows', { count: subtitles.length })}
                         onFileSelect={onSubtitleImport}
                         onNativeClick={onSubtitleImportNative}
                         useNativeDialog={isElectron}
@@ -414,8 +430,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                     )}
                   </div>
                   <div className="mt-1.5 fluid-small text-amber-300 bg-amber-500/10 px-2 py-1.5 rounded border border-amber-500/30">
-                    <span className="font-medium">💡 提示：</span>
-                    仅完全支持本程序生成的字幕格式
+                    <span className="font-medium">{t('sidebar.hint')}</span>
+                    {t('sidebar.hintText')}
                   </div>
                 </div>
               )}
@@ -426,7 +442,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                   className="w-full flex items-center justify-between px-2.5 py-2 text-xs text-slate-400 hover:bg-slate-800/50 transition-colors"
                 >
                   <span className="flex items-center fluid-heading font-medium text-slate-300">
-                    <Clapperboard className="w-3 h-3 mr-2" /> 项目设置
+                    <Clapperboard className="w-3 h-3 mr-2" /> {t('sidebar.projectSettings')}
                   </span>
                   {settingsExpanded ? (
                     <ChevronUp className="w-3.5 h-3.5 text-slate-500" />
@@ -438,24 +454,24 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                   <div className="px-2.5 pb-2.5 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="flex items-center text-slate-500 text-xs">
-                        <Clapperboard className="w-3 h-3 mr-2" /> 类型
+                        <Clapperboard className="w-3 h-3 mr-2" /> {t('sidebar.genre')}
                       </span>
                       <button
                         onClick={onShowGenreSettings}
                         className="flex items-center space-x-1.5 px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs font-medium text-slate-300 hover:text-white transition-colors group"
-                        title="编辑类型 / 上下文"
+                        title={t('sidebar.editGenre')}
                       >
                         <span className="truncate max-w-[100px]">
                           {settings.genre === 'general'
-                            ? '通用'
+                            ? t('genres.general')
                             : settings.genre === 'anime'
-                              ? '动漫'
+                              ? t('genres.anime')
                               : settings.genre === 'movie'
-                                ? '电影'
+                                ? t('genres.movie')
                                 : settings.genre === 'news'
-                                  ? '新闻'
+                                  ? t('genres.news')
                                   : settings.genre === 'tech'
-                                    ? '科技'
+                                    ? t('genres.tech')
                                     : settings.genre}
                         </span>
                         <Edit2 className="w-3 h-3 text-slate-500 group-hover:text-indigo-400 transition-colors" />
@@ -464,13 +480,13 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
 
                     <div className="flex flex-col space-y-1 pt-2 border-t border-slate-700/50">
                       <span className="flex items-center text-slate-500 text-xs mb-1">
-                        <Book className="w-3 h-3 mr-2" /> 术语表
+                        <Book className="w-3 h-3 mr-2" /> {t('sidebar.glossary')}
                       </span>
                       <CustomSelect
                         value={settings.activeGlossaryId || ''}
                         onChange={(val) => onUpdateSetting('activeGlossaryId', val || null)}
                         options={[
-                          { value: '', label: '(无)' },
+                          { value: '', label: t('sidebar.noGlossary') },
                           ...(settings.glossaries?.map((g) => ({
                             value: g.id,
                             label: (
@@ -484,7 +500,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                           })) || []),
                         ]}
                         className="w-full"
-                        placeholder="(无)"
+                        placeholder={t('sidebar.noGlossary')}
                       />
                     </div>
 
@@ -493,11 +509,13 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                       <div className="flex flex-col space-y-1.5 pt-2 border-t border-slate-700/50">
                         <span className="text-slate-500 text-xs flex items-center gap-1.5">
                           <Users className="w-3.5 h-3.5" />
-                          说话人数量 (可选)
+                          {t('sidebar.speakerCount')}
                         </span>
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-slate-400">最少</span>
+                            <span className="text-xs text-slate-400">
+                              {t('sidebar.speakerMin')}
+                            </span>
                             <NumberInput
                               value={settings.minSpeakers}
                               onChange={(num) => onUpdateSetting('minSpeakers', num)}
@@ -508,7 +526,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                             />
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-slate-400">最多</span>
+                            <span className="text-xs text-slate-400">
+                              {t('sidebar.speakerMax')}
+                            </span>
                             <NumberInput
                               value={settings.maxSpeakers}
                               onChange={(num) => onUpdateSetting('maxSpeakers', num)}
@@ -546,8 +566,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                   status === GenerationStatus.COMPLETED ||
                   status === GenerationStatus.ERROR ||
                   status === GenerationStatus.CANCELLED
-                    ? '开始处理'
-                    : '处理中...'}
+                    ? t('actions.startProcessing')
+                    : t('actions.processing')}
                 </span>
               </button>
             )}
@@ -566,7 +586,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                   className="w-full py-2 px-3 rounded-lg font-semibold text-white text-sm shadow-lg transition-all flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-500/25 hover:shadow-emerald-500/40 animate-fade-in"
                 >
                   <Download className="w-4 h-4" />
-                  <span>导出字幕...</span>
+                  <span>{t('actions.exportSubtitles')}</span>
                 </button>
               )}
 
@@ -576,7 +596,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                 className="w-full py-2 px-3 rounded-lg font-semibold text-white text-sm shadow-lg transition-all flex items-center justify-center space-x-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-500/25 hover:shadow-amber-500/40 animate-fade-in"
               >
                 <Scissors className="w-4 h-4" />
-                <span>压制视频</span>
+                <span>{t('actions.compressVideo')}</span>
               </button>
             )}
           </div>
@@ -585,13 +605,15 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
           <Modal
             isOpen={showExportModal}
             onClose={() => setShowExportModal(false)}
-            title="导出字幕"
+            title={t('export.title')}
             icon={<Download className="w-5 h-5 mr-2 text-emerald-400" />}
             maxWidth="sm"
           >
             <p className="text-slate-400 text-sm mb-6">
-              选择您需要的字幕文件格式。当前输出模式:{' '}
-              {settings.outputMode === 'bilingual' ? '双语' : '仅译文'}
+              {t('export.description')}{' '}
+              {settings.outputMode === 'bilingual'
+                ? t('export.bilingual')
+                : t('export.translationOnly')}
             </p>
 
             <div className="grid grid-cols-2 gap-3">
@@ -605,7 +627,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                 <span className="text-2xl font-bold text-slate-200 group-hover:text-emerald-400 mb-1">
                   .SRT
                 </span>
-                <span className="text-xs text-slate-500 mt-1">通用格式</span>
+                <span className="text-xs text-slate-500 mt-1">{t('export.srtFormat')}</span>
               </button>
               <button
                 onClick={() => {
@@ -617,7 +639,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                 <span className="text-2xl font-bold text-slate-200 group-hover:text-emerald-400 mb-1">
                   .ASS
                 </span>
-                <span className="text-xs text-slate-500 mt-1">高级样式</span>
+                <span className="text-xs text-slate-500 mt-1">{t('export.assFormat')}</span>
               </button>
             </div>
 
@@ -625,7 +647,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
               onClick={() => setShowExportModal(false)}
               className="w-full mt-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 text-sm font-medium transition-colors"
             >
-              取消
+              {t('export.cancel')}
             </button>
           </Modal>
 

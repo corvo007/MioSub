@@ -3,6 +3,7 @@ import home from './home.json';
 import progress from './progress.json';
 import settings from './settings.json';
 import app from './app.json';
+import workspace from './workspace.json';
 
 export default {
   common,
@@ -10,4 +11,5 @@ export default {
   progress,
   settings,
   app,
+  workspace,
 };

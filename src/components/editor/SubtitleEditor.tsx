@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Languages, Search } from 'lucide-react';
 import { type SubtitleItem } from '@/types';
 import { type SpeakerUIProfile } from '@/types/speaker';
@@ -76,6 +77,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
     conservativeBatchMode,
     onToggleConservativeMode,
   }) => {
+    const { t } = useTranslation('workspace');
     const [searchQuery, setSearchQuery] = React.useState('');
     const [filters, setFilters] = React.useState<SubtitleFilters>(defaultFilters);
     const [deleteModalOpen, setDeleteModalOpen] = React.useState(false);
@@ -245,9 +247,9 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
           <div className="w-16 h-16 border-2 border-slate-700 border-dashed rounded-full flex items-center justify-center mb-4">
             <Languages className="w-6 h-6" />
           </div>
-          <p className="font-medium">暂无生成字幕</p>
+          <p className="font-medium">{t('editor.noSubtitles')}</p>
           <p className="text-sm mt-2 max-w-xs text-center opacity-70">
-            {activeTab === 'new' ? '上传媒体文件开始生成。' : '导入 SRT/ASS 文件开始编辑。'}
+            {activeTab === 'new' ? t('editor.emptyStateNew') : t('editor.emptyStateImport')}
           </p>
         </div>
       );
@@ -258,9 +260,9 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
     // Get active filter labels for display
     const getFilterLabels = (): string[] => {
       const labels: string[] = [];
-      if (filters.duration) labels.push('时间过长');
-      if (filters.length) labels.push('字符过多');
-      if (filters.overlap) labels.push('时间重叠');
+      if (filters.duration) labels.push(t('editor.filters.durationTooLong'));
+      if (filters.length) labels.push(t('editor.filters.tooManyChars'));
+      if (filters.overlap) labels.push(t('editor.filters.timeOverlap'));
       filters.speakers.forEach((s) => labels.push(s));
       return labels;
     };
@@ -302,10 +304,10 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
           <>
             <div className="flex items-center justify-between text-xs text-slate-500 px-1">
               <span>
-                找到 {filteredSubtitles.length} 个结果
+                {t('editor.foundResults', { count: filteredSubtitles.length })}
                 {hasActiveFilter && (
                   <span className="ml-2 text-indigo-400">
-                    (筛选: {getFilterLabels().join(', ')})
+                    ({t('editor.filtering')}: {getFilterLabels().join(', ')})
                   </span>
                 )}
               </span>
@@ -350,7 +352,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-slate-500 bg-slate-900/30 rounded-xl border border-slate-800/50">
                 <Search className="w-8 h-8 opacity-20 mb-3" />
-                <p>未找到匹配的字幕</p>
+                <p>{t('editor.noMatchingSubtitles')}</p>
               </div>
             )}
           </>
@@ -400,9 +402,9 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
           isOpen={deleteModalOpen}
           onClose={() => setDeleteModalOpen(false)}
           onConfirm={confirmDelete}
-          title="删除字幕"
-          message="确定要删除这行字幕吗？此操作无法撤销。"
-          confirmText="删除"
+          title={t('editor.deleteConfirm.title')}
+          message={t('editor.deleteConfirm.message')}
+          confirmText={t('editor.deleteConfirm.confirm')}
           type="danger"
         />
 
@@ -410,9 +412,9 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
           isOpen={bulkDeleteModalOpen}
           onClose={() => setBulkDeleteModalOpen(false)}
           onConfirm={confirmBulkDelete}
-          title="批量删除"
-          message={`确定删除 ${selectedForDelete.size} 条字幕吗？此操作无法撤销。`}
-          confirmText="删除"
+          title={t('editor.batchDeleteConfirm.title')}
+          message={t('editor.batchDeleteConfirm.message', { count: selectedForDelete.size })}
+          confirmText={t('editor.batchDeleteConfirm.confirm')}
           type="danger"
         />
       </div>
