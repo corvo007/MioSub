@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
 import { GenerationStatus } from '@/types/api';
 import { logger, type LogEntry } from '@/services/utils/logger';
 import { getSpeakerColor } from '@/services/utils/colors';
@@ -57,6 +58,15 @@ export default function App() {
   // End-to-End Subtitle Generation Handler
   // This hook listens for IPC requests from main process and executes generation
   useEndToEndSubtitleGeneration({ settings, updateSetting });
+
+  // Initialize language from settings on app startup
+  useEffect(() => {
+    if (isSettingsLoaded && settings.language) {
+      if (i18n.language !== settings.language) {
+        void i18n.changeLanguage(settings.language);
+      }
+    }
+  }, [isSettingsLoaded, settings.language]);
 
   // Confirmation Modal State
   const [confirmation, setConfirmation] = useState<{
