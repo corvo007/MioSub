@@ -1,374 +1,376 @@
 # Gemini Subtitle Pro
 
-**Gemini Subtitle Pro** 是一款基于 AI 的字幕创建、翻译和润色工具。它利用 Google 的 Gemini 模型进行高质量的翻译和润色，并使用 OpenAI 的 Whisper 进行精准的语音转写。
+[中文文档 (Chinese Documentation)](./README_zh.md)
 
-## 🔥 核心特色
+**Gemini Subtitle Pro** is an AI-powered subtitle creation, translation, and polishing tool. It leverages Google's Gemini models for high-quality translation and polishing, and uses OpenAI's Whisper for precise speech transcription.
 
-**设计目标**：减少人工干预，提升字幕生成质量和效率。
+## 🔥 Core Features
 
-市面上的开源字幕工具各有侧重，但往往在某些方面存在不足：时间轴对齐需要手动调整，或者在没有术语表的情况下专有名词翻译不准确。
+**Design Goal**: Minimize manual intervention while increasing generated subtitle quality and efficiency.
 
-| 功能                | 说明                                                      |
-| ------------------- | --------------------------------------------------------- |
-| 🎧 **术语自动提取** | 从音频中智能提取专有名词，配合 Google Search 验证标准译法 |
-| ⚡ **长上下文翻译** | 按语义切分为 5-10 分钟片段，保留完整上下文进行翻译        |
-| 💎 **转录后处理**   | 智能断句、时间轴校正、术语替换一气呵成                    |
-| 🗣️ **说话人识别**   | 自动推测并标注多说话人身份                                |
-| 🧠 **智能并发**     | 根据模型动态调整并发数，30 分钟视频约 8-10 分钟处理完成   |
-| 🚀 **全自动模式**   | 输入视频链接，自动完成下载、转写、翻译、压制全流程        |
-| 🎬 **视频下载**     | 支持 YouTube / Bilibili 视频下载（桌面版）                |
-| ✂️ **视频压制**     | 内置 FFmpeg，支持 H.264/H.265 编码与字幕压制（桌面版）    |
-| 📦 **其他功能**     | 双语 SRT/ASS 导出、版本快照、自定义 API 端点              |
+Open-source subtitle tools on the market each have their focuses, but often have shortcomings in certain areas: timeline alignment requires manual adjustment, or proper noun translation is inaccurate without a glossary.
 
----
-
-## 📥 快速开始（桌面版）
-
-我们提供了自动构建的安装包，您无需配置开发环境即可直接使用。
-
-1.  访问项目的 [Releases](https://github.com/corvo007/gemini-subtitle-pro/releases) 页面。
-2.  下载最新版本：
-    - **便携版**: `Gemini-Subtitle-Pro-x.x.x-win-x64.zip`
-3.  解压到任意位置，双击 `Gemini Subtitle Pro.exe` 启动程序。
-4.  打开设置，填写 Gemini 及 OpenAI API KEY，及配置其他选项。
-
-    **⚠️ 注意事项：**
-    1. 如果需要使用本地 Whisper 模型的话，请参考下一节进行配置。
-    2. 你需要保证你的 API KEY 能请求 **Gemini 3 Flash** 及 **Gemini 3 Pro** 模型。推荐使用公益站/中转站的API KEY（个人推荐：[云雾API](https://yunwu.ai/register?aff=wmHr)）。
-    3. 为了保证翻译质量，目前暂不支持自定义模型。
-
-5.  Enjoy！
+| Feature                              | Description                                                                                        |
+| :----------------------------------- | :------------------------------------------------------------------------------------------------- |
+| 🎧 **Auto Glossary Extraction**      | Intelligently extracts proper nouns from audio, verifying standard translations with Google Search |
+| ⚡ **Long Context Translation**      | Splits by semantics into 5-10 minute segments, retaining full context for translation              |
+| 💎 **Post-Transcription Processing** | Smart sentence splitting, timeline correction, and term replacement in one go                      |
+| 🗣️ **Speaker Recognition**           | Automatically infers and labels multiple speakers' identities                                      |
+| 🧠 **Smart Concurrency**             | Dynamically adjusts concurrency based on models; ~8-10 mins to process a 30 min video              |
+| 🚀 **Full Auto Mode**                | Input a video link to automatically complete download, transcription, translation, and encoding    |
+| 🎬 **Video Download**                | Supports YouTube / Bilibili video download (Desktop version)                                       |
+| ✂️ **Video Encoding**                | Built-in FFmpeg, supporting H.264/H.265 encoding and subtitle burning (Desktop version)            |
+| 📦 **Other Features**                | Bilingual SRT/ASS export, version snapshots, custom API endpoints                                  |
 
 ---
 
-## 📖 功能详解
+## 📥 Quick Start (Desktop Version)
 
-### 🎧 从音频中提取术语
+We provide auto-built installation packages so you can use it directly without configuring a development environment.
 
-**解决的问题**：手动维护术语表工作量大，容易遗漏。
+1.  Visit the project's [Releases](https://github.com/corvo007/gemini-subtitle-pro/releases) page.
+2.  Download the latest version:
+    - **Portable**: `Gemini-Subtitle-Pro-x.x.x-win-x64.zip`
+3.  Unzip to any location and double-click `Gemini Subtitle Pro.exe` to launch the program.
+4.  Open settings, verify your Gemini and OpenAI API KEYs, and configure other options.
 
-**技术方案**：
+    **⚠️ Notes:**
+    1.  If you need to use a local Whisper model, please refer to the next section for configuration.
+    2.  You need to ensure your API KEY can access **Gemini 3 Flash**, **Gemini 3 Pro** and **Gemini 2.5 Flash** models. Using API proxy services/sites is recommended (Personal recommendation: [YunWu API](https://yunwu.ai/register?aff=wmHr)).
+    3.  To ensure translation quality, custom models are currently not supported.
 
-- 直接分析音频内容提取专有名词
-- 使用 Google Search API 验证术语的标准译法
-- 自动应用到翻译流程中
-- 特别适合处理无字幕的生肉
-
-**实现细节**：基于 Gemini 3 Pro 多模态能力，配合 Search Grounding 功能。
-
----
-
-### ⚡ 长上下文翻译
-
-**解决的问题**：逐行或小批量翻译会丢失上下文信息。
-
-**技术方案**：
-
-- 使用 VAD (Voice Activity Detection) 按语义切分为 5-10 分钟片段
-- 同时提供音频和完整文本给 AI 模型
-- 并行处理多个片段以提升效率
+5.  Enjoy!
 
 ---
 
-### 💎 转录结果后处理
+## 📖 Feature Details
 
-**解决的问题**：Whisper 原始输出存在断句过长、时间轴漂移等问题。
+### 🎧 Extract Terms from Audio
 
-**处理流程**：
+**Problem Solved**: Manually maintaining glossaries is a heavy workload and easy to miss terms.
 
-1. 根据术语表校正识别错误
-2. 智能切分长句（每行 ≤22 字）
-3. 二次校验时间轴对齐
-4. 使用 Gemini 3 Pro 进行翻译润色
+**Technical Solution**:
 
----
+- Directly analyzes audio content to extract proper nouns
+- Uses Google Search API to verify standard term translations
+- Automatically applies to the translation workflow
+- Especially suitable for raw content with no subtitles
 
-### 🗣️ 说话人识别
-
-**解决的问题**：听电台节目时有时无法分辨说话人是谁。
-
-**功能描述**：根据上下文自动推测说话人身份、名字等，自动标注不同说话人（羊宫妃那、立石凛、青木阳菜、小日向美香、林鼓子、......）
-
-**适用场景**：
-
-- 多人对话场景（访谈、电台）
-- 多角色内容（动画、电影）
+**Implementation Details**: Based on Gemini 3 Pro multimodal capabilities, combined with Search Grounding features.
 
 ---
 
-### 🧠 智能并发控制
+### ⚡ Long Context Translation
 
-**解决的问题**：同类开源工具少有支持并发处理的，导致处理长视频或音频时需要等待很长时间。
+**Problem Solved**: Line-by-line or small batch translation loses context information.
 
-**技术特点**：根据不同模型动态调整并发数
+**Technical Solution**:
 
-- Gemini 3 Flash：并发数 5（速度优先）
-- Gemini 3 Pro：并发数 2（避免超限）
-
-**效果**：30 分钟视频约 8-10 分钟处理完成
-
----
-
-### 🎬 视频下载支持 (仅限桌面版)
-
-支持从 YouTube 和 Bilibili 下载视频，内置 yt-dlp 引擎。
-
-#### ✅ 支持的链接格式
-
-| 平台         | 类型     | 示例                           |
-| ------------ | -------- | ------------------------------ |
-| **YouTube**  | 标准视频 | `youtube.com/watch?v=xxx`      |
-|              | 短链接   | `youtu.be/xxx`                 |
-|              | Shorts   | `youtube.com/shorts/xxx`       |
-|              | 嵌入式   | `youtube.com/embed/xxx`        |
-| **Bilibili** | BV/av 号 | `bilibili.com/video/BVxxx`     |
-|              | 分P视频  | `bilibili.com/video/BVxxx?p=2` |
-|              | B23 短链 | `b23.tv/xxx`                   |
-
-#### ❌ 暂不支持
-
-| 平台     | 类型            | 原因               |
-| -------- | --------------- | ------------------ |
-| YouTube  | 播放列表/频道   | 请使用单个视频链接 |
-| Bilibili | 番剧/影视       | 版权限制           |
-|          | 付费课程        | 需购买             |
-|          | 直播            | 实时流             |
-|          | 大会员/充电视频 | 需登录 cookies     |
-|          | 收藏夹/个人空间 | 请使用单个视频链接 |
+- Uses VAD (Voice Activity Detection) to split semantically into 5-10 minute segments
+- Provides both audio and full text to the AI model simultaneously
+- Processes multiple segments in parallel to improve efficiency
 
 ---
 
-### 🚀 全自动端到端模式 (Full Auto)
+### 💎 Post-Transcription Processing
 
-**解决的问题**：不仅想要字幕，还想直接得到带字幕的“熟肉”视频，但不想手动操作复杂的下载、转写、压制步骤。
+**Problem Solved**: Whisper raw output has issues like overly long sentences and timeline drift.
 
-**功能描述**：
-只需输入一个视频链接（YouTube/Bilibili），Gemini Subtitle Pro 将全自动处理后续所有步骤：
+**Processing Flow**:
 
-1.  **自动下载**：调用 yt-dlp 下载最佳画质视频。
-2.  **音频提取**：自动提取音频并进行 VAD 切分。
-3.  **智能转录**：使用 Whisper 进行语音转写。
-4.  **AI 翻译/润色**：Gemini 模型进行上下文感知的翻译与校对。
-5.  **自动压制**：使用 FFmpeg 将生成的双语字幕硬烧到视频中（支持 GPU 加速）。
-6.  **最终输出**：直接生成带有硬字幕的 MP4 视频文件。
+1.  Corrects recognition errors based on the glossary
+2.  Intelligently splits long sentences (≤22 characters per line)
+3.  Secondary validation of timeline alignment
+4.  Uses Gemini 3 Flash for translation and polishing
 
 ---
 
-### ✂️ 视频压制导出 (仅限桌面版)
+### 🗣️ Speaker Recognition
 
-内置 FFmpeg 引擎，支持高性能视频编码与字幕硬烧。包含**智能硬件加速检测**，自动优先使用 GPU (NVENC/QSV/AMF) 进行编码。
+**Problem Solved**: Sometimes unable to distinguish who is speaking when listening to radio programs.
 
-#### 功能特性
+**Function Description**: Automatically infers speaker identity, name, etc., based on context, automatically labeling different speakers (Hina Yomiya, Rin Tateishi, Hina Aoki, Mika Kohinata, Coco Hayashi, ...).
 
-| 功能         | 说明                                      |
-| ------------ | ----------------------------------------- |
-| **编码器**   | H.264 (AVC) / H.265 (HEVC)                |
-| **质量控制** | CRF 模式（0-51，数值越小画质越高）        |
-| **分辨率**   | 原样 / 1080P / 720P / 480P / 自定义       |
-| **字幕内嵌** | 支持本地 ASS/SRT 文件或直接使用工作区字幕 |
-| **一键压制** | 字幕生成完成后可直接跳转压制页面          |
+**Applicable Scenarios**:
 
-#### 工作流程
-
-1. 在字幕工作台完成字幕生成/编辑
-2. 点击侧边栏的 **"压制视频"** 按钮
-3. 自动带入视频和字幕，调整参数后开始压制
-4. 压制完成后可一键打开输出目录
+- Multi-person dialogue scenarios (interviews, radio)
+- Multi-role content (anime, movies)
 
 ---
 
-## 🎙️ 本地 Whisper 配置 (仅限桌面版)
+### 🧠 Smart Concurrency Control
 
-本项目支持集成 [whisper.cpp](https://github.com/ggerganov/whisper.cpp) 实现完全离线的语音转写。
+**Problem Solved**: Few similar open-source tools support concurrent processing, leading to long wait times when processing long videos or audio.
 
-- **默认支持**: 我们的安装包 **已内置 CPU 版** 的 Whisper 核心组件 (`whisper-cli.exe`)。
-- **需手动下载**: 您需要**自行下载**模型文件 (`.bin`) 才能使用。
-- **GPU 加速**: 如需更快的速度，可手动替换为 GPU 版组件。
+**Technical Features**: Dynamically adjusts concurrency count based on different models
 
-### ⚡ 快速开始
+- Gemini 3 Flash: Concurrency 5 (Speed priority)
+- Gemini 3 Pro: Concurrency 2 (Avoid limits)
 
-1.  **下载模型**:
-    - 访问 [Hugging Face](https://huggingface.co/ggerganov/whisper.cpp/tree/main) 下载 GGML 格式的模型文件 (可参考下方的模型下载指南进行模型选择)。
-    - 您可以将模型文件保存在电脑的**任意位置**。
-2.  **启用功能**:
-    - 打开应用，进入 **设置** > **常规**，选择 **"使用本地 Whisper"**。
-3.  **加载模型**:
-    - 点击 **"浏览"** 按钮。
-    - 在弹出的文件浏览窗口中，找到并选中您下载的 `.bin` 模型文件。
-4.  **开始使用**:
-    - 模型路径设置完成后即可开始使用。
-
-### 📦 模型下载指南
-
-在 Hugging Face 的文件列表中，您会看到大量不同后缀的文件。请参考以下指南进行选择：
-
-#### 1. 推荐下载 (最稳妥)
-
-请下载 **标准版** 模型，文件名格式为 `ggml-[model].bin`。
-
-- **Base**: `ggml-base.bin` (平衡推荐)
-- **Small**: `ggml-small.bin` (精度更好)
-- **Medium**: `ggml-medium.bin` (高质量，需更多内存)
-
-#### 2. 文件名后缀说明
-
-- **`.en` (如 `ggml-base.en.bin`)**: **仅英语**模型。如果您只转写英文视频，它比同级的多语言模型更准；但**不支持**中文或其他语言。
-- **`q5_0`, `q8_0` (如 `ggml-base-q5_0.bin`)**: **量化版**模型。体积更小、速度更快，但精度略有下降。
-  - `q8_0`: 几乎无损，推荐。
-  - `q5_0`: 损失少量精度，体积显著减小。
-- **`.mlmodelc.zip`**: ❌ **不要下载**。这是 macOS CoreML 专用格式，Windows 无法使用。
-
-#### 3. 性能对比参考
-
-| 模型         | 推荐文件名          | 大小   | 内存    | 速度 | 适用场景         |
-| :----------- | :------------------ | :----- | :------ | :--- | :--------------- |
-| **Tiny**     | `ggml-tiny.bin`     | 75 MB  | ~390 MB | 极快 | 快速测试         |
-| **Base**     | `ggml-base.bin`     | 142 MB | ~500 MB | 快   | 日常对话 (推荐)  |
-| **Small**    | `ggml-small.bin`    | 466 MB | ~1 GB   | 中等 | 播客/视频 (推荐) |
-| **Medium**   | `ggml-medium.bin`   | 1.5 GB | ~2.6 GB | 慢   | 复杂音频         |
-| **Large-v3** | `ggml-large-v3.bin` | 2.9 GB | ~4.7 GB | 最慢 | 专业需求         |
-
-### 🛠️ 进阶：GPU 加速 (NVIDIA 显卡)
-
-如果您拥有 NVIDIA 显卡，强烈建议启用 GPU 加速以获得 5-10 倍的性能提升。
-
-**前提条件**:
-
-- 已安装最新版 **NVIDIA 显卡驱动**。
-
-**安装步骤**:
-
-1.  **下载组件**:
-    - 访问 [whisper.cpp Releases](https://github.com/ggerganov/whisper.cpp/releases)。
-    - 找到最新的 Windows GPU 版本，文件名通常为 `whisper-cublas-bin-x64.zip`。
-2.  **解压文件**:
-    - 解压下载的压缩包。您会看到 `whisper-cli.exe` 和多个 `.dll` 文件 (例如 `cublas64_12.dll`, `cudart64_12.dll` 等)。
-3.  **放置文件**:
-    - 请在 `.exe` 同级目录下创建一个名为 `resources` 的文件夹，并将解压出的所有文件放入其中；或者直接将文件放在 `.exe` 同级目录。
-    - 注意：必须确保`whisper-cli.exe`存在，且 `.dll` 动态库文件与 `whisper-cli.exe` 在同一个文件夹内。
-4.  **验证**:
-    - 重启应用。尝试转写，如果速度显著提升，即表示 GPU 加速生效。
-
-### ❓ 常见问题
-
-- **找不到选项？**: 请确认您使用的是**桌面版**,网页版不支持此功能。
-- **状态错误？**: 检查是否已正确选择了 `.bin` 模型文件。
-- **速度慢？**: CPU 模式下速度取决于处理器性能,建议使用 `Base` 或 `Small` 模型。如需极致速度请配置 GPU 加速。
+**Effect**: A 30-minute video is processed in about 8-10 minutes.
 
 ---
 
-## ☁️ 部署网页版
+### 🎬 Video Download Support (Desktop Only)
 
-您可以将此应用程序部署到各种 Serverless 平台，但不支持使用本地 Whisper。
+Supports downloading videos from YouTube and Bilibili, with built-in yt-dlp engine.
+
+#### ✅ Supported Link Formats
+
+| Platform     | Type           | Example                        |
+| :----------- | :------------- | :----------------------------- |
+| **YouTube**  | Standard Video | `youtube.com/watch?v=xxx`      |
+|              | Short Link     | `youtu.be/xxx`                 |
+|              | Shorts         | `youtube.com/shorts/xxx`       |
+|              | Embedded       | `youtube.com/embed/xxx`        |
+| **Bilibili** | BV/av ID       | `bilibili.com/video/BVxxx`     |
+|              | Multi-P Video  | `bilibili.com/video/BVxxx?p=2` |
+|              | B23 Short Link | `b23.tv/xxx`                   |
+
+#### ❌ Not Currently Supported
+
+| Platform | Type                     | Reason                        |
+| :------- | :----------------------- | :---------------------------- |
+| YouTube  | Playlists/Channels       | Please use single video links |
+| Bilibili | Anime/Movies             | Copyright restrictions        |
+|          | Paid Courses             | Requires purchase             |
+|          | Live Streaming           | Real-time stream              |
+|          | Premium/Charging Videos  | Requires login cookies        |
+|          | Favorites/Personal Space | Please use single video links |
+
+---
+
+### 🚀 Full Auto End-to-End Mode (Full Auto)
+
+**Problem Solved**: Not only wanting subtitles, but wanting to directly get a "cooked" video with subtitles, without manually operating complex download, transcription, and encoding steps.
+
+**Function Description**:
+Just input a video link (YouTube/Bilibili), and Gemini Subtitle Pro will automatically handle all subsequent steps:
+
+1.  **Auto Download**: Calls yt-dlp to download the best quality video.
+2.  **Audio Extraction**: Automatically extracts audio and performs VAD segmentation.
+3.  **Smart Transcription**: Uses Whisper for speech transcription.
+4.  **AI Translation/Polishing**: Gemini models perform context-aware translation and proofreading.
+5.  **Auto Encoding**: Uses FFmpeg to burn generated bilingual subtitles into the video (supports GPU acceleration).
+6.  **Final Output**: Directly generates an MP4 video file with hard subtitles.
+
+---
+
+### ✂️ Video Encoding Export (Desktop Only)
+
+Built-in FFmpeg engine, supporting high-performance video encoding and subtitle burning. Includes **intelligent hardware acceleration detection**, automatically prioritizing GPU (NVENC/QSV/AMF) for encoding.
+
+#### Functional Features
+
+| Feature                | Description                                                        |
+| :--------------------- | :----------------------------------------------------------------- |
+| **Encoder**            | H.264 (AVC) / H.265 (HEVC)                                         |
+| **Quality Control**    | CRF mode (0-51, smaller value means higher quality)                |
+| **Resolution**         | Original / 1080P / 720P / 480P / Custom                            |
+| **Subtitle Embedding** | Supports local ASS/SRT files or direct use of workspace subtitles  |
+| **One-Click Encoding** | Directly jump to encoding page after subtitle generation completes |
+
+#### Workflow
+
+1.  Complete subtitle generation/editing in the Subtitle Workbench
+2.  Click the **"Encode Video"** button in the sidebar
+3.  Automatically imports video and subtitles, adjust parameters and start encoding
+4.  One-click open output directory after encoding completes
+
+---
+
+## 🎙️ Local Whisper Configuration (Desktop Only)
+
+This project supports integrating [whisper.cpp](https://github.com/ggerganov/whisper.cpp) to achieve completely offline speech transcription.
+
+- **Default Support**: Our installation package **has built-in CPU version** Whisper core component (`whisper-cli.exe`).
+- **Manual Download Required**: You need to **download** model files (`.bin`) **yourself** to use it.
+- **GPU Acceleration**: If you need faster speed, you can manually replace it with GPU version components.
+
+### ⚡ Quick Start
+
+1.  **Download Model**:
+    - Visit [Hugging Face](https://huggingface.co/ggerganov/whisper.cpp/tree/main) to download GGML format model files (refer to the model download guide below for model selection).
+    - You can save the model file in **any location** on your computer.
+2.  **Enable Function**:
+    - Open the application, go to **Settings** > **General**, select **"Use Local Whisper"**.
+3.  **Load Model**:
+    - Click the **"Browse"** button.
+    - Find and select the `.bin` model file you downloaded in the file browser window.
+4.  **Start Using**:
+    - You can start using it after the model path setting is completed.
+
+### 📦 Model Download Guide
+
+In the Hugging Face file list, you will see a large number of files with different suffixes. Please refer to the following guide for selection:
+
+#### 1. Recommended Download (Safest)
+
+Please download the **Standard Version** model, filename format is `ggml-[model].bin`.
+
+- **Base**: `ggml-base.bin` (Balanced Recommendation)
+- **Small**: `ggml-small.bin` (Better Accuracy)
+- **Medium**: `ggml-medium.bin` (High Quality, Requires More Memory)
+
+#### 2. Filename Suffix Explanation
+
+- **`.en` (e.g. `ggml-base.en.bin`)**: **English Only** model. If you only transcribe English videos, it is more accurate than multilingual models of the same level; but **does not support** Chinese or other languages.
+- **`q5_0`, `q8_0` (e.g. `ggml-base-q5_0.bin`)**: **Quantized Version** model. Smaller size, faster speed, but slightly reduced precision.
+  - `q8_0`: Almost lossless, recommended.
+  - `q5_0`: Small loss of precision, significantly reduced size.
+- **`.mlmodelc.zip`**: ❌ **Do not download**. This is a macOS CoreML dedicated format, Windows cannot use it.
+
+#### 3. Performance Comparison Reference
+
+| Model        | Recommended Filename | Size   | Memory  | Speed     | Applicable Scenarios             |
+| :----------- | :------------------- | :----- | :------ | :-------- | :------------------------------- |
+| **Tiny**     | `ggml-tiny.bin`      | 75 MB  | ~390 MB | Very Fast | Quick Testing                    |
+| **Base**     | `ggml-base.bin`      | 142 MB | ~500 MB | Fast      | Daily Conversation (Recommended) |
+| **Small**    | `ggml-small.bin`     | 466 MB | ~1 GB   | Medium    | Podcast/Video (Recommended)      |
+| **Medium**   | `ggml-medium.bin`    | 1.5 GB | ~2.6 GB | Slow      | Complex Audio                    |
+| **Large-v3** | `ggml-large-v3.bin`  | 2.9 GB | ~4.7 GB | Slowest   | Professional Needs               |
+
+### 🛠️ Advanced: GPU Acceleration (NVIDIA Graphics Card)
+
+If you have an NVIDIA graphics card, it is strongly recommended to enable GPU acceleration to get 5-10 times performance improvement.
+
+**Prerequisites**:
+
+- Installed latest version **NVIDIA Graphics Driver**.
+
+**Installation Steps**:
+
+1.  **Download Components**:
+    - Visit [whisper.cpp Releases](https://github.com/ggerganov/whisper.cpp/releases).
+    - Find the latest Windows GPU version, filename is usually `whisper-cublas-bin-x64.zip`.
+2.  **Unzip Files**:
+    - Unzip the downloaded compressed package. You will see `whisper-cli.exe` and multiple `.dll` files (e.g. `cublas64_12.dll`, `cudart64_12.dll`, etc.).
+3.  **Place Files**:
+    - Please create a folder named `resources` in the same directory as the `.exe` file, and put all unzipped files into it; or directly put the files in the same directory as the `.exe`.
+    - Note: Must ensure `whisper-cli.exe` exists, and `.dll` dynamic library files are in the same folder as `whisper-cli.exe`.
+4.  **Verification**:
+    - Restart the application. Attempt transcription, if speed improves significantly, it means GPU acceleration is effective.
+
+### ❓ FAQ
+
+- **Cannot find option?**: Please confirm you are using the **Desktop Version**, the web version does not support this feature.
+- **Status Error?**: Check if `.bin` model file is selected correctly.
+- **Slow Speed?**: Speed under CPU mode depends on processor performance, recommend using `Base` or `Small` models. For extreme speed please configure GPU acceleration.
+
+---
+
+## ☁️ Deploy Web Version
+
+You can deploy this application to various Serverless platforms, but using local Whisper is not supported.
 
 ### Vercel
 
-最简单的部署方式是使用 Vercel。
+The simplest way to deploy is using Vercel.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fcorvo007%2Fgemini-subtitle-pro&env=GEMINI_API_KEY,OPENAI_API_KEY)
 
-1. 点击上方按钮。
-2. 连接您的 GitHub 仓库。
-3. Vercel 将自动检测 Vite 配置。
-4. **重要:** 在 Environment Variables 部分添加 `GEMINI_API_KEY` 和 `OPENAI_API_KEY`。
+1.  Click the button above.
+2.  Connect your GitHub repository.
+3.  Vercel will automatically detect Vite configuration.
+4.  **Important:** Add `GEMINI_API_KEY` and `OPENAI_API_KEY` in the Environment Variables section.
 
 ### Google Cloud Run
 
-作为容器化应用程序部署在 Google Cloud Run 上。
+Deploy as a containerized application on Google Cloud Run.
 
 [![Run on Google Cloud](https://deploy.cloud.run/button.svg)](https://deploy.cloud.run)
 
-1. 点击上方按钮。
-2. 选择您的项目和仓库。
-3. 将自动检测 `Dockerfile`。
-4. 在 **Variables & Secrets** 步骤中，添加您的 `GEMINI_API_KEY` 和 `OPENAI_API_KEY`。
+1.  Click the button above.
+2.  Select your project and repository.
+3.  `Dockerfile` will be automatically detected.
+4.  In **Variables & Secrets** step, add your `GEMINI_API_KEY` and `OPENAI_API_KEY`.
 
 ### Cloudflare Pages
 
-1. 将代码推送到 GitHub 仓库。
-2. 登录 Cloudflare Dashboard 并转到 **Pages**。
-3. 选择 **Connect to Git** 并选择您的仓库。
-4. **构建设置:**
-   - **Framework Preset:** Vite
-   - **Build Command:** `npm run build`
-   - **Build Output Directory:** `dist`
-5. **环境变量:**
-   - 添加 `GEMINI_API_KEY` 和 `OPENAI_API_KEY`。
+1.  Push code to GitHub repository.
+2.  Log in to Cloudflare Dashboard and go to **Pages**.
+3.  Select **Connect to Git** and choose your repository.
+4.  **Build Settings:**
+    - **Framework Preset:** Vite
+    - **Build Command:** `npm run build`
+    - **Build Output Directory:** `dist`
+5.  **Environment Variables:**
+    - Add `GEMINI_API_KEY` and `OPENAI_API_KEY`.
 
 ### Netlify
 
-使用配置好的 `netlify.toml` 部署到 Netlify。
+Deploy to Netlify using the configured `netlify.toml`.
 
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/corvo007/gemini-subtitle-pro)
 
-1. 点击上方按钮。
-2. 连接您的 GitHub 仓库。
-3. Netlify 将检测 `netlify.toml` 设置。
-4. 转到 **Site settings > Build & deploy > Environment** 并添加您的 API 密钥。
+1.  Click the button above.
+2.  Connect your GitHub repository.
+3.  Netlify will detect `netlify.toml` settings.
+4.  Go to **Site settings > Build & deploy > Environment** and add your API keys.
 
 ### Render
 
-在 Render 上作为静态站点部署。
+Deploy as a static site on Render.
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/corvo007/gemini-subtitle-pro)
 
-1. 点击上方按钮。
-2. Render 将读取 `render.yaml` 文件。
-3. 设置过程中系统会提示您输入 `GEMINI_API_KEY` 和 `OPENAI_API_KEY`。
+1.  Click the button above.
+2.  Render will read `render.yaml` file.
+3.  The system will prompt you to enter `GEMINI_API_KEY` and `OPENAI_API_KEY` during setup.
 
 ---
 
-## 🚀 本地开发运行
+## 🚀 Local Development Run
 
-**前提条件:** Node.js 18+
+**Prerequisites:** Node.js 18+
 
-1. **安装依赖:**
+1.  **Install Dependencies:**
 
-   ```bash
-   npm install
-   # 或
-   yarn install
-   ```
+    ```bash
+    npm install
+    # or
+    yarn install
+    ```
 
-2. **配置环境:**
-   在根目录创建一个 `.env.local` 文件并添加您的 API 密钥：
+2.  **Configure Environment:**
+    Create a `.env.local` file in the root directory and add your API keys:
 
-   ```bash
-   cp .env.example .env.local
-   ```
+    ```bash
+    cp .env.example .env.local
+    ```
 
-   编辑 `.env.local`:
+    Edit `.env.local`:
 
-   ```env
-   # 翻译和校对需要
-   GEMINI_API_KEY=your_gemini_key
+    ```env
+    # Required for translation and proofreading
+    GEMINI_API_KEY=your_gemini_key
 
-   # 转写 (Whisper) 需要
-   OPENAI_API_KEY=your_openai_key
-   ```
+    # Required for transcription (Whisper)
+    OPENAI_API_KEY=your_openai_key
+    ```
 
-3. **运行应用:**
+3.  **Run Application:**
 
-   ```bash
-   npm run dev
-   # 或
-   yarn dev
-   ```
+    ```bash
+    npm run dev
+    # or
+    yarn dev
+    ```
 
-4. **构建桌面应用 (Electron):**
+4.  **Build Desktop Application (Electron):**
 
-   ```bash
-   # 开发模式
-   npm run electron:dev
+    ```bash
+    # Development Mode
+    npm run electron:dev
 
-   # 打包 (生成 zip 压缩包)
-   npm run electron:build
-   ```
+    # Package (Generate zip archive)
+    npm run electron:build
+    ```
 
-   打包完成后，您可以在 `release` 目录下找到便携版压缩包 (`.zip`)。解压后即可运行。
+    After packaging completes, you can find the portable version archive (`.zip`) in the `release` directory. Unzip and run.
 
 ---
 
-## 📚 文档
+## 📚 Documentation
 
-- [项目架构文档](./docs/ARCHITECTURE.md)
+- [Project Architecture Document](./docs/ARCHITECTURE.md)
