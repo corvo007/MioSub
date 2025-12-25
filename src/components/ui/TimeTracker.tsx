@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type GenerationStatus } from '@/types/api';
 import { formatDuration } from '@/services/subtitle/time';
 
@@ -15,6 +16,7 @@ export const TimeTracker: React.FC<TimeTrackerProps> = ({
   total,
   status,
 }) => {
+  const { t } = useTranslation('ui');
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export const TimeTracker: React.FC<TimeTrackerProps> = ({
 
   return (
     <div className="flex justify-between text-xs text-slate-400 mb-4 px-1">
-      <span>用时: {formatDuration(elapsed)}</span>
+      <span>{t('timeTracker.elapsed', { time: formatDuration(elapsed) })}</span>
     </div>
   );
 };

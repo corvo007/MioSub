@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 import { GENRE_PRESETS, GENRE_LABELS } from '@/types/settings';
 import { OptionButton } from '@/components/ui/OptionButton';
@@ -21,6 +22,7 @@ export const GenrePicker: React.FC<GenrePickerProps> = ({
   columns = 3,
   color = 'violet',
 }) => {
+  const { t } = useTranslation('ui');
   const isCustom = !GENRE_PRESETS.includes(currentGenre);
   const [showCustomInput, setShowCustomInput] = useState(isCustom);
   const [customValue, setCustomValue] = useState(isCustom ? currentGenre : '');
@@ -65,14 +67,14 @@ export const GenrePicker: React.FC<GenrePickerProps> = ({
           </OptionButton>
         ))}
         <OptionButton selected={showCustomInput} onClick={handleCustomClick} color={color}>
-          自定义...
+          {t('genrePicker.custom')}
         </OptionButton>
       </div>
       {showCustomInput && (
         <TextInput
           value={customValue}
           onChange={(e) => handleCustomChange(e.target.value)}
-          placeholder="例如：游戏解说、医学讲座、科技评测..."
+          placeholder={t('genrePicker.customPlaceholder')}
           variant="transparent"
           className="mt-2"
           autoFocus

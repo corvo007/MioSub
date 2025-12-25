@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FolderOpen } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
@@ -22,16 +23,20 @@ const buttonVariants = {
  */
 export const DirectorySelector: React.FC<DirectorySelectorProps> = ({
   value,
-  placeholder = '未选择',
+  placeholder,
   onSelect,
-  buttonText = '选择',
+  buttonText,
   variant = 'default',
   className = '',
 }) => {
+  const { t } = useTranslation('ui');
+  const displayPlaceholder = placeholder ?? t('directorySelector.notSelected');
+  const displayButtonText = buttonText ?? t('directorySelector.select');
+
   return (
     <div className={cn('flex items-center gap-3', className)}>
       <span className="flex-1 px-3 py-2 bg-white/5 rounded-lg text-white/70 text-sm truncate min-w-0">
-        {value || placeholder}
+        {value || displayPlaceholder}
       </span>
       <button
         onClick={onSelect}
@@ -41,7 +46,7 @@ export const DirectorySelector: React.FC<DirectorySelectorProps> = ({
         )}
       >
         <FolderOpen className="w-4 h-4" />
-        {buttonText}
+        {displayButtonText}
       </button>
     </div>
   );

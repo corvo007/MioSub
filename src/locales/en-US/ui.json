@@ -1,0 +1,59 @@
+{
+  "timeTracker": {
+    "elapsed": "Elapsed: {{time}}"
+  },
+  "passwordInput": {
+    "hideKey": "Hide key",
+    "showKey": "Show key"
+  },
+  "inputWithReset": {
+    "resetDefault": "Reset to default",
+    "reset": "Reset"
+  },
+  "genrePicker": {
+    "custom": "Custom...",
+    "customPlaceholder": "e.g., Game commentary, Medical lectures, Tech reviews..."
+  },
+  "envKeyHint": {
+    "usingEnvKey": "Using key from environment variable",
+    "overriddenEnvKey": "Overridden default key from environment variable"
+  },
+  "directorySelector": {
+    "notSelected": "Not selected",
+    "select": "Select"
+  },
+  "resolutionSelector": {
+    "original": "Original Resolution",
+    "keepOriginal": "Keep original resolution",
+    "fullHd": "Full HD",
+    "hd": "HD",
+    "sd": "SD",
+    "custom": "Custom",
+    "manualInput": "Enter width and height manually",
+    "width": "Width",
+    "height": "Height"
+  },
+  "languageSwitcher": {
+    "zhCN": "简体中文"
+  },
+  "hardwareAcceleration": {
+    "detecting": "Detecting...",
+    "unavailable": "Hardware acceleration unavailable",
+    "gpuEnabled": "GPU acceleration enabled",
+    "cpuMode": "CPU mode",
+    "detectingSupport": "Detecting hardware acceleration support",
+    "noGpuDetected": "No GPU with hardware acceleration detected",
+    "willUseEncoder": "Will use {{encoder}}",
+    "forceCpu": "Force CPU encoding",
+    "availableEncoders": "Available encoders:"
+  },
+  "genreSettings": {
+    "title": "Content Type Settings",
+    "selectPreset": "Select preset",
+    "saveChanges": "Save Changes"
+  },
+  "encoderSelector": {
+    "h264Desc": "Best compatibility, suitable for most scenarios",
+    "hevcDesc": "High compression, smaller file size at same quality"
+  }
+}

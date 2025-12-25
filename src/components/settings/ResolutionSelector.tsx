@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 import { CustomSelect } from '../settings/CustomSelect';
 import { NumberInput } from '../ui/NumberInput';
@@ -20,6 +21,8 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
   onChange,
   className = '',
 }) => {
+  const { t } = useTranslation('ui');
+
   return (
     <div className={cn('space-y-3 md:space-y-4', className)}>
       <CustomSelect
@@ -33,8 +36,8 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
             value: 'original',
             label: (
               <div>
-                <div className="font-medium text-slate-200">原始分辨率</div>
-                <div className="text-xs text-slate-500">保持原始分辨率</div>
+                <div className="font-medium text-slate-200">{t('resolutionSelector.original')}</div>
+                <div className="text-xs text-slate-500">{t('resolutionSelector.keepOriginal')}</div>
               </div>
             ),
           },
@@ -43,7 +46,9 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
             label: (
               <div>
                 <div className="font-medium text-slate-200">1080P</div>
-                <div className="text-xs text-slate-500">1920x1080 - 全高清</div>
+                <div className="text-xs text-slate-500">
+                  1920x1080 - {t('resolutionSelector.fullHd')}
+                </div>
               </div>
             ),
           },
@@ -52,7 +57,9 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
             label: (
               <div>
                 <div className="font-medium text-slate-200">720P</div>
-                <div className="text-xs text-slate-500">1280x720 - 高清</div>
+                <div className="text-xs text-slate-500">
+                  1280x720 - {t('resolutionSelector.hd')}
+                </div>
               </div>
             ),
           },
@@ -61,7 +68,7 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
             label: (
               <div>
                 <div className="font-medium text-slate-200">480P</div>
-                <div className="text-xs text-slate-500">854x480 - 标清</div>
+                <div className="text-xs text-slate-500">854x480 - {t('resolutionSelector.sd')}</div>
               </div>
             ),
           },
@@ -69,8 +76,8 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
             value: 'custom',
             label: (
               <div>
-                <div className="font-medium text-slate-200">自定义</div>
-                <div className="text-xs text-slate-500">手动输入宽高</div>
+                <div className="font-medium text-slate-200">{t('resolutionSelector.custom')}</div>
+                <div className="text-xs text-slate-500">{t('resolutionSelector.manualInput')}</div>
               </div>
             ),
           },
@@ -83,7 +90,7 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
             <NumberInput
               value={width}
               onChange={(v) => onChange(resolution, v, height)}
-              placeholder="宽"
+              placeholder={t('resolutionSelector.width')}
               className="w-full pl-4 pr-8 transition-all"
             />
             <span className="absolute right-3 top-2.5 text-xs text-slate-500 pointer-events-none">
@@ -94,7 +101,7 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
             <NumberInput
               value={height}
               onChange={(v) => onChange(resolution, width, v)}
-              placeholder="高"
+              placeholder={t('resolutionSelector.height')}
               className="w-full pl-4 pr-8 transition-all"
             />
             <span className="absolute right-3 top-2.5 text-xs text-slate-500 pointer-events-none">

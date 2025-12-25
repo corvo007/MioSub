@@ -7,6 +7,7 @@ import workspace from './workspace.json';
 import download from './download.json';
 import compression from './compression.json';
 import editor from './editor.json';
+import ui from './ui.json';
 
 export default {
   common,
@@ -18,4 +19,5 @@ export default {
   download,
   compression,
   editor,
+  ui,
 };

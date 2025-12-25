@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { Zap, Cpu, Loader2 } from 'lucide-react';
 import type { HardwareAccelInfo } from '@/types/compression';
 import { cn } from '@/lib/cn';
@@ -20,6 +21,7 @@ export const HardwareAccelerationSelector: React.FC<HardwareAccelerationSelector
   onToggle,
   encoder,
 }) => {
+  const { t } = useTranslation('ui');
   const isLoading = !hwAccelInfo;
   const isAvailable = hwAccelInfo?.available ?? false;
   const isEnabled = enabled && isAvailable;
@@ -72,21 +74,21 @@ export const HardwareAccelerationSelector: React.FC<HardwareAccelerationSelector
               )}
             >
               {isLoading
-                ? '正在检测...'
+                ? t('hardwareAcceleration.detecting')
                 : !isAvailable
-                  ? '硬件加速不可用'
+                  ? t('hardwareAcceleration.unavailable')
                   : isEnabled
-                    ? 'GPU 加速已开启'
-                    : 'CPU 模式'}
+                    ? t('hardwareAcceleration.gpuEnabled')
+                    : t('hardwareAcceleration.cpuMode')}
             </div>
             <div className="text-xs text-slate-500">
               {isLoading
-                ? '正在检测硬件加速支持情况'
+                ? t('hardwareAcceleration.detectingSupport')
                 : !isAvailable
-                  ? '未检测到可以使用硬件加速的 GPU'
+                  ? t('hardwareAcceleration.noGpuDetected')
                   : isEnabled
-                    ? `将使用 ${getPreferredEncoder()}`
-                    : '强制使用 CPU 编码'}
+                    ? t('hardwareAcceleration.willUseEncoder', { encoder: getPreferredEncoder() })
+                    : t('hardwareAcceleration.forceCpu')}
             </div>
           </div>
         </div>
@@ -111,7 +113,7 @@ export const HardwareAccelerationSelector: React.FC<HardwareAccelerationSelector
       {/* Encoder Badges */}
       {isAvailable && isEnabled && hwAccelInfo && (
         <div className="text-xs text-slate-500 flex items-center gap-2 flex-wrap">
-          <span>可用编码器:</span>
+          <span>{t('hardwareAcceleration.availableEncoders')}</span>
           {hwAccelInfo.encoders.h264_nvenc && (
             <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 rounded">NVENC</span>
           )}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { CustomSelect } from '@/components/settings/CustomSelect';
 
 interface EncoderSelectorProps {
@@ -8,6 +9,8 @@ interface EncoderSelectorProps {
 }
 
 export const EncoderSelector: React.FC<EncoderSelectorProps> = ({ value, onChange, className }) => {
+  const { t } = useTranslation('ui');
+
   return (
     <CustomSelect
       value={value || 'libx264'}
@@ -19,7 +22,7 @@ export const EncoderSelector: React.FC<EncoderSelectorProps> = ({ value, onChang
           label: (
             <div className="text-left whitespace-normal break-words">
               <div className="font-medium text-slate-200">H.264 (AVC)</div>
-              <div className="text-xs text-slate-500">兼容性最好，适合大多数场景</div>
+              <div className="text-xs text-slate-500">{t('encoderSelector.h264Desc')}</div>
             </div>
           ),
         },
@@ -28,7 +31,7 @@ export const EncoderSelector: React.FC<EncoderSelectorProps> = ({ value, onChang
           label: (
             <div className="text-left whitespace-normal break-words">
               <div className="font-medium text-slate-200">H.265 (HEVC)</div>
-              <div className="text-xs text-slate-500">高压缩率，同画质体积更小</div>
+              <div className="text-xs text-slate-500">{t('encoderSelector.hevcDesc')}</div>
             </div>
           ),
         },

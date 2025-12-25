@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Clapperboard } from 'lucide-react';
 import { GENRE_PRESETS } from '@/types/settings';
 import { Modal } from '@/components/ui/Modal';
@@ -18,6 +19,7 @@ export const GenreSettingsDialog: React.FC<GenreSettingsDialogProps> = ({
   currentGenre,
   onSave,
 }) => {
+  const { t } = useTranslation('ui');
   const [tempGenre, setTempGenre] = useState(currentGenre);
 
   useEffect(() => {
@@ -38,13 +40,15 @@ export const GenreSettingsDialog: React.FC<GenreSettingsDialogProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="内容类型设置"
+      title={t('genreSettings.title')}
       icon={<Clapperboard className="w-5 h-5" />}
       maxWidth="md"
     >
       <div className="space-y-4 mb-6">
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">选择预设</label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            {t('genreSettings.selectPreset')}
+          </label>
           <GenrePicker
             currentGenre={tempGenre}
             onGenreChange={setTempGenre}
@@ -55,7 +59,7 @@ export const GenreSettingsDialog: React.FC<GenreSettingsDialogProps> = ({
       </div>
       <div className="flex justify-end">
         <PrimaryButton onClick={handleSave} disabled={!isValidSelection}>
-          保存更改
+          {t('genreSettings.saveChanges')}
         </PrimaryButton>
       </div>
     </Modal>

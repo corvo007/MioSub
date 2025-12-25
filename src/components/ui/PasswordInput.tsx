@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
@@ -19,6 +20,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
   placeholder,
   className,
 }) => {
+  const { t } = useTranslation('ui');
   const [showPassword, setShowPassword] = useState(false);
 
   return (
@@ -39,7 +41,7 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
         type="button"
         onClick={() => setShowPassword(!showPassword)}
         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-        title={showPassword ? '隐藏密钥' : '显示密钥'}
+        title={showPassword ? t('passwordInput.hideKey') : t('passwordInput.showKey')}
       >
         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
       </button>
