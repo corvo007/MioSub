@@ -1,0 +1,36 @@
+{
+  "glossaryConfirmation": {
+    "title": "Confirm Glossary",
+    "subtitle": "Extraction complete. Please select the terms to apply.",
+    "conflicts": "Conflicts",
+    "multipleVersions": "Multiple versions exist",
+    "keepCurrent": "Keep current",
+    "customTranslation": "Custom translation",
+    "customTranslationPlaceholder": "Custom translation...",
+    "doNotUse": "Don't use this term",
+    "newTerms": "New Terms",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "customTerms": "Custom Terms",
+    "addTerm": "+ Add Term",
+    "termPlaceholder": "Term",
+    "translationPlaceholder": "Translation",
+    "notesPlaceholder": "Notes",
+    "notesOptional": "Notes (optional)",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "discardAll": "Discard all",
+    "addTo": "Add to:",
+    "temporarySession": "Temporary (this session only)",
+    "createNew": "+ Create New Glossary",
+    "selectGlossary": "Select glossary",
+    "addTerms": "Add {{count}} terms",
+    "newGlossaryDialog": {
+      "title": "New Glossary",
+      "placeholder": "Enter glossary name",
+      "cancel": "Cancel",
+      "create": "Create"
+    }
+  }
+}

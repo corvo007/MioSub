@@ -9,6 +9,7 @@ import compression from './compression.json';
 import editor from './editor.json';
 import ui from './ui.json';
 import endToEnd from './endToEnd.json';
+import modals from './modals.json';
 
 export default {
   common,
@@ -22,4 +23,5 @@ export default {
   editor,
   ui,
   endToEnd,
+  modals,
 };

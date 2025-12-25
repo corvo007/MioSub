@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Book, X, AlertCircle, CheckCircle, Sparkles, Edit2, Plus, Check } from 'lucide-react';
 import { type GlossaryItem, type GlossaryExtractionResult, type AppSettings } from '@/types';
 import { mergeGlossaryResults } from '@/services/glossary/merger';
@@ -22,6 +23,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
   onConfirm,
   onUpdateSetting,
 }) => {
+  const { t } = useTranslation('modals');
   const [selectedTerms, setSelectedTerms] = useState<Set<string>>(new Set());
   const [resolvedConflicts, setResolvedConflicts] = useState<Record<string, GlossaryItem | null>>(
     {}
@@ -223,9 +225,9 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
           <div>
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
               <Book className="w-5 h-5 text-indigo-400" />
-              确认术语表
+              {t('glossaryConfirmation.title')}
             </h3>
-            <p className="text-slate-400 text-sm mt-1">提取完成，请选择要应用的术语。</p>
+            <p className="text-slate-400 text-sm mt-1">{t('glossaryConfirmation.subtitle')}</p>
           </div>
           <div className="flex items-center gap-4">
             <button
@@ -242,7 +244,8 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
           {conflicts.length > 0 && (
             <div className="space-y-4">
               <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center">
-                <AlertCircle className="w-4 h-4 mr-2" /> 冲突 ({conflicts.length})
+                <AlertCircle className="w-4 h-4 mr-2" /> {t('glossaryConfirmation.conflicts')} (
+                {conflicts.length})
               </h3>
               <div className="grid gap-4">
                 {conflicts.map((conflict, idx) => {
@@ -265,7 +268,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                       <div className="flex items-center justify-between mb-3">
                         <span className="font-bold text-white text-lg">{conflict.term}</span>
                         <span className="text-xs text-amber-500 bg-amber-500/10 px-2 py-1 rounded-full border border-amber-500/20">
-                          存在多个版本
+                          {t('glossaryConfirmation.multipleVersions')}
                         </span>
                       </div>
                       <div className="space-y-2">
@@ -323,7 +326,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                 <div className="font-medium text-white flex items-center gap-2">
                                   {existingOption.translation}
                                   <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded">
-                                    保留当前
+                                    {t('glossaryConfirmation.keepCurrent')}
                                   </span>
                                 </div>
                                 {existingOption.notes && (
@@ -358,7 +361,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                   );
                                 }}
                                 className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
-                                placeholder="自定义翻译"
+                                placeholder={t('glossaryConfirmation.customTranslation')}
                                 autoFocus
                                 onClick={(e) => e.stopPropagation()}
                               />
@@ -370,7 +373,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                   );
                                 }}
                                 className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-slate-400"
-                                placeholder="备注 (可选)"
+                                placeholder={t('glossaryConfirmation.notesOptional')}
                                 onClick={(e) => e.stopPropagation()}
                               />
                               <div className="flex justify-end gap-2">
@@ -381,7 +384,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                   }}
                                   className="text-xs text-slate-400 hover:text-white"
                                 >
-                                  取消
+                                  {t('glossaryConfirmation.cancel')}
                                 </button>
                                 <button
                                   onClick={(e) => {
@@ -390,7 +393,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                   }}
                                   className="text-xs text-indigo-400 hover:text-indigo-300"
                                 >
-                                  保存
+                                  {t('glossaryConfirmation.save')}
                                 </button>
                               </div>
                             </div>
@@ -420,7 +423,9 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                       : 'text-slate-400 italic text-sm'
                                   }
                                 >
-                                  {customValue ? customValue.translation : '自定义翻译...'}
+                                  {customValue
+                                    ? customValue.translation
+                                    : t('glossaryConfirmation.customTranslationPlaceholder')}
                                 </span>
                               </div>
                               {customValue && (
@@ -458,7 +463,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                           >
                             <div className="flex items-center gap-2">
                               <X className="w-4 h-4" />
-                              <span>不使用此术语</span>
+                              <span>{t('glossaryConfirmation.doNotUse')}</span>
                             </div>
                           </div>
                         )}
@@ -475,7 +480,8 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider flex items-center">
-                  <Sparkles className="w-4 h-4 mr-2" /> 新术语 ({unique.length})
+                  <Sparkles className="w-4 h-4 mr-2" /> {t('glossaryConfirmation.newTerms')} (
+                  {unique.length})
                 </h3>
                 <button
                   onClick={() => {
@@ -484,7 +490,9 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                   }}
                   className="text-xs text-indigo-400 hover:text-indigo-300"
                 >
-                  {selectedTerms.size === unique.length ? '取消全选' : '全选'}
+                  {selectedTerms.size === unique.length
+                    ? t('glossaryConfirmation.deselectAll')
+                    : t('glossaryConfirmation.selectAll')}
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -528,7 +536,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                   );
                                 }}
                                 className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
-                                placeholder="术语"
+                                placeholder={t('glossaryConfirmation.termPlaceholder')}
                               />
                               <input
                                 value={editValue?.translation}
@@ -538,7 +546,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                   );
                                 }}
                                 className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
-                                placeholder="翻译"
+                                placeholder={t('glossaryConfirmation.translationPlaceholder')}
                               />
                               <input
                                 value={editValue?.notes}
@@ -548,20 +556,20 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                   );
                                 }}
                                 className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-slate-400"
-                                placeholder="备注"
+                                placeholder={t('glossaryConfirmation.notesPlaceholder')}
                               />
                               <div className="flex justify-end gap-2">
                                 <button
                                   onClick={() => setEditingId(null)}
                                   className="text-xs text-slate-400 hover:text-white"
                                 >
-                                  取消
+                                  {t('glossaryConfirmation.cancel')}
                                 </button>
                                 <button
                                   onClick={() => saveEdit(term.term)}
                                   className="text-xs text-indigo-400 hover:text-indigo-300"
                                 >
-                                  保存
+                                  {t('glossaryConfirmation.save')}
                                 </button>
                               </div>
                             </div>
@@ -601,13 +609,14 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center">
-                <Plus className="w-4 h-4 mr-2" /> 自定义术语 ({customTerms.length})
+                <Plus className="w-4 h-4 mr-2" /> {t('glossaryConfirmation.customTerms')} (
+                {customTerms.length})
               </h3>
               <button
                 onClick={addCustomTerm}
                 className="text-xs bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 px-2 py-1 rounded border border-emerald-500/20 transition-colors"
               >
-                + 添加术语
+                {t('glossaryConfirmation.addTerm')}
               </button>
             </div>
             {customTerms.length > 0 && (
@@ -661,13 +670,13 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                               }}
                               className="text-xs text-red-400 hover:text-red-300"
                             >
-                              删除
+                              {t('glossaryConfirmation.delete')}
                             </button>
                             <button
                               onClick={() => saveEdit(term.term)}
                               className="text-xs text-emerald-400 hover:text-emerald-300"
                             >
-                              保存
+                              {t('glossaryConfirmation.save')}
                             </button>
                           </div>
                         </div>
@@ -704,22 +713,22 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
               onClick={handleDiscard}
               className="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
             >
-              全部丢弃
+              {t('glossaryConfirmation.discardAll')}
             </button>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-slate-400">添加到:</span>
+              <span className="text-sm text-slate-400">{t('glossaryConfirmation.addTo')}</span>
               <CustomSelect
                 value={targetGlossaryId || ''}
                 onChange={handleGlossaryChange}
                 options={[
                   ...(settings.glossaries?.map((g) => ({ value: g.id, label: g.name })) || []),
-                  { value: 'temporary', label: '临时 (仅本次会话)' },
-                  { value: 'create-new', label: '+ 新建术语表' },
+                  { value: 'temporary', label: t('glossaryConfirmation.temporarySession') },
+                  { value: 'create-new', label: t('glossaryConfirmation.createNew') },
                 ]}
                 className="w-48"
-                placeholder="选择术语表"
+                placeholder={t('glossaryConfirmation.selectGlossary')}
               />
             </div>
             <button
@@ -728,7 +737,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
               className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-medium shadow-lg shadow-indigo-500/25 transition-all flex items-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
             >
               <CheckCircle className="w-4 h-4 mr-2" />
-              添加 {totalToAdd} 个术语
+              {t('glossaryConfirmation.addTerms', { count: totalToAdd })}
             </button>
           </div>
         </div>
@@ -749,14 +758,14 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
           >
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <Plus className="w-5 h-5 text-indigo-400" />
-              新建术语表
+              {t('glossaryConfirmation.newGlossaryDialog.title')}
             </h3>
             <input
               type="text"
               value={newGlossaryName}
               onChange={(e) => setNewGlossaryName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleCreateNewGlossary()}
-              placeholder="输入术语表名称"
+              placeholder={t('glossaryConfirmation.newGlossaryDialog.placeholder')}
               className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500 mb-4"
               autoFocus
             />
@@ -768,14 +777,14 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                 }}
                 className="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
               >
-                取消
+                {t('glossaryConfirmation.newGlossaryDialog.cancel')}
               </button>
               <button
                 onClick={handleCreateNewGlossary}
                 disabled={!newGlossaryName.trim()}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                创建
+                {t('glossaryConfirmation.newGlossaryDialog.create')}
               </button>
             </div>
           </div>
