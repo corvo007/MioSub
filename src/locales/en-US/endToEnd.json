@@ -72,5 +72,70 @@
     "retry": "Retry",
     "close": "Close",
     "cancelProcessing": "Cancel Processing"
+  },
+  "config": {
+    "sections": {
+      "download": "Download Configuration",
+      "subtitle": "Subtitle Configuration",
+      "compression": "Video Compression"
+    },
+    "download": {
+      "outputDir": "Output Directory",
+      "placeholder": "Not selected",
+      "quality": "Quality Selection",
+      "best": "Best",
+      "cover": "Download Cover"
+    },
+    "subtitle": {
+      "genre": "Content Type",
+      "autoGlossary": {
+        "label": "Enable Auto Glossary",
+        "desc": "Apply extracted terms directly without manual confirmation. New terms will be merged into the active glossary (or a new one created)."
+      },
+      "glossary": {
+        "label": "Use Glossary",
+        "desc": "Select an existing glossary to assist translation",
+        "none": "(None)"
+      },
+      "diarization": {
+        "label": "Enable Speaker Diarization",
+        "desc": "Identify and tag different speakers in audio or video"
+      },
+      "speakerPreAnalysis": {
+        "label": "Enable Speaker Pre-analysis (Experimental)",
+        "desc": "Analyze audio before transcription to identify speaker count and voice characteristics. Improves accuracy but increases processing time."
+      },
+      "includeSpeaker": {
+        "label": "Include Speaker Names",
+        "desc": "Show speaker names in subtitles (e.g., Name: Dialogue)"
+      },
+      "speakerColors": {
+        "label": "Use Speaker Colors (ASS)",
+        "desc": "Assign different colors to different speakers (ASS format only)"
+      },
+      "visualStyle": {
+        "label": "Character Styled Translation",
+        "descEnabled": "Adjust translation tone based on speaker characteristics (Formal/Casual)",
+        "descDisabled": "Requires 'Speaker Pre-analysis' to be enabled"
+      },
+      "speakerCount": {
+        "label": "Speaker Count (Optional)",
+        "min": "Min Speakers",
+        "max": "Max Speakers"
+      }
+    },
+    "compression": {
+      "enable": {
+        "label": "Enable Video Compression",
+        "desc": "High-performance H.264/H.265 encoding with subtitle embedding"
+      },
+      "hwAccel": "Hardware Acceleration",
+      "encoder": "Encoder",
+      "resolution": "Resolution",
+      "crf": {
+        "label": "Quality (CRF)",
+        "desc": "Range 0-51, lower values mean higher quality. Recommended: H.264 (23), H.265 (28)"
+      }
+    }
   }
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Download, FileText, Film } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { useTranslation } from 'react-i18next';
 import type { AppSettings } from '@/types/settings';
 import { HardwareAccelerationSelector } from '@/components/settings/HardwareAccelerationSelector';
 import { ResolutionSelector } from '@/components/settings/ResolutionSelector';
@@ -26,6 +27,7 @@ export function StepConfig({
   videoInfo?: any;
   settings?: AppSettings;
 }) {
+  const { t } = useTranslation('endToEnd');
   const { hwAccelInfo } = useHardwareAcceleration();
 
   const handleSelectDir = async () => {
@@ -60,15 +62,18 @@ export function StepConfig({
 
       <div className="space-y-6">
         {/* ================================ */}
+        {/* ================================ */}
         {/* Section 1: 下载配置 */}
         {/* ================================ */}
-        <Card title="下载配置" icon={<Download className="w-4 h-4" />}>
+        <Card title={t('config.sections.download')} icon={<Download className="w-4 h-4" />}>
           {/* Output Directory */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-white/70 mb-2">输出目录</label>
+            <label className="block text-sm font-medium text-white/70 mb-2">
+              {t('config.download.outputDir')}
+            </label>
             <DirectorySelector
               value={config.outputDir || ''}
-              placeholder="未选择"
+              placeholder={t('config.download.placeholder')}
               onSelect={handleSelectDir}
               variant="accent"
             />
@@ -84,10 +89,12 @@ export function StepConfig({
             />
           ) : (
             <div className="mb-4">
-              <label className="block text-sm font-medium text-white/70 mb-2">画质选择</label>
+              <label className="block text-sm font-medium text-white/70 mb-2">
+                {t('config.download.quality')}
+              </label>
               <div className="flex flex-wrap gap-2 md:gap-3">
                 {[
-                  { value: 'best', label: '最佳' },
+                  { value: 'best', label: t('config.download.best') },
                   { value: '1080p', label: '1080p' },
                   { value: '720p', label: '720p' },
                   { value: '480p', label: '480p' },
@@ -111,7 +118,7 @@ export function StepConfig({
 
           {/* Download Thumbnail */}
           <ToggleOptionInline
-            label="下载封面"
+            label={t('config.download.cover')}
             checked={config.downloadThumbnail !== false}
             onChange={(v) => onConfigChange({ downloadThumbnail: v })}
           />
@@ -120,10 +127,12 @@ export function StepConfig({
         {/* ================================ */}
         {/* Section 2: 字幕生成配置 */}
         {/* ================================ */}
-        <Card title="字幕生成配置" icon={<FileText className="w-4 h-4" />}>
+        <Card title={t('config.sections.subtitle')} icon={<FileText className="w-4 h-4" />}>
           {/* Genre Selection */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-white/70 mb-2">内容类型</label>
+            <label className="block text-sm font-medium text-white/70 mb-2">
+              {t('config.subtitle.genre')}
+            </label>
             <GenreSelectorInline
               currentGenre={config.genre || 'anime'}
               onGenreChange={(genre) => onConfigChange({ genre })}
@@ -133,8 +142,8 @@ export function StepConfig({
           {/* Glossary & Speaker Detection */}
           <div className="space-y-2">
             <ToggleOptionInline
-              label="启用自动术语表"
-              description="提取术语后直接应用，无需人工确认。新术语将自动合并至当前激活的术语表（如当前无术语表，则自动新建）。"
+              label={t('config.subtitle.autoGlossary.label')}
+              description={t('config.subtitle.autoGlossary.desc')}
               checked={config.enableGlossary !== false}
               onChange={(v) => onConfigChange({ enableGlossary: v })}
             />
@@ -142,15 +151,15 @@ export function StepConfig({
             {/* Glossary Selection */}
             <div className="flex items-center justify-between py-2">
               <div>
-                <span className="text-sm text-white/90">使用术语表</span>
-                <p className="text-xs text-white/50">选择已有的术语表辅助翻译</p>
+                <span className="text-sm text-white/90">{t('config.subtitle.glossary.label')}</span>
+                <p className="text-xs text-white/50">{t('config.subtitle.glossary.desc')}</p>
               </div>
               <div className="w-40">
                 <CustomSelect
                   value={config.selectedGlossaryId || ''}
                   onChange={(val: string) => onConfigChange({ selectedGlossaryId: val || null })}
                   options={[
-                    { value: '', label: '(无)' },
+                    { value: '', label: t('config.subtitle.glossary.none') },
                     ...(settings?.glossaries?.map((g) => ({
                       value: g.id,
                       label: (
@@ -163,14 +172,14 @@ export function StepConfig({
                       ),
                     })) || []),
                   ]}
-                  placeholder="(无)"
+                  placeholder={t('config.subtitle.glossary.none')}
                 />
               </div>
             </div>
 
             <ToggleOptionInline
-              label="启用说话人区分"
-              description="识别音频或视频中的不同说话人，打上标签"
+              label={t('config.subtitle.diarization.label')}
+              description={t('config.subtitle.diarization.desc')}
               checked={config.enableDiarization !== false}
               onChange={(v) => onConfigChange({ enableDiarization: v })}
             />
@@ -178,8 +187,8 @@ export function StepConfig({
             {config.enableDiarization !== false && (
               <div className="ml-8 mt-1 space-y-2 border-l-2 border-white/10 pl-3">
                 <ToggleOptionInline
-                  label="启用说话人预分析 (实验性)"
-                  description="在生成字幕前预先分析音频以识别说话人数量和声音特征，可提高区分准确度，但会增加耗时"
+                  label={t('config.subtitle.speakerPreAnalysis.label')}
+                  description={t('config.subtitle.speakerPreAnalysis.desc')}
                   checked={!!config.enableSpeakerPreAnalysis}
                   onChange={(v) =>
                     onConfigChange({
@@ -190,23 +199,23 @@ export function StepConfig({
                   }
                 />
                 <ToggleOptionInline
-                  label="导出时包含说话人名称"
-                  description="在字幕文件中显示说话人（如：羊宫妃那：对话内容）"
+                  label={t('config.subtitle.includeSpeaker.label')}
+                  description={t('config.subtitle.includeSpeaker.desc')}
                   checked={!!config.includeSpeaker}
                   onChange={(v) => onConfigChange({ includeSpeaker: v })}
                 />
                 <ToggleOptionInline
-                  label="使用说话人颜色 (ASS)"
-                  description="为不同说话人分配不同颜色（仅 ASS 格式有效）"
+                  label={t('config.subtitle.speakerColors.label')}
+                  description={t('config.subtitle.speakerColors.desc')}
                   checked={!!config.useSpeakerColors}
                   onChange={(v) => onConfigChange({ useSpeakerColors: v })}
                 />
                 <ToggleOptionInline
-                  label="角色风格化翻译"
+                  label={t('config.subtitle.visualStyle.label')}
                   description={
                     config.enableSpeakerPreAnalysis
-                      ? '根据说话人特征调整翻译语气（正式/口语）'
-                      : '需要启用「说话人预分析」才能使用此功能'
+                      ? t('config.subtitle.visualStyle.descEnabled')
+                      : t('config.subtitle.visualStyle.descDisabled')
                   }
                   checked={!!config.useSpeakerStyledTranslation}
                   onChange={(v) => onConfigChange({ useSpeakerStyledTranslation: v })}
@@ -214,10 +223,14 @@ export function StepConfig({
                 />
                 {/* Min/Max Speaker Count */}
                 <div className="pt-3">
-                  <span className="text-sm text-white/90 block mb-2">说话人数量 (可选)</span>
+                  <span className="text-sm text-white/90 block mb-2">
+                    {t('config.subtitle.speakerCount.label')}
+                  </span>
                   <div className="flex flex-wrap items-center gap-4 md:gap-6">
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-white/70">最少说话人</span>
+                      <span className="text-sm text-white/70">
+                        {t('config.subtitle.speakerCount.min')}
+                      </span>
                       <NumberInput
                         value={config.minSpeakers}
                         onChange={(v) => onConfigChange({ minSpeakers: v })}
@@ -228,7 +241,9 @@ export function StepConfig({
                       />
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-white/70">最多说话人</span>
+                      <span className="text-sm text-white/70">
+                        {t('config.subtitle.speakerCount.max')}
+                      </span>
                       <NumberInput
                         value={config.maxSpeakers}
                         onChange={(v) => onConfigChange({ maxSpeakers: v })}
@@ -248,10 +263,10 @@ export function StepConfig({
         {/* ================================ */}
         {/* Section 3: 压制配置 */}
         {/* ================================ */}
-        <Card title="视频压制配置" icon={<Film className="w-4 h-4" />}>
+        <Card title={t('config.sections.compression')} icon={<Film className="w-4 h-4" />}>
           <ToggleOptionInline
-            label="启用视频压制"
-            description="高性能 H.264/H.265 视频编码与字幕内嵌"
+            label={t('config.compression.enable.label')}
+            description={t('config.compression.enable.desc')}
             checked={config.enableCompression !== false}
             onChange={(v) => onConfigChange({ enableCompression: v })}
           />
@@ -260,7 +275,9 @@ export function StepConfig({
             <div className="mt-6 space-y-6 pl-2">
               {/* Hardware Acceleration */}
               <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <label className="w-24 text-sm font-medium text-white/70 shrink-0">硬件加速</label>
+                <label className="w-24 text-sm font-medium text-white/70 shrink-0">
+                  {t('config.compression.hwAccel')}
+                </label>
                 <div className="flex-1">
                   <HardwareAccelerationSelector
                     hwAccelInfo={hwAccelInfo}
@@ -275,7 +292,9 @@ export function StepConfig({
 
               {/* Encoder */}
               <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <label className="w-24 text-sm font-medium text-white/70 shrink-0">编码器</label>
+                <label className="w-24 text-sm font-medium text-white/70 shrink-0">
+                  {t('config.compression.encoder')}
+                </label>
                 <div className="flex-1">
                   <EncoderSelector
                     value={config.compressionEncoder || 'libx264'}
@@ -286,7 +305,9 @@ export function StepConfig({
 
               {/* Resolution Select */}
               <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <label className="w-24 text-sm font-medium text-white/70 shrink-0">分辨率</label>
+                <label className="w-24 text-sm font-medium text-white/70 shrink-0">
+                  {t('config.compression.resolution')}
+                </label>
                 <div className="flex-1">
                   <ResolutionSelector
                     resolution={config.compressionResolution || 'original'}
@@ -306,7 +327,7 @@ export function StepConfig({
               {/* CRF Input */}
               <div className="flex flex-col md:flex-row md:items-center gap-4">
                 <label className="w-24 text-sm font-medium text-white/70 shrink-0">
-                  质量 (CRF)
+                  {t('config.compression.crf.label')}
                 </label>
                 <div className="flex-1 space-y-2">
                   <NumberInput
@@ -317,9 +338,7 @@ export function StepConfig({
                     allowDecimals={true}
                     className="w-full font-mono"
                   />
-                  <div className="text-xs text-slate-500">
-                    范围 0-51，数值越小画质越高。推荐：H.264 (23), H.265 (28)
-                  </div>
+                  <div className="text-xs text-slate-500">{t('config.compression.crf.desc')}</div>
                 </div>
               </div>
             </div>
