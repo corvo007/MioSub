@@ -73,4 +73,7 @@ export interface AppSettings {
   // Batch Operation Settings
   conservativeBatchMode?: boolean; // Conservative mode for fix_timestamps/proofread (default: false)
   zoomLevel?: number; // UI Zoom level (0.5 - 2.0)
+
+  // Display Settings
+  language?: 'zh-CN' | 'en-US'; // UI language (default: auto-detect from system)
 }
