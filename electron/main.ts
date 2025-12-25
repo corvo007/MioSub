@@ -31,6 +31,7 @@ import { VideoCompressorService } from './services/videoCompressor.ts';
 import type { CompressionOptions } from './services/videoCompressor.ts';
 import { endToEndPipeline } from './services/endToEndPipeline.ts';
 import type { EndToEndConfig } from '@/types/endToEnd.ts';
+import { t, changeLanguage } from './i18n.ts';
 
 const videoCompressorService = new VideoCompressorService();
 
@@ -80,15 +81,26 @@ ipcMain.handle('local-whisper-abort', async () => {
   return { success: true };
 });
 
+// IPC Handler: Change Language
+ipcMain.handle('i18n:change-language', async (_event, lang: string) => {
+  try {
+    await changeLanguage(lang);
+    console.log(`[Main] Language changed to: ${lang}`);
+    return { success: true };
+  } catch (error: any) {
+    console.error('[Main] Failed to change language:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // IPC Handler: Select Media File (for history support)
 ipcMain.handle('select-media-file', async () => {
   try {
     const result = await dialog.showOpenDialog({
-      title: '选择媒体文件',
+      title: t('dialog.selectMediaFile'),
       filters: [
-        // 扩展视频格式列表以匹配浏览器 video/* 的范围
         {
-          name: '视频文件',
+          name: t('fileFilter.videoFiles'),
           extensions: [
             'mp4',
             'mkv',
@@ -108,9 +120,8 @@ ipcMain.handle('select-media-file', async () => {
             'vob',
           ],
         },
-        // 扩展音频格式列表以匹配浏览器 audio/* 的范围
         {
-          name: '音频文件',
+          name: t('fileFilter.audioFiles'),
           extensions: [
             'mp3',
             'wav',
@@ -129,7 +140,7 @@ ipcMain.handle('select-media-file', async () => {
             'dts',
           ],
         },
-        { name: '所有文件', extensions: ['*'] },
+        { name: t('fileFilter.allFiles'), extensions: ['*'] },
       ],
       properties: ['openFile'],
     });
@@ -208,10 +219,10 @@ ipcMain.handle('select-media-file', async () => {
 ipcMain.handle('select-subtitle-file', async () => {
   try {
     const result = await dialog.showOpenDialog({
-      title: '选择字幕文件',
+      title: t('dialog.selectSubtitleFile'),
       filters: [
-        { name: '字幕文件', extensions: ['srt', 'ass'] },
-        { name: '所有文件', extensions: ['*'] },
+        { name: t('fileFilter.subtitleFiles'), extensions: ['srt', 'ass'] },
+        { name: t('fileFilter.allFiles'), extensions: ['*'] },
       ],
       properties: ['openFile'],
     });
@@ -239,10 +250,10 @@ ipcMain.handle('select-subtitle-file', async () => {
 ipcMain.handle('select-json-file', async () => {
   try {
     const result = await dialog.showOpenDialog({
-      title: '选择 JSON 文件',
+      title: t('dialog.selectJsonFile'),
       filters: [
-        { name: 'JSON 文件', extensions: ['json'] },
-        { name: '所有文件', extensions: ['*'] },
+        { name: t('fileFilter.jsonFiles'), extensions: ['json'] },
+        { name: t('fileFilter.allFiles'), extensions: ['*'] },
       ],
       properties: ['openFile'],
     });
@@ -270,11 +281,11 @@ ipcMain.handle('select-json-file', async () => {
 ipcMain.handle('select-whisper-model', async () => {
   try {
     const result = await dialog.showOpenDialog({
-      title: '选择 Whisper 模型文件',
-      message: '请选择 GGML 格式的 .bin 模型文件',
+      title: t('dialog.selectWhisperModel'),
+      message: t('dialog.selectWhisperModelMessage'),
       filters: [
-        { name: 'Whisper 模型', extensions: ['bin'] },
-        { name: '所有文件', extensions: ['*'] },
+        { name: t('fileFilter.whisperModel'), extensions: ['bin'] },
+        { name: t('fileFilter.allFiles'), extensions: ['*'] },
       ],
       properties: ['openFile'],
     });
@@ -284,7 +295,7 @@ ipcMain.handle('select-whisper-model', async () => {
       const validation = localWhisperService.validateModel(filePath);
 
       if (!validation.valid) {
-        return { success: false, error: validation.error || '未知错误' };
+        return { success: false, error: validation.error || t('error.unknownError') };
       }
       return { success: true, path: filePath };
     }
@@ -301,11 +312,11 @@ ipcMain.handle(
   async (_event, defaultName: string, content: string, format: 'srt' | 'ass') => {
     try {
       const result = await dialog.showSaveDialog({
-        title: '保存字幕文件',
+        title: t('dialog.saveSubtitleFile'),
         defaultPath: defaultName,
         filters: [
-          { name: format.toUpperCase() + ' 字幕', extensions: [format] },
-          { name: '所有文件', extensions: ['*'] },
+          { name: format.toUpperCase() + ' ' + t('fileFilter.subtitle'), extensions: [format] },
+          { name: t('fileFilter.allFiles'), extensions: ['*'] },
         ],
       });
 
@@ -332,11 +343,11 @@ ipcMain.handle('save-logs-dialog', async (_event, content: string) => {
     const localTimestamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}-${String(now.getMinutes()).padStart(2, '0')}-${String(now.getSeconds()).padStart(2, '0')}-${String(now.getMilliseconds()).padStart(3, '0')}Z`;
 
     const result = await dialog.showSaveDialog({
-      title: '导出日志',
+      title: t('dialog.exportLogs'),
       defaultPath: `gemini-subtitle-pro-logs-${localTimestamp}.txt`,
       filters: [
-        { name: '文本文件', extensions: ['txt'] },
-        { name: '所有文件', extensions: ['*'] },
+        { name: t('fileFilter.textFiles'), extensions: ['txt'] },
+        { name: t('fileFilter.allFiles'), extensions: ['*'] },
       ],
     });
 
@@ -530,10 +541,10 @@ ipcMain.handle('read-local-file', async (event, filePath) => {
     // Security: Validate path to prevent directory traversal attacks
     const normalizedPath = path.normalize(filePath);
     if (!path.isAbsolute(normalizedPath)) {
-      throw new Error('无效的文件路径：必须使用绝对路径');
+      throw new Error(t('error.invalidPath'));
     }
     if (normalizedPath.includes('..')) {
-      throw new Error('无效的文件路径：不允许使用相对路径符号');
+      throw new Error(t('error.relativePathNotAllowed'));
     }
 
     const buffer = await fs.promises.readFile(normalizedPath);
@@ -677,7 +688,7 @@ ipcMain.handle('download:cancel', async () => {
 ipcMain.handle('download:select-dir', async () => {
   try {
     const result = await dialog.showOpenDialog({
-      title: '选择下载目录',
+      title: t('dialog.selectDownloadDir'),
       properties: ['openDirectory'],
     });
     if (!result.canceled && result.filePaths.length > 0) {
@@ -867,10 +878,10 @@ const createWindow = () => {
 const createMenu = () => {
   const template: Electron.MenuItemConstructorOptions[] = [
     {
-      label: '文件',
+      label: t('menu.file'),
       submenu: [
         {
-          label: '退出',
+          label: t('menu.exit'),
           accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Alt+F4',
           click: () => {
             app.quit();
@@ -879,34 +890,34 @@ const createMenu = () => {
       ],
     },
     {
-      label: '编辑',
+      label: t('menu.edit'),
       submenu: [
-        { label: '撤销', accelerator: 'CmdOrCtrl+Z', role: 'undo' },
-        { label: '重做', accelerator: 'Shift+CmdOrCtrl+Z', role: 'redo' },
+        { label: t('menu.undo'), accelerator: 'CmdOrCtrl+Z', role: 'undo' },
+        { label: t('menu.redo'), accelerator: 'Shift+CmdOrCtrl+Z', role: 'redo' },
         { type: 'separator' },
-        { label: '剪切', accelerator: 'CmdOrCtrl+X', role: 'cut' },
-        { label: '复制', accelerator: 'CmdOrCtrl+C', role: 'copy' },
-        { label: '粘贴', accelerator: 'CmdOrCtrl+V', role: 'paste' },
-        { label: '全选', accelerator: 'CmdOrCtrl+A', role: 'selectAll' },
+        { label: t('menu.cut'), accelerator: 'CmdOrCtrl+X', role: 'cut' },
+        { label: t('menu.copy'), accelerator: 'CmdOrCtrl+C', role: 'copy' },
+        { label: t('menu.paste'), accelerator: 'CmdOrCtrl+V', role: 'paste' },
+        { label: t('menu.selectAll'), accelerator: 'CmdOrCtrl+A', role: 'selectAll' },
       ],
     },
     {
-      label: '窗口',
+      label: t('menu.window'),
       submenu: [
-        { label: '最小化', accelerator: 'CmdOrCtrl+M', role: 'minimize' },
-        { label: '关闭', accelerator: 'CmdOrCtrl+W', role: 'close' },
+        { label: t('menu.minimize'), accelerator: 'CmdOrCtrl+M', role: 'minimize' },
+        { label: t('menu.close'), accelerator: 'CmdOrCtrl+W', role: 'close' },
       ],
     },
   ];
 
   if (!app.isPackaged) {
     template.push({
-      label: '开发',
+      label: t('menu.dev'),
       submenu: [
-        { label: '重新加载', accelerator: 'CmdOrCtrl+R', role: 'reload' },
-        { label: '强制重新加载', accelerator: 'CmdOrCtrl+Shift+R', role: 'forceReload' },
+        { label: t('menu.reload'), accelerator: 'CmdOrCtrl+R', role: 'reload' },
+        { label: t('menu.forceReload'), accelerator: 'CmdOrCtrl+Shift+R', role: 'forceReload' },
         { type: 'separator' },
-        { label: '开发者工具', accelerator: 'CmdOrCtrl+Shift+I', role: 'toggleDevTools' },
+        { label: t('menu.devTools'), accelerator: 'CmdOrCtrl+Shift+I', role: 'toggleDevTools' },
       ],
     });
   }

@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { spawn } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
+import { t } from '../i18n.ts';
 
 export interface SubtitleItem {
   start: string;
@@ -102,18 +103,18 @@ export class LocalWhisperService {
   validateModel(filePath: string): { valid: boolean; error?: string } {
     try {
       if (!fs.existsSync(filePath)) {
-        return { valid: false, error: '模型文件不存在' };
+        return { valid: false, error: t('localWhisper.modelNotExist') };
       }
       if (!filePath.endsWith('.bin')) {
-        return { valid: false, error: '模型文件格式错误 (需 .bin)' };
+        return { valid: false, error: t('localWhisper.modelInvalidFormat') };
       }
       const stats = fs.statSync(filePath);
       if (stats.size < 50 * 1024 * 1024) {
-        return { valid: false, error: '模型文件过小 (可能是无效文件)' };
+        return { valid: false, error: t('localWhisper.modelTooSmall') };
       }
       return { valid: true };
     } catch (error) {
-      return { valid: false, error: '无法读取模型文件' };
+      return { valid: false, error: t('localWhisper.modelReadError') };
     }
   }
 

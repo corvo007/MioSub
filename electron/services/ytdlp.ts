@@ -4,12 +4,13 @@
  */
 
 import { app } from 'electron';
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, type ChildProcess } from 'child_process';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
 import http from 'http';
 import https from 'https';
+import { t } from '../i18n.ts';
 
 export interface VideoInfo {
   id: string;
@@ -165,7 +166,7 @@ export function validateUrl(url: string): UrlValidation {
       contentType: 'playlist',
       error: {
         type: 'unsupported',
-        message: '暂不支持下载播放列表，请使用单个视频链接',
+        message: t('ytdlp.playlistNotSupported'),
         originalError: 'YouTube playlist URL detected',
         retryable: false,
       },
@@ -180,7 +181,7 @@ export function validateUrl(url: string): UrlValidation {
       contentType: 'channel',
       error: {
         type: 'unsupported',
-        message: '暂不支持下载频道，请使用单个视频链接',
+        message: t('ytdlp.channelNotSupported'),
         originalError: 'YouTube channel URL detected',
         retryable: false,
       },
@@ -220,7 +221,7 @@ export function validateUrl(url: string): UrlValidation {
       contentType: 'bangumi',
       error: {
         type: 'unsupported',
-        message: '暂不支持下载番剧/影视内容（版权限制）',
+        message: t('ytdlp.bangumiNotSupported'),
         originalError: 'Bilibili bangumi URL detected',
         retryable: false,
       },
@@ -235,7 +236,7 @@ export function validateUrl(url: string): UrlValidation {
       contentType: 'course',
       error: {
         type: 'paid',
-        message: '暂不支持下载付费课程',
+        message: t('ytdlp.courseNotSupported'),
         originalError: 'Bilibili course URL detected',
         retryable: false,
       },
@@ -251,7 +252,7 @@ export function validateUrl(url: string): UrlValidation {
       contentType: 'live',
       error: {
         type: 'unsupported',
-        message: '暂不支持下载直播内容',
+        message: t('ytdlp.liveNotSupported'),
         originalError: 'Bilibili live URL detected',
         retryable: false,
       },
@@ -267,7 +268,7 @@ export function validateUrl(url: string): UrlValidation {
       contentType: 'space',
       error: {
         type: 'unsupported',
-        message: '暂不支持下载用户空间，请使用单个视频链接',
+        message: t('ytdlp.userSpaceNotSupported'),
         originalError: 'Bilibili space URL detected',
         retryable: false,
       },
@@ -283,7 +284,7 @@ export function validateUrl(url: string): UrlValidation {
       contentType: 'favorites',
       error: {
         type: 'unsupported',
-        message: '暂不支持下载收藏夹，请使用单个视频链接',
+        message: t('ytdlp.favoritesNotSupported'),
         originalError: 'Bilibili favorites URL detected',
         retryable: false,
       },
@@ -299,7 +300,7 @@ export function validateUrl(url: string): UrlValidation {
       contentType: 'festival',
       error: {
         type: 'unsupported',
-        message: '暂不支持下载活动专题页，请使用单个视频链接',
+        message: t('ytdlp.festivalNotSupported'),
         originalError: 'Bilibili festival URL detected',
         retryable: false,
       },
@@ -318,7 +319,7 @@ export function validateUrl(url: string): UrlValidation {
       contentType: 'unsupported',
       error: {
         type: 'invalid_url',
-        message: '无法识别的视频链接格式，请检查URL是否正确',
+        message: t('ytdlp.invalidUrlFormat'),
         originalError: `Unrecognized URL format: ${trimmedUrl}`,
         retryable: false,
       },
@@ -332,7 +333,7 @@ export function validateUrl(url: string): UrlValidation {
     contentType: 'unsupported',
     error: {
       type: 'unsupported',
-      message: '仅支持 YouTube 和 Bilibili 视频链接',
+      message: t('ytdlp.unsupportedPlatform'),
       originalError: `Unsupported URL: ${trimmedUrl}`,
       retryable: false,
     },
@@ -362,7 +363,7 @@ export function classifyError(stderr: string): DownloadError {
   ) {
     return {
       type: 'network',
-      message: '网络连接失败，请检查网络后重试',
+      message: t('ytdlp.networkError'),
       originalError: stderr,
       retryable: true,
     };
@@ -375,7 +376,7 @@ export function classifyError(stderr: string): DownloadError {
   ) {
     return {
       type: 'rate_limit',
-      message: '请求过于频繁，YouTube 限制访问，请稍后再试（建议等待 5-10 秒）',
+      message: t('ytdlp.youtubeRateLimit'),
       originalError: stderr,
       retryable: true,
     };
@@ -386,7 +387,7 @@ export function classifyError(stderr: string): DownloadError {
   if (lowerError.includes('http error 403') || lowerError.includes('403 forbidden')) {
     return {
       type: 'rate_limit',
-      message: '访问被拒绝 (403)，可能需要更新 yt-dlp 或稍后重试',
+      message: t('ytdlp.accessDenied'),
       originalError: stderr,
       retryable: true,
     };
@@ -400,7 +401,7 @@ export function classifyError(stderr: string): DownloadError {
   ) {
     return {
       type: 'rate_limit',
-      message: '请求过于频繁，请稍后再试',
+      message: t('ytdlp.rateLimit'),
       originalError: stderr,
       retryable: true,
     };
@@ -411,7 +412,7 @@ export function classifyError(stderr: string): DownloadError {
   if (lowerError.includes('this video is private') || lowerError.includes('video is private')) {
     return {
       type: 'private',
-      message: '这是私密视频，无法下载',
+      message: t('ytdlp.privateVideo'),
       originalError: stderr,
       retryable: false,
     };
@@ -428,7 +429,7 @@ export function classifyError(stderr: string): DownloadError {
   ) {
     return {
       type: 'unavailable',
-      message: '视频不存在或已被删除',
+      message: t('ytdlp.videoNotFound'),
       originalError: stderr,
       retryable: false,
     };
@@ -446,7 +447,7 @@ export function classifyError(stderr: string): DownloadError {
   ) {
     return {
       type: 'login_required',
-      message: '需要登录账号才能下载 (可使用 --cookies-from-browser 参数)',
+      message: t('ytdlp.loginRequired'),
       originalError: stderr,
       retryable: false,
     };
@@ -462,7 +463,7 @@ export function classifyError(stderr: string): DownloadError {
   ) {
     return {
       type: 'age_restricted',
-      message: '年龄限制内容，需要登录验证年龄',
+      message: t('ytdlp.ageRestricted'),
       originalError: stderr,
       retryable: false,
     };
@@ -482,7 +483,7 @@ export function classifyError(stderr: string): DownloadError {
   ) {
     return {
       type: 'geo_blocked',
-      message: '该视频在您所在地区不可用（可尝试使用代理）',
+      message: t('ytdlp.geoBlocked'),
       originalError: stderr,
       retryable: false,
     };
@@ -502,7 +503,7 @@ export function classifyError(stderr: string): DownloadError {
   ) {
     return {
       type: 'paid',
-      message: '这是付费/会员内容，需要购买后才能下载',
+      message: t('ytdlp.paidContent'),
       originalError: stderr,
       retryable: false,
     };
@@ -516,7 +517,7 @@ export function classifyError(stderr: string): DownloadError {
   ) {
     return {
       type: 'unavailable',
-      message: '该视频已被UP主删除或设为不可见',
+      message: t('ytdlp.videoDeleted'),
       originalError: stderr,
       retryable: false,
     };
@@ -526,7 +527,7 @@ export function classifyError(stderr: string): DownloadError {
   if (lowerError.includes('仅粉丝') || lowerError.includes('仅限') || lowerError.includes('充电')) {
     return {
       type: 'paid',
-      message: '该视频为UP主限定内容（粉丝/充电专属）',
+      message: t('ytdlp.fanOnly'),
       originalError: stderr,
       retryable: false,
     };
@@ -541,7 +542,7 @@ export function classifyError(stderr: string): DownloadError {
   ) {
     return {
       type: 'unsupported',
-      message: '不支持此链接类型，请检查URL是否正确',
+      message: t('ytdlp.unsupportedUrl'),
       originalError: stderr,
       retryable: false,
     };
@@ -556,7 +557,7 @@ export function classifyError(stderr: string): DownloadError {
   ) {
     return {
       type: 'format_unavailable',
-      message: '所选清晰度不可用，请尝试其他画质',
+      message: t('ytdlp.formatUnavailable'),
       originalError: stderr,
       retryable: false,
     };
@@ -570,7 +571,7 @@ export function classifyError(stderr: string): DownloadError {
   ) {
     return {
       type: 'network',
-      message: '解析响应失败，可能是临时网络问题，请重试',
+      message: t('ytdlp.parseError'),
       originalError: stderr,
       retryable: true,
     };
@@ -581,7 +582,7 @@ export function classifyError(stderr: string): DownloadError {
   if (stderr.includes('"code":600') || stderr.includes('"code": 600')) {
     return {
       type: 'paid',
-      message: '需要B站大会员才能观看此视频',
+      message: t('ytdlp.vipRequired'),
       originalError: stderr,
       retryable: false,
     };
@@ -591,7 +592,7 @@ export function classifyError(stderr: string): DownloadError {
   if (stderr.includes('"code":601') || stderr.includes('"code": 601')) {
     return {
       type: 'paid',
-      message: '这是付费视频，需要购买后才能下载',
+      message: t('ytdlp.paymentRequired'),
       originalError: stderr,
       retryable: false,
     };
@@ -605,7 +606,7 @@ export function classifyError(stderr: string): DownloadError {
   ) {
     return {
       type: 'unsupported',
-      message: '该视频有DRM加密保护，无法下载',
+      message: t('ytdlp.drmProtected'),
       originalError: stderr,
       retryable: false,
     };
@@ -615,7 +616,7 @@ export function classifyError(stderr: string): DownloadError {
   if (stderr.includes('"code":-10403') || stderr.includes('"code": -10403')) {
     return {
       type: 'geo_blocked',
-      message: '该视频仅限特定地区观看（版权限制）',
+      message: t('ytdlp.regionRestricted'),
       originalError: stderr,
       retryable: false,
     };
@@ -625,7 +626,7 @@ export function classifyError(stderr: string): DownloadError {
   if (stderr.includes('"code":-101') || stderr.includes('"code": -101')) {
     return {
       type: 'login_required',
-      message: '需要登录B站账号才能观看此视频',
+      message: t('ytdlp.biliLoginRequired'),
       originalError: stderr,
       retryable: false,
     };
@@ -634,7 +635,7 @@ export function classifyError(stderr: string): DownloadError {
   // Unknown error - may be retryable
   return {
     type: 'unknown',
-    message: `下载失败: ${stderr.slice(0, 200)}`,
+    message: t('ytdlp.downloadFailed', { error: stderr.slice(0, 200) }),
     originalError: stderr,
     retryable: true,
   };
@@ -680,7 +681,7 @@ class YtDlpService {
       const timeoutHandle = setTimeout(() => {
         killed = true;
         proc.kill('SIGTERM');
-        reject(new Error(`yt-dlp 执行超时 (${timeoutMs / 1000}秒)`));
+        reject(new Error(t('error.ytdlpTimeout', { seconds: timeoutMs / 1000 })));
       }, timeoutMs);
 
       proc.stdout.on('data', (data) => {
@@ -711,7 +712,7 @@ class YtDlpService {
     const validation = validateUrl(url);
     if (!validation.valid) {
       console.warn(`[Download] URL验证失败: ${validation.error?.message}`);
-      throw new Error(validation.error?.message || '无效的视频链接');
+      throw new Error(validation.error?.message || t('error.invalidVideoUrl'));
     }
 
     const platform = validation.platform!;
@@ -760,7 +761,7 @@ class YtDlpService {
       // If it's an array, take first element
       data = Array.isArray(parsed) ? parsed[0] : parsed;
     } catch {
-      throw new Error('解析视频信息失败：无效的响应格式');
+      throw new Error(t('error.parseVideoFailed'));
     }
 
     // Extract formats with proper filtering

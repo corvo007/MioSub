@@ -14,6 +14,7 @@ import fs from 'fs';
 import { ytDlpService, classifyError } from './ytdlp.ts';
 import { extractAudioFromVideo } from './ffmpegAudioExtractor.ts';
 import { VideoCompressorService } from './videoCompressor.ts';
+import { t } from '../i18n.ts';
 import type {
   EndToEndConfig,
   PipelineProgress,
@@ -132,14 +133,14 @@ export class EndToEndPipeline {
       // ========================================
       // Stage 1: 下载视频
       // ========================================
-      updateProgress('downloading', 0, '正在准备下载...');
+      updateProgress('downloading', 0, t('endToEnd.preparingDownload'));
 
-      if (this.isAborted) throw new Error('用户取消操作');
+      if (this.isAborted) throw new Error(t('endToEnd.userCancelled'));
 
       // Use passed videoInfo or parse URL if not provided
       let videoInfo = config.videoInfo;
       if (!videoInfo) {
-        updateProgress('downloading', 0, '正在解析视频链接...');
+        updateProgress('downloading', 0, t('endToEnd.parsingUrl'));
         videoInfo = await ytDlpService.parseUrl(config.url);
       }
       console.log(`[DEBUG] [Pipeline] Video info: ${videoInfo.title}`);
@@ -149,12 +150,12 @@ export class EndToEndPipeline {
         stage: 'downloading',
         stageProgress: 10,
         overallProgress: calculateOverallProgress('downloading', 10, config.enableCompression),
-        message: `正在下载: ${videoInfo.title}`,
+        message: t('endToEnd.downloading', { title: videoInfo.title }),
         videoInfo,
         pipelineStartTime: this.startTime,
       });
 
-      if (this.isAborted) throw new Error('用户取消操作');
+      if (this.isAborted) throw new Error(t('endToEnd.userCancelled'));
 
       // Create output directory with video title
       const safeTitle = videoInfo.title.replace(/[<>:"/\\|?*]/g, '_').substring(0, 100);
@@ -176,7 +177,10 @@ export class EndToEndPipeline {
             10 + progress.percent * 0.9,
             config.enableCompression
           ),
-          message: `正在下载: ${progress.percent.toFixed(1)}% - ${progress.speed}`,
+          message: t('endToEnd.downloadingProgress', {
+            percent: progress.percent.toFixed(1),
+            speed: progress.speed,
+          }),
           downloadProgress: progress,
           videoInfo,
           pipelineStartTime: this.startTime,
@@ -203,12 +207,12 @@ export class EndToEndPipeline {
         }
       }
 
-      if (this.isAborted) throw new Error('用户取消操作');
+      if (this.isAborted) throw new Error(t('endToEnd.userCancelled'));
 
       // ========================================
       // Stage 2: 提取音频
       // ========================================
-      updateProgress('extracting_audio', 0, '正在提取音频...');
+      updateProgress('extracting_audio', 0, t('endToEnd.extractingAudio'));
 
       const audioPath = await extractAudioFromVideo(
         videoPath,
@@ -226,7 +230,9 @@ export class EndToEndPipeline {
               progress.percent,
               config.enableCompression
             ),
-            message: `正在提取音频: ${progress.percent.toFixed(1)}%`,
+            message: t('endToEnd.extractingAudioProgress', {
+              percent: progress.percent.toFixed(1),
+            }),
             pipelineStartTime: this.startTime,
           });
         }
@@ -235,7 +241,7 @@ export class EndToEndPipeline {
       this.outputs.audioPath = audioPath;
       console.log(`[DEBUG] [Pipeline] Audio extracted: ${audioPath}`);
 
-      if (this.isAborted) throw new Error('用户取消操作');
+      if (this.isAborted) throw new Error(t('endToEnd.userCancelled'));
 
       // ========================================
       // Stage 3-7: 字幕生成（由渲染进程处理）
@@ -243,11 +249,11 @@ export class EndToEndPipeline {
       // 通过 IPC 事件通知渲染进程开始字幕生成
       // 渲染进程完成后会通过 IPC 回调通知主进程
 
-      updateProgress('transcribing', 0, '正在准备字幕生成...');
+      updateProgress('transcribing', 0, t('endToEnd.preparingSubtitle'));
 
       // Send subtitle generation request to renderer
       if (!this.mainWindow) {
-        throw new Error('主窗口未初始化');
+        throw new Error(t('endToEnd.mainWindowNotInit'));
       }
 
       // Track chunk progress
@@ -306,7 +312,10 @@ export class EndToEndPipeline {
               stageProgress,
               config.enableCompression
             ),
-            message: total > 0 ? `正在生成字幕 (${completed}/${total})` : `正在生成字幕...`,
+            message:
+              total > 0
+                ? t('endToEnd.generatingSubtitle', { completed, total })
+                : t('endToEnd.generatingSubtitleSimple'),
             transcribeProgress: chunks,
             pipelineStartTime: this.startTime,
           });
@@ -314,7 +323,7 @@ export class EndToEndPipeline {
       );
 
       if (!subtitleResult.success) {
-        throw new Error(subtitleResult.error || '字幕生成失败');
+        throw new Error(subtitleResult.error || t('endToEnd.subtitleFailed'));
       }
 
       this.outputs.subtitles = subtitleResult.subtitles;
@@ -333,13 +342,13 @@ export class EndToEndPipeline {
 
       console.log(`[DEBUG] [Pipeline] Subtitles generated: ${this.outputs.subtitlePath}`);
 
-      if (this.isAborted) throw new Error('用户取消操作');
+      if (this.isAborted) throw new Error(t('endToEnd.userCancelled'));
 
       // ========================================
       // Stage 8: 视频压制（可选）
       // ========================================
       if (config.enableCompression && config.embedSubtitle && this.outputs.subtitlePath) {
-        updateProgress('compressing', 0, '正在压制视频...');
+        updateProgress('compressing', 0, t('endToEnd.compressingVideo'));
 
         const outputVideoName = `${safeTitle}_hardsubbed.mp4`;
         const outputVideoPath = path.join(outputDir, outputVideoName);
@@ -376,7 +385,9 @@ export class EndToEndPipeline {
                 progress.percent,
                 config.enableCompression
               ),
-              message: `正在压制视频: ${progress.percent.toFixed(1)}%`,
+              message: t('endToEnd.compressingVideoProgress', {
+                percent: progress.percent.toFixed(1),
+              }),
               compressProgress: progress,
               pipelineStartTime: this.startTime,
             });
@@ -390,7 +401,7 @@ export class EndToEndPipeline {
       // ========================================
       // Complete
       // ========================================
-      updateProgress('completed', 100, '处理完成！');
+      updateProgress('completed', 100, t('endToEnd.completed'));
 
       return {
         success: true,
@@ -445,7 +456,7 @@ export class EndToEndPipeline {
   }> {
     return new Promise((resolve, reject) => {
       if (!this.mainWindow) {
-        reject(new Error('主窗口未初始化'));
+        reject(new Error(t('endToEnd.mainWindowNotInit')));
         return;
       }
 
