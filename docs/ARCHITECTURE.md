@@ -83,20 +83,22 @@ flowchart TB
 
 ### Dependency Version Overview
 
-| Category             | Dependency         | Version | Purpose            |
-| :------------------- | :----------------- | :------ | :----------------- |
-| **Core Frameworks**  | React              | 19.2    | UI Framework       |
-|                      | Vite               | 6.2     | Build Tool         |
-|                      | TypeScript         | 5.8     | Type System        |
-|                      | Electron           | 39      | Desktop Container  |
-| **AI SDK**           | @google/genai      | Latest  | Gemini API         |
-|                      | openai             | Latest  | Whisper API        |
-|                      | onnxruntime-web    | 1.23    | VAD Inference      |
-| **Audio Processing** | @ricky0123/vad-web | 0.0.30  | Silero VAD Wrapper |
-|                      | fluent-ffmpeg      | 2.1     | FFmpeg Control     |
-| **Styling**          | TailwindCSS        | 4.1     | Atomic CSS         |
-|                      | Lucide React       | 0.554   | Icon Library       |
-| **Utils**            | clsx / tw-merge    | Latest  | Style Merging      |
+| Category             | Dependency         | Version | Purpose                   |
+| :------------------- | :----------------- | :------ | :------------------------ |
+| **Core Frameworks**  | React              | 19.2    | UI Framework              |
+|                      | Vite               | 6.2     | Build Tool                |
+|                      | TypeScript         | 5.8     | Type System               |
+|                      | Electron           | 39      | Desktop Container         |
+| **AI SDK**           | @google/genai      | Latest  | Gemini API                |
+|                      | openai             | Latest  | Whisper API               |
+|                      | onnxruntime-web    | 1.23    | VAD Inference             |
+| **Audio Processing** | @ricky0123/vad-web | 0.0.30  | Silero VAD Wrapper        |
+|                      | fluent-ffmpeg      | 2.1     | FFmpeg Control            |
+| **i18n**             | i18next            | 25.7    | Internationalization Core |
+|                      | react-i18next      | 16.5    | React Bindings            |
+| **Styling**          | TailwindCSS        | 4.1     | Atomic CSS                |
+|                      | Lucide React       | 0.554   | Icon Library              |
+| **Utils**            | clsx / tw-merge    | Latest  | Style Merging             |
 
 ---
 
@@ -335,6 +337,7 @@ Gemini-Subtitle-Pro/
 │   ├── 📄 App.tsx                   # Application Main Entry
 │   ├── 📄 index.tsx                 # React Render Entry
 │   ├── 📄 index.css                 # Global Styles
+│   ├── 📄 i18n.ts                   # [NEW] i18n Configuration Entry
 │   │
 │   ├── 📂 components/               # UI Components
 │   │   ├── 📂 common/               # Common Business Components (Header, PageHeader, etc.)
@@ -356,12 +359,23 @@ Gemini-Subtitle-Pro/
 │   │   ├── 📄 useDownload.ts        # Download Logic
 │   │   └── ...                      # Other Feature Hooks
 │   │
+│   ├── 📂 locales/                  # [NEW] Internationalization Resources
+│   │   ├── 📂 zh-CN/                # Chinese (Simplified)
+│   │   │   ├── 📄 common.json       # Common Texts
+│   │   │   ├── 📄 home.json         # Home Page
+│   │   │   ├── 📄 editor.json       # Editor
+│   │   │   ├── 📄 settings.json     # Settings
+│   │   │   ├── 📄 endToEnd.json     # End-to-End Wizard
+│   │   │   └── 📄 ...               # Other Namespaces
+│   │   └── 📂 en-US/                # English
+│   │       └── 📄 ...               # Same Structure
+│   │
 │   ├── 📂 services/                 # Service Layer (Pure Logic)
 │   │   ├── 📂 api/                  # API Integration (Gemini Core, OpenAI)
 │   │   │   └── 📂 gemini/           # Gemini Basic Client and Config
 │   │   │       ├── 📂 core/         # Core API Logic
 │   │   │       └── 📂 utils/        # API Utility Functions
-│   │   ├── 📂 generation/           # [NEW] Generation Services (Core Business Logic)
+│   │   ├── 📂 generation/           # Generation Services (Core Business Logic)
 │   │   │   ├── 📂 pipeline/         # Complete Pipeline (Orchestrator, ChunkProcessor)
 │   │   │   ├── 📂 extractors/       # Information Extraction (Glossary, Speaker)
 │   │   │   ├── 📂 batch/            # Batch Operations
@@ -388,7 +402,7 @@ Gemini-Subtitle-Pro/
 │   └── 📂 services/                 # Desktop Services (Node.js Env)
 │       ├── 📄 localWhisper.ts       # Local Whisper Call
 │       ├── 📄 videoCompressor.ts    # Video Compression
-│       ├── 📄 logger.ts             # [NEW] Unified Logging Service
+│       ├── 📄 logger.ts             # Unified Logging Service
 │       └── ...                      # Other System-level Services
 │
 └── 📄 package.json                  # Project Config
@@ -861,6 +875,35 @@ Retains only the most basic API interaction capabilities:
 | `services/ytdlp.ts`                | Video Download Service (YouTube/Bilibili)                                 |
 | `services/videoCompressor.ts`      | Video Encoding Service (Supports GPU Acceleration)                        |
 | `services/endToEndPipeline.ts`     | **Full Auto Pipeline**, Orchestrates Download-Transcribe-Encode Full Flow |
+
+### 7. Internationalization Module (`src/locales/`, `src/i18n.ts`) [NEW]
+
+Full i18n support powered by i18next, enabling bilingual UI (Chinese/English):
+
+| File/Directory | Function Description                                              |
+| :------------- | :---------------------------------------------------------------- |
+| `i18n.ts`      | i18n Configuration Entry, Initializes i18next with React bindings |
+| `locales/`     | Translation Resources Root Directory                              |
+| `zh-CN/`       | Chinese (Simplified) translations, 14 namespace files             |
+| `en-US/`       | English translations, mirrors zh-CN structure                     |
+
+**Namespace Organization:**
+
+| Namespace     | Content                                |
+| :------------ | :------------------------------------- |
+| `common`      | Shared texts (buttons, labels, errors) |
+| `home`        | Home page content                      |
+| `workspace`   | Workspace page                         |
+| `editor`      | Subtitle editor                        |
+| `settings`    | Settings modal                         |
+| `endToEnd`    | End-to-end wizard                      |
+| `modals`      | Business modals                        |
+| `services`    | API service messages                   |
+| `compression` | Video compression page                 |
+| `download`    | Download page                          |
+| `progress`    | Progress indicators                    |
+| `ui`          | UI components                          |
+| `app`         | App-level texts                        |
 
 ---
 
