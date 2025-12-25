@@ -8,6 +8,7 @@ import download from './download.json';
 import compression from './compression.json';
 import editor from './editor.json';
 import ui from './ui.json';
+import endToEnd from './endToEnd.json';
 
 export default {
   common,
@@ -20,4 +21,5 @@ export default {
   compression,
   editor,
   ui,
+  endToEnd,
 };

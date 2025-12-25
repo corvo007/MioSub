@@ -1,0 +1,76 @@
+{
+  "progress": {
+    "elapsed": "用时: {{time}}",
+    "chunkLabels": {
+      "decoding": "解码音频",
+      "segmenting": "分段处理",
+      "glossary": "提取术语",
+      "diarization": "说话人预分析"
+    },
+    "subtitleProgress": "字幕生成进度",
+    "completed": "已完成",
+    "chunk": "片段 {{id}}",
+    "stages": {
+      "idle": {
+        "label": "准备中",
+        "description": "初始化任务..."
+      },
+      "downloading": {
+        "label": "下载视频",
+        "description": "正在从网络下载视频文件"
+      },
+      "extracting_audio": {
+        "label": "提取音频",
+        "description": "从视频中提取音频流"
+      },
+      "transcribing": {
+        "label": "生成字幕",
+        "description": "AI 转录与翻译"
+      },
+      "extracting_glossary": {
+        "label": "提取术语",
+        "description": "生成专有词汇表"
+      },
+      "extracting_speakers": {
+        "label": "说话人预分析",
+        "description": "识别音频中的说话人"
+      },
+      "refining": {
+        "label": "润色校对",
+        "description": "校对并润色字幕内容"
+      },
+      "translating": {
+        "label": "翻译字幕",
+        "description": "翻译字幕内容"
+      },
+      "exporting_subtitle": {
+        "label": "导出字幕",
+        "description": "将字幕导出为文件"
+      },
+      "compressing": {
+        "label": "压制视频",
+        "description": "压缩视频并嵌入字幕"
+      },
+      "completed": {
+        "label": "完成",
+        "description": "所有处理已完成"
+      },
+      "failed": {
+        "label": "失败",
+        "description": "处理过程中发生错误"
+      }
+    },
+    "cancelConfirm": {
+      "title": "确认取消",
+      "message": "确定要取消当前处理吗？已完成的中间文件将被保留在临时目录中。",
+      "continue": "继续处理",
+      "confirm": "确认取消"
+    },
+    "overallProgress": "总进度",
+    "compressing": "正在压制视频...",
+    "errorDetails": "错误详情",
+    "retry": "重试",
+    "close": "关闭",
+    "cancelProcessing": "取消处理"
+  }
+}

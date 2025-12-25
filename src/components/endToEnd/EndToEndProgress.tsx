@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Download,
   Music2,
@@ -25,6 +26,7 @@ import { cn } from '@/lib/cn';
 
 /** Elapsed time display component */
 function ElapsedTime({ startTime }: { startTime: number }) {
+  const { t } = useTranslation('endToEnd');
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -33,7 +35,11 @@ function ElapsedTime({ startTime }: { startTime: number }) {
   }, []);
 
   const elapsed = Math.floor((now - startTime) / 1000);
-  return <span className="text-white/40">用时: {formatDuration(elapsed)}</span>;
+  return (
+    <span className="text-white/40">
+      {t('progress.elapsed', { time: formatDuration(elapsed) })}
+    </span>
+  );
 }
 
 /** Chunk status labels */

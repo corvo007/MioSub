@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2025-12-25T03:24:44.619Z",
-  "totalFiles": 64,
-  "totalStrings": 569,
+  "generatedAt": "2025-12-25T03:32:10.297Z",
+  "totalFiles": 54,
+  "totalStrings": 529,
   "files": {
     "src\\index.tsx": ["未找到 root 挂载元素"],
     "src\\types\\settings.ts": ["通用", "动漫", "电影/剧集", "新闻", "科技"],
@@ -283,58 +283,7 @@
       "操作失败：${error.message}"
     ],
     "src\\components\\upload\\FileUploader.tsx": ["更改文件"],
-    "src\\components\\ui\\TimeTracker.tsx": ["用时: {formatDuration(elapsed)}"],
-    "src\\components\\ui\\PasswordInput.tsx": [
-      "setShowPassword(!showPassword)}\r\n        className=\"absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors\"\r\n        title={showPassword ? '隐藏密钥' : '显示密钥'}\r\n      >\r\n        {showPassword ?",
-      "显示密钥"
-    ],
-    "src\\components\\ui\\InputWithReset.tsx": ["重置", "恢复默认"],
-    "src\\components\\ui\\GenrePicker.tsx": [
-      "自定义...",
-      "handleCustomChange(e.target.value)}\r\n          placeholder=\"例如：游戏解说、医学讲座、科技评测...\"\r\n          variant=\"transparent\"\r\n          className=\"mt-2\"\r\n          autoFocus\r\n        />\r\n      )}",
-      "例如：游戏解说、医学讲座、科技评测..."
-    ],
-    "src\\components\\ui\\EnvKeyHint.tsx": [
-      "正在使用环境变量配置的密钥",
-      "已覆盖环境变量中的默认密钥"
-    ],
-    "src\\components\\ui\\DirectorySelector.tsx": [
-      "= ({\r\n  value,\r\n  placeholder = '未选择',\r\n  onSelect,\r\n  buttonText = '选择',\r\n  variant = 'default',\r\n  className = '',\r\n}) => {\r\n  return (",
-      "未选择",
-      "选择"
-    ],
-    "src\\components\\settings\\ResolutionSelector.tsx": [
-      "原始分辨率",
-      "保持原始分辨率",
-      "1920x1080 - 全高清",
-      "1280x720 - 高清",
-      "854x480 - 标清",
-      "自定义",
-      "手动输入宽高",
-      "onChange(resolution, v, height)}\r\n              placeholder=\"宽\"\r\n              className=\"w-full pl-4 pr-8 transition-all\"\r\n            />",
-      "onChange(resolution, width, v)}\r\n              placeholder=\"高\"\r\n              className=\"w-full pl-4 pr-8 transition-all\"\r\n            />",
-      "宽",
-      "高"
-    ],
     "src\\components\\settings\\LanguageSwitcher.tsx": ["简体中文"],
-    "src\\components\\settings\\HardwareAccelerationSelector.tsx": [
-      "{isLoading\r\n                ? '正在检测...'\r\n                : !isAvailable\r\n                  ? '硬件加速不可用'\r\n                  : isEnabled\r\n                    ? 'GPU 加速已开启'\r\n                    : 'CPU 模式'}",
-      "{isLoading\r\n                ? '正在检测硬件加速支持情况'\r\n                : !isAvailable\r\n                  ? '未检测到可以使用硬件加速的 GPU'\r\n                  : isEnabled\r\n                    ? `将使用 ${getPreferredEncoder()}`\r\n                    : '强制使用 CPU 编码'}",
-      "可用编码器:",
-      "正在检测...",
-      "硬件加速不可用",
-      "GPU 加速已开启",
-      "CPU 模式",
-      "正在检测硬件加速支持情况",
-      "未检测到可以使用硬件加速的 GPU",
-      "强制使用 CPU 编码",
-      "将使用 ${getPreferredEncoder()}"
-    ],
-    "src\\components\\settings\\GenreSettingsDialog.tsx": ["选择预设", "保存更改", "内容类型设置"],
-    "src\\components\\settings\\EncoderSelector.tsx": [
-      "兼容性最好，适合大多数场景",
-      "高压缩率，同画质体积更小"
-    ],
     "src\\components\\modals\\SpeakerManagerModal.tsx": [
       "说话人档案",
       "暂无说话人",

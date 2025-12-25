@@ -1,0 +1,76 @@
+{
+  "progress": {
+    "elapsed": "Elapsed: {{time}}",
+    "chunkLabels": {
+      "decoding": "Decoding Audio",
+      "segmenting": "Segmenting",
+      "glossary": "Extracting Glossary",
+      "diarization": "Speaker Pre-analysis"
+    },
+    "subtitleProgress": "Subtitle Generation Progress",
+    "completed": "completed",
+    "chunk": "Chunk {{id}}",
+    "stages": {
+      "idle": {
+        "label": "Preparing",
+        "description": "Initializing task..."
+      },
+      "downloading": {
+        "label": "Downloading Video",
+        "description": "Downloading video file from network"
+      },
+      "extracting_audio": {
+        "label": "Extracting Audio",
+        "description": "Extracting audio stream from video"
+      },
+      "transcribing": {
+        "label": "Generating Subtitles",
+        "description": "AI transcription and translation"
+      },
+      "extracting_glossary": {
+        "label": "Extracting Glossary",
+        "description": "Generating specialized vocabulary"
+      },
+      "extracting_speakers": {
+        "label": "Speaker Pre-analysis",
+        "description": "Identifying speakers in audio"
+      },
+      "refining": {
+        "label": "Refining",
+        "description": "Proofreading and polishing subtitles"
+      },
+      "translating": {
+        "label": "Translating Subtitles",
+        "description": "Translating subtitle content"
+      },
+      "exporting_subtitle": {
+        "label": "Exporting Subtitles",
+        "description": "Exporting subtitles to file"
+      },
+      "compressing": {
+        "label": "Compressing Video",
+        "description": "Compressing video and embedding subtitles"
+      },
+      "completed": {
+        "label": "Completed",
+        "description": "All processing completed"
+      },
+      "failed": {
+        "label": "Failed",
+        "description": "Error occurred during processing"
+      }
+    },
+    "cancelConfirm": {
+      "title": "Confirm Cancel",
+      "message": "Are you sure you want to cancel the current process? Completed intermediate files will be kept in the temporary directory.",
+      "continue": "Continue Processing",
+      "confirm": "Confirm Cancel"
+    },
+    "overallProgress": "Overall Progress",
+    "compressing": "Compressing video...",
+    "errorDetails": "Error Details",
+    "retry": "Retry",
+    "close": "Close",
+    "cancelProcessing": "Cancel Processing"
+  }
+}
