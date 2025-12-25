@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   MessageCircle,
   Pencil,
@@ -132,6 +133,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
     // Add subtitle
     addSubtitle,
   }) => {
+    const { t } = useTranslation('editor');
     const [editing, setEditing] = React.useState(false);
     const [tempText, setTempText] = React.useState('');
     const [tempOriginal, setTempOriginal] = React.useState('');
@@ -387,25 +389,27 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 {sub.hasCorruptedRangeIssue && (
                   <span
                     className="flex items-center gap-0.5 text-[10px] text-red-400"
-                    title="时间轴损坏区间"
+                    title={t('subtitleRow.corruptedTimeline')}
                   >
                     <AlertOctagon className="w-3 h-3" />
-                    <span>损坏</span>
+                    <span>{t('subtitleRow.corrupted')}</span>
                   </span>
                 )}
                 {sub.hasRegressionIssue && (
                   <span
                     className="flex items-center gap-0.5 text-[10px] text-pink-400"
-                    title="时间回退"
+                    title={t('subtitleRow.timeReverse')}
                   >
                     <Rewind className="w-3 h-3" />
-                    <span>回退</span>
+                    <span>{t('subtitleRow.reverse')}</span>
                   </span>
                 )}
                 {validation.hasOverlapIssue && (
                   <span
                     className="flex items-center gap-0.5 text-[10px] text-orange-400"
-                    title={`与上一行重叠 ${validation.overlapAmount.toFixed(1)}s`}
+                    title={t('subtitleRow.overlapWith', {
+                      amount: validation.overlapAmount.toFixed(1),
+                    })}
                   >
                     <AlertTriangle className="w-3 h-3" />
                     <span>{validation.overlapAmount.toFixed(1)}s</span>
@@ -414,7 +418,10 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 {validation.hasDurationIssue && (
                   <span
                     className="flex items-center gap-0.5 text-[10px] text-yellow-400"
-                    title={`持续时间 ${validation.duration.toFixed(1)}s 超过 ${MAX_DURATION_SECONDS}s`}
+                    title={t('subtitleRow.durationExceeds', {
+                      duration: validation.duration.toFixed(1),
+                      max: MAX_DURATION_SECONDS,
+                    })}
                   >
                     <Clock className="w-3 h-3" />
                     <span>{validation.duration.toFixed(1)}s</span>
@@ -423,10 +430,13 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 {validation.hasLengthIssue && (
                   <span
                     className="flex items-center gap-0.5 text-[10px] text-rose-400"
-                    title={`字符数 ${validation.charCount} 超过 ${MAX_CHINESE_CHARACTERS} 字符`}
+                    title={t('subtitleRow.charCountExceeds', {
+                      count: validation.charCount,
+                      max: MAX_CHINESE_CHARACTERS,
+                    })}
                   >
                     <Type className="w-3 h-3" />
-                    <span>{validation.charCount}字</span>
+                    <span>{t('subtitleRow.charCount', { count: validation.charCount })}</span>
                   </span>
                 )}
               </div>
@@ -452,7 +462,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                   value={tempOriginal}
                   onChange={(e) => setTempOriginal(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="原文"
+                  placeholder={t('subtitleRow.sourcePlaceholder')}
                   className="w-full bg-slate-600/10 border border-slate-500/30 rounded px-2 py-1 text-xs sm:text-sm text-slate-300 placeholder-slate-500/50 focus:outline-none focus:border-slate-400/50 leading-relaxed"
                 />
               )}
@@ -462,7 +472,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 onChange={(e) => setTempText(e.target.value)}
                 onKeyDown={handleKeyDown}
                 autoFocus
-                placeholder="译文"
+                placeholder={t('subtitleRow.translationPlaceholder')}
                 className="w-full bg-indigo-500/10 border border-indigo-500/30 rounded px-2 py-1 text-base sm:text-lg text-indigo-200 placeholder-indigo-500/50 focus:outline-none focus:border-indigo-500/50 leading-relaxed font-medium"
               />
             </div>
@@ -485,7 +495,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 type="text"
                 value={sub.comment || ''}
                 onChange={(e) => updateLineComment(sub.id, e.target.value)}
-                placeholder="添加具体修改说明..."
+                placeholder={t('subtitleRow.commentPlaceholder')}
                 autoFocus={editingCommentId === sub.id}
                 onBlur={() => setEditingCommentId(null)}
                 className="w-full bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1 text-sm text-amber-200 placeholder-amber-500/50 focus:outline-none focus:border-amber-500/50"
@@ -503,7 +513,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                   ? 'text-slate-300'
                   : 'text-slate-600 opacity-0 group-hover/row:opacity-100'
               )}
-              title="更多操作"
+              title={t('subtitleRow.moreActions')}
             >
               <MoreVertical className="w-6 h-6" />
             </button>
@@ -517,7 +527,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                     menuDropUp ? 'origin-bottom-right' : 'origin-top-right'
                   )}
                 >
-                  {/* 1. 编辑行 */}
+                  {/* 1. Edit Row */}
                   <button
                     onClick={() => {
                       handleStartEdit();
@@ -526,9 +536,9 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                     className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-indigo-400 transition-colors flex items-center gap-2"
                   >
                     <Pencil className="w-3.5 h-3.5" />
-                    编辑行
+                    {t('subtitleRow.editRow')}
                   </button>
-                  {/* 2. 添加新行 (submenu) */}
+                  {/* 2. Add New Row (submenu) */}
                   {addSubtitle && (
                     <div
                       className="relative"
@@ -538,7 +548,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                       <button className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors flex items-center justify-between">
                         <span className="flex items-center gap-2">
                           <Plus className="w-3.5 h-3.5" />
-                          添加新行
+                          {t('subtitleRow.addNewRow')}
                         </span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </button>
@@ -556,7 +566,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                             }}
                             className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors"
                           >
-                            在前面添加
+                            {t('subtitleRow.addBefore')}
                           </button>
                           <button
                             onClick={() => {
@@ -565,13 +575,13 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                             }}
                             className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors"
                           >
-                            在后面添加
+                            {t('subtitleRow.addAfter')}
                           </button>
                         </div>
                       )}
                     </div>
                   )}
-                  {/* 3. 添加评论 */}
+                  {/* 3. Add Comment */}
                   <button
                     onClick={() => {
                       setEditingCommentId(sub.id);
@@ -580,9 +590,9 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                     className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-amber-400 transition-colors flex items-center gap-2"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
-                    添加评论
+                    {t('subtitleRow.addComment')}
                   </button>
-                  {/* 4. 删除行 (red) */}
+                  {/* 4. Delete Row (red) */}
                   {deleteSubtitle && (
                     <>
                       <div className="border-t border-slate-700 my-1" />
@@ -594,7 +604,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                         className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors flex items-center gap-2"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        删除行
+                        {t('subtitleRow.deleteRow')}
                       </button>
                     </>
                   )}

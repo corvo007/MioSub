@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Book,
   Plus,
@@ -40,6 +41,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
   onSetActiveGlossary,
   onClose,
 }) => {
+  const { t } = useTranslation('editor');
   const [selectedGlossaryId, setSelectedGlossaryId] = useState<string | null>(activeGlossaryId);
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editNameValue, setEditNameValue] = useState('');
@@ -67,7 +69,9 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
   const selectedGlossary = glossaries.find((g) => g.id === selectedGlossaryId);
 
   const handleAddGlossary = () => {
-    const newGlossary = createGlossary(`新术语表 ${glossaries.length + 1}`);
+    const newGlossary = createGlossary(
+      t('glossary.newGlossaryName', { num: glossaries.length + 1 })
+    );
     onUpdateGlossaries([...glossaries, newGlossary]);
     setSelectedGlossaryId(newGlossary.id);
     // Auto-start editing name
@@ -211,7 +215,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
         <div className="w-64 bg-slate-950 border-r border-slate-800 flex flex-col">
           <div className="p-4 border-b border-slate-800">
             <h2 className="text-lg font-bold text-white flex items-center">
-              <Book className="w-5 h-5 mr-2 text-indigo-400" /> 术语表
+              <Book className="w-5 h-5 mr-2 text-indigo-400" /> {t('glossary.title')}
             </h2>
           </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
@@ -229,7 +233,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                 {showDeleteConfirm === glossary.id ? (
                   <div className="absolute inset-0 bg-slate-900 flex items-center justify-between px-3 rounded-lg z-10 border border-red-500/30">
                     <span className="text-xs text-red-400 font-medium flex items-center">
-                      <AlertCircle className="w-3 h-3 mr-1" /> 删除？
+                      <AlertCircle className="w-3 h-3 mr-1" /> {t('glossary.deleteConfirm')}
                     </span>
                     <div className="flex items-center space-x-2">
                       <button
@@ -239,7 +243,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                         }}
                         className="px-2 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs rounded border border-red-500/30 transition-colors"
                       >
-                        是
+                        {t('glossary.yes')}
                       </button>
                       <button
                         onClick={(e) => {
@@ -248,7 +252,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                         }}
                         className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs rounded border border-slate-700 transition-colors"
                       >
-                        否
+                        {t('glossary.no')}
                       </button>
                     </div>
                   </div>
@@ -277,13 +281,13 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                       </span>
                       {activeGlossaryId === glossary.id && (
                         <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/20">
-                          当前使用
+                          {t('glossary.currentlyUsed')}
                         </span>
                       )}
                     </div>
                   )}
                   <div className="text-[10px] text-slate-500 mt-0.5">
-                    {glossary.terms.length} 个术语
+                    {t('glossary.termCount', { count: glossary.terms.length })}
                   </div>
                 </div>
 
@@ -302,7 +306,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                       setEditNameValue(glossary.name);
                     }}
                     className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white"
-                    title="重命名"
+                    title={t('glossary.rename')}
                   >
                     <Edit2 className="w-3 h-3" />
                   </button>
@@ -312,7 +316,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                       setShowDeleteConfirm(glossary.id);
                     }}
                     className="p-1.5 hover:bg-red-500/20 rounded text-slate-400 hover:text-red-400"
-                    title="Delete"
+                    title={t('glossary.delete')}
                   >
                     <Trash2 className="w-3 h-3" />
                   </button>
@@ -326,12 +330,12 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
               className="w-full flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white py-2 rounded-lg transition-colors border border-slate-700"
             >
               <Plus className="w-4 h-4" />
-              <span className="text-sm font-medium">新建术语表</span>
+              <span className="text-sm font-medium">{t('glossary.createNew')}</span>
             </button>
             {glossaries.length === 0 && (
               <label className="w-full flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white py-2 rounded-lg transition-colors border border-slate-700 cursor-pointer">
                 <Upload className="w-4 h-4" />
-                <span className="text-sm font-medium">导入术语表</span>
+                <span className="text-sm font-medium">{t('glossary.import')}</span>
                 <input type="file" accept=".json" onChange={handleImport} className="hidden" />
               </label>
             )}
@@ -348,12 +352,13 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                     {selectedGlossary.name}
                     {activeGlossaryId === selectedGlossary.id && (
                       <span className="ml-3 px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 flex items-center">
-                        <CheckCircle className="w-3 h-3 mr-1" /> 当前使用
+                        <CheckCircle className="w-3 h-3 mr-1" /> {t('glossary.currentlyUsed')}
                       </span>
                     )}
                   </h2>
                   <p className="text-slate-500 text-sm mt-1">
-                    最后更新: {new Date(selectedGlossary.updatedAt).toLocaleDateString()}
+                    {t('glossary.lastUpdated')}:{' '}
+                    {new Date(selectedGlossary.updatedAt).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -362,13 +367,13 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                       onClick={() => onSetActiveGlossary(selectedGlossary.id)}
                       className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors flex items-center"
                     >
-                      <CheckCircle className="w-4 h-4 mr-2" /> 设为当前
+                      <CheckCircle className="w-4 h-4 mr-2" /> {t('glossary.setAsCurrent')}
                     </button>
                   )}
                   <div className="h-6 w-px bg-slate-700 mx-2" />
                   <label
                     className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer"
-                    title="导入 JSON"
+                    title={t('glossary.importJson')}
                   >
                     <Download className="w-5 h-5" />
                     <input type="file" accept=".json" onChange={handleImport} className="hidden" />
@@ -376,7 +381,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                   <button
                     onClick={handleExport}
                     className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
-                    title="导出 JSON"
+                    title={t('glossary.exportJson')}
                   >
                     <Upload className="w-5 h-5" />
                   </button>
@@ -390,7 +395,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <input
                       type="text"
-                      placeholder="搜索术语..."
+                      placeholder={t('glossary.searchTerms')}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
@@ -406,7 +411,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                       <div className="flex-1 space-y-2">
                         <div className="flex space-x-2">
                           <input
-                            placeholder="术语"
+                            placeholder={t('glossary.term')}
                             className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
@@ -429,12 +434,12 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                             }}
                           />
                           <input
-                            placeholder="翻译"
+                            placeholder={t('glossary.translation')}
                             className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
                           />
                         </div>
                         <input
-                          placeholder="备注 (可选)"
+                          placeholder={t('glossary.notes')}
                           className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-400 focus:outline-none focus:border-indigo-500"
                         />
                       </div>
@@ -489,7 +494,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                       setEditTermData({ ...editTermData, term: e.target.value })
                                     }
                                     className="flex-1 bg-slate-900 border border-indigo-500 rounded px-2 py-1 text-sm text-white focus:outline-none"
-                                    placeholder="术语"
+                                    placeholder={t('glossary.term')}
                                     autoFocus
                                   />
                                   <input
@@ -501,7 +506,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                       })
                                     }
                                     className="flex-1 bg-slate-900 border border-indigo-500 rounded px-2 py-1 text-sm text-white focus:outline-none"
-                                    placeholder="翻译"
+                                    placeholder={t('glossary.translation')}
                                   />
                                 </div>
                                 <input
@@ -510,7 +515,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                     setEditTermData({ ...editTermData, notes: e.target.value })
                                   }
                                   className="w-full bg-slate-900 border border-indigo-500 rounded px-2 py-1 text-xs text-slate-300 focus:outline-none"
-                                  placeholder="备注 (可选)"
+                                  placeholder={t('glossary.notes')}
                                   onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
                                 />
                               </div>
@@ -518,14 +523,14 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                 <button
                                   onClick={handleSaveEdit}
                                   className="p-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded transition-colors"
-                                  title="保存"
+                                  title={t('glossary.save')}
                                 >
                                   <CheckCircle className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={handleCancelEdit}
                                   className="p-1.5 bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-white rounded transition-colors"
-                                  title="取消"
+                                  title={t('glossary.cancel')}
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
@@ -554,7 +559,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                     setEditTermData({ ...item });
                                   }}
                                   className="p-1.5 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded transition-colors"
-                                  title="编辑"
+                                  title={t('glossary.edit')}
                                 >
                                   <Edit2 className="w-4 h-4" />
                                 </button>
@@ -565,7 +570,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                     handleUpdateTerms(newItems);
                                   }}
                                   className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
-                                  title="删除"
+                                  title={t('glossary.delete')}
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
@@ -581,7 +586,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-500">
               <Book className="w-16 h-16 mb-4 opacity-20" />
-              <p>选择一个术语表以管理术语</p>
+              <p>{t('glossary.selectToManage')}</p>
             </div>
           )}
           <button

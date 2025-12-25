@@ -6,6 +6,7 @@ import app from './app.json';
 import workspace from './workspace.json';
 import download from './download.json';
 import compression from './compression.json';
+import editor from './editor.json';
 
 export default {
   common,
@@ -16,4 +17,5 @@ export default {
   workspace,
   download,
   compression,
+  editor,
 };
