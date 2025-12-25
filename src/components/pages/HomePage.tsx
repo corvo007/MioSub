@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { FileVideo, FileText, Download, ArrowRight, Scissors, Wand2, Sparkles } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { SectionHeader } from '@/components/ui/SectionHeader';
@@ -28,6 +29,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   onStartCompression,
   onStartEndToEnd,
 }) => {
+  const { t } = useTranslation('home');
   const isElectron = typeof window !== 'undefined' && !!window.electronAPI?.isElectron;
 
   return (
@@ -44,27 +46,25 @@ export const HomePage: React.FC<HomePageProps> = ({
             <div className="flex items-center justify-center gap-3 text-sm text-slate-400">
               <span className="flex items-center gap-2 px-4 py-2 bg-slate-900/50 rounded-full border border-slate-800">
                 <Download className="w-4 h-4 text-violet-400" />
-                <span>下载视频</span>
+                <span>{t('workflow.download')}</span>
               </span>
               <ArrowRight className="w-5 h-5 text-slate-700" />
               <span className="flex items-center gap-2 px-4 py-2 bg-slate-900/50 rounded-full border border-slate-800">
                 <FileVideo className="w-4 h-4 text-indigo-400" />
-                <span>生成字幕</span>
+                <span>{t('workflow.generate')}</span>
               </span>
               <ArrowRight className="w-5 h-5 text-slate-700" />
               <span className="flex items-center gap-2 px-4 py-2 bg-slate-900/50 rounded-full border border-slate-800">
                 <FileText className="w-4 h-4 text-emerald-400" />
-                <span>编辑润色</span>
+                <span>{t('workflow.edit')}</span>
               </span>
               <ArrowRight className="w-5 h-5 text-slate-700" />
               <span className="flex items-center gap-2 px-4 py-2 bg-slate-900/50 rounded-full border border-slate-800">
                 <Scissors className="w-4 h-4 text-amber-400" />
-                <span>压制导出</span>
+                <span>{t('workflow.export')}</span>
               </span>
             </div>
-            <p className="text-center text-slate-500 text-sm mt-4">
-              支持视频下载、字幕生成、翻译润色、压制导出全流程
-            </p>
+            <p className="text-center text-slate-500 text-sm mt-4">{t('description')}</p>
           </div>
 
           {/* One-Click End-to-End Button */}
@@ -82,10 +82,10 @@ export const HomePage: React.FC<HomePageProps> = ({
                   </div>
                   <div className="text-left">
                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                      一键生成熟肉（全自动模式）
+                      {t('endToEnd.title')}
                       <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
                     </h2>
-                    <p className="text-white/70 text-sm">输入链接，自动下载、生成字幕、压制视频</p>
+                    <p className="text-white/70 text-sm">{t('endToEnd.description')}</p>
                   </div>
                   <ArrowRight className="w-6 h-6 text-white/50 group-hover:text-white group-hover:translate-x-1 transition-all ml-auto" />
                 </div>
@@ -96,7 +96,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           {/* Subtitle Workspace Section */}
           <div className="w-full mb-6">
             <SectionHeader withDivider className="mb-4">
-              字幕工作台
+              {t('sections.workspace')}
             </SectionHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
               <button
@@ -107,8 +107,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <FileVideo className="w-6 h-6 text-indigo-400 group-hover:scale-110 transition-transform" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-white mb-0.5">新建项目</h2>
-                  <p className="text-slate-500 text-sm truncate">上传本地视频，生成字幕并翻译</p>
+                  <h2 className="text-lg font-bold text-white mb-0.5">
+                    {t('cards.newProject.title')}
+                  </h2>
+                  <p className="text-slate-500 text-sm truncate">
+                    {t('cards.newProject.description')}
+                  </p>
                 </div>
               </button>
               <button
@@ -119,8 +123,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                   <FileText className="w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-white mb-0.5">打开字幕</h2>
-                  <p className="text-slate-500 text-sm truncate">导入已有字幕文件，编辑或翻译</p>
+                  <h2 className="text-lg font-bold text-white mb-0.5">
+                    {t('cards.openSubtitle.title')}
+                  </h2>
+                  <p className="text-slate-500 text-sm truncate">
+                    {t('cards.openSubtitle.description')}
+                  </p>
                 </div>
               </button>
             </div>
@@ -129,7 +137,7 @@ export const HomePage: React.FC<HomePageProps> = ({
           {/* Toolbox Section */}
           <div className="w-full">
             <SectionHeader withDivider className="mb-4">
-              工具箱
+              {t('sections.toolbox')}
             </SectionHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
               <button
@@ -156,8 +164,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                   />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-white mb-0.5">下载视频</h2>
-                  <p className="text-slate-500 text-sm truncate">从 YouTube / Bilibili 下载视频</p>
+                  <h2 className="text-lg font-bold text-white mb-0.5">
+                    {t('cards.download.title')}
+                  </h2>
+                  <p className="text-slate-500 text-sm truncate">
+                    {t('cards.download.description')}
+                  </p>
                 </div>
               </button>
               <button
@@ -184,15 +196,17 @@ export const HomePage: React.FC<HomePageProps> = ({
                   />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-white mb-0.5">视频压制</h2>
-                  <p className="text-slate-500 text-sm truncate">将字幕嵌入视频并压缩导出</p>
+                  <h2 className="text-lg font-bold text-white mb-0.5">
+                    {t('cards.compression.title')}
+                  </h2>
+                  <p className="text-slate-500 text-sm truncate">
+                    {t('cards.compression.description')}
+                  </p>
                 </div>
               </button>
             </div>
             {!isElectron && (
-              <p className="text-center text-amber-500/80 text-sm mt-4">
-                ⚠️ 以上功能及全自动模式在网页版不可用，请使用桌面版以获得最佳体验
-              </p>
+              <p className="text-center text-amber-500/80 text-sm mt-4">{t('webWarning')}</p>
             )}
           </div>
         </main>

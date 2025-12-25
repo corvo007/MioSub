@@ -1,0 +1,36 @@
+{
+  "workflow": {
+    "download": "下载视频",
+    "generate": "生成字幕",
+    "edit": "编辑润色",
+    "export": "压制导出"
+  },
+  "description": "支持视频下载、字幕生成、翻译润色、压制导出全流程",
+  "endToEnd": {
+    "title": "一键生成熟肉（全自动模式）",
+    "description": "输入链接，自动下载、生成字幕、压制视频"
+  },
+  "sections": {
+    "workspace": "字幕工作台",
+    "toolbox": "工具箱"
+  },
+  "cards": {
+    "newProject": {
+      "title": "新建项目",
+      "description": "上传本地视频，生成字幕并翻译"
+    },
+    "openSubtitle": {
+      "title": "打开字幕",
+      "description": "导入已有字幕文件，编辑或翻译"
+    },
+    "download": {
+      "title": "下载视频",
+      "description": "从 YouTube / Bilibili 下载视频"
+    },
+    "compression": {
+      "title": "视频压制",
+      "description": "将字幕嵌入视频并压缩导出"
+    }
+  },
+  "webWarning": "⚠️ 以上功能及全自动模式在网页版不可用，请使用桌面版以获得最佳体验"
+}

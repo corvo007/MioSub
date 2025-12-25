@@ -1,0 +1,36 @@
+{
+  "workflow": {
+    "download": "Download Video",
+    "generate": "Generate Subtitles",
+    "edit": "Edit & Polish",
+    "export": "Compress & Export"
+  },
+  "description": "Full workflow: video download, subtitle generation, translation, and export",
+  "endToEnd": {
+    "title": "One-Click Subtitle Generation (Auto Mode)",
+    "description": "Enter a link to auto-download, generate subtitles, and compress video"
+  },
+  "sections": {
+    "workspace": "Subtitle Workspace",
+    "toolbox": "Toolbox"
+  },
+  "cards": {
+    "newProject": {
+      "title": "New Project",
+      "description": "Upload local video, generate and translate subtitles"
+    },
+    "openSubtitle": {
+      "title": "Open Subtitle",
+      "description": "Import existing subtitle files for editing or translation"
+    },
+    "download": {
+      "title": "Download Video",
+      "description": "Download videos from YouTube / Bilibili"
+    },
+    "compression": {
+      "title": "Video Compression",
+      "description": "Embed subtitles into video and export"
+    }
+  },
+  "webWarning": "⚠️ The above features and auto mode are not available in the web version. Please use the desktop app for the best experience."
+}
