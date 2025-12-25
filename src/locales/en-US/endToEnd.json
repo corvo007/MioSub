@@ -137,5 +137,34 @@
         "desc": "Range 0-51, lower values mean higher quality. Recommended: H.264 (23), H.265 (28)"
       }
     }
+  },
+  "wizard": {
+    "title": "Auto Mode",
+    "modeBadge": "End-to-End Mode",
+    "subtitle": "Enter URL to automatically generate subtitled video",
+    "featureUnavailable": {
+      "title": "Feature Unavailable",
+      "desc": "This feature is only available in the desktop version",
+      "return": "Return"
+    },
+    "header": {
+      "logs": "Logs",
+      "glossary": "Glossary",
+      "settings": "Settings",
+      "viewLogs": "View Logs",
+      "manageGlossary": "Manage Glossary"
+    },
+    "steps": {
+      "input": "Input URL",
+      "config": "Configure",
+      "process": "Process",
+      "complete": "Complete"
+    },
+    "navigation": {
+      "back": "Back",
+      "cancel": "Cancel",
+      "start": "Start Processing",
+      "next": "Next"
+    }
   }
 }

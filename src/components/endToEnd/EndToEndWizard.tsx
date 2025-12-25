@@ -15,6 +15,7 @@ import {
   Book,
   AlertCircle,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useEndToEnd } from '@/hooks/useEndToEnd';
 import { EndToEndProgress } from '@/components/endToEnd/EndToEndProgress';
 import type { AppSettings } from '@/types/settings';
@@ -58,12 +59,13 @@ export function EndToEndWizard({
     abortPipeline,
     isElectron,
   } = useEndToEnd();
+  const { t } = useTranslation('endToEnd');
 
   const steps = [
-    { label: '输入链接', icon: <Link2 className="w-4 h-4" /> },
-    { label: '配置参数', icon: <Settings className="w-4 h-4" /> },
-    { label: '执行处理', icon: <Play className="w-4 h-4" /> },
-    { label: '完成', icon: <CheckCircle className="w-4 h-4" /> },
+    { label: t('wizard.steps.input'), icon: <Link2 className="w-4 h-4" /> },
+    { label: t('wizard.steps.config'), icon: <Settings className="w-4 h-4" /> },
+    { label: t('wizard.steps.process'), icon: <Play className="w-4 h-4" /> },
+    { label: t('wizard.steps.complete'), icon: <CheckCircle className="w-4 h-4" /> },
   ];
 
   const currentStepIndex = ['input', 'config', 'progress', 'result'].indexOf(state.currentStep);
@@ -100,13 +102,15 @@ export function EndToEndWizard({
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-8">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-amber-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">功能不可用</h2>
-          <p className="text-white/60 mb-6">此功能仅在桌面版可用</p>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            {t('wizard.featureUnavailable.title')}
+          </h2>
+          <p className="text-white/60 mb-6">{t('wizard.featureUnavailable.desc')}</p>
           <button
             onClick={onCancel}
             className="px-6 py-3 bg-white/10 border border-white/20 rounded-xl text-white"
           >
-            返回
+            {t('wizard.featureUnavailable.return')}
           </button>
         </div>
       </div>
@@ -120,13 +124,13 @@ export function EndToEndWizard({
         <PageHeader
           title={
             <>
-              <span className="truncate">全自动模式</span>
+              <span className="truncate">{t('wizard.title')}</span>
               <span className="text-[10px] sm:text-xs font-normal text-slate-500 bg-slate-900 border border-slate-800 px-1.5 sm:px-2 py-0.5 rounded whitespace-nowrap">
-                端到端模式
+                {t('wizard.modeBadge')}
               </span>
             </>
           }
-          subtitle="输入链接，自动生成字幕视频"
+          subtitle={t('wizard.subtitle')}
           onBack={onCancel}
           actions={
             <>
@@ -134,8 +138,8 @@ export function EndToEndWizard({
                 <HeaderButton
                   onClick={onShowLogs}
                   icon={<FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-                  label="日志"
-                  title="查看日志"
+                  label={t('wizard.header.logs')}
+                  title={t('wizard.header.viewLogs')}
                   hoverColor="blue"
                 />
               )}
@@ -143,8 +147,8 @@ export function EndToEndWizard({
                 <HeaderButton
                   onClick={onShowGlossary}
                   icon={<Book className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-                  label="术语表"
-                  title="术语表管理"
+                  label={t('wizard.header.glossary')}
+                  title={t('wizard.header.manageGlossary')}
                   hoverColor="indigo"
                 />
               )}
@@ -152,7 +156,7 @@ export function EndToEndWizard({
                 <HeaderButton
                   onClick={onShowSettings}
                   icon={<Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-                  label="设置"
+                  label={t('wizard.header.settings')}
                   hoverColor="emerald"
                 />
               )}
@@ -211,7 +215,9 @@ export function EndToEndWizard({
               >
                 <span className="flex items-center gap-2">
                   <ArrowLeft className="w-4 h-4" />
-                  {currentStepIndex > 0 ? '上一步' : '取消'}
+                  {currentStepIndex > 0
+                    ? t('wizard.navigation.back')
+                    : t('wizard.navigation.cancel')}
                 </span>
               </button>
               <PrimaryButton
@@ -220,10 +226,10 @@ export function EndToEndWizard({
                 icon={state.currentStep === 'config' ? <Play className="w-4 h-4" /> : undefined}
               >
                 {state.currentStep === 'config' ? (
-                  '开始处理'
+                  t('wizard.navigation.start')
                 ) : (
                   <>
-                    下一步
+                    {t('wizard.navigation.next')}
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
