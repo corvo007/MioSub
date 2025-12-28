@@ -25,7 +25,7 @@
     },
     "download": {
       "title": "下载视频",
-      "description": "支持 YouTube / Bilibili 等主流平台"
+      "description": "支持 YouTube / Bilibili 平台"
     },
     "compression": {
       "title": "视频压制",

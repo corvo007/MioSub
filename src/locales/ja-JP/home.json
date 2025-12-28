@@ -17,7 +17,7 @@
   "cards": {
     "newProject": {
       "title": "新規プロジェクト",
-      "description": "ローカル動画をアップロードし、ワンクリックでバイリンガル字幕を生成"
+      "description": "動画をアップロードして字幕を自動生成"
     },
     "openSubtitle": {
       "title": "字幕を開く",
@@ -25,11 +25,11 @@
     },
     "download": {
       "title": "動画ダウンロード",
-      "description": "YouTube / Bilibili などの主要プラットフォームに対応"
+      "description": "YouTube / Bilibili に対応"
     },
     "compression": {
       "title": "動画エンコード",
-      "description": "字幕を動画に焼き込んでエンコード・エクスポート"
+      "description": "字幕を動画に埋め込んで出力"
     }
   },
   "webWarning": "⚠️ この機能と全自動モードはウェブ版では使えません。パソコン版アプリを使うのがおすすめです。"
