@@ -4,7 +4,7 @@
     "selectSubtitleFile": "选择字幕文件",
     "selectJsonFile": "选择 JSON 文件",
     "selectWhisperModel": "选择 Whisper 模型文件",
-    "selectWhisperModelMessage": "请选择 GGML 格式的 .bin 模型文件",
+    "selectWhisperModelMessage": "请选择 .bin 格式的 GGML 模型文件",
     "selectDownloadDir": "选择下载目录",
     "saveSubtitleFile": "保存字幕文件",
     "exportLogs": "导出日志"
@@ -61,7 +61,7 @@
     "youtubeRateLimit": "请求过于频繁，YouTube 限制访问，请稍后再试（建议等待 5-10 秒）",
     "accessDenied": "访问被拒绝 (403)，可能需要更新 yt-dlp 或稍后重试",
     "privateVideo": "这是私密视频，无法下载",
-    "videoNotFound": "视频不存在或已被删除",
+    "videoNotFound": "视频不存在或已删除",
     "loginRequired": "需要登录账号才能下载 (可使用 --cookies-from-browser 参数)",
     "ageRestricted": "年龄限制内容，需要登录验证年龄",
     "geoBlocked": "该视频在您所在地区不可用（可尝试使用代理）",

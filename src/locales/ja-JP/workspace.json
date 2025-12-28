@@ -1,0 +1,135 @@
+{
+  "header": {
+    "newProject": "新規プロジェクト",
+    "subtitleEditor": "字幕エディタ",
+    "generateMode": "生成モード",
+    "importMode": "インポートモード",
+    "rowsLoaded": "{{count}} 行読み込み済み",
+    "noFileSelected": "ファイルが選択されていません"
+  },
+  "sidebar": {
+    "projectSettings": "プロジェクト設定",
+    "projectFile": "プロジェクトファイル",
+    "loading": "読み込み中",
+    "readingFile": "ファイルを読み取り中...",
+    "uploadVideoNew": "動画/音声をアップロード",
+    "startTranscription": "文字起こしを開始",
+    "attachMedia": "メディアを添付（オプション）",
+    "subtitleFile": "字幕ファイル",
+    "selected": "{{count}} 件選択済み",
+    "segment": "セグメント {{id}}",
+    "commentPlaceholder": "説明やメモを追加...",
+    "proofread": "翻訳を校正",
+    "rows": "{{count}} 行",
+    "parsing": "解析中",
+    "parsingSubtitles": "字幕を解析中...",
+    "importSrtAss": ".SRT / .ASS をインポート",
+    "hint": "💡 ヒント：",
+    "hintText": "本アプリで生成した字幕のみフル機能で編集できます",
+    "genre": "ジャンル",
+    "editGenre": "ジャンル/コンテキストを編集",
+    "glossary": "用語集",
+    "targetLanguage": "ターゲット言語",
+    "noGlossary": "（なし）",
+    "speakerCount": "話者数（オプション）",
+    "speakerMin": "最小",
+    "speakerMax": "最大"
+  },
+  "genres": {
+    "general": "一般",
+    "anime": "アニメ",
+    "movie": "映画/ドラマ",
+    "news": "ニュース",
+    "tech": "テクノロジー"
+  },
+  "actions": {
+    "startProcessing": "処理を開始",
+    "processing": "処理中...",
+    "exportSubtitles": "字幕をエクスポート...",
+    "compressVideo": "動画をエンコード"
+  },
+  "export": {
+    "title": "字幕をエクスポート",
+    "description": "必要な字幕ファイル形式を選択してください。現在の出力モード：",
+    "bilingual": "バイリンガル",
+    "translationOnly": "翻訳のみ",
+    "srtFormat": "汎用フォーマット",
+    "assFormat": "高度なスタイル",
+    "cancel": "キャンセル"
+  },
+  "editor": {
+    "noSubtitles": "生成された字幕がありません",
+    "emptyStateNew": "メディアファイルをアップロードして生成を開始。",
+    "emptyStateImport": "SRT/ASS ファイルをインポートして編集を開始。",
+    "noMatchingSubtitles": "一致する字幕が見つかりませんでした",
+    "foundResults": "{{count}} 件の結果が見つかりました",
+    "filtering": "フィルタ中",
+    "filters": {
+      "durationTooLong": "時間が長すぎる",
+      "tooManyChars": "文字が多すぎる",
+      "timeOverlap": "時間の重複"
+    },
+    "deleteConfirm": {
+      "title": "字幕を削除",
+      "message": "この字幕行を削除しますか？この操作は元に戻せません。",
+      "confirm": "削除"
+    },
+    "batchDeleteConfirm": {
+      "title": "一括削除",
+      "message": "{{count}} 件の字幕を削除しますか？この操作は元に戻せません。",
+      "confirm": "削除"
+    }
+  },
+  "batch": {
+    "segment": "区間 {{id}}",
+    "commentPlaceholder": "この区間への指示やメモ...",
+    "proofread": "この区間を校正"
+  },
+  "hooks": {
+    "generation": {
+      "errors": {
+        "fileRequired": "最初にメディアファイルをアップロードしてください。",
+        "apiKeyMissing": "API キーが設定されていません。設定で追加してください。",
+        "noSubtitles": "字幕が生成されませんでした。"
+      },
+      "status": {
+        "success": "字幕の作成に成功しました！",
+        "cancelledPartial": "中止しました（一部の結果を保持）",
+        "cancelled": "中止しました",
+        "failed": "失敗しました：{{error}}"
+      }
+    },
+    "fileOperations": {
+      "confirm": {
+        "replaceFile": {
+          "title": "ファイル置換の確認",
+          "message": "ファイルを置換すると現在の字幕が削除されます。事前に字幕（SRT/ASS）をエクスポートすることをお勧めします。続行しますか？"
+        }
+      },
+      "errors": {
+        "processFailed": "ファイル処理失敗",
+        "parseFailed": "字幕解析失敗: {{error}}"
+      }
+    },
+    "batch": {
+      "errors": {
+        "fixTimestamps": {
+          "audioRequired": "タイムライン校正にはソースの動画または音声ファイルが必要です。"
+        }
+      },
+      "actions": {
+        "fixTimestamps": "タイムラインを校正",
+        "refineTranslation": "翻訳を校正"
+      },
+      "snapshot": {
+        "backupSuffix": "{{action}} 前のバックアップ"
+      },
+      "status": {
+        "completed": "一括操作 '{{action}}' が終わりました！",
+        "cancelledRestore": "中止しました（元に戻します）",
+        "cancelled": "中止しました",
+        "failed": "失敗しました：{{error}}"
+      }
+    }
+  }
+}

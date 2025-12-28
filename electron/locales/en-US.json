@@ -4,7 +4,7 @@
     "selectSubtitleFile": "Select Subtitle File",
     "selectJsonFile": "Select JSON File",
     "selectWhisperModel": "Select Whisper Model File",
-    "selectWhisperModelMessage": "Please select a GGML format .bin model file",
+    "selectWhisperModelMessage": "Please select a .bin model file in GGML format",
     "selectDownloadDir": "Select Download Directory",
     "saveSubtitleFile": "Save Subtitle File",
     "exportLogs": "Export Logs"
@@ -58,7 +58,7 @@
     "unsupportedPlatform": "Only YouTube and Bilibili video URLs are supported",
     "networkError": "Network connection failed, please check your network and retry",
     "rateLimit": "Too many requests, please try again later",
-    "youtubeRateLimit": "YouTube rate limited, please try again later (wait 5-10 seconds)",
+    "youtubeRateLimit": "YouTube rate limit exceeded, please try again later (wait 5-10 seconds)",
     "accessDenied": "Access denied (403), try updating yt-dlp or retry later",
     "privateVideo": "This is a private video and cannot be downloaded",
     "videoNotFound": "Video not found or has been deleted",

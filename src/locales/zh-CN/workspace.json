@@ -38,7 +38,7 @@
   "genres": {
     "general": "通用",
     "anime": "动漫",
-    "movie": "电影",
+    "movie": "电影/剧集",
     "news": "新闻",
     "tech": "科技"
   },
@@ -79,6 +79,11 @@
       "message": "确定删除 {{count}} 条字幕吗？此操作无法撤销。",
       "confirm": "删除"
     }
+  },
+  "batch": {
+    "segment": "片段 {{id}}",
+    "commentPlaceholder": "添加提示词或备注...",
+    "proofread": "润色该片段"
   },
   "hooks": {
     "generation": {

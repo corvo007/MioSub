@@ -11,7 +11,7 @@
     "display": {
       "title": "Display Settings",
       "zoomLevel": "Interface Zoom",
-      "zoomHint": "Adjust the size of interface elements. If you're using a high-resolution screen with system scaling and the interface looks too narrow, try a lower value (e.g. 80%).",
+      "zoomHint": "Adjust the UI scale. Try a lower value (e.g., 80%) if the layout feels cramped on high-resolution screens.",
       "language": "Interface Language",
       "languageHint": "Change the application interface language. Changes take effect immediately.",
       "zoomOptions": {
@@ -40,7 +40,7 @@
     },
     "speaker": {
       "enableDiarization": "Enable Speaker Diarization",
-      "enableDiarizationDesc": "Identify different speakers in audio/video and label them",
+      "enableDiarizationDesc": "Detects and separates different speakers in the audio pipeline.",
       "enablePreAnalysis": "Enable Speaker Pre-analysis (Experimental)",
       "enablePreAnalysisDesc": "Pre-analyze audio before subtitle generation to identify speaker count and voice characteristics, improving diarization accuracy but increasing processing time",
       "includeSpeakerInExport": "Include Speaker Names in Export",
@@ -57,10 +57,10 @@
       "title": "Translation and Proofreading Services",
       "geminiKey": "Gemini API Key",
       "geminiKeyPlaceholder": "Enter Gemini API Key",
-      "geminiKeyHint": "Translation uses <strong>Gemini Flash models</strong>; glossary extraction and proofreading use <strong>Gemini Pro models</strong>.",
+      "geminiKeyHint": "Uses <strong>Gemini Flash</strong> for primary translation, and <strong>Gemini Pro</strong> for advanced tasks like glossary extraction and proofreading.",
       "geminiEndpoint": "Gemini Endpoint (Optional)",
       "geminiEndpointPlaceholder": "https://generativelanguage.googleapis.com",
-      "geminiEndpointHint": "Custom API endpoint for proxy or third-party gateway."
+      "geminiEndpointHint": "Set a custom base URL. Useful for proxies or API gateways."
     },
     "transcription": {
       "title": "Speech Recognition",
@@ -78,7 +78,7 @@
         "modelPathPlaceholder": "Select model file...",
         "browseButton": "📁 Browse",
         "instructionsTitle": "💡 Instructions:",
-        "instructionGgml": "Requires <strong>GGML format</strong> .bin model files",
+        "instructionGgml": "Requires a .bin model file in <strong>GGML format</strong>",
         "instructionModel": "Only supports ",
         "instructionModelLink": "whisper.cpp official models",
         "instructionModelSuffix": ", Faster-whisper models are not supported."
@@ -137,7 +137,7 @@
     "mockLocalWhisper": "Mock Local Whisper",
     "mockLocalWhisperDesc": "Skip local Whisper transcription",
     "saveIntermediateArtifacts": "Save Intermediate Results",
-    "saveIntermediateArtifactsDesc": "Save Whisper raw results, proofreading results, translation results and other intermediate files in the log directory for debugging",
+    "saveIntermediateArtifactsDesc": "Save intermediate files (Whisper raw results, proofreading, translation) to the log directory for debugging analysis",
     "customPaths": "Custom Paths",
     "ffmpegPath": "Custom ffmpeg.exe Path",
     "ffprobePath": "Custom ffprobe.exe Path",

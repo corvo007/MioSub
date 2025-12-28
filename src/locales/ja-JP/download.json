@@ -1,0 +1,27 @@
+{
+  "title": "動画ダウンロード",
+  "subtitle": "YouTube と Bilibili 動画ダウンロードに対応",
+  "logs": "ログ",
+  "viewLogs": "ログを表示",
+  "settings": "設定",
+  "retry": "再試行",
+  "clear": "クリア",
+  "outputDir": "出力ディレクトリ",
+  "notSelected": "未選択",
+  "downloadThumbnail": "サムネイルも一緒にダウンロード",
+  "thumbnailOnly": "サムネイルのみダウンロード",
+  "downloadVideo": "動画をダウンロード",
+  "downloadAndGenerate": "ダウンロードして字幕生成",
+  "downloadComplete": "ダウンロード完了",
+  "thumbnail": "サムネイル",
+  "openOutputDir": "ダウンロードディレクトリを開く",
+  "downloadNewVideo": "新しい動画をダウンロード",
+  "continueGenerating": "字幕生成を続行",
+  "errors": {
+    "thumbnailFailed": "サムネイルのダウンロードに失敗しました"
+  },
+  "urlPlaceholder": "YouTube / Bilibili 動画リンクを貼り付け...",
+  "parse": "解析",
+  "parsing": "解析中",
+  "qualityLabel": "画質選択"
+}

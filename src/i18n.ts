@@ -5,6 +5,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 // 翻译资源
 import zhCN from './locales/zh-CN';
 import enUS from './locales/en-US';
+import jaJP from './locales/ja-JP';
 
 i18n
   .use(LanguageDetector)
@@ -13,6 +14,7 @@ i18n
     resources: {
       'zh-CN': zhCN,
       'en-US': enUS,
+      'ja-JP': jaJP,
     },
     fallbackLng: 'zh-CN',
     defaultNS: 'common',
@@ -27,7 +29,6 @@ i18n
 
 // Sync language changes to main process (Electron only)
 i18n.on('languageChanged', (lng) => {
-   
   const electronAPI = (window as any).electronAPI;
   if (electronAPI?.i18n?.changeLanguage) {
     electronAPI.i18n.changeLanguage(lng).catch((err: Error) => {

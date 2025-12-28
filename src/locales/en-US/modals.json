@@ -44,7 +44,7 @@
     "title": "Speaker Profiles",
     "selectSpeaker": "Select Speaker",
     "manageSpeakers": "Manage Speakers",
-    "noSpeakers": "No speakers found",
+    "noSpeakers": "No speakers yet",
     "autoAddHint": "Speakers will be added automatically after generation",
     "rename": "Rename",
     "delete": "Delete",

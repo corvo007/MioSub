@@ -138,11 +138,11 @@
     "mockLocalWhisperDesc": "跳过本地 Whisper 转录",
     "saveIntermediateArtifacts": "保存中间结果",
     "saveIntermediateArtifactsDesc": "在日志目录下保存 Whisper 原始结果、润色结果、翻译结果等中间文件，用于调试分析",
-    "customPaths": "Custom Paths",
-    "ffmpegPath": "Custom ffmpeg.exe Path",
-    "ffprobePath": "Custom ffprobe.exe Path",
-    "whisperPath": "Custom whisper-cli.exe Path",
-    "defaultAutoDetected": "Default (Auto-detected)"
+    "customPaths": "自定义路径",
+    "ffmpegPath": "自定义 ffmpeg.exe 路径",
+    "ffprobePath": "自定义 ffprobe.exe 路径",
+    "whisperPath": "自定义 whisper-cli.exe 路径",
+    "defaultAutoDetected": "默认（自动检测）"
   },
   "languages": {
     "simplifiedChinese": "简体中文",

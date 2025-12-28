@@ -1,0 +1,20 @@
+{
+  "confirmations": {
+    "switchToNew": {
+      "title": "新規プロジェクトに切り替え",
+      "message": "現在読み込まれている字幕データがあります。新規プロジェクトに切り替えると、これらのデータは削除されます。事前に字幕（SRT/ASS）をエクスポートすることをお勧めします。続行しますか？"
+    },
+    "restoreSnapshot": {
+      "title": "スナップショットを復元",
+      "messageWithFile": "ファイル \"{{fileName}}\" の {{timestamp}} バージョンに復元しますか？現在の状態は自動的にバックアップされます。",
+      "messageGeneric": "{{timestamp}} のバージョンに復元しますか？現在の状態は自動的にバックアップされます。",
+      "backupLabel": "復元前のバックアップ",
+      "unknownFile": "不明なファイル"
+    }
+  },
+  "errorBoundary": {
+    "title": "エラーが発生しました",
+    "description": "アプリケーションで予期しないエラーが発生しました。この問題は記録されました。",
+    "reload": "アプリを再読み込み"
+  }
+}

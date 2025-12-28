@@ -5,10 +5,10 @@
     "edit": "Edit & Polish",
     "export": "Compress & Export"
   },
-  "description": "Full workflow: video download, subtitle generation, translation, and export",
+  "description": "An all-in-one solution for video downloading, AI subtitling, translation, and video production.",
   "endToEnd": {
-    "title": "One-Click Subtitle Generation (Auto Mode)",
-    "description": "Enter a link to auto-download, generate subtitles, and compress video"
+    "title": "One-Click Subtitled Video (Auto Mode)",
+    "description": "Enter a video link to automatically download, subscribe, and render the final video."
   },
   "sections": {
     "workspace": "Subtitle Workspace",
@@ -32,5 +32,5 @@
       "description": "Embed subtitles into video and export"
     }
   },
-  "webWarning": "⚠️ The above features and auto mode are not available in the web version. Please use the desktop app for the best experience."
+  "webWarning": "⚠️ These features and Auto Mode are unavailable in the web version. Please use the desktop app for the best experience."
 }

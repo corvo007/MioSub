@@ -1,0 +1,220 @@
+{
+  "progress": {
+    "elapsed": "経過時間: {{time}}",
+    "chunkLabels": {
+      "decoding": "音声をデコード",
+      "segmenting": "セグメント処理",
+      "glossary": "用語を抽出",
+      "diarization": "話者の事前分析"
+    },
+    "subtitleProgress": "字幕生成進捗",
+    "completed": "完了",
+    "chunk": "セグメント {{id}}",
+    "stages": {
+      "idle": {
+        "label": "準備中",
+        "description": "タスクを初期化中..."
+      },
+      "downloading": {
+        "label": "動画をダウンロード",
+        "description": "ネットワークから動画ファイルをダウンロード中"
+      },
+      "extracting_audio": {
+        "label": "音声を抽出",
+        "description": "動画から音声ストリームを抽出中"
+      },
+      "transcribing": {
+        "label": "字幕を生成",
+        "description": "AI による文字起こしと翻訳"
+      },
+      "extracting_glossary": {
+        "label": "用語を抽出",
+        "description": "専門用語集を生成中"
+      },
+      "extracting_speakers": {
+        "label": "話者の事前分析",
+        "description": "音声中の話者を識別中"
+      },
+      "refining": {
+        "label": "校正・校閲",
+        "description": "字幕の校正と校閲"
+      },
+      "translating": {
+        "label": "字幕を翻訳",
+        "description": "字幕内容を翻訳中"
+      },
+      "exporting_subtitle": {
+        "label": "字幕をエクスポート",
+        "description": "字幕をファイルにエクスポート中"
+      },
+      "compressing": {
+        "label": "動画をエンコード",
+        "description": "動画を圧縮して字幕を埋め込み中"
+      },
+      "completed": {
+        "label": "完了",
+        "description": "すべての処理が完了しました"
+      },
+      "failed": {
+        "label": "失敗",
+        "description": "処理中にエラーが発生しました"
+      }
+    },
+    "cancelConfirm": {
+      "title": "キャンセルの確認",
+      "message": "現在の処理をキャンセルしますか？完了した中間ファイルは一時ディレクトリに保持されます。",
+      "continue": "処理を続行",
+      "confirm": "キャンセルを確認"
+    },
+    "overallProgress": "全体の進捗",
+    "compressing": "動画をエンコード中...",
+    "errorDetails": "エラーの詳細",
+    "retry": "再試行",
+    "close": "閉じる",
+    "cancelProcessing": "処理をキャンセル"
+  },
+  "config": {
+    "sections": {
+      "download": "ダウンロード設定",
+      "subtitle": "字幕生成設定",
+      "compression": "動画エンコード設定"
+    },
+    "download": {
+      "outputDir": "出力ディレクトリ",
+      "placeholder": "未選択",
+      "quality": "画質選択",
+      "best": "最高",
+      "cover": "サムネイルをダウンロード"
+    },
+    "subtitle": {
+      "genre": "コンテンツタイプ",
+      "autoGlossary": {
+        "label": "自動用語集を有効化",
+        "desc": "用語抽出後に人の確認なしで直接適用。新しい用語は現在アクティブな用語集に自動的にマージされます（用語集がない場合は自動作成）。"
+      },
+      "glossary": {
+        "label": "用語集を使用",
+        "desc": "既存の用語集を選択して翻訳を支援",
+        "none": "（なし）"
+      },
+      "diarization": {
+        "label": "話者識別を有効化",
+        "desc": "音声や動画の異なる話者を識別してラベル付け"
+      },
+      "speakerPreAnalysis": {
+        "label": "話者の事前分析を有効化（実験的）",
+        "desc": "字幕を作る前に音声をチェックして、話者の数や声の特徴を分析します。時間はかかりますが、より正確に識別できるようになります。"
+      },
+      "includeSpeaker": {
+        "label": "エクスポート時に話者名を含める",
+        "desc": "字幕ファイルに話者を表示（例：羊宮妃那：セリフ内容）"
+      },
+      "speakerColors": {
+        "label": "話者の色を使用（ASS）",
+        "desc": "異なる話者に異なる色を割り当て（ASS形式のみ有効）"
+      },
+      "visualStyle": {
+        "label": "キャラクタースタイル翻訳",
+        "descEnabled": "話者の特徴に基づいて翻訳のトーンを調整（フォーマル/カジュアル）",
+        "descDisabled": "この機能を使用するには「話者の事前分析」を有効にする必要があります"
+      },
+      "speakerCount": {
+        "label": "話者数（オプション）",
+        "min": "最小話者数",
+        "max": "最大話者数"
+      }
+    },
+    "compression": {
+      "enable": {
+        "label": "動画エンコードを有効化",
+        "desc": "高性能 H.264/H.265 動画エンコードと字幕埋め込み"
+      },
+      "hwAccel": "ハードウェアアクセラレーション",
+      "encoder": "エンコーダ",
+      "resolution": "解像度",
+      "crf": {
+        "label": "品質（CRF）",
+        "desc": "範囲 0-51、値が小さいほど画質が高い。推奨：H.264 (23), H.265 (28)"
+      }
+    }
+  },
+  "wizard": {
+    "title": "フルオートモード",
+    "modeBadge": "エンドツーエンドモード",
+    "subtitle": "リンクを入力して字幕付き動画を自動生成",
+    "featureUnavailable": {
+      "title": "機能が利用できません",
+      "desc": "この機能はデスクトップ版でのみ利用可能です",
+      "return": "戻る"
+    },
+    "header": {
+      "logs": "ログ",
+      "glossary": "用語集",
+      "settings": "設定",
+      "viewLogs": "ログを表示",
+      "manageGlossary": "用語集管理"
+    },
+    "steps": {
+      "input": "リンクを入力",
+      "config": "パラメータ設定",
+      "process": "処理を実行",
+      "complete": "完了"
+    },
+    "navigation": {
+      "back": "戻る",
+      "cancel": "キャンセル",
+      "start": "処理を開始",
+      "next": "次へ"
+    },
+    "inputStep": {
+      "title": "動画リンクを入力",
+      "description": "YouTube と Bilibili 動画に対応",
+      "placeholder": "YouTube / Bilibili 動画リンクを貼り付け...",
+      "unknownTitle": "不明なタイトル",
+      "unknownAuthor": "不明な作者",
+      "video": "動画",
+      "parsing": "解析中...",
+      "parseButton": "動画を解析"
+    },
+    "resultStep": {
+      "success": "処理完了",
+      "failure": "処理失敗",
+      "duration": "所要時間 {{minutes}} 分",
+      "unknownError": "不明なエラーが発生しました",
+      "originalVideo": "元の動画",
+      "subtitleFile": "字幕ファイル",
+      "outputVideo": "エンコード済み動画",
+      "errorStage": "エラー段階: {{stage}}",
+      "processNew": "新しい動画を処理",
+      "done": "完了"
+    }
+  },
+  "errors": {
+    "desktopOnly": "この機能はデスクトップ版でのみ利用可能です",
+    "parseTimeout": "解析タイムアウト、ネットワーク接続を確認して再試行してください",
+    "parseError": "動画リンクの解析に失敗しました",
+    "parseException": "動画リンクの解析中にエラーが発生しました",
+    "enterUrl": "動画リンクを入力してください",
+    "selectOutputDir": "出力ディレクトリを選択してください",
+    "executionFailed": "実行失敗",
+    "busy": "既にタスクが処理中です",
+    "invalidPath": "無効な音声パス",
+    "missingGeminiKey": "Gemini API キーがありません。設定で構成してください",
+    "missingOpenAIKey": "OpenAI API キーがないか、ローカル Whisper が設定されていません",
+    "fileReadError": "音声ファイルを読み取れません: {{error}}",
+    "fileEmpty": "音声ファイルが空です",
+    "fileCorrupt": "音声ファイルが小さすぎます。破損している可能性があります",
+    "decodeError": "音声デコード失敗: {{error}}",
+    "audioTooShort": "音声が短すぎます（1秒未満）",
+    "audioTooLong": "音声が長すぎます（6時間超過）",
+    "cancelled": "操作がキャンセルされました",
+    "noSpeech": "字幕が生成されませんでした。音声に会話がない可能性があります",
+    "apiKeyError": "API キーエラー: {{error}}",
+    "rateLimited": "API リクエスト頻度制限、後で再試行してください",
+    "timeout": "リクエストタイムアウト、ネットワーク接続を確認してください",
+    "unknown": "字幕生成失敗"
+  },
+  "status": {
+    "initializing": "初期化中..."
+  }
+}

@@ -75,5 +75,5 @@ export interface AppSettings {
   zoomLevel?: number; // UI Zoom level (0.5 - 2.0)
 
   // Display Settings
-  language?: 'zh-CN' | 'en-US'; // UI language (default: auto-detect from system)
+  language?: 'zh-CN' | 'en-US' | 'ja-JP'; // UI language (default: auto-detect from system)
 }

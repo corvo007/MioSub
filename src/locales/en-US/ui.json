@@ -24,7 +24,7 @@
   },
   "resolutionSelector": {
     "original": "Original Resolution",
-    "keepOriginal": "Keep original resolution",
+    "keepOriginal": "Keep Original",
     "fullHd": "Full HD",
     "hd": "HD",
     "sd": "SD",
@@ -41,7 +41,7 @@
     "unavailable": "Hardware acceleration unavailable",
     "gpuEnabled": "GPU acceleration enabled",
     "cpuMode": "CPU mode",
-    "detectingSupport": "Detecting hardware acceleration support",
+    "detectingSupport": "Checking hardware acceleration support...",
     "noGpuDetected": "No GPU with hardware acceleration detected",
     "willUseEncoder": "Will use {{encoder}}",
     "forceCpu": "Force CPU encoding",

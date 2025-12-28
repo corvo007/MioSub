@@ -183,7 +183,7 @@
       "unknownError": "Unknown error occurred",
       "originalVideo": "Original Video",
       "subtitleFile": "Subtitle File",
-      "outputVideo": "Burned Video",
+      "outputVideo": "Hardsubbed Video",
       "errorStage": "Error Stage: {{stage}}",
       "processNew": "Process New Video",
       "done": "Done"

@@ -1,0 +1,68 @@
+{
+  "glossary": {
+    "autoName": "自動用語抽出",
+    "errors": {
+      "invalidFormat": "用語集の形式が無効です",
+      "parseFailed": "用語集ファイルの解析に失敗しました"
+    }
+  },
+  "api": {
+    "errors": {
+      "billingRequired": "課金を有効にする必要があります（無料枠を使い切ったか有効になっていません）",
+      "invalidKey": "API キーが無効です",
+      "permissionDenied": "権限なし / アクセス拒否",
+      "modelNotFound": "モデルが見つかりません",
+      "notFound": "リソースが見つかりません",
+      "regionRestricted": "地域制限（現在の場所では利用不可）",
+      "network": "ネットワークエラー"
+    },
+    "network": {
+      "rateLimited": "リクエスト頻度制限 / クォータ超過",
+      "timeout": "リクエストタイムアウト",
+      "timeoutWithSeconds": "リクエストタイムアウト（{{seconds}}秒）",
+      "cancelled": "リクエストがキャンセルされました"
+    }
+  },
+  "snapshots": {
+    "autoSave": "自動保存",
+    "initialImport": "初期インポート",
+    "initialGeneration": "初期生成",
+    "partialGeneration": "部分生成（中止）"
+  },
+  "parser": {
+    "soundEffects": {
+      "laughter": "笑い声",
+      "applause": "拍手",
+      "music": "音楽",
+      "cough": "咳",
+      "sigh": "ため息",
+      "themeSong": "テーマソング",
+      "outro": "エンディング曲",
+      "intro": "オープニング曲"
+    }
+  },
+  "pipeline": {
+    "status": {
+      "retryMissedTranslations": "{{count}} 件の欠落した翻訳を再試行中...",
+      "loadingAudio": "音声ファイルを読み込み中...",
+      "proofing": "チェック中...",
+      "fixingTimestamps": "タイミングを調整中...",
+      "translating": "翻訳中...",
+      "completed": "完了",
+      "failed": "失敗",
+      "translatingNew": "{{count}} 件の新しい項目を翻訳中...",
+      "autoTranslationComplete": "自動翻訳が終わりました",
+      "autoTranslationFailed": "自動翻訳に失敗しました",
+      "extractingGlossaryInit": "用語抽出を初期化中（全 {{total}} セグメント）...",
+      "extractingGlossaryComplete": "用語抽出完了",
+      "extractingGlossary": "用語を抽出中（{{current}}/{{total}}）...",
+      "analyzingSpeakers": "話者を分析中..."
+    },
+    "errors": {
+      "translationFailed": "翻訳失敗: {{error}}",
+      "translationFailedUseOriginal": "翻訳失敗、原文を使用",
+      "missingGeminiKey": "Gemini API キーがありません",
+      "missingOpenAIKey": "OpenAI API キーが見つかりません（またはローカル Whisper が無効になっています）"
+    }
+  }
+}

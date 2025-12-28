@@ -1,0 +1,163 @@
+{
+  "title": "設定",
+  "tabs": {
+    "general": "一般",
+    "services": "サービス",
+    "performance": "パフォーマンス",
+    "glossary": "用語集",
+    "debug": "デバッグ"
+  },
+  "general": {
+    "display": {
+      "title": "表示設定",
+      "zoomLevel": "インターフェースの拡大率",
+      "zoomHint": "画面の表示サイズを調整します。高解像度画面で表示が窮屈な場合は、値を小さく（例: 80%）してみてください。",
+      "language": "インターフェース言語",
+      "languageHint": "アプリケーションのインターフェース言語を切り替えます。変更は即座に反映されます。",
+      "zoomOptions": {
+        "50": "50% (極小)",
+        "67": "67% (小)",
+        "75": "75% (やや小)",
+        "80": "80% (適度)",
+        "90": "90%",
+        "100": "100% (デフォルト)",
+        "110": "110%",
+        "125": "125% (やや大)",
+        "150": "150% (極大)"
+      }
+    },
+    "output": {
+      "title": "出力設定",
+      "targetLanguage": {
+        "label": "ターゲット言語",
+        "placeholder": "言語を選択",
+        "description": "字幕翻訳のターゲット言語。"
+      },
+      "exportMode": "エクスポートモード",
+      "bilingual": "バイリンガル字幕",
+      "targetOnly": "翻訳のみ",
+      "bilingualHint": "バイリンガルモードでは、原文と訳文を並べて表示します。"
+    },
+    "speaker": {
+      "enableDiarization": "話者識別を有効化",
+      "enableDiarizationDesc": "音声や動画の異なる話者を識別してラベル付け",
+      "enablePreAnalysis": "話者の事前分析を有効化（実験的）",
+      "enablePreAnalysisDesc": "字幕を作る前に音声をチェックして、話者の数や声の特徴を分析します。時間はかかりますが、より正確に識別できるようになります。",
+      "includeSpeakerInExport": "エクスポート時に話者名を含める",
+      "includeSpeakerInExportDesc": "字幕ファイルに話者を表示（例：羊宮妃那：セリフ内容）",
+      "useSpeakerColors": "話者の色を使用（ASS）",
+      "useSpeakerColorsDesc": "異なる話者に異なる色を割り当て（ASS形式のみ有効）",
+      "styledTranslation": "キャラクタースタイル翻訳",
+      "styledTranslationDesc": "話者の特徴に基づいて翻訳のトーンを調整（フォーマル/カジュアル）",
+      "styledTranslationDisabledDesc": "この機能を使用するには「話者の事前分析」を有効にする必要があります"
+    }
+  },
+  "services": {
+    "translation": {
+      "title": "翻訳・校正サービス",
+      "geminiKey": "Gemini API キー",
+      "geminiKeyPlaceholder": "Gemini API キーを入力してください",
+      "geminiKeyHint": "翻訳には <strong>Gemini Flash</strong>、用語抽出や校正などの高度な処理には <strong>Gemini Pro</strong> を使用します。",
+      "geminiEndpoint": "Gemini エンドポイント（オプション）",
+      "geminiEndpointPlaceholder": "https://generativelanguage.googleapis.com",
+      "geminiEndpointHint": "カスタム API エンドポイント。プロキシやサードパーティゲートウェイに対応。"
+    },
+    "transcription": {
+      "title": "音声認識",
+      "openaiApi": "OpenAI API",
+      "localWhisper": "ローカル Whisper",
+      "openaiKey": "OpenAI API キー",
+      "openaiKeyPlaceholder": "OpenAI API キーを入力",
+      "openaiKeyHint": "OpenAI の <strong>Whisper</strong> モデルを使用して高精度な音声テキスト変換を行います。",
+      "openaiEndpoint": "OpenAI エンドポイント（オプション）",
+      "openaiEndpointPlaceholder": "https://api.openai.com/v1",
+      "openaiEndpointHint": "カスタム API エンドポイント。ローカルモデル、プロキシ、サードパーティゲートウェイに対応。",
+      "localWhisperSettings": {
+        "modelPathTitle": "モデルファイルパス",
+        "modelPathDesc": "自分のパソコンにある Whisper モデル（GGML 形式）を使って文字起こしをします。ネットに繋がなくても動きます。",
+        "modelPathPlaceholder": "モデルファイルを選択...",
+        "browseButton": "📁 参照",
+        "instructionsTitle": "💡 説明：",
+        "instructionGgml": "<strong>GGML形式</strong> の .bin モデルファイルが必要です",
+        "instructionModel": "サポート対象は ",
+        "instructionModelLink": "whisper.cpp 公式モデル",
+        "instructionModelSuffix": " のみです。Faster-whisper モデルはサポートされていません。"
+      }
+    }
+  },
+  "performance": {
+    "localWhisper": {
+      "title": "ローカル Whisper 設定",
+      "cpuThreads": "CPUスレッド数",
+      "cpuThreadsHint": "各文字起こしタスクで使用するCPUスレッド数、範囲 1-16",
+      "concurrency": "最大同時実行数",
+      "concurrencyHint": "同時に処理する文字起こしタスク数、範囲 1-4"
+    },
+    "batch": {
+      "proofreadBatchSize": "校正翻訳バッチサイズ",
+      "proofreadBatchSizeHint": "1回のチェック・翻訳で処理する字幕の行数。値が大きいほど文脈が考慮され質が良くなりますが、消費量が増えます。",
+      "translationBatchSize": "翻訳バッチサイズ",
+      "translationBatchSizeHint": "1回の翻訳で処理する字幕の行数。値が大きいほど文脈が考慮され質が良くなりますが、消費量が増えます。",
+      "chunkDuration": "チャンク時間（秒）",
+      "chunkDurationHint": "音声セグメントの目標長さ（秒）。文字起こしの並列処理効率に影響します。"
+    },
+    "concurrency": {
+      "concurrencyFlash": "同時実行数（Flash）",
+      "concurrencyFlashHint": "<strong>Gemini Flash シリーズモデル</strong> の翻訳・最適化および <strong>Whisper API</strong> の文字起こしに適用。アカウントの制限に応じて調整してください。",
+      "concurrencyPro": "同時実行数（Pro）",
+      "concurrencyProHint": "<strong>Gemini Pro シリーズモデル</strong> の用語抽出と校正翻訳に適用。アカウントの制限に応じて調整してください。",
+      "requestTimeout": "リクエストタイムアウト（秒）",
+      "requestTimeoutHint": "単一 API リクエストの最大待機時間。ネットワークが遅い場合や大量処理時は適宜増加してください。"
+    },
+    "smartSplit": "スマート分割",
+    "smartSplitDesc": "AI音声検出を使用して自然な停止点で音声を分割し、文字起こし精度を向上（推奨）"
+  },
+  "glossary": {
+    "enableAutoGlossary": "自動用語集を有効化",
+    "enableAutoGlossaryDesc": "専門用語を自動的に識別・抽出し、翻訳の精度と一貫性を向上",
+    "sampleDuration": "用語抽出音声長",
+    "sampleDurationHint": "音声の最初の N 分を使用して用語を抽出。「音声全体」を選択するとより完全な用語が得られますが、処理時間が長くなります。",
+    "sampleOptions": {
+      "5": "最初の 5 分",
+      "15": "最初の 15 分",
+      "30": "最初の 30 分",
+      "all": "音声全体（遅め）"
+    },
+    "autoConfirm": "用語集を自動確認",
+    "autoConfirmDesc": "用語抽出後に人の確認なしで直接適用。新しい用語は現在アクティブな用語集に自動的にマージされます（用語集がない場合は自動作成）。",
+    "manageGlossary": "用語集を管理"
+  },
+  "debug": {
+    "title": "デバッグモード",
+    "description": "Mock モードを有効にすると、実際の API リクエストをスキップしてモックデータを直接返します。フローのテストや API 使用量の節約に使用します。",
+    "mockGemini": "Mock Gemini API",
+    "mockGeminiDesc": "用語抽出、校正、翻訳リクエストをスキップ",
+    "mockOpenAI": "Mock OpenAI API",
+    "mockOpenAIDesc": "OpenAI Whisper 文字起こしリクエストをスキップ",
+    "mockLocalWhisper": "Mock ローカル Whisper",
+    "mockLocalWhisperDesc": "ローカル Whisper 文字起こしをスキップ",
+    "saveIntermediateArtifacts": "中間結果を保存",
+    "saveIntermediateArtifactsDesc": "Whisperの生データや、校正・翻訳の履歴などの中間ファイルをログフォルダに保存します（デバッグ用）。",
+    "customPaths": "カスタムパス",
+    "ffmpegPath": "カスタム ffmpeg.exe パス",
+    "ffprobePath": "カスタム ffprobe.exe パス",
+    "whisperPath": "カスタム whisper-cli.exe パス",
+    "defaultAutoDetected": "デフォルト（自動検出）"
+  },
+  "languages": {
+    "simplifiedChinese": "簡体字中国語",
+    "traditionalChinese": "繁体字中国語",
+    "english": "英語",
+    "japanese": "日本語",
+    "korean": "韓国語",
+    "spanish": "スペイン語",
+    "french": "フランス語",
+    "german": "ドイツ語",
+    "russian": "ロシア語",
+    "portuguese": "ポルトガル語",
+    "italian": "イタリア語",
+    "vietnamese": "ベトナム語",
+    "thai": "タイ語",
+    "indonesian": "インドネシア語"
+  }
+}

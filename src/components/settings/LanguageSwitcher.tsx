@@ -19,15 +19,20 @@ export const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ className })
   const options = [
     { value: 'zh-CN', label: t('languages.zh-CN') },
     { value: 'en-US', label: t('languages.en-US') },
+    { value: 'ja-JP', label: t('languages.ja-JP') },
   ];
 
   const handleLanguageChange = (lang: string) => {
     void i18n.changeLanguage(lang);
-    updateSetting('language', lang as 'zh-CN' | 'en-US');
+    updateSetting('language', lang as 'zh-CN' | 'en-US' | 'ja-JP');
   };
 
   // Use i18n.language as source of truth (auto-detected on first use)
-  const currentValue = i18n.language.startsWith('zh') ? 'zh-CN' : 'en-US';
+  const currentValue = i18n.language.startsWith('zh')
+    ? 'zh-CN'
+    : i18n.language.startsWith('ja')
+      ? 'ja-JP'
+      : 'en-US';
 
   return (
     <CustomSelect

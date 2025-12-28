@@ -1,0 +1,36 @@
+{
+  "workflow": {
+    "download": "動画ダウンロード",
+    "generate": "字幕生成",
+    "edit": "編集・校正",
+    "export": "エンコード・エクスポート"
+  },
+  "description": "動画のダウンロードから字幕作り、翻訳、そして動画の保存まで。これひとつで全部できます。",
+  "endToEnd": {
+    "title": "ワンクリック字幕付き動画作成（フルオートモード）",
+    "description": "URLを入れるだけ。動画のダウンロードから字幕を入れるところまで、全部自動でやります。"
+  },
+  "sections": {
+    "workspace": "字幕ワークスペース",
+    "toolbox": "ツールボックス"
+  },
+  "cards": {
+    "newProject": {
+      "title": "新規プロジェクト",
+      "description": "ローカル動画をアップロードし、ワンクリックでバイリンガル字幕を生成"
+    },
+    "openSubtitle": {
+      "title": "字幕を開く",
+      "description": "SRT/ASS 字幕をインポートして編集・翻訳"
+    },
+    "download": {
+      "title": "動画ダウンロード",
+      "description": "YouTube / Bilibili などの主要プラットフォームに対応"
+    },
+    "compression": {
+      "title": "動画エンコード",
+      "description": "字幕を動画に焼き込んでエンコード・エクスポート"
+    }
+  },
+  "webWarning": "⚠️ この機能と全自動モードはウェブ版では使えません。パソコン版アプリを使うのがおすすめです。"
+}
