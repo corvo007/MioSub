@@ -224,6 +224,7 @@ export const useWorkspaceLogic = ({
     selectedBatches,
     batchComments,
     settings,
+    speakerProfiles,
     setSubtitles,
     setSelectedBatches,
     setBatchComments,

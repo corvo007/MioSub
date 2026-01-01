@@ -182,6 +182,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     seekTo,
     updateTime,
     setIsCollapsed: setVideoPreviewCollapsed,
+    currentTime,
   } = useVideoPreview();
 
   // Prepare video for preview when file changes
@@ -194,10 +195,13 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   // Handle subtitle row click to seek video (will be passed to SubtitleEditor)
   const _handleSubtitleRowClick = useCallback(
     (startTimeStr: string) => {
+      // Prevent seeking while transcoding to avoid state mismatches
+      if (isTranscoding) return;
+
       const seconds = timeToSeconds(startTimeStr);
       seekTo(seconds);
     },
-    [seekTo]
+    [seekTo, isTranscoding]
   );
 
   // Force vertical layout when viewport is too small (height or width)
@@ -729,6 +733,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                       videoSrc={videoSrc}
                       subtitles={subtitles}
                       speakerProfiles={speakerProfiles}
+                      includeSpeaker={settings.includeSpeakerInExport}
+                      useSpeakerColors={settings.useSpeakerColors}
                       isTranscoding={isTranscoding}
                       transcodeProgress={transcodeProgress}
                       transcodedDuration={transcodedDuration}
@@ -773,6 +779,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                       onToggleConservativeMode={() =>
                         onUpdateSetting('conservativeBatchMode', !settings.conservativeBatchMode)
                       }
+                      currentPlayTime={currentTime}
+                      onRowClick={_handleSubtitleRowClick}
                     />
                   </div>
                 </div>

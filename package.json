@@ -22,6 +22,7 @@
   "dependencies": {
     "@google/genai": "^1.30.0",
     "@ricky0123/vad-web": "^0.0.30",
+    "assjs": "^0.1.4",
     "clsx": "^2.1.1",
     "electron-squirrel-startup": "^1.0.1",
     "fluent-ffmpeg": "^2.1.3",

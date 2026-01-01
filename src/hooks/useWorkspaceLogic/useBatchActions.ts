@@ -3,6 +3,7 @@ import type React from 'react';
 import { useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type SubtitleItem, type BatchOperationMode } from '@/types/subtitle';
+import { type SpeakerUIProfile } from '@/types/speaker';
 import { type AppSettings } from '@/types/settings';
 import { GenerationStatus, type ChunkStatus } from '@/types/api';
 import { generateSrtContent, generateAssContent } from '@/services/subtitle/generator';
@@ -21,6 +22,7 @@ interface UseBatchActionsProps {
   selectedBatches: Set<number>;
   batchComments: Record<number, string>;
   settings: AppSettings;
+  speakerProfiles?: SpeakerUIProfile[];
 
   // State setters
   setSubtitles: (subtitles: SubtitleItem[]) => void;
@@ -61,6 +63,7 @@ export function useBatchActions({
   selectedBatches,
   batchComments,
   settings,
+  speakerProfiles,
   setSubtitles,
   setSelectedBatches,
   setBatchComments,
@@ -177,6 +180,7 @@ export function useBatchActions({
 
       abortControllerRef,
       handleProgress,
+      t,
       setSubtitles,
       setSelectedBatches,
       setBatchComments,
@@ -200,7 +204,8 @@ export function useBatchActions({
               file ? file.name : 'video',
               isBilingual,
               includeSpeaker,
-              settings.useSpeakerColors
+              settings.useSpeakerColors,
+              speakerProfiles
             );
       const filename = file ? file.name.replace(/\.[^/.]+$/, '') : 'subtitles';
       logger.info(`Downloading subtitles: ${filename}.${format}`);
@@ -212,6 +217,7 @@ export function useBatchActions({
       settings.includeSpeakerInExport,
       settings.useSpeakerColors,
       file,
+      speakerProfiles,
     ]
   );
 

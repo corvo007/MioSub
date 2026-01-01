@@ -22,9 +22,11 @@ import { Rnd } from 'react-rnd';
 import { createPortal } from 'react-dom';
 import type { SubtitleItem } from '@/types/subtitle';
 import type { SpeakerUIProfile } from '@/types/speaker';
-import { timeToSeconds, formatDuration } from '@/services/subtitle/time';
+import { formatDuration } from '@/services/subtitle/time';
 import { cn } from '@/lib/cn';
 import { useTranslation } from 'react-i18next';
+import ASS from 'assjs';
+import { generateAssContent } from '@/services/subtitle/generator';
 
 export interface VideoPlayerPreviewRef {
   seekTo: (seconds: number) => void;
@@ -37,6 +39,8 @@ interface VideoPlayerPreviewProps {
   videoSrc: string | null;
   subtitles: SubtitleItem[];
   speakerProfiles?: SpeakerUIProfile[];
+  includeSpeaker?: boolean;
+  useSpeakerColors?: boolean;
   showSourceText: boolean;
   onToggleSourceText?: () => void;
   isCollapsed: boolean;
@@ -54,6 +58,8 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
       videoSrc,
       subtitles,
       speakerProfiles,
+      includeSpeaker = false,
+      useSpeakerColors = false,
       showSourceText,
       onToggleSourceText,
       isCollapsed,
@@ -81,6 +87,8 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
     const startYRef = useRef(0);
     const startHeightRef = useRef(0);
     const currentTimeRef = useRef(0); // Track currentTime in ref to preserve across re-renders
+    const assContainerRef = useRef<HTMLDivElement>(null);
+    const assRef = useRef<ASS | null>(null);
 
     const handleResizeStart = useCallback(
       (e: React.MouseEvent) => {
@@ -147,14 +155,86 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
       getCurrentTime: () => currentTime,
     }));
 
-    // Find current subtitle based on playback time
-    const currentSubtitle = useMemo(() => {
-      return subtitles.find((sub) => {
-        const start = timeToSeconds(sub.startTime);
-        const end = timeToSeconds(sub.endTime);
-        return currentTime >= start && currentTime <= end;
-      });
-    }, [subtitles, currentTime]);
+    // Generate ASS content for preview (WYSIWYG)
+    // Reuse existing generator logic to ensure preview matches export
+    const assContent = useMemo(() => {
+      // Default Title: Video Preview
+      // Bilingual: Always true for preview (or depend on settings? showing both lines matches current behavior)
+      // Include Speaker: True (to match export)
+      // Use Colors: True (to match export)
+      return generateAssContent(
+        subtitles,
+        'Video Preview',
+        showSourceText,
+        includeSpeaker,
+        useSpeakerColors,
+        speakerProfiles
+      );
+    }, [subtitles, speakerProfiles, includeSpeaker, useSpeakerColors, showSourceText]);
+
+    // Initialize ASS instance
+    useEffect(() => {
+      if (!assContainerRef.current || !videoRef.current) return;
+
+      const video = videoRef.current;
+      const wasPlaying = !video.paused && !video.ended && video.readyState > 2;
+
+      // 1. Pause video to ensure stable initialization state
+      if (wasPlaying) {
+        video.pause();
+      }
+
+      // 2. Clean up previous instance and DOM
+      if (assRef.current) {
+        try {
+          assRef.current.destroy();
+        } catch {
+          // ignore cleanup errors
+        }
+      }
+
+      // Force clear container
+      if (assContainerRef.current) {
+        assContainerRef.current.innerHTML = '';
+      }
+
+      // 3. Initialize new instance
+      try {
+        assRef.current = new ASS(assContent, video, {
+          container: assContainerRef.current,
+          resampling: 'video_width',
+        });
+
+        // Force initial layout
+        if (assRef.current) {
+          assRef.current.resize();
+        }
+      } catch (error) {
+        console.error('Failed to initialize ASS renderer:', error);
+      }
+
+      // 4. Resume playback if it was playing
+      if (wasPlaying) {
+        // Use a small timeout to allow the renderer to attach listeners properly
+        setTimeout(() => {
+          video.play().catch((e) => console.warn('Failed to resume playback:', e));
+        }, 10);
+      }
+
+      return () => {
+        if (assRef.current) {
+          try {
+            assRef.current.destroy();
+          } catch {
+            // ignore cleanup errors
+          }
+          assRef.current = null;
+        }
+      };
+    }, [assContent, ready]);
+
+    // Update time for external sync (not handled by ASS automatically?)
+    // ASS handles sync automatically via video events! We just need to manage lifecycle.
 
     // Handle video time update
     const handleTimeUpdate = useCallback(() => {
@@ -321,33 +401,15 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
                   onPause={() => setPlaying(false)}
                 />
 
-                {/* Subtitle Overlay */}
-                {currentSubtitle &&
-                  (() => {
-                    const speakerColor =
-                      speakerProfiles?.find((p) => p.name === currentSubtitle.speaker)?.color ||
-                      '#ffffff';
-
-                    return (
-                      <div className="absolute bottom-8 left-0 right-0 text-center pointer-events-none px-4 flex flex-col items-center gap-1 z-10 transition-all duration-200">
-                        {showSourceText && currentSubtitle.original && (
-                          <div className="inline-block bg-black/60 backdrop-blur-[2px] px-3 py-1 rounded-lg">
-                            <span className="text-white/90 text-sm font-medium drop-shadow-md">
-                              {currentSubtitle.original}
-                            </span>
-                          </div>
-                        )}
-                        <div className="inline-block bg-black/70 backdrop-blur-[2px] px-4 py-1.5 rounded-lg">
-                          <span
-                            className="text-lg font-bold drop-shadow-md transition-colors"
-                            style={{ color: speakerColor }}
-                          >
-                            {currentSubtitle.translated || currentSubtitle.original}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })()}
+                {/* ASS Subtitle Container - Absolute positioned over video */}
+                <div
+                  ref={assContainerRef}
+                  className="absolute inset-0 pointer-events-none z-10"
+                  style={{
+                    // Ensure it stays on top but lets events pass through to video
+                    pointerEvents: 'none',
+                  }}
+                />
 
                 {/* Loading overlay */}
                 {!ready && (
@@ -491,7 +553,6 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
         playing,
         currentTime,
         displayDuration,
-        currentSubtitle,
         showSourceText,
         transcodedDuration,
         transcodedProgress,
@@ -504,7 +565,6 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
         togglePlay,
         toggleMute,
         t,
-        speakerProfiles,
         isTranscoding,
         onToggleSourceText,
       ]

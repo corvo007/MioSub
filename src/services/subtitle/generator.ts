@@ -1,4 +1,5 @@
 import { type SubtitleItem } from '@/types/subtitle';
+import { type SpeakerUIProfile } from '@/types/speaker';
 import { toAssTime } from '@/services/subtitle/time';
 import { getSpeakerColor } from '@/services/utils/colors';
 
@@ -39,7 +40,8 @@ export const generateAssContent = (
   title: string,
   bilingual: boolean = true,
   includeSpeaker: boolean = false,
-  useSpeakerColors: boolean = false
+  useSpeakerColors: boolean = false,
+  speakerProfiles?: SpeakerUIProfile[]
 ): string => {
   // Updated Styles:
   // Default: Fontsize 75 (Large), White (Primary) -> Used for Translation
@@ -53,7 +55,13 @@ export const generateAssContent = (
   // Generate speaker styles
   const speakerStyles = uniqueSpeakers
     .map((speaker) => {
-      const color = getSpeakerColor(speaker);
+      let color = getSpeakerColor(speaker);
+      if (speakerProfiles) {
+        const profile = speakerProfiles.find((p) => p.name === speaker);
+        if (profile) {
+          color = profile.color;
+        }
+      }
       const bgrColor = hexToAssBgr(color);
       // Inherit from Default but change PrimaryColour
       // Sanitize speaker name for style name
