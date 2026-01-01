@@ -23,6 +23,7 @@ flowchart TB
         TAILWIND["TailwindCSS 4.1<br/>样式系统"]
         LUCIDE["Lucide React<br/>图标库"]
         UI_LIB["Unified UI Components<br/>(Button, Modal, Input)"]
+        ASSJS["assjs<br/>所见即所得字幕渲染"]
     end
 
     subgraph BUILD["🔧 构建层 (Build Toolchain)"]
@@ -83,22 +84,23 @@ flowchart TB
 
 ### 依赖版本一览
 
-| 类别         | 依赖               | 版本   | 用途            |
-| ------------ | ------------------ | ------ | --------------- |
-| **核心框架** | React              | 19.2   | UI 框架         |
-|              | Vite               | 6.2    | 构建工具        |
-|              | TypeScript         | 5.8    | 类型系统        |
-|              | Electron           | 39     | 桌面容器        |
-| **AI SDK**   | @google/genai      | Latest | Gemini API      |
-|              | openai             | Latest | Whisper API     |
-|              | onnxruntime-web    | 1.23   | VAD 推理        |
-| **音频处理** | @ricky0123/vad-web | 0.0.30 | Silero VAD 封装 |
-|              | fluent-ffmpeg      | 2.1    | FFmpeg 控制     |
-| **国际化**   | i18next            | 25.7   | 国际化核心      |
-|              | react-i18next      | 16.5   | React 绑定      |
-| **样式**     | TailwindCSS        | 4.1    | 原子化 CSS      |
-|              | Lucide React       | 0.554  | 图标库          |
-| **工具**     | clsx / tw-merge    | Latest | 样式合并        |
+| 类别         | 依赖               | 版本   | 用途               |
+| ------------ | ------------------ | ------ | ------------------ |
+| **核心框架** | React              | 19.2   | UI 框架            |
+|              | Vite               | 6.2    | 构建工具           |
+|              | TypeScript         | 5.8    | 类型系统           |
+|              | Electron           | 39     | 桌面容器           |
+| **AI SDK**   | @google/genai      | Latest | Gemini API         |
+|              | openai             | Latest | Whisper API        |
+|              | onnxruntime-web    | 1.23   | VAD 推理           |
+| **音频处理** | @ricky0123/vad-web | 0.0.30 | Silero VAD 封装    |
+|              | fluent-ffmpeg      | 2.1    | FFmpeg 控制        |
+| **国际化**   | i18next            | 25.7   | 国际化核心         |
+|              | react-i18next      | 16.5   | React 绑定         |
+| **字幕渲染** | assjs              | 0.1.4  | 所见即所得字幕渲染 |
+| **样式**     | TailwindCSS        | 4.1    | 原子化 CSS         |
+|              | Lucide React       | 0.554  | 图标库             |
+| **工具**     | clsx / tw-merge    | Latest | 样式合并           |
 
 ---
 
@@ -247,13 +249,15 @@ flowchart TB
             COMPRESSOR_SVC["videoCompressor.ts"]
             YTDLP_SVC["ytdlp.ts"]
             PIPELINE_SVC["endToEndPipeline.ts<br/>全自动流水线"]
+            PREVIEW_SVC["videoPreviewTranscoder.ts<br/>视频预览与缓存"]
             STORAGE_SVC["storage.ts"]
-            LOGGER_SVC["logger.ts (New)"]
+            LOGGER_SVC["logger.ts"]
         end
 
         MAIN_PROCESS --> ELECTRON_SVC
         PIPELINE_SVC -.-> YTDLP_SVC
         PIPELINE_SVC -.-> COMPRESSOR_SVC
+        ELECTRON_SVC -.-> PREVIEW_SVC
     end
 
     APP_LAYER --> HOOKS_LAYER
@@ -401,7 +405,7 @@ Gemini-Subtitle-Pro/
 │   ├── 📄 preload.ts                # 预加载脚本
 │   └── 📂 services/                 # 桌面端服务 (Node.js 环境)
 │       ├── 📄 localWhisper.ts       # 本地 Whisper 调用
-│       ├── 📄 videoCompressor.ts    # 视频压缩
+│       ├── 📄 videoPreviewTranscoder.ts # [NEW] 视频预览与缓存
 │       ├── 📄 logger.ts             # 统一日志服务
 │       └── ...                      # 其他系统级服务
 │
@@ -812,6 +816,58 @@ sequenceDiagram
 
 ---
 
+## 🛰️ 媒体播放自定义协议
+
+为了绕过浏览器的安全限制（CSP、沙箱）并支持大文件流式播放，桌面版实现了一个自定义协议：
+
+### `local-video://` 协议
+
+- **实现位置**：`electron/main.ts`
+- **核心权限**：`standard`, `secure`, `stream`, `supportFetchAPI`, `bypassCSP`。
+- **关键技术：Tailing Reader**：支持读取“增长中的文件”（转码进行中）。它使用轮询机制读取 FFmpeg 正在写入磁盘的新数据。
+
+---
+
+## 📺 视频预览与缓存策略
+
+系统采用分片 MP4 (fragmented MP4) 转码策略，平衡兼容性与性能。
+
+### 流程图
+
+```mermaid
+sequenceDiagram
+    participant R as 渲染进程 (VideoPlayer)
+    participant M as 主进程 (PreviewTranscoder)
+    participant F as FFmpeg
+    participant C as 磁盘缓存 (Disk Cache)
+
+    R->>M: IPC (video-preview:transcode)
+    M->>M: 检查是否需要转码 (编码格式检查)
+    alt 已缓存且有效
+        M-->>R: 返回缓存路径
+    else 需要转码
+        M->>F: 启动 ffmpeg (分片 mp4)
+        F-->>C: 将 .mp4 流写入缓存
+        M-->>R: IPC (transcode-start)
+        R->>R: 加载 local-video://缓存路径
+        Note over R,C: TailingReader 从缓存流式读取
+    end
+```
+
+### 缓存生命周期
+
+- **存储位置**：用户数据目录 (`/preview_cache/`)。
+- **限制**：自动执行总大小限制（如 2GB）。
+- **清理**：应用启动时自动检测，并支持 UI 手动清理。
+  | `video-preview:transcode` | Renderer -> Main | `{ filePath }` | 请求视频预览转码 |
+  | `video-preview:transcode-start` | Main -> Renderer | `{ outputPath }` | 转码已开始 |
+  | `video-preview:transcode-progress` | Main -> Renderer | `{ percent }` | 转码进度更新 |
+  | `video-preview:needs-transcode` | Renderer -> Main | `filePath` | 检查视频是否需要转码 |
+  | `cache:get-size` | Renderer -> Main | - | 获取预览缓存大小 |
+  | `cache:clear` | Renderer -> Main | - | 清理预览缓存 |
+
+---
+
 ## 🧩 核心模块说明
 
 ### 1. 生成服务模块 (`src/services/generation/`) [NEW]
@@ -841,20 +897,24 @@ sequenceDiagram
 
 ### 3. 音频处理模块 (`src/services/audio/`)
 
-| 文件           | 功能描述                                                             |
-| -------------- | -------------------------------------------------------------------- |
-| `segmenter.ts` | **智能音频切分器**，使用 Silero VAD 模型检测语音活动，按语义边界切分 |
-| `sampler.ts`   | 音频采样，生成用于 AI 分析的音频样本                                 |
-| `decoder.ts`   | 音频解码，支持多种格式                                               |
-| `processor.ts` | 音频预处理，归一化等                                                 |
+| 文件                 | 功能描述                                                             |
+| -------------------- | -------------------------------------------------------------------- |
+| `segmenter.ts`       | **智能音频切分器**，使用 Silero VAD 模型检测语音活动，按语义边界切分 |
+| `sampler.ts`         | 音频采样，生成用于 AI 分析的音频样本                                 |
+| `decoder.ts`         | 音频解码，支持多种格式                                               |
+| `processor.ts`       | 音频预处理，归一化等                                                 |
+| `converter.ts`       | 音频格式转换                                                         |
+| `ffmpegExtractor.ts` | FFmpeg 音频提取 (核心逻辑)                                           |
 
 ### 4. 字幕处理模块 (`src/services/subtitle/`)
 
-| 文件           | 功能描述                            |
-| -------------- | ----------------------------------- |
-| `parser.ts`    | 字幕解析器，支持 SRT/ASS/VTT 等格式 |
-| `generator.ts` | 字幕导出，生成双语字幕文件          |
-| `time.ts`      | 时间码处理工具                      |
+| 文件                   | 功能描述                            |
+| ---------------------- | ----------------------------------- |
+| `parser.ts`            | 字幕解析器，支持 SRT/ASS/VTT 等格式 |
+| `generator.ts`         | 字幕导出，生成双语字幕文件          |
+| `time.ts`              | 时间码处理工具                      |
+| `postCheck.ts`         | 字幕质量后检查                      |
+| `timelineValidator.ts` | 字幕时间轴逻辑校验                  |
 
 ### 5. 下载服务模块 (`src/services/download/`)
 

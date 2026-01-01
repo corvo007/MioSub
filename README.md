@@ -18,9 +18,10 @@ Open-source subtitle tools on the market each have their focuses, but often have
 | 🗣️ **Speaker Recognition**           | Automatically infers and labels multiple speakers' identities                                      |
 | 🧠 **Smart Concurrency**             | Dynamically adjusts concurrency based on models; ~8-10 mins to process a 30 min video              |
 | 🚀 **Full Auto Mode**                | Input a video link to automatically complete download, transcription, translation, and encoding    |
+| 📺 **WYSIWYG Preview**               | Real-time subtitle rendering using `assjs` for accurate style representation (font, color, etc.)   |
 | 🎬 **Video Download**                | Supports YouTube / Bilibili video download (Desktop version)                                       |
 | ✂️ **Video Encoding**                | Built-in FFmpeg, supporting H.264/H.265 encoding and subtitle burning (Desktop version)            |
-| 📦 **Other Features**                | Bilingual SRT/ASS export, version snapshots, custom API endpoints                                  |
+| 📦 **Other Features**                | Bilingual SRT/ASS export, version snapshots, custom API endpoints, cache management                |
 
 ---
 
@@ -72,7 +73,20 @@ We provide auto-built installation packages so you can use it directly without c
 
 ---
 
-### 💎 Post-Transcription Processing
+### � WYSIWYG Video Preview
+
+**Problem Solved**: Standard video players cannot render complex subtitle styles (ASS), and constant rendering is slow.
+
+**Technical Features**:
+
+- **Real-time Rendering**: Built-in `assjs` engine for accurate rendering of fonts, colors, and positions.
+- **Smart Caching**: Efficiently caches transcoded previews to ensure smooth seeking and playback.
+- **Cache Management**: Dedicated UI to monitor and clean up preview caches, keeping your disk lean.
+- **Source Toggle**: One-click toggle between source text and translation for quick proofreading.
+
+---
+
+### �💎 Post-Transcription Processing
 
 **Problem Solved**: Whisper raw output has issues like overly long sentences and timeline drift.
 

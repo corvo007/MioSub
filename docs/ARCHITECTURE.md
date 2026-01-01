@@ -23,6 +23,7 @@ flowchart TB
         TAILWIND["TailwindCSS 4.1<br/>Styling System"]
         LUCIDE["Lucide React<br/>Icon Library"]
         UI_LIB["Unified UI Components<br/>(Button, Modal, Input)"]
+        ASSJS["assjs<br/>WYSIWYG Subtitle Rendering"]
     end
 
     subgraph BUILD["🔧 Build Toolchain"]
@@ -83,22 +84,23 @@ flowchart TB
 
 ### Dependency Version Overview
 
-| Category             | Dependency         | Version | Purpose                   |
-| :------------------- | :----------------- | :------ | :------------------------ |
-| **Core Frameworks**  | React              | 19.2    | UI Framework              |
-|                      | Vite               | 6.2     | Build Tool                |
-|                      | TypeScript         | 5.8     | Type System               |
-|                      | Electron           | 39      | Desktop Container         |
-| **AI SDK**           | @google/genai      | Latest  | Gemini API                |
-|                      | openai             | Latest  | Whisper API               |
-|                      | onnxruntime-web    | 1.23    | VAD Inference             |
-| **Audio Processing** | @ricky0123/vad-web | 0.0.30  | Silero VAD Wrapper        |
-|                      | fluent-ffmpeg      | 2.1     | FFmpeg Control            |
-| **i18n**             | i18next            | 25.7    | Internationalization Core |
-|                      | react-i18next      | 16.5    | React Bindings            |
-| **Styling**          | TailwindCSS        | 4.1     | Atomic CSS                |
-|                      | Lucide React       | 0.554   | Icon Library              |
-| **Utils**            | clsx / tw-merge    | Latest  | Style Merging             |
+| Category             | Dependency         | Version | Purpose                    |
+| :------------------- | :----------------- | :------ | :------------------------- |
+| **Core Frameworks**  | React              | 19.2    | UI Framework               |
+|                      | Vite               | 6.2     | Build Tool                 |
+|                      | TypeScript         | 5.8     | Type System                |
+|                      | Electron           | 39      | Desktop Container          |
+| **AI SDK**           | @google/genai      | Latest  | Gemini API                 |
+|                      | openai             | Latest  | Whisper API                |
+|                      | onnxruntime-web    | 1.23    | VAD Inference              |
+| **Audio Processing** | @ricky0123/vad-web | 0.0.30  | Silero VAD Wrapper         |
+|                      | fluent-ffmpeg      | 2.1     | FFmpeg Control             |
+| **i18n**             | i18next            | 25.7    | Internationalization Core  |
+|                      | react-i18next      | 16.5    | React Bindings             |
+| **Rendering**        | assjs              | 0.1.4   | WYSIWYG Subtitle Rendering |
+| **Styling**          | TailwindCSS        | 4.1     | Atomic CSS                 |
+|                      | Lucide React       | 0.554   | Icon Library               |
+| **Utils**            | clsx / tw-merge    | Latest  | Style Merging              |
 
 ---
 
@@ -247,13 +249,15 @@ flowchart TB
             COMPRESSOR_SVC["videoCompressor.ts"]
             YTDLP_SVC["ytdlp.ts"]
             PIPELINE_SVC["endToEndPipeline.ts<br/>Full Auto Pipeline"]
+            PREVIEW_SVC["videoPreviewTranscoder.ts<br/>Video Preview & Caching"]
             STORAGE_SVC["storage.ts"]
-            LOGGER_SVC["logger.ts (New)"]
+            LOGGER_SVC["logger.ts"]
         end
 
         MAIN_PROCESS --> ELECTRON_SVC
         PIPELINE_SVC -.-> YTDLP_SVC
         PIPELINE_SVC -.-> COMPRESSOR_SVC
+        ELECTRON_SVC -.-> PREVIEW_SVC
     end
 
     APP_LAYER --> HOOKS_LAYER
@@ -401,7 +405,7 @@ Gemini-Subtitle-Pro/
 │   ├── 📄 preload.ts                # Preload Script
 │   └── 📂 services/                 # Desktop Services (Node.js Env)
 │       ├── 📄 localWhisper.ts       # Local Whisper Call
-│       ├── 📄 videoCompressor.ts    # Video Compression
+│       ├── 📄 videoPreviewTranscoder.ts # [NEW] Video Preview & Caching
 │       ├── 📄 logger.ts             # Unified Logging Service
 │       └── ...                      # Other System-level Services
 │
@@ -812,6 +816,58 @@ All intermediate state and configuration is managed through the `EndToEndWizard`
 
 ---
 
+## 🛰️ Custom Protocol for Media Playback
+
+To bypass browser security restrictions (CSP, Sandbox) and support large file streaming, the desktop version implements a custom protocol:
+
+### `local-video://` Protocol
+
+- **Implementation**: `electron/main.ts`
+- **Privileges**: `standard`, `secure`, `stream`, `supportFetchAPI`, `bypassCSP`.
+- **Key Feature: Tailing Reader**: Support for reading "growing files" (transcoding in progress). It uses a polling mechanism to read new data as it is written to disk by FFmpeg.
+
+---
+
+## 📺 Video Preview & Caching Strategy
+
+The system uses a fragmented MP4 (fMP4) transcoding strategy to balance compatibility and performance.
+
+### Process Flow
+
+```mermaid
+sequenceDiagram
+    participant R as Renderer (VideoPlayer)
+    participant M as Main (PreviewTranscoder)
+    participant F as FFmpeg
+    participant C as Disk Cache
+
+    R->>M: IPC (video-preview:transcode)
+    M->>M: Check if transcode needed (codec check)
+    alt Cached & Recent
+        M-->>R: Return cached path
+    else Needs Transcode
+        M->>F: Spawn ffmpeg (fragmented mp4)
+        F-->>C: Write .mp4 stream to cache
+        M-->>R: IPC (transcode-start)
+        R->>R: Load local-video://cache_path
+        Note over R,C: TailingReader streams from cache
+    end
+```
+
+### Cache Lifecycle
+
+- **Storage**: User data directory (`/preview_cache/`).
+- **Limit**: Automatically enforces a total size limit (e.g., 2GB).
+- **Cleanup**: Enforced on app startup and via manual UI action.
+  | `video-preview:transcode` | Renderer -> Main | `{ filePath }` | Request video transcoding for preview |
+  | `video-preview:transcode-start` | Main -> Renderer | `{ outputPath }` | Transcoding started |
+  | `video-preview:transcode-progress` | Main -> Renderer | `{ percent }` | Transcoding progress update |
+  | `video-preview:needs-transcode` | Renderer -> Main | `filePath` | Check if video needs transcoding |
+  | `cache:get-size` | Renderer -> Main | - | Get preview cache size |
+  | `cache:clear` | Renderer -> Main | - | Clear preview cache |
+
+---
+
 ## 🧩 Core Module Descriptions
 
 ### 1. Generation Services Module (`src/services/generation/`) [NEW]
@@ -841,20 +897,24 @@ Retains only the most basic API interaction capabilities:
 
 ### 3. Audio Processing Module (`src/services/audio/`)
 
-| File           | Function Description                                                                                     |
-| :------------- | :------------------------------------------------------------------------------------------------------- |
-| `segmenter.ts` | **Smart Audio Segmenter**, Uses Silero VAD Model to Detect Voice Activity, Splits by Semantic Boundaries |
-| `sampler.ts`   | Audio Sampling, Generates Audio Samples for AI Analysis                                                  |
-| `decoder.ts`   | Audio Decoding, Supports Multiple Formats                                                                |
-| `processor.ts` | Audio Preprocessing, Normalization, etc.                                                                 |
+| File                 | Function Description                                                                                     |
+| :------------------- | :------------------------------------------------------------------------------------------------------- |
+| `segmenter.ts`       | **Smart Audio Segmenter**, Uses Silero VAD Model to Detect Voice Activity, Splits by Semantic Boundaries |
+| `sampler.ts`         | Audio Sampling, Generates Audio Samples for AI Analysis                                                  |
+| `decoder.ts`         | Audio Decoding, Supports Multiple Formats                                                                |
+| `processor.ts`       | Audio Preprocessing, Normalization, etc.                                                                 |
+| `converter.ts`       | Audio Format Conversion                                                                                  |
+| `ffmpegExtractor.ts` | FFmpeg Audio Extraction (Core Logic)                                                                     |
 
 ### 4. Subtitle Processing Module (`src/services/subtitle/`)
 
-| File           | Function Description                                    |
-| :------------- | :------------------------------------------------------ |
-| `parser.ts`    | Subtitle Parser, Supports SRT/ASS/VTT and other formats |
-| `generator.ts` | Subtitle Export, Generates Bilingual Subtitle Files     |
-| `time.ts`      | Timecode Processing Tool                                |
+| File                   | Function Description                                    |
+| :--------------------- | :------------------------------------------------------ |
+| `parser.ts`            | Subtitle Parser, Supports SRT/ASS/VTT and other formats |
+| `generator.ts`         | Subtitle Export, Generates Bilingual Subtitle Files     |
+| `time.ts`              | Timecode Processing Tool                                |
+| `postCheck.ts`         | Subtitle Quality Post-check                             |
+| `timelineValidator.ts` | Subtitle Timeline Logic Validation                      |
 
 ### 5. Download Service Module (`src/services/download/`)
 
