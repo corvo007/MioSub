@@ -7,13 +7,13 @@ interface LocalWhisperSettingsProps {
   whisperModelPath?: string;
   onToggle: (enabled: boolean) => void;
   onModelPathChange: (path: string) => void;
+  addToast: (message: string, type: 'info' | 'warning' | 'error' | 'success') => void;
 }
 
 export const LocalWhisperSettings: React.FC<LocalWhisperSettingsProps> = ({
-  useLocalWhisper,
   whisperModelPath,
-  onToggle,
   onModelPathChange,
+  addToast,
 }) => {
   const { t } = useTranslation('settings');
   // Select model
@@ -30,14 +30,16 @@ export const LocalWhisperSettings: React.FC<LocalWhisperSettingsProps> = ({
       if (result && result.success && result.path) {
         onModelPathChange(result.path);
       } else if (result && result.error) {
-        // Use logger or alert? The user asked to remove native dialogs.
-        // We should probably show a toast or alert, but this component doesn't have access to addToast.
-        // For now, logging error. The main process already returns error object.
+        // Show error toast to user
+        addToast(
+          t('services.transcription.localWhisperSettings.selectError', { error: result.error }),
+          'error'
+        );
         console.error('[LocalWhisperSettings] Model selection error:', result.error);
-        // If we had toast, we would show it.
       }
     } catch (error: any) {
       logger.error('[LocalWhisperSettings] Model selection failed', error);
+      addToast(t('services.transcription.localWhisperSettings.selectErrorGeneric'), 'error');
     }
   };
 

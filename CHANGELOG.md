@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - **i18n**: Shortened home page card descriptions for better layout on smaller screens.
 - **i18n**: Polished translations for more natural phrasing across all supported languages.
 - **Batch Processing**: Fixed timestamp conversion to use relative time before sending to Gemini API for improved accuracy.
+- **Build**: Fixed critical issue where locale files were missing in the packaged application (ENOENT error).
 
 ## [2.10.1] - 2025-12-25
 

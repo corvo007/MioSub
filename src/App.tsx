@@ -236,6 +236,7 @@ export default function App() {
           setShowSettings(false);
           setShowGlossaryManager(true);
         }}
+        addToast={addToast}
       />
       {showGlossaryManager && (
         <GlossaryManager
