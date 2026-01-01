@@ -413,7 +413,7 @@ export class EndToEndPipeline {
       console.error('[Pipeline] Error:', error);
 
       const errorStage = this.currentStage;
-      const errorMessage = error.message || '未知错误';
+      const errorMessage = error.message || t('error.unknownError');
 
       // Classify error for better UX
       let classifiedError;

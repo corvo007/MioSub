@@ -142,6 +142,8 @@
     "floatingMode": "视频正在悬浮窗口播放",
     "restore": "还原",
     "noVideo": "未加载视频",
-    "resize": "拖动调整高度"
+    "resize": "拖动调整高度",
+    "jumpAfterTranscode": "转码完成后可跳转",
+    "unableToLoadFile": "无法加载文件: {{error}}"
   }
 }

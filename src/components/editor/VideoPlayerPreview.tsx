@@ -480,7 +480,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
                 onChange={handleSeek}
                 disabled={!videoSrc || isTranscoding}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-                title={isTranscoding ? '转码完成后可跳转' : undefined}
+                title={isTranscoding ? t('videoPreview.jumpAfterTranscode') : undefined}
               />
             </div>
 

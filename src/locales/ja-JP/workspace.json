@@ -142,6 +142,8 @@
     "floatingMode": "フローティングウィンドウで再生中",
     "restore": "元に戻す",
     "noVideo": "動画が読み込まれていません",
-    "resize": "ドラッグして高さを調整"
+    "resize": "ドラッグして高さを調整",
+    "jumpAfterTranscode": "トランスコード完了後にジャンプ可能",
+    "unableToLoadFile": "ファイルを読み込めません: {{error}}"
   }
 }

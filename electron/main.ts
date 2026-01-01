@@ -1244,18 +1244,18 @@ app.on('web-contents-created', (_event, contents) => {
 
       if (isEditable) {
         menuItems.push(
-          { label: '撤销', role: 'undo', enabled: editFlags.canUndo },
-          { label: '重做', role: 'redo', enabled: editFlags.canRedo },
+          { label: t('menu.undo'), role: 'undo', enabled: editFlags.canUndo },
+          { label: t('menu.redo'), role: 'redo', enabled: editFlags.canRedo },
           { type: 'separator' }
         );
       }
 
       menuItems.push(
-        { label: '剪切', role: 'cut', enabled: editFlags.canCut },
-        { label: '复制', role: 'copy', enabled: editFlags.canCopy },
-        { label: '粘贴', role: 'paste', enabled: editFlags.canPaste },
+        { label: t('menu.cut'), role: 'cut', enabled: editFlags.canCut },
+        { label: t('menu.copy'), role: 'copy', enabled: editFlags.canCopy },
+        { label: t('menu.paste'), role: 'paste', enabled: editFlags.canPaste },
         { type: 'separator' },
-        { label: '全选', role: 'selectAll', enabled: editFlags.canSelectAll }
+        { label: t('menu.selectAll'), role: 'selectAll', enabled: editFlags.canSelectAll }
       );
 
       const contextMenu = Menu.buildFromTemplate(menuItems);

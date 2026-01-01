@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type SubtitleItem, type SubtitleSnapshot } from '@/types/subtitle';
 import { type AppSettings } from '@/types/settings';
 import {
@@ -75,6 +76,7 @@ export const useWorkspaceLogic = ({
   snapshotsValues,
   setShowSettings,
 }: UseWorkspaceLogicProps) => {
+  const { t } = useTranslation('workspace');
   // ============================================
   // Core State
   // ============================================
@@ -319,10 +321,10 @@ export const useWorkspaceLogic = ({
       } catch (e: unknown) {
         const error = e as Error;
         logger.error('Failed to load file from path', e);
-        setError('无法加载文件: ' + error.message);
+        setError(t('unableToLoadFile', { error: error.message }));
       }
     },
-    [snapshotsValues, setBatchComments, setSelectedBatches]
+    [snapshotsValues, setBatchComments, setSelectedBatches, t]
   );
 
   // ============================================

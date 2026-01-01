@@ -13,16 +13,20 @@ const CHINESE_REGEX = /[\u4e00-\u9fa5]/;
 // 匹配 JSX 中的文本模式
 const PATTERNS = [
   // JSX 文本内容: >中文文本<
-  { regex: />([^<]*[\u4e00-\u9fa5][^<]*)</g, type: 'jsx' },
+  { regex: />([^<\r\n]*[\u4e00-\u9fa5][^<\r\n]*)</g, type: 'jsx' },
   // 字符串属性: "中文" 或 '中文'
-  { regex: /['"]([^'"]*[\u4e00-\u9fa5][^'"]*)['"](?=\s*[,)\}>;\n])/g, type: 'string' },
+  { regex: /['"]([^'"\r\n]*[\u4e00-\u9fa5][^'"\r\n]*)['"]/g, type: 'string' },
   // 模板字符串: `包含${var}中文`
-  { regex: /`([^`]*[\u4e00-\u9fa5][^`]*)`/g, type: 'template' },
+  { regex: /`([^`\r\n]*[\u4e00-\u9fa5][^`\r\n]*)`/g, type: 'template' },
 ];
 
 // 扫描的文件类型
-const files = globSync('src/**/*.{tsx,ts}', {
-  ignore: ['**/node_modules/**', '**/*.d.ts'],
+const files = globSync(['src/**/*.{tsx,ts}', 'electron/**/*.{ts,tsx}'], {
+  ignore: [
+    '**/node_modules/**',
+    '**/*.d.ts',
+    'src/services/api/gemini/core/prompts.ts',
+  ],
 });
 
 const results = {};
@@ -30,12 +34,18 @@ let totalCount = 0;
 
 for (const file of files) {
   const content = readFileSync(file, 'utf-8');
-  const matches = new Set();
+  const fileResults = [];
 
-  // 移除注释内容，避免误匹配
+  // 移除注释内容但保留占位，以保持行号一致
   const contentWithoutComments = content
-    .replace(/\/\*[\s\S]*?\*\//g, '') // 多行注释
-    .replace(/\/\/.*$/gm, ''); // 单行注释
+    .replace(/\/\*[\s\S]*?\*\//g, (match) => {
+      // 将块注释内容替换为等长空格/换行，保持行号
+      return match.replace(/[^\n]/g, ' ');
+    })
+    .replace(/\/\/.*$/gm, (match) => {
+      // 将单行注释内容替换为等长空格
+      return match.replace(/./g, ' ');
+    });
 
   for (const { regex } of PATTERNS) {
     let match;
@@ -44,16 +54,24 @@ for (const file of files) {
       if (text && CHINESE_REGEX.test(text)) {
         // 排除纯空白或太短的内容
         if (text.length > 0) {
-          matches.add(text);
+          // 计算行号 (1-based)
+          const lineNumber = content.slice(0, match.index).split(/\r\n|\r|\n/).length;
+
+          fileResults.push({
+            line: lineNumber,
+            text: text,
+          });
         }
       }
     }
     regex.lastIndex = 0; // 重置正则
   }
 
-  if (matches.size > 0) {
-    results[file] = Array.from(matches);
-    totalCount += matches.size;
+  if (fileResults.length > 0) {
+    // 按行号排序
+    fileResults.sort((a, b) => a.line - b.line);
+    results[file] = fileResults;
+    totalCount += fileResults.length;
   }
 }
 

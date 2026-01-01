@@ -17,7 +17,7 @@ export class GlossaryHandler {
     glossaryChunks: { index: number; start: number; end: number }[] | undefined,
     onGlossaryReady?: (metadata: GlossaryExtractionMetadata) => Promise<GlossaryItem[]>
   ): Promise<{ glossary: GlossaryItem[]; raw?: GlossaryExtractionResult[] }> {
-    const { settings, onProgress, isDebug } = context;
+    const { settings, onProgress } = context;
 
     // Local variable to capture results for artifact saving
     let extractedGlossaryResults: GlossaryExtractionResult[] | undefined;
@@ -86,7 +86,11 @@ export class GlossaryHandler {
           });
         }
       } catch (e: any) {
-        if (e.message === '操作已取消' || e.name === 'AbortError') {
+        if (
+          e.message === 'Operation cancelled' ||
+          e.message === i18n.t('endToEnd:errors.cancelled') ||
+          e.name === 'AbortError'
+        ) {
           logger.info('Glossary extraction cancelled');
           onProgress?.({
             id: 'glossary',
