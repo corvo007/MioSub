@@ -4,7 +4,7 @@
     "general": "General",
     "services": "Services",
     "performance": "Performance",
-    "glossary": "Glossary",
+    "enhance": "Enhance",
     "debug": "Debug"
   },
   "general": {
@@ -37,20 +37,6 @@
       "bilingual": "Bilingual Subtitles",
       "targetOnly": "Translation Only",
       "bilingualHint": "Bilingual mode displays both original and translated text in subtitles."
-    },
-    "speaker": {
-      "title": "Speaker Diarization",
-      "enableDiarization": "Enable Speaker Diarization",
-      "enableDiarizationDesc": "Detects and separates different speakers in the audio pipeline.",
-      "enablePreAnalysis": "Enable Speaker Pre-analysis (Experimental)",
-      "enablePreAnalysisDesc": "Analyze audio before transcription to identify speaker count and voice characteristics. Improves accuracy but takes longer.",
-      "includeSpeakerInExport": "Include Speaker Names in Export",
-      "includeSpeakerInExportDesc": "Display speaker names in subtitle files (e.g., Speaker A: dialogue content)",
-      "useSpeakerColors": "Use Speaker Colors (ASS)",
-      "useSpeakerColorsDesc": "Assign different colors to different speakers (ASS format only)",
-      "styledTranslation": "Character-styled Translation",
-      "styledTranslationDesc": "Adjust translation tone based on speaker characteristics (formal/casual)",
-      "styledTranslationDisabledDesc": "Requires 'Speaker Pre-analysis' to be enabled"
     }
   },
   "services": {
@@ -128,23 +114,37 @@
       "hint": "Cached video previews allow faster loading when reopening the same video."
     }
   },
-  "glossary": {
-    "settings": {
-      "title": "Auto Glossary Settings"
+  "enhance": {
+    "speaker": {
+      "title": "Speaker Recognition",
+      "enableDiarization": "Enable Speaker Recognition",
+      "enableDiarizationDesc": "Detects and separates different speakers in the audio pipeline.",
+      "enablePreAnalysis": "Enable Speaker Pre-analysis (Experimental)",
+      "enablePreAnalysisDesc": "Analyze audio before transcription to identify speaker count and voice characteristics. Improves accuracy but takes longer.",
+      "includeSpeakerInExport": "Include Speaker Names in Export",
+      "includeSpeakerInExportDesc": "Display speaker names in subtitle files (e.g., Speaker A: dialogue content)",
+      "useSpeakerColors": "Use Speaker Colors (ASS)",
+      "useSpeakerColorsDesc": "Assign different colors to different speakers (ASS format only)",
+      "styledTranslation": "Character-styled Translation",
+      "styledTranslationDesc": "Adjust translation tone based on speaker characteristics (formal/casual)",
+      "styledTranslationDisabledDesc": "Requires 'Speaker Pre-analysis' to be enabled"
     },
-    "enableAutoGlossary": "Enable Auto Glossary",
-    "enableAutoGlossaryDesc": "Automatically identify and extract professional terms to improve translation accuracy and consistency",
-    "sampleDuration": "Glossary Sample Duration",
-    "sampleDurationHint": "Use the first N minutes of audio for term extraction. 'Full audio' provides more comprehensive terms but takes longer.",
-    "sampleOptions": {
-      "5": "First 5 minutes",
-      "15": "First 15 minutes",
-      "30": "First 30 minutes",
-      "all": "Full audio (slower)"
-    },
-    "autoConfirm": "Auto-confirm Glossary",
-    "autoConfirmDesc": "Apply extracted terms directly without manual confirmation. New terms will be merged into the currently active glossary (if none exists, a new one will be created).",
-    "manageGlossary": "Manage Glossary"
+    "glossary": {
+      "title": "Glossary Settings",
+      "enableAutoGlossary": "Enable Auto Glossary",
+      "enableAutoGlossaryDesc": "Automatically identify and extract professional terms to improve translation accuracy and consistency",
+      "sampleDuration": "Glossary Sample Duration",
+      "sampleDurationHint": "Use the first N minutes of audio for term extraction. 'Full audio' provides more comprehensive terms but takes longer.",
+      "sampleOptions": {
+        "5": "First 5 minutes",
+        "15": "First 15 minutes",
+        "30": "First 30 minutes",
+        "all": "Full audio (slower)"
+      },
+      "autoConfirm": "Auto-confirm Glossary",
+      "autoConfirmDesc": "Apply extracted terms directly without manual confirmation. New terms will be merged into the currently active glossary (if none exists, a new one will be created).",
+      "manageGlossary": "Manage Glossary"
+    }
   },
   "debug": {
     "title": "Debug Mode",

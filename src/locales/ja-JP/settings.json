@@ -4,7 +4,7 @@
     "general": "一般",
     "services": "サービス",
     "performance": "パフォーマンス",
-    "glossary": "用語集",
+    "enhance": "強化",
     "debug": "デバッグ"
   },
   "general": {
@@ -37,20 +37,6 @@
       "bilingual": "バイリンガル字幕",
       "targetOnly": "翻訳のみ",
       "bilingualHint": "バイリンガルモードでは、原文と訳文を並べて表示します。"
-    },
-    "speaker": {
-      "title": "話者識別",
-      "enableDiarization": "話者識別を有効化",
-      "enableDiarizationDesc": "音声や動画から話者を識別してマークします",
-      "enablePreAnalysis": "話者の事前分析を有効化（実験的）",
-      "enablePreAnalysisDesc": "字幕を作る前に音声をチェックして、話者の数や声の特徴を分析します。時間はかかりますが、より正確に識別できるようになります。",
-      "includeSpeakerInExport": "エクスポート時に話者名を含める",
-      "includeSpeakerInExportDesc": "字幕ファイルに話者を表示（例：羊宮妃那：セリフ内容）",
-      "useSpeakerColors": "話者の色を使用（ASS）",
-      "useSpeakerColorsDesc": "異なる話者に異なる色を割り当て（ASS形式のみ有効）",
-      "styledTranslation": "キャラクタースタイル翻訳",
-      "styledTranslationDesc": "話者の特徴に基づいて翻訳のトーンを調整（フォーマル/カジュアル）",
-      "styledTranslationDisabledDesc": "この機能を使用するには「話者の事前分析」を有効にする必要があります"
     }
   },
   "services": {
@@ -128,23 +114,37 @@
       "hint": "キャッシュされたプレビューにより、同じ動画を再度開く際の読み込みが速くなります。"
     }
   },
-  "glossary": {
-    "settings": {
-      "title": "自動用語集設定"
+  "enhance": {
+    "speaker": {
+      "title": "話者識別",
+      "enableDiarization": "話者識別を有効化",
+      "enableDiarizationDesc": "音声や動画から話者を識別してマークします",
+      "enablePreAnalysis": "話者の事前分析を有効化（実験的）",
+      "enablePreAnalysisDesc": "字幕を作る前に音声をチェックして、話者の数や声の特徴を分析します。時間はかかりますが、より正確に識別できるようになります。",
+      "includeSpeakerInExport": "エクスポート時に話者名を含める",
+      "includeSpeakerInExportDesc": "字幕ファイルに話者を表示（例：羊宮妃那：セリフ内容）",
+      "useSpeakerColors": "話者の色を使用（ASS）",
+      "useSpeakerColorsDesc": "異なる話者に異なる色を割り当て（ASS形式のみ有効）",
+      "styledTranslation": "キャラクタースタイル翻訳",
+      "styledTranslationDesc": "話者の特徴に基づいて翻訳のトーンを調整（フォーマル/カジュアル）",
+      "styledTranslationDisabledDesc": "この機能を使用するには「話者の事前分析」を有効にする必要があります"
     },
-    "enableAutoGlossary": "自動用語集を有効化",
-    "enableAutoGlossaryDesc": "専門用語を自動的に識別・抽出し、翻訳の精度と一貫性を向上",
-    "sampleDuration": "用語抽出音声長",
-    "sampleDurationHint": "音声の最初の N 分を使用して用語を抽出。「音声全体」を選択するとより完全な用語が得られますが、処理時間が長くなります。",
-    "sampleOptions": {
-      "5": "最初の 5 分",
-      "15": "最初の 15 分",
-      "30": "最初の 30 分",
-      "all": "音声全体（遅め）"
-    },
-    "autoConfirm": "用語集を自動確認",
-    "autoConfirmDesc": "用語抽出後に人の確認なしで直接適用。新しい用語は現在アクティブな用語集に自動的にマージされます（用語集がない場合は自動作成）。",
-    "manageGlossary": "用語集を管理"
+    "glossary": {
+      "title": "用語集設定",
+      "enableAutoGlossary": "自動用語集を有効化",
+      "enableAutoGlossaryDesc": "専門用語を自動的に識別・抽出し、翻訳の精度と一貫性を向上",
+      "sampleDuration": "用語抽出音声長",
+      "sampleDurationHint": "音声の最初の N 分を使用して用語を抽出。「音声全体」を選択するとより完全な用語が得られますが、処理時間が長くなります。",
+      "sampleOptions": {
+        "5": "最初の 5 分",
+        "15": "最初の 15 分",
+        "30": "最初の 30 分",
+        "all": "音声全体（遅め）"
+      },
+      "autoConfirm": "用語集を自動確認",
+      "autoConfirmDesc": "用語抽出後に人の確認なしで直接適用。新しい用語は現在アクティブな用語集に自動的にマージされます（用語集がない場合は自動作成）。",
+      "manageGlossary": "用語集を管理"
+    }
   },
   "debug": {
     "title": "デバッグモード",

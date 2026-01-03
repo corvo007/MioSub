@@ -4,7 +4,7 @@
     "general": "常规",
     "services": "服务",
     "performance": "性能",
-    "glossary": "术语表",
+    "enhance": "增强",
     "debug": "调试"
   },
   "general": {
@@ -37,20 +37,6 @@
       "bilingual": "双语字幕",
       "targetOnly": "仅译文",
       "bilingualHint": "双语模式会在字幕中同时显示原文和译文。"
-    },
-    "speaker": {
-      "title": "说话人区分",
-      "enableDiarization": "启用说话人区分",
-      "enableDiarizationDesc": "识别音频或视频中的不同说话人，并打上标签",
-      "enablePreAnalysis": "启用说话人预分析 (实验性)",
-      "enablePreAnalysisDesc": "在生成字幕前预先分析音频以识别说话人数量和声音特征，可提高区分准确度，但会增加耗时",
-      "includeSpeakerInExport": "导出时包含说话人名称",
-      "includeSpeakerInExportDesc": "在字幕文件中显示说话人（如：羊宫妃那：对话内容）",
-      "useSpeakerColors": "使用说话人颜色 (ASS)",
-      "useSpeakerColorsDesc": "为不同说话人分配不同颜色（仅 ASS 格式有效）",
-      "styledTranslation": "角色风格化翻译",
-      "styledTranslationDesc": "根据说话人特征调整翻译语气（正式/口语）",
-      "styledTranslationDisabledDesc": "需要启用「说话人预分析」才能使用此功能"
     }
   },
   "services": {
@@ -128,23 +114,37 @@
       "hint": "缓存的视频预览可在再次打开相同视频时加快加载速度。"
     }
   },
-  "glossary": {
-    "settings": {
-      "title": "自动术语表设置"
+  "enhance": {
+    "speaker": {
+      "title": "说话人识别",
+      "enableDiarization": "启用说话人识别",
+      "enableDiarizationDesc": "识别音频或视频中的不同说话人，并打上标签",
+      "enablePreAnalysis": "启用说话人预分析 (实验性)",
+      "enablePreAnalysisDesc": "在生成字幕前预先分析音频以识别说话人数量和声音特征，可提高区分准确度，但会增加耗时",
+      "includeSpeakerInExport": "导出时包含说话人名称",
+      "includeSpeakerInExportDesc": "在字幕文件中显示说话人（如：羊宫妃那：对话内容）",
+      "useSpeakerColors": "使用说话人颜色 (ASS)",
+      "useSpeakerColorsDesc": "为不同说话人分配不同颜色（仅 ASS 格式有效）",
+      "styledTranslation": "角色风格化翻译",
+      "styledTranslationDesc": "根据说话人特征调整翻译语气（正式/口语）",
+      "styledTranslationDisabledDesc": "需要启用「说话人预分析」才能使用此功能"
     },
-    "enableAutoGlossary": "启用自动术语表",
-    "enableAutoGlossaryDesc": "自动识别并提取专业术语，提升翻译准确性和一致性",
-    "sampleDuration": "术语提取音频长度",
-    "sampleDurationHint": "使用音频的前 N 分钟提取术语。选择「完整音频」可获得更全面的术语，但处理时间更长。",
-    "sampleOptions": {
-      "5": "前 5 分钟",
-      "15": "前 15 分钟",
-      "30": "前 30 分钟",
-      "all": "完整音频 (较慢)"
-    },
-    "autoConfirm": "自动确认术语表",
-    "autoConfirmDesc": "提取术语后直接应用，无需人工确认。新术语将自动合并至当前激活的术语表（如当前无术语表，则自动新建）。",
-    "manageGlossary": "管理术语表"
+    "glossary": {
+      "title": "术语表设置",
+      "enableAutoGlossary": "启用自动术语表",
+      "enableAutoGlossaryDesc": "自动识别并提取专业术语，提升翻译准确性和一致性",
+      "sampleDuration": "术语提取音频长度",
+      "sampleDurationHint": "使用音频的前 N 分钟提取术语。选择「完整音频」可获得更全面的术语，但处理时间更长。",
+      "sampleOptions": {
+        "5": "前 5 分钟",
+        "15": "前 15 分钟",
+        "30": "前 30 分钟",
+        "all": "完整音频 (较慢)"
+      },
+      "autoConfirm": "自动确认术语表",
+      "autoConfirmDesc": "提取术语后直接应用，无需人工确认。新术语将自动合并至当前激活的术语表（如当前无术语表，则自动新建）。",
+      "manageGlossary": "管理术语表"
+    }
   },
   "debug": {
     "title": "调试模式",

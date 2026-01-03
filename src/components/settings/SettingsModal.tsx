@@ -140,7 +140,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               'general',
               'services',
               'performance',
-              'glossary',
+              'enhance',
               ...(window.electronAPI?.isDebug ? ['debug'] : []),
             ].map((tab) => (
               <button
@@ -226,80 +226,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       {t('general.output.bilingualHint')}
                     </p>
                   </div>
-                </div>
-
-                {/* Speaker Diarization Settings */}
-                <div className="space-y-4">
-                  <SectionHeader>{t('general.speaker.title')}</SectionHeader>
-                  <SettingRow
-                    label={t('general.speaker.enableDiarization')}
-                    description={t('general.speaker.enableDiarizationDesc')}
-                  >
-                    <Toggle
-                      checked={settings.enableDiarization || false}
-                      onChange={(v) => updateSetting('enableDiarization', v)}
-                    />
-                  </SettingRow>
-
-                  {settings.enableDiarization && (
-                    <SettingRow
-                      label={t('general.speaker.enablePreAnalysis')}
-                      description={t('general.speaker.enablePreAnalysisDesc')}
-                      indented
-                    >
-                      <Toggle
-                        checked={settings.enableSpeakerPreAnalysis || false}
-                        onChange={(v) => {
-                          updateSetting('enableSpeakerPreAnalysis', v);
-                          // Auto-disable styled translation when pre-analysis is disabled
-                          if (!v) {
-                            updateSetting('useSpeakerStyledTranslation', false);
-                          }
-                        }}
-                      />
-                    </SettingRow>
-                  )}
-
-                  {settings.enableDiarization && (
-                    <div className="space-y-4 animate-fade-in">
-                      <SettingRow
-                        label={t('general.speaker.includeSpeakerInExport')}
-                        description={t('general.speaker.includeSpeakerInExportDesc')}
-                        indented
-                      >
-                        <Toggle
-                          checked={settings.includeSpeakerInExport || false}
-                          onChange={(v) => updateSetting('includeSpeakerInExport', v)}
-                        />
-                      </SettingRow>
-                      <SettingRow
-                        label={t('general.speaker.useSpeakerColors')}
-                        description={t('general.speaker.useSpeakerColorsDesc')}
-                        indented
-                      >
-                        <Toggle
-                          checked={settings.useSpeakerColors || false}
-                          onChange={(v) => updateSetting('useSpeakerColors', v)}
-                        />
-                      </SettingRow>
-                      <SettingRow
-                        label={t('general.speaker.styledTranslation')}
-                        description={
-                          settings.enableSpeakerPreAnalysis
-                            ? t('general.speaker.styledTranslationDesc')
-                            : t('general.speaker.styledTranslationDisabledDesc')
-                        }
-                        indented
-                        disabled={!settings.enableSpeakerPreAnalysis}
-                      >
-                        <Toggle
-                          checked={settings.useSpeakerStyledTranslation || false}
-                          onChange={(v) => updateSetting('useSpeakerStyledTranslation', v)}
-                          disabled={!settings.enableSpeakerPreAnalysis}
-                        />
-                      </SettingRow>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
@@ -635,14 +561,88 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             )}
 
-            {activeTab === 'glossary' && (
+            {activeTab === 'enhance' && (
               <div className="space-y-6 animate-fade-in">
-                {/* Auto Glossary Settings */}
+                {/* Speaker Recognition Settings */}
                 <div className="space-y-4">
-                  <SectionHeader>{t('glossary.settings.title')}</SectionHeader>
+                  <SectionHeader>{t('enhance.speaker.title')}</SectionHeader>
                   <SettingRow
-                    label={t('glossary.enableAutoGlossary')}
-                    description={t('glossary.enableAutoGlossaryDesc')}
+                    label={t('enhance.speaker.enableDiarization')}
+                    description={t('enhance.speaker.enableDiarizationDesc')}
+                  >
+                    <Toggle
+                      checked={settings.enableDiarization || false}
+                      onChange={(v) => updateSetting('enableDiarization', v)}
+                    />
+                  </SettingRow>
+
+                  {settings.enableDiarization && (
+                    <SettingRow
+                      label={t('enhance.speaker.enablePreAnalysis')}
+                      description={t('enhance.speaker.enablePreAnalysisDesc')}
+                      indented
+                    >
+                      <Toggle
+                        checked={settings.enableSpeakerPreAnalysis || false}
+                        onChange={(v) => {
+                          updateSetting('enableSpeakerPreAnalysis', v);
+                          // Auto-disable styled translation when pre-analysis is disabled
+                          if (!v) {
+                            updateSetting('useSpeakerStyledTranslation', false);
+                          }
+                        }}
+                      />
+                    </SettingRow>
+                  )}
+
+                  {settings.enableDiarization && (
+                    <div className="space-y-4 animate-fade-in">
+                      <SettingRow
+                        label={t('enhance.speaker.includeSpeakerInExport')}
+                        description={t('enhance.speaker.includeSpeakerInExportDesc')}
+                        indented
+                      >
+                        <Toggle
+                          checked={settings.includeSpeakerInExport || false}
+                          onChange={(v) => updateSetting('includeSpeakerInExport', v)}
+                        />
+                      </SettingRow>
+                      <SettingRow
+                        label={t('enhance.speaker.useSpeakerColors')}
+                        description={t('enhance.speaker.useSpeakerColorsDesc')}
+                        indented
+                      >
+                        <Toggle
+                          checked={settings.useSpeakerColors || false}
+                          onChange={(v) => updateSetting('useSpeakerColors', v)}
+                        />
+                      </SettingRow>
+                      <SettingRow
+                        label={t('enhance.speaker.styledTranslation')}
+                        description={
+                          settings.enableSpeakerPreAnalysis
+                            ? t('enhance.speaker.styledTranslationDesc')
+                            : t('enhance.speaker.styledTranslationDisabledDesc')
+                        }
+                        indented
+                        disabled={!settings.enableSpeakerPreAnalysis}
+                      >
+                        <Toggle
+                          checked={settings.useSpeakerStyledTranslation || false}
+                          onChange={(v) => updateSetting('useSpeakerStyledTranslation', v)}
+                          disabled={!settings.enableSpeakerPreAnalysis}
+                        />
+                      </SettingRow>
+                    </div>
+                  )}
+                </div>
+
+                {/* Glossary Settings */}
+                <div className="space-y-4">
+                  <SectionHeader>{t('enhance.glossary.title')}</SectionHeader>
+                  <SettingRow
+                    label={t('enhance.glossary.enableAutoGlossary')}
+                    description={t('enhance.glossary.enableAutoGlossaryDesc')}
                   >
                     <Toggle
                       checked={settings.enableAutoGlossary !== false}
@@ -654,7 +654,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     <div className="space-y-4 animate-fade-in">
                       <div>
                         <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                          {t('glossary.sampleDuration')}
+                          {t('enhance.glossary.sampleDuration')}
                         </label>
                         <CustomSelect
                           value={
@@ -667,21 +667,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             else updateSetting('glossarySampleMinutes', parseInt(val));
                           }}
                           options={[
-                            { value: '5', label: t('glossary.sampleOptions.5') },
-                            { value: '15', label: t('glossary.sampleOptions.15') },
-                            { value: '30', label: t('glossary.sampleOptions.30') },
-                            { value: 'all', label: t('glossary.sampleOptions.all') },
+                            { value: '5', label: t('enhance.glossary.sampleOptions.5') },
+                            { value: '15', label: t('enhance.glossary.sampleOptions.15') },
+                            { value: '30', label: t('enhance.glossary.sampleOptions.30') },
+                            { value: 'all', label: t('enhance.glossary.sampleOptions.all') },
                           ]}
                           icon={<Clock className="w-4 h-4" />}
                         />
                         <p className="text-xs text-slate-500 mt-1">
-                          {t('glossary.sampleDurationHint')}
+                          {t('enhance.glossary.sampleDurationHint')}
                         </p>
                       </div>
 
                       <SettingRow
-                        label={t('glossary.autoConfirm')}
-                        description={t('glossary.autoConfirmDesc')}
+                        label={t('enhance.glossary.autoConfirm')}
+                        description={t('enhance.glossary.autoConfirmDesc')}
                       >
                         <Toggle
                           checked={settings.glossaryAutoConfirm || false}
@@ -701,7 +701,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     }}
                     className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-white transition-colors flex items-center justify-center text-sm font-medium"
                   >
-                    <Book className="w-4 h-4 mr-2" /> {t('glossary.manageGlossary')}
+                    <Book className="w-4 h-4 mr-2" /> {t('enhance.glossary.manageGlossary')}
                   </button>
                 </div>
               </div>
