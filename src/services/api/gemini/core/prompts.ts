@@ -177,43 +177,6 @@ function getGenreSpecificGuidance(genre: string): string {
 }
 
 /**
- * Get prompt for LLM Aligner
- * specialized in timestamp alignment and segment splitting
- */
-export const getLLMAlignerPrompt = (
-  genre: string,
-  targetLanguage: string = 'Simplified Chinese'
-): string => {
-  return `You are a professional Subtitle Timing and Synchronization Specialist.
-Your PRIMARY GOAL is to perfect timestamp alignment and segment timing for ${genre} content.
-
-TASK RULES (Strict Priority):
-
-[P0 - TIMESTAMPS] Timestamp Alignment
-→ Listen to provided audio and align start/end times to actual speech boundaries
-→ Whisper timestamps may drift - correct any misalignment you detect
-→ Ensure timestamps are strictly within the provided audio duration
-→ Timestamps must be relative to provided audio file (starting at 00:00:00)
-
-[P1 - SPLITTING] Segment Splitting
-→ ${getSegmentSplittingRule('transcription', targetLanguage)}
-${getTimestampSplittingInstructions()}
-
-[P2 - CONTENT INTEGRITY]
-→ DO NOT change the text content (except removing fillers if configured)
-→ DO NOT translate text
-→ Keep all IDs preserved (assign new IDs only for split segments)
-
-OUTPUT REQUIREMENTS:
-✓ Valid JSON matching input structure
-✓ Preserve all IDs
-✓ All timestamps in HH:MM:SS,mmm format
-✓ Ensure start < end for all segments
-
-Context: ${genre}`;
-};
-
-/**
  * System instruction with optional speaker diarization support
  * Wraps getSystemInstruction and adds diarization instructions when enabled
  */
@@ -376,17 +339,20 @@ Before returning, confirm:
     1. Listen to the audio to verify the transcription.
     2. **CHECK FOR MISSED SPEECH**: If there is CLEAR, MEANINGFUL speech in the audio that is MISSING from the transcription, you MUST ADD IT.
        → Do NOT add: background noise, music lyrics, ambient sounds, or unintelligible mumbling
-       → Assign appropriate timestamps for new entries (relative to audio start)
-    3. FIX TRANSCRIPTION: Correct mishearings, typos, and proper nouns (names, terminology).
-    4. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (${FILLER_WORDS_PROMPT}).
-    5. **LANGUAGE RULE**: Keep the transcription in the ORIGINAL LANGUAGE spoken in the audio. DO NOT translate to any other language.
-    6. **TIMESTAMP INTEGRITY**: Preserve existing timestamps as much as possible. Only estimate timestamps when adding NEW missing speech.
-       → DO NOT split segments (this is handled in a later step)
-       → DO NOT merge segments
-    7. FORMAT: Return a valid JSON array.
-    8. FINAL CHECK: Before outputting, strictly verify that ALL previous rules have been perfectly followed. Correct any remaining errors.
-    
+    3. **ALIGN TIMESTAMPS**: Listen to audio and adjust start/end times to match actual speech boundaries.
+       → Whisper timestamps may drift, especially in long audio - correct any misalignment you detect
+       → **Timestamps MUST be strictly within the provided audio duration.**
+       → **NEVER MERGE** multiple segments into one - only SPLIT long segments when needed
+    4. FIX TRANSCRIPTION: Correct mishearings, typos, and proper nouns (names, terminology).
+    5. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (${FILLER_WORDS_PROMPT}).
+    6. SPLIT LINES: STRICT RULE. ${getSegmentSplittingRule()}, YOU MUST SPLIT IT into shorter, natural segments.
+    ${getTimestampSplittingInstructions()}
+    7. **LANGUAGE RULE**: Keep the transcription in the ORIGINAL LANGUAGE spoken in the audio. DO NOT translate to any other language.
+    8. FORMAT: Return a valid JSON array.
+
     ${diarizationSection}
+
+    9. FINAL CHECK: Before outputting, strictly verify that ALL previous rules have been perfectly followed. Correct any remaining errors.
     
     Genre Context: ${genre}${glossaryText}`;
   }
@@ -463,16 +429,17 @@ export const getSystemInstruction = (
     1. Listen to the audio to verify the transcription.
     2. **CHECK FOR MISSED SPEECH**: If there is CLEAR, MEANINGFUL speech in the audio that is MISSING from the transcription, you MUST ADD IT.
        → Do NOT add: background noise, music lyrics, ambient sounds, or unintelligible mumbling
-       → Assign appropriate timestamps for new entries (relative to audio start)
-    3. FIX TRANSCRIPTION: Correct mishearings, typos, and proper nouns (names, terminology).
-    4. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (${FILLER_WORDS_PROMPT}).
-    5. **LANGUAGE RULE**: Keep the transcription in the ORIGINAL LANGUAGE spoken in the audio. DO NOT translate to any other language.
-    6. **TIMESTAMP INTEGRITY**: Preserve existing timestamps as much as possible. Only estimate timestamps when adding NEW missing speech.
-       → DO NOT split segments (this is handled in a later alignment step)
-       → DO NOT merge segments
-       → **DELETE** segments that are pure hallucinations (e.g. "Thanks for watching", "Subscribe", or silence) which is not exist in the audio
-    7. FORMAT: Return a valid JSON array.
-    8. FINAL CHECK: Before outputting, strictly verify that ALL previous rules (1-7) have been perfectly followed. Correct any remaining errors.
+    3. **ALIGN TIMESTAMPS**: Listen to audio and adjust start/end times to match actual speech boundaries.
+       → Whisper timestamps may drift, especially in long audio - correct any misalignment you detect
+       → **Timestamps MUST be strictly within the provided audio duration.**
+       → **NEVER MERGE** multiple segments into one - only SPLIT long segments when needed
+    4. FIX TRANSCRIPTION: Correct mishearings, typos, and proper nouns (names, terminology).
+    5. IGNORE FILLERS: Do not transcribe stuttering or meaningless filler words (${FILLER_WORDS_PROMPT}).
+    6. SPLIT LINES: STRICT RULE. ${getSegmentSplittingRule()}, YOU MUST SPLIT IT into shorter, natural segments.
+    ${getTimestampSplittingInstructions()}
+    7. **LANGUAGE RULE**: Keep the transcription in the ORIGINAL LANGUAGE spoken in the audio. DO NOT translate to any other language.
+    8. FORMAT: Return a valid JSON array.
+    9. FINAL CHECK: Before outputting, strictly verify that ALL previous rules (1-8) have been perfectly followed. Correct any remaining errors.
     
     
     Genre Context: ${genre}${glossaryText}`;
@@ -1088,27 +1055,27 @@ export const getRefinementPrompt = (params: RefinementPromptParams): string => `
             → Listen carefully to the attached audio
             → Fix misrecognized words and phrases in 'text'
             → Verify timing accuracy of 'start' and 'end' timestamps
-            → DO NOT split segments (this is handled in a later alignment step)
-            → DO NOT merge segments
-            → **DELETE** segments that are hallucinations (e.g., "Thanks for watching", "Subscribe", or silence/noise not in audio) which is not exist in the audio
             ${params.glossaryInfo ? `→ Pay special attention to key terminology listed below` : ''}
 ${getSearchEnhancedRefinementPrompt('refinement')}
-            [P2 - CLEANING] Remove Non-Speech Elements
+            [P2 - READABILITY] Segment Splitting
+            → ${getSegmentSplittingRule('transcription', params.targetLanguage)}
+            ${getTimestampSplittingInstructions()}
+            
+            [P3 - CLEANING] Remove Non-Speech Elements
             → ${getFillerWordsRule()}
             → Remove stuttering and false starts
             → Keep natural speech flow
 
-            [P3 - OUTPUT] Format Requirements
+            [P4 - OUTPUT] Format Requirements
             → Return timestamps in HH:MM:SS,mmm format
             → Timestamps must be relative to the provided audio (starting at 00:00:00,000)
             → Ensure all required fields are present
             ${params.enableDiarization ? `→ INCLUDE "speaker" field for every segment (e.g., "Speaker 1")` : ''}
 
             FINAL VERIFICATION:
+            ✓ Long segments (>${MAX_SEGMENT_DURATION_SECONDS}s or >${MAX_SEGMENT_CHARACTERS} chars) properly split
             ✓ Timestamps are relative to chunk start
             ✓ Terminology from glossary is used correctly
-            ✓ Segment count unchanged (no splits or merges)
-            ✓ Hallucinated segments removed
             ${params.glossaryInfo ? `✓ Checked against ${params.glossaryCount} glossary terms` : ''}
 
             Input Transcription (JSON):

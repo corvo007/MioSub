@@ -5,10 +5,9 @@
  */
 
 import { type AppSettings } from '@/types/settings';
-import { type AlignmentStrategy } from './types';
+import { type AlignmentStrategy } from '@/types/alignment';
 import { NoAligner } from './strategies/noAligner';
 import { CTCAligner } from './strategies/ctcAligner';
-import { LLMAligner } from './strategies/llmAligner';
 import { logger } from '@/services/utils/logger';
 
 /**
@@ -46,9 +45,6 @@ export function createAligner(settings: AppSettings): AlignmentStrategy {
         modelPath: settings.alignmentModelPath,
       });
 
-    case 'llm':
-      return new LLMAligner();
-
     case 'none':
     default:
       return new NoAligner();
@@ -58,7 +54,6 @@ export function createAligner(settings: AppSettings): AlignmentStrategy {
 /**
  * Re-export types for convenience
  */
-export type { AlignmentStrategy } from './types';
+export type { AlignmentStrategy } from '@/types/alignment';
 export { NoAligner } from './strategies/noAligner';
 export { CTCAligner } from './strategies/ctcAligner';
-export { LLMAligner } from './strategies/llmAligner';

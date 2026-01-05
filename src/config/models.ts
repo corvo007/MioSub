@@ -33,9 +33,6 @@ export const STEP_MODELS = {
 
   // Batch Fix Timestamps: Timeline correction
   batchFixTimestamps: MODELS.FLASH,
-
-  // LLM Alignment: Split segments and align timestamps
-  llmAlignment: MODELS.FLASH,
 } as const;
 
 export type StepName = keyof typeof STEP_MODELS;
@@ -88,12 +85,6 @@ export const STEP_CONFIGS: Record<StepName, StepConfig> = {
   },
 
   batchFixTimestamps: {
-    thinkingLevel: 'high',
-    useSearch: false,
-    maxOutputTokens: 65536,
-  },
-
-  llmAlignment: {
     thinkingLevel: 'high',
     useSearch: false,
     maxOutputTokens: 65536,
