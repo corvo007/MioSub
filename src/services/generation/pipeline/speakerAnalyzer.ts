@@ -1,5 +1,5 @@
 import { type SpeakerProfile } from '@/services/generation/extractors/speakerProfile';
-import { type PipelineContext } from './types';
+import { type PipelineContext } from '@/types/pipeline';
 import { MockFactory } from '@/services/generation/debug/mockFactory';
 import { intelligentAudioSampling } from '@/services/audio/sampler';
 import { extractSpeakerProfiles } from '@/services/generation/extractors/speakerProfile';

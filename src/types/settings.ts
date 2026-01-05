@@ -77,7 +77,7 @@ export interface AppSettings {
   zoomLevel?: number; // UI Zoom level (0.5 - 2.0)
 
   // Alignment Settings
-  alignmentMode?: 'ctc' | 'llm' | 'none'; // Timestamp alignment strategy (default: 'none')
+  alignmentMode?: 'ctc' | 'none'; // Timestamp alignment strategy (default: 'none')
   alignerPath?: string; // Path to align.exe (CTC forced aligner)
   alignmentModelPath?: string; // Path to MMS alignment model directory
   localConcurrency?: number; // Max concurrent local processes (default: 1)

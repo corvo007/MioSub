@@ -3,7 +3,7 @@ import {
   type GlossaryExtractionResult,
   type GlossaryExtractionMetadata,
 } from '@/types/glossary';
-import { type PipelineContext } from './types';
+import { type PipelineContext } from '@/types/pipeline';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
 import { getActionableErrorMessage } from '@/services/api/gemini/core/client';
 import { ArtifactSaver } from '@/services/generation/debug/artifactSaver';

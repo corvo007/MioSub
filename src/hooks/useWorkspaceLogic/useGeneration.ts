@@ -12,7 +12,11 @@ import { generateSubtitles } from '@/services/generation/pipeline';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
 import { decodeAudioWithRetry } from '@/services/audio/decoder';
 import { ENV } from '@/config';
-import { type GlossaryFlowProps, type SnapshotsValuesProps, type ProgressHandler } from './types';
+import {
+  type GlossaryFlowProps,
+  type SnapshotsValuesProps,
+  type ProgressHandler,
+} from '@/types/workspace';
 
 interface UseGenerationProps {
   // State reading

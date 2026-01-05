@@ -6,7 +6,7 @@ import { preprocessAudio } from './preprocessor';
 import { SmartSegmenter } from '@/services/audio/segmenter';
 import { SpeakerAnalyzer } from './speakerAnalyzer';
 import { GlossaryHandler } from './glossaryHandler';
-import { type PipelineContext } from './types';
+import { type PipelineContext } from '@/types/pipeline';
 import { type SubtitleItem } from '@/types/subtitle';
 import { type AppSettings } from '@/types/settings';
 import { type ChunkStatus } from '@/types/api';

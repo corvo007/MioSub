@@ -1,7 +1,8 @@
 import { type Semaphore } from '@/services/utils/concurrency';
 import i18n from '@/i18n';
 import { type ChunkParams } from './preprocessor';
-import { type PipelineContext, type SubtitleItem, type SpeakerProfile } from './types';
+import { type PipelineContext, type SpeakerProfile } from '@/types/pipeline';
+import { type SubtitleItem } from '@/types/subtitle';
 import { type GlossaryState } from '@/services/generation/extractors/glossary-state';
 import { ArtifactSaver } from '@/services/generation/debug/artifactSaver';
 import { MockFactory } from '@/services/generation/debug/mockFactory';
@@ -451,9 +452,9 @@ export class ChunkProcessor {
                   `[Chunk ${index}] Alignment Language: ${detectedLang} → ${language} (Source: ${settings.debug?.mockLanguage ? 'Manual' : 'Auto'}, Segments: ${segmentsForDetection.length})`
                 );
 
-                // Prepare audio file for alignment if needed (CTC or LLM)
+                // Prepare audio file for CTC alignment if needed
                 let tempAudioPath = '';
-                if (settings.alignmentMode === 'ctc' || settings.alignmentMode === 'llm') {
+                if (settings.alignmentMode === 'ctc') {
                   try {
                     // Reuse audio from refinement step if available, otherwise generate
                     let audioDataForTemp: string | ArrayBuffer;
@@ -461,15 +462,9 @@ export class ChunkProcessor {
                     if (base64Audio) {
                       audioDataForTemp = base64Audio;
                     } else {
+                      // For CTC, we prefer ArrayBuffer to save memory
                       const wavBlob = await sliceAudioBuffer(audioBuffer, start, end);
-                      // For LLM, we strictly need base64 for the API.
-                      // For CTC, we prefer ArrayBuffer to save memory (avoid large string allocation).
-                      if (settings.alignmentMode === 'llm') {
-                        base64Audio = await blobToBase64(wavBlob);
-                        audioDataForTemp = base64Audio;
-                      } else {
-                        audioDataForTemp = await wavBlob.arrayBuffer();
-                      }
+                      audioDataForTemp = await wavBlob.arrayBuffer();
                     }
 
                     const result = await window.electronAPI.writeTempAudioFile(
@@ -490,10 +485,7 @@ export class ChunkProcessor {
 
                 // Validate requirements before proceeding
                 let canAlign = true;
-                if (settings.alignmentMode === 'llm' && !base64Audio) {
-                  logger.warn(`[Chunk ${index}] Skipping LLM alignment: Missing base64 audio`);
-                  canAlign = false;
-                } else if (settings.alignmentMode === 'ctc' && !tempAudioPath) {
+                if (settings.alignmentMode === 'ctc' && !tempAudioPath) {
                   logger.warn(`[Chunk ${index}] Skipping CTC alignment: Failed to write temp file`);
                   canAlign = false;
                 }
@@ -608,6 +600,18 @@ export class ChunkProcessor {
                 ...(chunkSettings.enableDiarization && item.speaker
                   ? { speaker: item.speaker }
                   : {}),
+                // Preserve alignment metadata if present in mock data
+                ...(item.alignmentScore !== undefined
+                  ? { alignmentScore: item.alignmentScore }
+                  : {}),
+                ...(item.lowConfidence !== undefined ? { lowConfidence: item.lowConfidence } : {}),
+                // Preserve timeline issue markers if present in mock data
+                ...(item.hasRegressionIssue !== undefined
+                  ? { hasRegressionIssue: item.hasRegressionIssue }
+                  : {}),
+                ...(item.hasCorruptedRangeIssue !== undefined
+                  ? { hasCorruptedRangeIssue: item.hasCorruptedRangeIssue }
+                  : {}),
               }));
             } else {
               const items = await translateBatch(
@@ -636,16 +640,41 @@ export class ChunkProcessor {
                   `[Chunk ${index}] Translation first segment speaker: ${items[0].speaker}`
                 );
               }
-              finalChunkSubs = items.map((item) => ({
-                id: item.id,
-                startTime: formatTime(timeToSeconds(item.start) + start),
-                endTime: formatTime(timeToSeconds(item.end) + start),
-                original: item.original,
-                translated: item.translated,
-                ...(chunkSettings.enableDiarization && item.speaker
-                  ? { speaker: item.speaker }
-                  : {}),
-              }));
+              // Build maps to preserve metadata from previous pipeline stages
+              const alignedMap = new Map(alignedSegments.map((seg, idx) => [seg.id || idx, seg]));
+              // Also need refinedSegments map for timeline issue markers (set in refinement postprocessor)
+              const refinedMap = new Map(refinedSegments.map((seg, idx) => [seg.id || idx, seg]));
+
+              finalChunkSubs = items.map((item, idx) => {
+                // Look up data from corresponding segments
+                const alignedSeg = alignedMap.get(item.id) || alignedSegments[idx];
+                const refinedSeg = refinedMap.get(item.id) || refinedSegments[idx];
+
+                return {
+                  id: item.id,
+                  startTime: formatTime(timeToSeconds(item.start) + start),
+                  endTime: formatTime(timeToSeconds(item.end) + start),
+                  original: item.original,
+                  translated: item.translated,
+                  ...(chunkSettings.enableDiarization && item.speaker
+                    ? { speaker: item.speaker }
+                    : {}),
+                  // Preserve alignment metadata from CTC aligner
+                  ...(alignedSeg?.alignmentScore !== undefined
+                    ? { alignmentScore: alignedSeg.alignmentScore }
+                    : {}),
+                  ...(alignedSeg?.lowConfidence !== undefined
+                    ? { lowConfidence: alignedSeg.lowConfidence }
+                    : {}),
+                  // Preserve timeline issue markers from refinement postprocessor
+                  ...(refinedSeg?.hasRegressionIssue !== undefined
+                    ? { hasRegressionIssue: refinedSeg.hasRegressionIssue }
+                    : {}),
+                  ...(refinedSeg?.hasCorruptedRangeIssue !== undefined
+                    ? { hasCorruptedRangeIssue: refinedSeg.hasCorruptedRangeIssue }
+                    : {}),
+                };
+              });
             }
 
             ArtifactSaver.saveChunkArtifact(index, 'translation', finalChunkSubs, settings);
