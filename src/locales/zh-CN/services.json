@@ -63,13 +63,22 @@
       "extractingGlossaryInit": "正在初始化术语提取 (共 {{total}} 个片段)...",
       "extractingGlossaryComplete": "术语提取完成",
       "extractingGlossary": "正在提取术语 ({{current}}/{{total}})...",
-      "analyzingSpeakers": "正在分析说话人..."
+      "analyzingSpeakers": "正在分析说话人...",
+      "complete": "完成",
+      "waitingTranscription": "等待转录...",
+      "transcribing": "正在转录...",
+      "completeNoContent": "完成 (无内容)",
+      "waitingGlossary": "正在等待术语表...",
+      "waitingSpeakerAnalysis": "正在等待说话人分析...",
+      "refinementFailed": "优化失败 (第 {{index}} 块)"
     },
     "errors": {
       "translationFailed": "翻译失败: {{error}}",
       "translationFailedUseOriginal": "翻译失败，使用原文",
       "missingGeminiKey": "缺少 Gemini API Key",
-      "missingOpenAIKey": "缺少 OpenAI API Key (或未启用本地 Whisper)"
+      "missingOpenAIKey": "缺少 OpenAI API Key (或未启用本地 Whisper)",
+      "cancelled": "操作已取消",
+      "translationFailedKeepRefined": "翻译失败 (第 {{index}} 块)，保留优化结果"
     }
   }
 }

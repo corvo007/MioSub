@@ -63,13 +63,22 @@
       "extractingGlossaryInit": "Initializing glossary extraction ({{total}} chunks)...",
       "extractingGlossaryComplete": "Glossary extraction complete",
       "extractingGlossary": "Extracting glossary ({{current}}/{{total}})...",
-      "analyzingSpeakers": "Analyzing speakers..."
+      "analyzingSpeakers": "Analyzing speakers...",
+      "complete": "Complete",
+      "waitingTranscription": "Waiting for transcription...",
+      "transcribing": "Transcribing...",
+      "completeNoContent": "Complete (No content)",
+      "waitingGlossary": "Waiting for glossary...",
+      "waitingSpeakerAnalysis": "Waiting for speaker analysis...",
+      "refinementFailed": "Refinement failed (Chunk {{index}})"
     },
     "errors": {
       "translationFailed": "Translation failed: {{error}}",
       "translationFailedUseOriginal": "Translation failed, using original text",
       "missingGeminiKey": "Gemini API key is missing",
-      "missingOpenAIKey": "OpenAI API Key missing (or local Whisper not enabled)"
+      "missingOpenAIKey": "OpenAI API Key missing (or local Whisper not enabled)",
+      "cancelled": "Operation cancelled",
+      "translationFailedKeepRefined": "Translation failed (Chunk {{index}}), keeping refined text"
     }
   }
 }
