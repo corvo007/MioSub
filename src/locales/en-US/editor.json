@@ -43,7 +43,8 @@
     "addBefore": "Add Before",
     "addAfter": "Add After",
     "addComment": "Add Comment",
-    "deleteRow": "Delete Row"
+    "deleteRow": "Delete Row",
+    "lowConfidence": "Low confidence timestamp ({{score}}%)"
   },
   "batchHeader": {
     "searchPlaceholder": "Search...",
@@ -53,6 +54,9 @@
     "durationTooLong": "Duration too long",
     "tooManyChars": "Too many characters",
     "timeOverlap": "Time overlap",
+    "lowConfidence": "Low Confidence",
+    "regression": "Time Regression",
+    "corrupted": "Corrupted Timeline",
     "clearIssueFilters": "Clear issue filters",
     "filterSpeakers": "Filter speakers",
     "speaker": "Speaker",

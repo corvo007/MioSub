@@ -25,7 +25,7 @@
     "parsingSubtitles": "字幕を解析中...",
     "importSrtAss": ".SRT / .ASS をインポート",
     "hint": "💡 ヒント：",
-    "hintText": "本アプリで生成した字幕のみフル機能で編集できます",
+    "hintText": "本アプリで生成した字幕のみ、フル機能で編集できます",
     "genre": "ジャンル",
     "editGenre": "ジャンル/コンテキストを編集",
     "glossary": "用語集",

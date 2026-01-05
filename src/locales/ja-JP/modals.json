@@ -2,13 +2,13 @@
   "glossaryConfirmation": {
     "extractionFailed": {
       "title": "用語抽出失敗",
-      "description": "音声から用語を取り出せませんでした。ネットワーク接続を確認するか、音声の質に問題がないか確認してください。",
+      "description": "音声から用語を抽出できませんでした。ネットワーク接続等を確認してください。",
       "retry": "抽出を再試行",
       "retryProcessing": "再試行中...",
       "continue": "スキップ（新しい用語なしで進む）"
     },
     "title": "用語集を確認",
-    "subtitle": "抽出が終わりました。使いたい用語を選んでください。",
+    "subtitle": "抽出が完了しました。使用する用語を選択してください。",
     "conflicts": "重複",
     "multipleVersions": "複数のバージョンがあります",
     "keepCurrent": "現在を保持",
@@ -45,7 +45,7 @@
     "selectSpeaker": "話者を選択",
     "manageSpeakers": "話者を管理",
     "noSpeakers": "話者が登録されていません",
-    "autoAddHint": "字幕生成後に自動追加されます",
+    "autoAddHint": "字幕生成後に自動で追加されます",
     "rename": "名前を変更",
     "delete": "削除",
     "inputPlaceholder": "話者名を入力...",
@@ -57,14 +57,14 @@
     "create": "新規作成",
     "done": "完了",
     "deleteTitle": "話者を削除",
-    "deleteConfirm": "話者「{{name}}」を削除してもよろしいですか？削除すると、この話者が割り当てられているすべての字幕から話者情報が解除されます。",
+    "deleteConfirm": "話者「{{name}}」を削除しますか？削除すると、この話者が割り当てられているすべての字幕から話者情報が解除されます。",
     "deleteConfirmBtn": "削除"
   },
   "glossaryImport": {
     "title": "用語集をインポート",
     "ready": "インポート準備完了",
     "readCount": "ファイルから <1>{{count}}</1> 個の用語を読み取りました。",
-    "selectMode": "インポート方法を選択",
+    "selectMode": "インポート方法を選択してください",
     "create": "新規用語集を作成",
     "nameLabel": "用語集名",
     "namePlaceholder": "名前を入力...",

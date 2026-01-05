@@ -10,11 +10,11 @@
     "errors": {
       "billingRequired": "課金を有効にする必要があります（無料枠を使い切ったか有効になっていません）",
       "invalidKey": "API キーが無効です",
-      "permissionDenied": "権限なし / アクセス拒否",
+      "permissionDenied": "権限がありません / アクセスが拒否されました",
       "modelNotFound": "モデルが見つかりません",
       "notFound": "リソースが見つかりません",
-      "regionRestricted": "地域制限（現在の場所では利用不可）",
-      "network": "ネットワークエラー"
+      "regionRestricted": "地域制限があります（現在の場所では利用できません）",
+      "network": "ネットワークエラーが発生しました"
     },
     "network": {
       "rateLimited": "リクエスト頻度制限 / クォータ超過",
@@ -43,6 +43,13 @@
   },
   "pipeline": {
     "status": {
+      "decoding": "音声をデコード中...",
+      "decodingUsingCache": "キャッシュされた音声を使用中（長さ: {{duration}}）",
+      "decodingComplete": "音声デコード完了（長さ: {{duration}}）",
+      "segmenting": "セグメント分割中...",
+      "segmentingComplete": "セグメント分割完了（{{count}} 個のチャンク）",
+      "refining": "文字起こしを最適化中...",
+      "aligning": "タイムスタンプを調整中...",
       "retryMissedTranslations": "{{count}} 件の欠落した翻訳を再試行中...",
       "loadingAudio": "音声ファイルを読み込み中...",
       "proofing": "チェック中...",
@@ -51,7 +58,7 @@
       "completed": "完了",
       "failed": "失敗",
       "translatingNew": "{{count}} 件の新しい項目を翻訳中...",
-      "autoTranslationComplete": "自動翻訳が終わりました",
+      "autoTranslationComplete": "自動翻訳が完了しました",
       "autoTranslationFailed": "自動翻訳に失敗しました",
       "extractingGlossaryInit": "用語抽出を初期化中（全 {{total}} セグメント）...",
       "extractingGlossaryComplete": "用語抽出完了",

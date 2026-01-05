@@ -5,16 +5,20 @@
     "selectJsonFile": "JSON ファイルを選択",
     "selectWhisperModel": "Whisper モデルファイルを選択",
     "selectWhisperModelMessage": "GGML形式の .bin モデルファイルを選んでください",
+    "selectAlignerExecutable": "アライナー実行ファイルを選択",
+    "selectAlignerModelDir": "アライナーモデルフォルダを選択",
     "selectDownloadDir": "ダウンロードディレクトリを選択",
     "saveSubtitleFile": "字幕ファイルを保存",
     "exportLogs": "ログをエクスポート"
   },
   "fileFilter": {
+    "mediaFiles": "メディアファイル",
     "videoFiles": "動画ファイル",
     "audioFiles": "音声ファイル",
     "subtitleFiles": "字幕ファイル",
     "jsonFiles": "JSON ファイル",
     "whisperModel": "Whisper モデル",
+    "executableFiles": "実行ファイル",
     "textFiles": "テキストファイル",
     "allFiles": "すべてのファイル",
     "subtitle": "字幕"
@@ -43,7 +47,9 @@
     "unknownError": "不明なエラー",
     "invalidVideoUrl": "無効な動画リンク",
     "parseVideoFailed": "動画情報の解析に失敗：無効なレスポンス形式",
-    "ytdlpTimeout": "yt-dlp 実行タイムアウト ({{seconds}}秒)"
+    "ytdlpTimeout": "yt-dlp 実行タイムアウト ({{seconds}}秒)",
+    "notAFile": "選択したパスはファイルではありません",
+    "fileNotAccessible": "ファイルにアクセスできません"
   },
   "ytdlp": {
     "playlistNotSupported": "プレイリストのダウンロードには対応していません。単一の動画リンクを使用してください",

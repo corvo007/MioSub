@@ -107,7 +107,7 @@
       },
       "speakerPreAnalysis": {
         "label": "話者の事前分析を有効化（実験的）",
-        "desc": "字幕を作る前に音声をチェックして、話者の数や声の特徴を分析します。時間はかかりますが、より正確に識別できるようになります。"
+        "desc": "字幕生成前に音声を分析し、話者の数や声の特徴を識別します。時間はかかりますが、より正確に識別できるようになります。"
       },
       "includeSpeaker": {
         "label": "エクスポート時に話者名を含める",
@@ -115,7 +115,7 @@
       },
       "speakerColors": {
         "label": "話者の色を使用（ASS）",
-        "desc": "異なる話者に異なる色を割り当て（ASS形式のみ有効）"
+        "desc": "異なる話者に異なる色を割り当てます（ASS形式のみ有効）"
       },
       "visualStyle": {
         "label": "キャラクタースタイル翻訳",
@@ -147,7 +147,7 @@
     "modeBadge": "フルオートモード",
     "subtitle": "リンクを入力して字幕付き動画を自動生成",
     "featureUnavailable": {
-      "title": "機能が利用できません",
+      "title": "機能を利用できません",
       "desc": "この機能はデスクトップ版でのみ利用可能です",
       "return": "戻る"
     },
@@ -195,7 +195,7 @@
   },
   "errors": {
     "desktopOnly": "この機能はデスクトップ版でのみ利用可能です",
-    "parseTimeout": "解析タイムアウト、ネットワーク接続を確認して再試行してください",
+    "parseTimeout": "解析がタイムアウトしました。ネットワーク接続を確認して再試行してください。",
     "parseError": "動画リンクの解析に失敗しました",
     "parseException": "動画リンクの解析中にエラーが発生しました",
     "enterUrl": "動画リンクを入力してください",
@@ -203,8 +203,8 @@
     "executionFailed": "実行失敗",
     "busy": "既にタスクが処理中です",
     "invalidPath": "無効な音声パス",
-    "missingGeminiKey": "Gemini API キーがありません。設定で構成してください",
-    "missingOpenAIKey": "OpenAI API キーがないか、ローカル Whisper が設定されていません",
+    "missingGeminiKey": "Gemini API キーがありません。設定で構成してください。",
+    "missingOpenAIKey": "OpenAI API キーがないか、ローカル Whisper が設定されていません。",
     "fileReadError": "音声ファイルを読み取れません: {{error}}",
     "fileEmpty": "音声ファイルが空です",
     "fileCorrupt": "音声ファイルが小さすぎます。破損している可能性があります",
@@ -212,11 +212,11 @@
     "audioTooShort": "音声が短すぎます（1秒未満）",
     "audioTooLong": "音声が長すぎます（6時間超過）",
     "cancelled": "操作がキャンセルされました",
-    "noSpeech": "字幕が生成されませんでした。音声に会話がない可能性があります",
+    "noSpeech": "字幕が生成されませんでした。音声に会話がない可能性があります。",
     "apiKeyError": "API キーエラー: {{error}}",
     "invalidApiKey": "APIキーが無効です。設定を確認してください。",
-    "rateLimited": "API リクエスト頻度制限、後で再試行してください",
-    "timeout": "リクエストタイムアウト、ネットワーク接続を確認してください",
+    "rateLimited": "API リクエストが頻度制限されました。しばらくしてから再試行してください。",
+    "timeout": "リクエストがタイムアウトしました。ネットワーク接続を確認してください。",
     "unknown": "字幕生成失敗"
   },
   "status": {

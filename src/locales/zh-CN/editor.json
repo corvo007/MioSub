@@ -43,7 +43,8 @@
     "addBefore": "在前面添加",
     "addAfter": "在后面添加",
     "addComment": "添加评论",
-    "deleteRow": "删除行"
+    "deleteRow": "删除行",
+    "lowConfidence": "时间轴置信度较低 ({{score}}%)"
   },
   "batchHeader": {
     "searchPlaceholder": "搜索...",
@@ -53,6 +54,9 @@
     "durationTooLong": "时间过长",
     "tooManyChars": "字符过多",
     "timeOverlap": "时间重叠",
+    "lowConfidence": "置信度低",
+    "regression": "时间回退",
+    "corrupted": "时间轴损坏",
     "clearIssueFilters": "清除问题筛选",
     "filterSpeakers": "筛选说话人",
     "speaker": "说话人",

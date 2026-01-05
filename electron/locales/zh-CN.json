@@ -5,16 +5,20 @@
     "selectJsonFile": "选择 JSON 文件",
     "selectWhisperModel": "选择 Whisper 模型文件",
     "selectWhisperModelMessage": "请选择 .bin 格式的 GGML 模型文件",
+    "selectAlignerExecutable": "选择对齐器可执行文件",
+    "selectAlignerModelDir": "选择对齐器模型目录",
     "selectDownloadDir": "选择下载目录",
     "saveSubtitleFile": "保存字幕文件",
     "exportLogs": "导出日志"
   },
   "fileFilter": {
+    "mediaFiles": "音视频文件",
     "videoFiles": "视频文件",
     "audioFiles": "音频文件",
     "subtitleFiles": "字幕文件",
     "jsonFiles": "JSON 文件",
     "whisperModel": "Whisper 模型",
+    "executableFiles": "可执行文件",
     "textFiles": "文本文件",
     "allFiles": "所有文件",
     "subtitle": "字幕"
@@ -43,7 +47,9 @@
     "unknownError": "未知错误",
     "invalidVideoUrl": "无效的视频链接",
     "parseVideoFailed": "解析视频信息失败：无效的响应格式",
-    "ytdlpTimeout": "yt-dlp 执行超时 ({{seconds}}秒)"
+    "ytdlpTimeout": "yt-dlp 执行超时 ({{seconds}}秒)",
+    "notAFile": "所选路径不是文件",
+    "fileNotAccessible": "无法访问文件"
   },
   "ytdlp": {
     "playlistNotSupported": "暂不支持下载播放列表，请使用单个视频链接",

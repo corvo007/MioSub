@@ -42,7 +42,7 @@
     "gpuEnabled": "GPU アクセラレーション有効",
     "cpuMode": "CPU モード",
     "detectingSupport": "ハードウェアアクセラレーションが使えるか確認中...",
-    "noGpuDetected": "使えるGPUが見つかりませんでした",
+    "noGpuDetected": "利用可能な GPU が見つかりませんでした",
     "willUseEncoder": "{{encoder}} を使用します",
     "forceCpu": "CPU エンコードを強制",
     "availableEncoders": "利用可能なエンコーダ:"
@@ -53,8 +53,8 @@
     "saveChanges": "変更を保存"
   },
   "encoderSelector": {
-    "h264Desc": "互換性最高、ほとんどのシナリオに適合",
-    "hevcDesc": "圧縮効率が高くファイルサイズが小さいが、エンコード速度が遅い",
+    "h264Desc": "互換性が高く、ほとんどのシナリオに適しています",
+    "hevcDesc": "圧縮効率が高くファイルサイズが小さいですが、エンコード速度が遅くなります",
     "hevc_nvenc": "HEVC (NVENC) - 高効率圧縮"
   },
   "header": {

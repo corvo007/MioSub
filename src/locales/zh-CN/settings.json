@@ -75,13 +75,6 @@
     }
   },
   "performance": {
-    "localWhisper": {
-      "title": "本地 Whisper 设置",
-      "cpuThreads": "CPU 线程数",
-      "cpuThreadsHint": "每个转录任务使用的 CPU 线程数，范围 1-16",
-      "concurrency": "最大并发数",
-      "concurrencyHint": "同时处理的转录任务数，范围 1-4"
-    },
     "batch": {
       "title": "批处理",
       "proofreadBatchSize": "润色翻译批次大小",
@@ -93,10 +86,12 @@
     },
     "concurrency": {
       "title": "并发与超时",
-      "concurrencyFlash": "并发数 (Flash)",
-      "concurrencyFlashHint": "应用于 <strong>Gemini Flash 系列模型</strong> 翻译、优化和 <strong>Whisper API</strong> 转录。请根据账户限额调整。",
-      "concurrencyPro": "并发数 (Pro)",
-      "concurrencyProHint": "应用于 <strong>Gemini Pro 系列模型</strong> 术语提取和润色翻译。请根据账户限额调整。",
+      "concurrencyFlash": "并发数 A",
+      "concurrencyFlashHint": "适用环节：主流程（优化转录、翻译）、Whipser API 转录、修复时间轴。",
+      "concurrencyPro": "并发数 B",
+      "concurrencyProHint": "适用环节：术语提取、翻译润色。",
+      "localConcurrency": "并发数 C",
+      "localConcurrencyHint": "适用环节：时间轴对齐、本地 Whisper 转录。",
       "requestTimeout": "请求超时 (秒)",
       "requestTimeoutHint": "单个 API 请求的最长等待时间。网络较慢或处理大批量时可适当增加。"
     },
@@ -144,17 +139,60 @@
       "autoConfirm": "自动确认术语表",
       "autoConfirmDesc": "提取术语后直接应用，无需人工确认。新术语将自动合并至当前激活的术语表（如当前无术语表，则自动新建）。",
       "manageGlossary": "管理术语表"
+    },
+    "alignment": {
+      "title": "长句拆分 & 时间轴对齐",
+      "mode": "执行模式",
+      "modeHint": "选择转录优化后如何进行拆分与对齐时间轴。",
+      "modeOptions": {
+        "none": "无 (保留原始)",
+        "ctc": "CTC (准确度最高)",
+        "llm": "LLM (实验性)"
+      },
+      "ctcConfig": "CTC 对齐器配置",
+      "ctcConfigDesc": "配置外部 CTC 对齐工具和模型的路径。",
+      "alignerPath": "对齐器可执行文件",
+      "alignerPathPlaceholder": "选择 align.exe...",
+      "modelPath": "模型目录",
+      "modelPathPlaceholder": "选择模型文件夹...",
+      "browseButton": "📁 浏览",
+      "selectError": "选择失败: {{error}}",
+      "selectErrorGeneric": "选择失败",
+      "instructions": "设置说明：",
+      "instructionAligner": "从项目发布页面下载 align.exe",
+      "instructionModel": "下载 MMS 模型 (~1.2GB) 并解压到文件夹",
+      "llmHint": "LLM 模式使用 Gemini 对齐时间轴。精度不如 CTC，但无需外部依赖。"
     }
   },
   "debug": {
     "title": "调试模式",
-    "description": "启用 Mock 模式可以跳过实际 API 请求，直接返回模拟数据。用于测试流程或节省 API 额度。",
-    "mockGemini": "Mock Gemini API",
-    "mockGeminiDesc": "跳过术语提取、润色和翻译请求",
-    "mockOpenAI": "Mock OpenAI API",
-    "mockOpenAIDesc": "跳过 OpenAI Whisper 转录请求",
-    "mockLocalWhisper": "Mock Local Whisper",
-    "mockLocalWhisperDesc": "跳过本地 Whisper 转录",
+    "description": "启用 Mock 模式可以跳过实际 API 请求，直接返回模拟数据。用于测试流程或节省 API 额度。启用后将自动跳过术语表提取及说话人预分析。",
+    "mockStage": {
+      "title": "Mock 起始阶段",
+      "desc": "从选定的阶段开始执行，跳过该阶段之前的所有步骤。例如选择「润色」则跳过转录，从润色开始执行后续流程。Mock 模式下仅处理第一个分块。",
+      "none": "无（正常执行）",
+      "transcribe": "转录",
+      "refinement": "润色",
+      "alignment": "时间轴对齐",
+      "translation": "翻译"
+    },
+    "mockData": {
+      "title": "Mock 数据文件",
+      "placeholder": "JSON/SRT 文件路径（可选）",
+      "hint": "作为 Mock 起始阶段的输入数据。留空则使用预置占位数据（仅含单条测试字幕，无实际意义）。建议提供真实字幕文件以有效测试后续阶段。"
+    },
+    "skipAfter": {
+      "title": "跳过后续",
+      "desc": "执行到此阶段后停止",
+      "none": "无（运行全部阶段）",
+      "transcribe": "转录",
+      "refinement": "润色",
+      "alignment": "时间轴对齐"
+    },
+    "language": {
+      "title": "Mock 语言",
+      "desc": "对齐语言（覆盖自动检测）"
+    },
     "saveIntermediateArtifacts": "保存中间结果",
     "saveIntermediateArtifactsDesc": "在日志目录下保存 Whisper 原始结果、润色结果、翻译结果等中间文件，用于调试分析",
     "customPaths": "自定义路径",

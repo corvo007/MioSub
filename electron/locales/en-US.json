@@ -5,16 +5,20 @@
     "selectJsonFile": "Select JSON File",
     "selectWhisperModel": "Select Whisper Model File",
     "selectWhisperModelMessage": "Please select a .bin model file in GGML format",
+    "selectAlignerExecutable": "Select Aligner Executable",
+    "selectAlignerModelDir": "Select Aligner Model Directory",
     "selectDownloadDir": "Select Download Directory",
     "saveSubtitleFile": "Save Subtitle File",
     "exportLogs": "Export Logs"
   },
   "fileFilter": {
+    "mediaFiles": "Media Files",
     "videoFiles": "Video Files",
     "audioFiles": "Audio Files",
     "subtitleFiles": "Subtitle Files",
     "jsonFiles": "JSON Files",
     "whisperModel": "Whisper Model",
+    "executableFiles": "Executable Files",
     "textFiles": "Text Files",
     "allFiles": "All Files",
     "subtitle": "Subtitle"
@@ -43,7 +47,9 @@
     "unknownError": "Unknown error",
     "invalidVideoUrl": "Invalid video URL",
     "parseVideoFailed": "Failed to parse video info: invalid response format",
-    "ytdlpTimeout": "yt-dlp execution timeout ({{seconds}}s)"
+    "ytdlpTimeout": "yt-dlp execution timeout ({{seconds}}s)",
+    "notAFile": "Selected path is not a file",
+    "fileNotAccessible": "Cannot access file"
   },
   "ytdlp": {
     "playlistNotSupported": "Playlists are not supported, please use a single video URL",

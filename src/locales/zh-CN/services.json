@@ -43,6 +43,13 @@
   },
   "pipeline": {
     "status": {
+      "decoding": "正在解码音频...",
+      "decodingUsingCache": "使用缓存的音频 (时长: {{duration}})",
+      "decodingComplete": "音频解码完成 (时长: {{duration}})",
+      "segmenting": "正在分段处理...",
+      "segmentingComplete": "分段完成 (共 {{count}} 个片段)",
+      "refining": "正在优化转录...",
+      "aligning": "正在拆分长句&对齐时间轴...",
       "retryMissedTranslations": "正在重试 {{count}} 条缺失的翻译...",
       "loadingAudio": "正在加载音频文件...",
       "proofing": "正在校对...",

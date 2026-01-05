@@ -43,6 +43,13 @@
   },
   "pipeline": {
     "status": {
+      "decoding": "Decoding audio...",
+      "decodingUsingCache": "Using cached audio (Duration: {{duration}})",
+      "decodingComplete": "Audio decoding complete (Duration: {{duration}})",
+      "segmenting": "Segmenting audio...",
+      "segmentingComplete": "Segmentation complete ({{count}} chunks)",
+      "refining": "Refining transcription...",
+      "aligning": "Aligning timestamps...",
       "retryMissedTranslations": "Retrying {{count}} missing translations...",
       "loadingAudio": "Loading audio file...",
       "proofing": "Proofreading...",

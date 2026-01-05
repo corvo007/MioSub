@@ -75,13 +75,6 @@
     }
   },
   "performance": {
-    "localWhisper": {
-      "title": "Local Whisper Settings",
-      "cpuThreads": "CPU Threads",
-      "cpuThreadsHint": "Number of CPU threads per transcription task (1-16)",
-      "concurrency": "Max Concurrency",
-      "concurrencyHint": "Number of simultaneous transcription tasks (1-4)"
-    },
     "batch": {
       "title": "Batch Processing",
       "proofreadBatchSize": "Proofreading Batch Size",
@@ -93,10 +86,12 @@
     },
     "concurrency": {
       "title": "Concurrency & Timeout",
-      "concurrencyFlash": "Concurrency (Flash)",
-      "concurrencyFlashHint": "Applied to <strong>Gemini Flash models</strong> for translation/optimization and <strong>Whisper API</strong> transcription. Adjust based on account limits.",
-      "concurrencyPro": "Concurrency (Pro)",
-      "concurrencyProHint": "Applied to <strong>Gemini Pro models</strong> for glossary extraction and proofreading. Adjust based on account limits.",
+      "concurrencyFlash": "Concurrency A",
+      "concurrencyFlashHint": "Apply to: Main Pipeline (Transcription Refinement, Translation), Whisper API Transcription, Timestamp Repair.",
+      "concurrencyPro": "Concurrency B",
+      "concurrencyProHint": "Apply to: Glossary Extraction, Translation Proofreading.",
+      "localConcurrency": "Concurrency C",
+      "localConcurrencyHint": "Apply to: Timestamp Alignment, Local Whisper Transcription.",
       "requestTimeout": "Request Timeout (seconds)",
       "requestTimeoutHint": "Maximum wait time for a single API request. Increase for slow networks or large batches."
     },
@@ -144,17 +139,60 @@
       "autoConfirm": "Auto-confirm Glossary",
       "autoConfirmDesc": "Apply extracted terms directly without manual confirmation. New terms will be merged into the currently active glossary (if none exists, a new one will be created).",
       "manageGlossary": "Manage Glossary"
+    },
+    "alignment": {
+      "title": "Sentence Splitting & Alignment",
+      "mode": "Alignment Mode",
+      "modeHint": "Select how to split and align timestamps after transcription refinement.",
+      "modeOptions": {
+        "none": "None (Keep Original)",
+        "ctc": "CTC (Highest Accuracy)",
+        "llm": "LLM (Experimental)"
+      },
+      "ctcConfig": "CTC Aligner Configuration",
+      "ctcConfigDesc": "Configure paths for the external CTC alignment tool and model.",
+      "alignerPath": "Aligner Executable",
+      "alignerPathPlaceholder": "Select align.exe...",
+      "modelPath": "Model Directory",
+      "modelPathPlaceholder": "Select model folder...",
+      "browseButton": "📁 Browse",
+      "selectError": "Selection failed: {{error}}",
+      "selectErrorGeneric": "Selection failed",
+      "instructions": "Setup Instructions:",
+      "instructionAligner": "Download align.exe from the project releases page",
+      "instructionModel": "Download the MMS model (~1.2GB) and extract to a folder",
+      "llmHint": "LLM mode uses Gemini to estimate timestamps. Less accurate than CTC but requires no external dependencies."
     }
   },
   "debug": {
     "title": "Debug Mode",
-    "description": "Enable Mock mode to skip actual API requests and return simulated data. Useful for testing workflows or saving API quota.",
-    "mockGemini": "Mock Gemini API",
-    "mockGeminiDesc": "Skip glossary extraction, proofreading, and translation requests",
-    "mockOpenAI": "Mock OpenAI API",
-    "mockOpenAIDesc": "Skip OpenAI Whisper transcription requests",
-    "mockLocalWhisper": "Mock Local Whisper",
-    "mockLocalWhisperDesc": "Skip local Whisper transcription",
+    "description": "Enable Mock mode to skip actual API requests and return simulated data. Useful for testing workflows or saving API quota. When enabled, glossary extraction and speaker pre-analysis are automatically skipped.",
+    "mockStage": {
+      "title": "Mock Start Stage",
+      "desc": "Start from the selected stage, skipping ALL stages before it. E.g., selecting 'Refinement' skips transcription and starts from refinement. Only the first chunk is processed in mock mode.",
+      "none": "None (Normal execution)",
+      "transcribe": "Transcribe",
+      "refinement": "Refinement",
+      "alignment": "Alignment",
+      "translation": "Translation"
+    },
+    "mockData": {
+      "title": "Mock Data File",
+      "placeholder": "Path to JSON/SRT file (optional)",
+      "hint": "Input data for the mock start stage. Leave empty to use preset placeholder data (a single test subtitle with no real content). Provide a real subtitle file to effectively test subsequent stages."
+    },
+    "skipAfter": {
+      "title": "Skip After",
+      "desc": "Stop pipeline after this stage",
+      "none": "None (Run all stages)",
+      "transcribe": "Transcribe",
+      "refinement": "Refinement",
+      "alignment": "Alignment"
+    },
+    "language": {
+      "title": "Mock Language",
+      "desc": "Language for alignment (override auto-detect)"
+    },
     "saveIntermediateArtifacts": "Save Intermediate Results",
     "saveIntermediateArtifactsDesc": "Save intermediate files (Whisper raw results, proofreading, translation) to the log directory for debugging analysis",
     "customPaths": "Custom Paths",
