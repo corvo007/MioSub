@@ -3,7 +3,7 @@ import i18n from '@/i18n';
 import { type ChunkParams } from './preprocessor';
 import { type PipelineContext, type SpeakerProfile } from '@/types/pipeline';
 import { type SubtitleItem } from '@/types/subtitle';
-import { type GlossaryState } from '@/services/generation/extractors/glossary-state';
+import { type GlossaryState } from '@/services/generation/extractors/glossaryState';
 import { ArtifactSaver } from '@/services/generation/debug/artifactSaver';
 import { MockFactory } from '@/services/generation/debug/mockFactory';
 import { logger } from '@/services/utils/logger';

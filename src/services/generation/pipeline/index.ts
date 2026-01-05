@@ -17,7 +17,7 @@ import {
 } from '@/types/glossary';
 import { selectChunksByDuration } from '@/services/glossary/selector';
 import { extractGlossaryFromAudio } from '@/services/generation/extractors/glossary';
-import { GlossaryState } from '@/services/generation/extractors/glossary-state';
+import { GlossaryState } from '@/services/generation/extractors/glossaryState';
 import { type SpeakerProfile } from '@/services/generation/extractors/speakerProfile';
 import { mapInParallel, Semaphore } from '@/services/utils/concurrency';
 import { logger } from '@/services/utils/logger';
