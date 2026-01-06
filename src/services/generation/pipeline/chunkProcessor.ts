@@ -31,9 +31,12 @@ import { translateBatch } from '@/services/generation/pipeline/translation';
 import { STEP_MODELS, buildStepConfig } from '@/config';
 import { parseGeminiResponse } from '@/services/subtitle/parser';
 import { withPostCheck } from '@/services/subtitle/postCheck';
+import { reconcile } from '@/services/subtitle/reconciler';
+import { toTranslationPayload, toRefinementPayloads } from '@/services/subtitle/payloads';
 import { createRefinementPostProcessor } from '@/services/generation/pipeline/postProcessors';
 import { createAligner } from '@/services/alignment';
-import { iso639_1To3, detectLanguage } from '@/services/utils/language';
+import { iso639_1To3, detectLanguage, toLocaleCode } from '@/services/utils/language';
+import { CONFIDENCE_THRESHOLD } from '@/services/alignment/utils';
 
 export interface ChunkDependencies {
   glossaryState: GlossaryState;
@@ -119,6 +122,14 @@ export class ChunkProcessor {
       if (mockStageIndex >= 0) {
         logger.info(`[Chunk ${index}] Skipping transcription (mockStage='${currentMockStage}')`);
         rawSegments = mockInputSegments;
+      } else if (settings.debug?.mockApi?.transcribe) {
+        logger.info(`[Chunk ${index}] Mocking transcription (mockApi enabled)`);
+        rawSegments = await MockFactory.getMockTranscription(
+          index,
+          start,
+          end,
+          settings.debug?.mockDataPath
+        );
       } else {
         onProgress?.({
           id: index,
@@ -160,17 +171,19 @@ export class ChunkProcessor {
         }
 
         logger.debug(`[Chunk ${index}] Transcription complete. Segments: ${rawSegments.length}`);
-
-        // Clean non-speech annotations
-        rawSegments = rawSegments
-          .map((seg) => ({
-            ...seg,
-            original: cleanNonSpeechAnnotations(seg.original),
-          }))
-          .filter((seg) => seg.original.length > 0);
-
-        ArtifactSaver.saveChunkArtifact(index, 'whisper', rawSegments, settings);
       }
+
+      // Clean non-speech annotations (Run on both Real and Mock data)
+      rawSegments = rawSegments
+        .map((seg) => ({
+          ...seg,
+          original: cleanNonSpeechAnnotations(seg.original),
+        }))
+        .filter((seg) => seg.original.length > 0);
+
+      // Save artifact after cleaning
+
+      ArtifactSaver.saveChunkArtifact(index, 'whisper', rawSegments, settings);
 
       // Skip if no segments
       if (rawSegments.length === 0) {
@@ -276,8 +289,16 @@ export class ChunkProcessor {
           logger.info(`[Chunk ${index}] Skipping refinement (mockStage='${currentMockStage}')`);
           refinedSegments = mockInputSegments; // Use loaded mock data directly
         } else {
-          const refineWavBlob = await sliceAudioBuffer(audioBuffer, start, end);
-          base64Audio = await blobToBase64(refineWavBlob);
+          // Prepare for Refinement (Real or Mock)
+          let base64Audio = '';
+          // Only slice audio if we plan to use it (Real API) OR if we want to simulate full pipeline
+          // Since user wants to skip API *only*, we can skip audio slicing overhead if Mock is ON,
+          // but strictly speaking "post-processing" doesn't include audio slicing.
+          // Let's optimize: If Mock Refinement is ON, we don't need base64Audio.
+          if (!settings.debug?.mockApi?.refinement) {
+            const refineWavBlob = await sliceAudioBuffer(audioBuffer, start, end);
+            base64Audio = await blobToBase64(refineWavBlob);
+          }
 
           onProgress?.({
             id: index,
@@ -287,6 +308,7 @@ export class ChunkProcessor {
             message: i18n.t('services:pipeline.status.refining'),
           });
 
+          // Generate Prompts & System Instructions (Run even in Mock mode for verification)
           const refineSystemInstruction = getSystemInstructionWithDiarization(
             chunkSettings.genre,
             undefined,
@@ -304,49 +326,76 @@ export class ChunkProcessor {
               ? `\n\nKEY TERMINOLOGY (Listen for these terms in the audio and transcribe them accurately in the ORIGINAL LANGUAGE):\n${chunkSettings.glossary.map((g) => `- ${g.term}${g.notes ? ` (${g.notes})` : ''}`).join('\n')}`
               : '';
 
+          const payload = toRefinementPayloads(rawSegments, {
+            includeSpeaker: chunkSettings.enableDiarization,
+          });
+
           const refinePrompt = getRefinementPrompt({
             genre: chunkSettings.genre,
-            rawSegments,
+            payload,
             glossaryInfo,
             glossaryCount: chunkSettings.glossary?.length,
             enableDiarization: chunkSettings.enableDiarization,
             targetLanguage,
           });
 
+          // Detect language for refinement post-processing (splitting)
+          const sampleRefineText = rawSegments
+            .slice(0, 5)
+            .map((s) => s.original)
+            .join(' ');
+          const detectedRefineLang = await detectLanguage(sampleRefineText);
+
           try {
-            const { result: processedSegments } = await withPostCheck(
-              async () => {
-                const response = await generateContentWithRetry(
-                  ai,
-                  {
-                    model: STEP_MODELS.refinement,
-                    contents: {
-                      parts: [
-                        { inlineData: { mimeType: 'audio/wav', data: base64Audio } },
-                        { text: refinePrompt },
-                      ],
-                    },
-                    config: {
-                      responseMimeType: 'application/json',
-                      responseSchema: chunkSettings.enableDiarization
-                        ? REFINEMENT_WITH_DIARIZATION_SCHEMA
-                        : REFINEMENT_SCHEMA,
-                      systemInstruction: refineSystemInstruction,
-                      safetySettings: SAFETY_SETTINGS,
-                      ...buildStepConfig('refinement'),
-                    },
-                  },
-                  3,
-                  signal,
-                  trackUsage,
-                  (settings.requestTimeout || 600) * 1000
+            // Execution Wrapper: Swaps implementation if Mock is enabled, but keeps Validation/PostCheck
+            const refinementGenerator = async () => {
+              if (settings.debug?.mockApi?.refinement) {
+                logger.info(
+                  `[Chunk ${index}] Mocking Refinement API Call (injecting mock data into validation flow)`
                 );
-                return parseGeminiResponse(response.text, chunkDuration);
-              },
-              createRefinementPostProcessor(),
+                const mockData = await MockFactory.getMockRefinement(
+                  index,
+                  rawSegments,
+                  settings.debug?.mockDataPath
+                );
+                return mockData;
+              }
+
+              // Real API Call
+              const response = await generateContentWithRetry(
+                ai,
+                {
+                  model: STEP_MODELS.refinement,
+                  contents: {
+                    parts: [
+                      { inlineData: { mimeType: 'audio/wav', data: base64Audio } },
+                      { text: refinePrompt },
+                    ],
+                  },
+                  config: {
+                    responseMimeType: 'application/json',
+                    responseSchema: chunkSettings.enableDiarization
+                      ? REFINEMENT_WITH_DIARIZATION_SCHEMA
+                      : REFINEMENT_SCHEMA,
+                    systemInstruction: refineSystemInstruction,
+                    safetySettings: SAFETY_SETTINGS,
+                    ...buildStepConfig('refinement'),
+                  },
+                },
+                3,
+                signal,
+                trackUsage,
+                (settings.requestTimeout || 600) * 1000
+              );
+              return parseGeminiResponse(response.text, chunkDuration);
+            };
+
+            const { result: processedSegments } = await withPostCheck(
+              refinementGenerator,
+              createRefinementPostProcessor(toLocaleCode(detectedRefineLang)),
               { maxRetries: 1, stepName: `[Chunk ${index}]` }
             );
-            refinedSegments = processedSegments;
+            refinedSegments = reconcile(rawSegments, processedSegments);
 
             if (refinedSegments.length === 0) {
               refinedSegments = [...rawSegments];
@@ -421,12 +470,16 @@ export class ChunkProcessor {
                   `[Chunk ${index}] Skipping alignment (mockStage='${currentMockStage}')`
                 );
                 alignedSegments = mockInputSegments; // Use loaded mock data directly
+              } else if (settings.debug?.mockApi?.alignment) {
+                logger.info(`[Chunk ${index}] Mocking alignment (pass-through, skipping CTC)`);
+                // Use map to create new object references
+                alignedSegments = refinedSegments.map((s) => ({ ...s }));
+                ArtifactSaver.saveChunkArtifact(index, 'alignment', alignedSegments, settings);
               } else {
                 logger.info(
                   `[Chunk ${index}] Starting alignment (mode: ${settings.alignmentMode}, segments: ${refinedSegments.length})`
                 );
                 const aligner = createAligner(settings);
-                // Detect language from segment text
                 // Detect language from segment text
                 // In mock mode, refinedSegments might be the mock data, use it for detection
                 const segmentsForDetection =
@@ -442,7 +495,7 @@ export class ChunkProcessor {
                     .slice(0, 5)
                     .map((s) => s.original)
                     .join(' ');
-                  logger.info(`[Chunk ${index}] Language detection sample text: "${sampleText}"`);
+                  // logger.info(`[Chunk ${index}] Language detection sample text: "${sampleText}"`);
                   detectedLang = await detectLanguage(sampleText);
                 }
 
@@ -513,7 +566,7 @@ export class ChunkProcessor {
               const lowConfCount = alignedSegments.filter((s) => s.lowConfidence).length;
               if (lowConfCount > 0) {
                 logger.warn(
-                  `[Chunk ${index}] Alignment: ${lowConfCount}/${alignedSegments.length} segments have low confidence (<0.7)`
+                  `[Chunk ${index}] Alignment: ${lowConfCount}/${alignedSegments.length} segments have low confidence (<${CONFIDENCE_THRESHOLD})`
                 );
               }
             } catch (e: any) {
@@ -562,13 +615,9 @@ export class ChunkProcessor {
               message: i18n.t('services:pipeline.status.translating'),
             });
 
-            const toTranslate = alignedSegments.map((seg) => ({
-              id: seg.id,
-              original: seg.original,
-              start: seg.startTime,
-              end: seg.endTime,
-              ...(chunkSettings.enableDiarization && seg.speaker ? { speaker: seg.speaker } : {}),
-            }));
+            const toTranslate = alignedSegments.map((seg) =>
+              toTranslationPayload(seg, { includeSpeaker: chunkSettings.enableDiarization })
+            );
 
             const profilesForTranslation =
               chunkSettings.useSpeakerStyledTranslation && speakerProfiles
@@ -614,67 +663,78 @@ export class ChunkProcessor {
                   : {}),
               }));
             } else {
-              const items = await translateBatch(
-                ai,
-                toTranslate,
-                translateSystemInstruction,
-                1,
-                chunkSettings.translationBatchSize || 20,
-                (update) =>
-                  onProgress?.({
-                    id: index,
-                    total: totalChunks,
-                    status: 'processing',
-                    stage: 'translating',
-                    ...update,
-                  }),
-                signal,
-                trackUsage,
-                (settings.requestTimeout || 600) * 1000,
-                !!chunkSettings.enableDiarization,
-                targetLanguage
-              );
+              let items: any[] = []; // Explicit type would be TranslationItem[] but let's use any or infer to avoid import issues for now
+
+              if (settings.debug?.mockApi?.translation) {
+                logger.info(
+                  `[Chunk ${index}] Mocking Translation API Call (injecting mock data into reconciliation flow)`
+                );
+                const mockData = await MockFactory.getMockTranslation(
+                  index,
+                  alignedSegments,
+                  settings.debug?.mockDataPath
+                );
+                // Convert SubtitleItem (mock) to TranslationItem structure (expected by pipeline)
+                items = mockData.map((s) => ({
+                  id: s.id,
+                  start: s.startTime,
+                  end: s.endTime,
+                  original: s.original,
+                  translated: s.translated,
+                  speaker: s.speaker,
+                }));
+              } else {
+                items = await translateBatch(
+                  ai,
+                  toTranslate,
+                  translateSystemInstruction,
+                  1,
+                  chunkSettings.translationBatchSize || 20,
+                  (update) =>
+                    onProgress?.({
+                      id: index,
+                      total: totalChunks,
+                      status: 'processing',
+                      stage: 'translating',
+                      ...update,
+                    }),
+                  signal,
+                  trackUsage,
+                  (settings.requestTimeout || 600) * 1000,
+                  !!chunkSettings.enableDiarization,
+                  targetLanguage
+                );
+              }
+
               logger.debug(`[Chunk ${index}] Translation complete. Items: ${items.length}`);
               if (items.length > 0 && chunkSettings.enableDiarization) {
                 logger.debug(
                   `[Chunk ${index}] Translation first segment speaker: ${items[0].speaker}`
                 );
               }
-              // Build maps to preserve metadata from previous pipeline stages
-              const alignedMap = new Map(alignedSegments.map((seg, idx) => [seg.id || idx, seg]));
-              // Also need refinedSegments map for timeline issue markers (set in refinement postprocessor)
-              const refinedMap = new Map(refinedSegments.map((seg, idx) => [seg.id || idx, seg]));
 
-              finalChunkSubs = items.map((item, idx) => {
-                // Look up data from corresponding segments
-                const alignedSeg = alignedMap.get(item.id) || alignedSegments[idx];
-                const refinedSeg = refinedMap.get(item.id) || refinedSegments[idx];
+              // Convert translation items to SubtitleItem format (chunk-local timestamps)
+              const translatedSegments: SubtitleItem[] = items.map((item) => ({
+                id: item.id,
+                startTime: item.start,
+                endTime: item.end,
+                original: item.original,
+                translated: item.translated,
+                ...(chunkSettings.enableDiarization && item.speaker
+                  ? { speaker: item.speaker }
+                  : {}),
+              }));
 
-                return {
-                  id: item.id,
-                  startTime: formatTime(timeToSeconds(item.start) + start),
-                  endTime: formatTime(timeToSeconds(item.end) + start),
-                  original: item.original,
-                  translated: item.translated,
-                  ...(chunkSettings.enableDiarization && item.speaker
-                    ? { speaker: item.speaker }
-                    : {}),
-                  // Preserve alignment metadata from CTC aligner
-                  ...(alignedSeg?.alignmentScore !== undefined
-                    ? { alignmentScore: alignedSeg.alignmentScore }
-                    : {}),
-                  ...(alignedSeg?.lowConfidence !== undefined
-                    ? { lowConfidence: alignedSeg.lowConfidence }
-                    : {}),
-                  // Preserve timeline issue markers from refinement postprocessor
-                  ...(refinedSeg?.hasRegressionIssue !== undefined
-                    ? { hasRegressionIssue: refinedSeg.hasRegressionIssue }
-                    : {}),
-                  ...(refinedSeg?.hasCorruptedRangeIssue !== undefined
-                    ? { hasCorruptedRangeIssue: refinedSeg.hasCorruptedRangeIssue }
-                    : {}),
-                };
-              });
+              // Use reconcile to preserve metadata from aligned segments
+              // 1:1 mapping is auto-detected, internal fields preserved automatically
+              const reconciledSegments = reconcile(alignedSegments, translatedSegments);
+
+              // Convert to global timestamps
+              finalChunkSubs = reconciledSegments.map((seg) => ({
+                ...seg,
+                startTime: formatTime(timeToSeconds(seg.startTime) + start),
+                endTime: formatTime(timeToSeconds(seg.endTime) + start),
+              }));
             }
 
             ArtifactSaver.saveChunkArtifact(index, 'translation', finalChunkSubs, settings);

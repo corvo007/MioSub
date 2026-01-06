@@ -5,6 +5,8 @@ import { type AppSettings } from '@/types/settings';
 import { type ChunkStatus, type TokenUsage } from '@/types/api';
 import { parseGeminiResponse } from '@/services/subtitle/parser';
 import { timeToSeconds, formatTime } from '@/services/subtitle/time';
+import { reconcile } from '@/services/subtitle/reconciler';
+import { toBatchPayload } from '@/services/subtitle/payloads';
 import { decodeAudio } from '@/services/audio/decoder';
 import { sliceAudioBuffer } from '@/services/audio/processor';
 import { blobToBase64 } from '@/services/audio/converter';
@@ -26,10 +28,8 @@ import { generateContentWithLongOutput } from '@/services/api/gemini/core/client
 import { STEP_MODELS, STEP_CONFIGS } from '@/config';
 import { translateBatch } from '@/services/generation/pipeline/translation';
 import { UsageReporter } from '@/services/generation/pipeline/usageReporter';
-import {
-  adjustTimestampOffset,
-  preserveSpeakerInfo,
-} from '@/services/generation/pipeline/resultTransformers';
+import { adjustTimestampOffset } from '@/services/generation/pipeline/resultTransformers';
+import { ENV } from '@/config';
 
 async function processBatch(
   ai: GoogleGenAI,
@@ -79,17 +79,10 @@ async function processBatch(
     const startTimeSec = timeToSeconds(s.startTime);
     const endTimeSec = timeToSeconds(s.endTime);
     // Convert to relative timestamps if we have audio offset
-    const relativeStart = audioOffset > 0 ? formatTime(startTimeSec - audioOffset) : s.startTime;
-    const relativeEnd = audioOffset > 0 ? formatTime(endTimeSec - audioOffset) : s.endTime;
-    return {
-      id: s.id,
-      start: relativeStart,
-      end: relativeEnd,
-      text_original: s.original,
-      text_translated: s.translated,
-      comment: s.comment, // Include user comment
-      ...(settings.enableDiarization && s.speaker ? { speaker: s.speaker } : {}),
-    };
+    const relativeStart = audioOffset > 0 ? formatTime(startTimeSec - audioOffset) : undefined;
+    const relativeEnd = audioOffset > 0 ? formatTime(endTimeSec - audioOffset) : undefined;
+
+    return toBatchPayload(s, relativeStart, relativeEnd);
   });
 
   let prompt = '';
@@ -207,8 +200,6 @@ async function processBatch(
   // Fallback: return original batch
   return batch;
 }
-
-import { ENV } from '@/config';
 
 export const runBatchOperation = async (
   file: File | null,
@@ -387,16 +378,14 @@ export const runBatchOperation = async (
           const endIdx = currentSubtitles.findIndex((s) => s.id === lastOriginalId);
 
           if (startIdx !== -1 && endIdx !== -1 && startIdx <= endIdx) {
-            // Preserve speaker info from original if not present in processed
-            const originalSpeakers = new Map(
-              currentSubtitles.slice(startIdx, endIdx + 1).map((s) => [s.id, s.speaker])
-            );
-
-            const processedWithSpeakers = preserveSpeakerInfo(processed, originalSpeakers);
+            // Use reconcile to preserve metadata from original batch
+            // Batch operations may split/merge, so don't preserve internal fields
+            const originalBatch = currentSubtitles.slice(startIdx, endIdx + 1);
+            const reconciledResults = reconcile(originalBatch, processed);
 
             // Replace the entire region [startIdx, endIdx] with processed results
             const itemsToRemove = endIdx - startIdx + 1;
-            currentSubtitles.splice(startIdx, itemsToRemove, ...processedWithSpeakers);
+            currentSubtitles.splice(startIdx, itemsToRemove, ...reconciledResults);
 
             logger.debug(
               `[Batch ${groupLabel}] Replaced ${itemsToRemove} items with ${processed.length} processed items`

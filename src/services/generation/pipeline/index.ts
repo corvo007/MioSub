@@ -65,13 +65,76 @@ export const generateSubtitles = async (
     openaiKey,
   };
 
-  // Preprocess: Decode audio and segment into chunks
-  const { audioBuffer, chunksParams, vadSegments, chunkDuration } = await preprocessAudio(
-    audioSource,
-    settings,
-    onProgress,
-    signal
-  );
+  // Check if we can skip audio preprocessing (decoding/segmentation)
+  // This is possible if we are starting from a later stage (Mock Stage) AND NO subsequent stage needs audio.
+  const isMockStageActive = !!(isDebug && settings.debug?.mockStage);
+  const skipAfter = settings.debug?.skipAfter;
+
+  // Dependency Checks
+  // 1. Glossary needs audio if enabled and not mocked
+  const needsGlossary =
+    settings.enableAutoGlossary !== false && !(isDebug && settings.debug?.mockApi?.glossary);
+
+  // 2. Speaker needs audio if enabled and not mocked
+  const needsSpeaker =
+    settings.enableDiarization &&
+    settings.enableSpeakerPreAnalysis &&
+    !(isDebug && settings.debug?.mockApi?.speaker);
+
+  // 3. Refinement needs audio if it runs (not skipped, not mocked, not bypassed by later start)
+  const mockStageIndex = settings.debug?.mockStage
+    ? ['transcribe', 'refinement', 'alignment', 'translation'].indexOf(settings.debug.mockStage)
+    : -1;
+  const stopsBeforeRefinement = skipAfter === 'transcribe';
+  const startsAfterRefinement = mockStageIndex > 1; // 0=transcribe, 1=refinement. >1 means alignment/translation
+  const needsRefinement =
+    !stopsBeforeRefinement &&
+    !startsAfterRefinement &&
+    !(isDebug && settings.debug?.mockApi?.refinement);
+
+  // 4. Alignment needs audio if it runs (not skipped, not mocked, not bypassed by later start)
+  const stopsBeforeAlignment = skipAfter === 'transcribe' || skipAfter === 'refinement';
+  const startsAfterAlignment = mockStageIndex > 2; // 2=alignment. >2 means translation
+  const needsAlignment =
+    !stopsBeforeAlignment &&
+    !startsAfterAlignment &&
+    !(isDebug && settings.debug?.mockApi?.alignment);
+
+  const shouldSkipAudioProcessing =
+    isMockStageActive && !needsGlossary && !needsSpeaker && !needsRefinement && !needsAlignment;
+
+  let audioBuffer: AudioBuffer;
+  let chunksParams: any[]; // Using explicit type locally from preprocessor/index if imported, or inference
+  let vadSegments: any[];
+  let chunkDuration: number;
+
+  if (shouldSkipAudioProcessing) {
+    logger.info('🚀 [OPTIMIZATION] Skipping Audio Processing (Decoding/Segmentation).');
+    logger.info(
+      '   Reason: Started from Mock Stage and all audio-dependent downstream stages (Glossary, Speaker, Alignment) are Mocked or Skipped.'
+    );
+
+    // Create Dummy Audio Buffer
+    audioBuffer = new AudioBuffer({ length: 1, sampleRate: 16000, numberOfChannels: 1 });
+    // Create Single Dummy Chunk (Mock mode only processes chunk index 1)
+    chunkDuration = 3600; // 1 hour dummy duration (seconds)
+    chunksParams = [{ index: 1, start: 0, end: chunkDuration }];
+    vadSegments = [];
+
+    onProgress?.({
+      id: 'decoding',
+      total: 100,
+      status: 'completed',
+      message: i18n.t('services:pipeline.status.audioLoaded'), // Reuse existing message or 'Audio Skipped'
+    });
+  } else {
+    // Preprocess: Decode audio and segment into chunks
+    const result = await preprocessAudio(audioSource, settings, onProgress, signal);
+    audioBuffer = result.audioBuffer;
+    chunksParams = result.chunksParams;
+    vadSegments = result.vadSegments;
+    chunkDuration = result.chunkDuration;
+  }
   const totalChunks = chunksParams.length;
 
   // Intermediate results storage for full recording
@@ -110,7 +173,7 @@ export const generateSubtitles = async (
   let glossaryChunks: { index: number; start: number; end: number }[] | undefined;
 
   // Mock glossary if any mock stage is enabled (but only if glossary is enabled)
-  if (isDebug && settings.debug?.mockStage && settings.enableAutoGlossary !== false) {
+  if (isDebug && settings.debug?.mockApi?.glossary && settings.enableAutoGlossary !== false) {
     logger.info('⚠️ [MOCK] Glossary Extraction ENABLED. Using MockFactory.');
     glossaryPromise = MockFactory.getMockGlossary(0);
   } else if (settings.enableAutoGlossary !== false) {

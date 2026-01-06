@@ -23,7 +23,13 @@ import {
   TRANSLATION_WITH_DIARIZATION_SCHEMA,
   SAFETY_SETTINGS,
 } from '@/services/api/gemini/core/schemas';
-import { STEP_MODELS, buildStepConfig } from '@/config';
+import {
+  STEP_MODELS,
+  buildStepConfig,
+  SUBTITLE_MAX_WIDTH,
+  SUBTITLE_MIN_SPLIT_WIDTH,
+} from '@/config';
+import { splitLongSegment } from '@/services/subtitle/textSplitter';
 
 // ===== Types =====
 
@@ -42,7 +48,7 @@ export interface RawTranslationResult {
  * 3. Validate timeline
  * 4. Apply issue markers (if validation fails and not retryable)
  */
-export function createRefinementPostProcessor() {
+export function createRefinementPostProcessor(detectedLocale: string = 'en') {
   return (
     segments: SubtitleItem[],
     isFinalAttempt: boolean = false
@@ -56,13 +62,28 @@ export function createRefinementPostProcessor() {
     // Step 2: Filter empty segments
     processed = processed.filter((seg) => seg.original.length > 0);
 
-    // Step 3: Validate timeline
+    // Step 3: Split long segments at word boundaries (using visual width)
+    const locale = detectedLocale || 'en';
+
+    processed = processed.flatMap((seg) =>
+      splitLongSegment(
+        seg,
+        {
+          maxLength: SUBTITLE_MAX_WIDTH,
+          minLength: SUBTITLE_MIN_SPLIT_WIDTH,
+          locale,
+        },
+        locale
+      )
+    );
+
+    // Step 4: Validate timeline
     const validation = validateTimeline(processed);
 
-    // Step 4: Convert validation result to PostCheckResult
+    // Step 5: Convert validation result to PostCheckResult
     const checkResult = mapValidationToCheckResult(validation);
 
-    // Step 5: Apply markers on final attempt (when no more retries)
+    // Step 6: Apply markers on final attempt (when no more retries)
     if (isFinalAttempt && !checkResult.isValid) {
       if (validation.independentAnomalies.length > 0) {
         processed = markRegressionIssues(processed, validation.independentAnomalies);
