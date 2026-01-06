@@ -1,4 +1,3 @@
-/* eslint-disable no-useless-escape */
 /* eslint-disable no-undef */
 /**
  * 自动提取硬编码中文字符串

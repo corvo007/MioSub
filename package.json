@@ -11,6 +11,7 @@
     "dev": "vite",
     "build": "vite build",
     "i18n:extract": "node scripts/extract-chinese.mjs",
+    "i18n:check": "node scripts/check-i18n.mjs",
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"cross-env BROWSER=none yarn dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron -r ts-node/register electron/main.ts\"",
     "electron:build": "yarn build:main && vite build && electron-builder",
