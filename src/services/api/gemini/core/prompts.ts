@@ -1,41 +1,19 @@
 import { type GlossaryItem } from '@/types/glossary';
 import { type SpeakerProfile } from '@/services/generation/extractors/speakerProfile';
 import { formatTime } from '@/services/subtitle/time';
+import { type RefinementPayload } from '@/services/subtitle/payloads';
 import { STEP_CONFIGS, type StepName } from '@/config/models';
+import {
+  MAX_SEGMENT_DURATION_SECONDS,
+  SUBTITLE_MAX_WIDTH,
+  FILLER_WORDS,
+  SENIOR_MODEL_NAME,
+} from '@/config';
 
 // --- Constants ---
 
-/** Maximum segment duration before splitting (seconds) */
-const MAX_SEGMENT_DURATION_SECONDS = 4;
-
-/** Maximum character count before splitting */
-const MAX_SEGMENT_CHARACTERS = 25;
-
-/** Filler words to remove across all languages */
-const FILLER_WORDS = [
-  // English
-  'uh',
-  'um',
-  'ah',
-  'er',
-  'hmm',
-  // Japanese
-  'eto',
-  'ano',
-  'えーと',
-  'あの',
-  // Chinese
-  '呃',
-  '嗯',
-  '那个',
-  '就是',
-];
-
 /** Filler words formatted for prompt inclusion */
 const FILLER_WORDS_PROMPT = FILLER_WORDS.join(', ');
-
-/** Model name for display in prompts */
-const SENIOR_MODEL_NAME = 'Gemini 3 Pro Thinking';
 
 // --- Search Enhancement Prompts ---
 
@@ -94,14 +72,8 @@ function getSearchEnhancedRefinementPrompt(step: StepName): string {
 /**
  * Get standard segment splitting rule text for prompts
  */
-function getSegmentSplittingRule(
-  context: 'transcription' | 'translation' = 'transcription',
-  targetLanguage: string = 'Simplified Chinese'
-): string {
-  const isCJ = targetLanguage.includes('Chinese') || targetLanguage.includes('Japanese');
-  const charType = context === 'translation' && isCJ ? 'Chinese/Japanese characters' : 'characters';
-  // Adjust length for non-CJ languages if needed, but keeping simple for now
-  return `SPLIT any segment longer than ${MAX_SEGMENT_DURATION_SECONDS} seconds OR >${MAX_SEGMENT_CHARACTERS} ${charType}`;
+function getSegmentSplittingRule(): string {
+  return `SPLIT any segment longer than ${MAX_SEGMENT_DURATION_SECONDS} seconds OR >${SUBTITLE_MAX_WIDTH} visual width units (CJK=2, Latin=1)`;
 }
 
 /**
@@ -376,7 +348,7 @@ TASK RULES (Priority Order):
 ${diarizationSection}
 
 [P3 - READABILITY] Segment Splitting
-→ ${getSegmentSplittingRule('translation', targetLanguage)}
+→ ${getSegmentSplittingRule()}
 ${getTimestampSplittingInstructions()}
 
 [P4 - CONTENT ACCURACY] Audio Content Verification
@@ -560,7 +532,7 @@ Speaker (formal): "すごいですね" → "真是令人印象深刻。"
       → **NEVER MERGE** multiple segments into one - only SPLIT long segments when needed
       
       [P2 - READABILITY] Segment Splitting
-      → ${getSegmentSplittingRule('translation', targetLanguage)}
+      → ${getSegmentSplittingRule()}
       ${getTimestampSplittingInstructions()}
       
       [P3 - CONTENT ACCURACY] Audio Content Verification
@@ -915,7 +887,7 @@ export const getFixTimestampsPrompt = (params: FixTimestampsPromptParams): strin
     → If a line has a "comment" field, prioritize fixing it according to the user's instruction
     
     [P2 - MANDATORY] Segment Splitting for Readability
-    → ${getSegmentSplittingRule('translation', targetLanguage)}
+    → ${getSegmentSplittingRule()}
     ${getTimestampSplittingInstructions()}
     → For NEW/SPLIT entries: provide appropriate translation in ${targetLanguage}
     `;
@@ -1033,7 +1005,7 @@ export const getProofreadPrompt = (params: ProofreadPromptParams): string => {
  */
 export interface RefinementPromptParams {
   genre: string;
-  rawSegments: any[];
+  payload: RefinementPayload[];
   glossaryInfo: string;
   glossaryCount?: number;
   enableDiarization: boolean;
@@ -1058,7 +1030,7 @@ export const getRefinementPrompt = (params: RefinementPromptParams): string => `
             ${params.glossaryInfo ? `→ Pay special attention to key terminology listed below` : ''}
 ${getSearchEnhancedRefinementPrompt('refinement')}
             [P2 - READABILITY] Segment Splitting
-            → ${getSegmentSplittingRule('transcription', params.targetLanguage)}
+            → ${getSegmentSplittingRule()}
             ${getTimestampSplittingInstructions()}
             
             [P3 - CLEANING] Remove Non-Speech Elements
@@ -1073,11 +1045,11 @@ ${getSearchEnhancedRefinementPrompt('refinement')}
             ${params.enableDiarization ? `→ INCLUDE "speaker" field for every segment (e.g., "Speaker 1")` : ''}
 
             FINAL VERIFICATION:
-            ✓ Long segments (>${MAX_SEGMENT_DURATION_SECONDS}s or >${MAX_SEGMENT_CHARACTERS} chars) properly split
+            ✓ Long segments (>${MAX_SEGMENT_DURATION_SECONDS}s or >${SUBTITLE_MAX_WIDTH} visual width) properly split
             ✓ Timestamps are relative to chunk start
             ✓ Terminology from glossary is used correctly
             ${params.glossaryInfo ? `✓ Checked against ${params.glossaryCount} glossary terms` : ''}
 
             Input Transcription (JSON):
-            ${JSON.stringify(params.rawSegments.map((s) => ({ start: s.startTime, end: s.endTime, text: s.original })))}
+            ${JSON.stringify(params.payload)}
             `;
