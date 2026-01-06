@@ -25,7 +25,7 @@ export class SpeakerAnalyzer {
 
     try {
       // Mock speaker profiles if any mock stage is enabled
-      if (isDebug && settings.debug?.mockStage) {
+      if (isDebug && settings.debug?.mockApi?.speaker) {
         return MockFactory.getMockSpeakerProfiles();
       }
 

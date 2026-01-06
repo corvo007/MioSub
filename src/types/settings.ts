@@ -19,6 +19,15 @@ export interface DebugSettings {
   // Skip After: Stop pipeline after this stage
   skipAfter?: 'transcribe' | 'refinement' | 'alignment';
   mockLanguage?: string; // Language for alignment (ISO 639-3)
+  // Mock API: Skip actual API calls and pass-through/echo data
+  mockApi?: {
+    transcribe?: boolean;
+    refinement?: boolean;
+    alignment?: boolean; // Skip CTC alignment
+    translation?: boolean;
+    glossary?: boolean; // Skip/Mock glossary extraction
+    speaker?: boolean; // Skip/Mock speaker analysis (pre-analysis)
+  };
   // Custom paths
   ffmpegPath?: string;
   ffprobePath?: string;
