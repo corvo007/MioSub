@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.12.0] - 2026-01-06
+
+### Features
+
+- **Alignment**: Complete CTC forced aligner integration
+- **Pipeline**: Add reconciler for metadata preservation
+- **Subtitle**: Implement visual width based splitting
+- **Debug**: Add granular mock API controls
+- **Pipeline**: Enhance metadata preservation and processing robustness
+- **Alignment**: Add CTC aligner service and settings UI
+
+### Fixes
+
+- **Subtitle**: Handle undefined speaker color
+- **Snapshots**: Include date in timestamp display
+- **I18n**: Add missing translation keys for all locales
+- **Lint**: Add missing hook dependencies
+- **UI**: Isolate component errors with granular boundaries
+- **I18n**: Add missing localization keys for subtitle generation pipeline
+- **Subtitle**: Service improvements (generator, parser, time)
+
+### Refactor
+
+- **Naming**: Rename glossary-state.ts to glossaryState.ts
+- **Structure**: Update services and hooks after component restructure
+- **Types**: Centralize type definitions and update imports
+- **Components**: Update components and fix imports after restructure
+- **I18n**: Localize hardcoded Chinese strings and improve extraction script
+
+### Chore
+
+- **Skills**: Add release-version skill
+- **Config**: Add Claude AI development config
+- **Scripts**: Add i18n key validation script
+- **Deps**: Update dependencies and types
+
 ## [2.11.0] - 2026-01-01 🎆
 
 ### Features
