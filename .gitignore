@@ -48,3 +48,5 @@ cloc_result.txt
 
 align.py
 aligner_readme.md
+dev/
+implementation_plan.md

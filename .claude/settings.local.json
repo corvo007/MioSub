@@ -7,7 +7,60 @@
       "mcp__serena__list_dir",
       "mcp__serena__get_symbols_overview",
       "mcp__serena__find_symbol",
-      "mcp__serena__search_for_pattern"
+      "mcp__serena__search_for_pattern",
+      "mcp__sequential-thinking__sequentialthinking",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(claude /plugin marketplace add:*)",
+      "Bash(claude /plugin:*)",
+      "Bash(claude plugin:*)",
+      "Skill(superpowers:brainstorming)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(curl:*)",
+      "Bash(yarn build:*)",
+      "Bash(yarn install:*)",
+      "Bash(ls -la:*)",
+      "Bash(cat:*)",
+      "Bash(node -e:*)",
+      "Skill(superpowers:receiving-code-review)",
+      "Skill(superpowers:requesting-code-review)",
+      "Bash(git rev-parse:*)",
+      "Bash(node:*)",
+      "Bash(echo:*)",
+      "Bash(mkdir -p:*)"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/skill-activation-prompt.cjs"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/post-tool-use-tracker.cjs"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/tsc-check.cjs"
+          }
+        ]
+      }
     ]
   }
 }

@@ -1,0 +1,187 @@
+{
+  "version": "1.0",
+  "description": "Skill activation triggers for Gemini-Subtitle-Pro. Controls when skills automatically suggest or block actions.",
+  "skillsLocation": ".claude/skills/",
+  "skills": {
+    "react-component-dev": {
+      "type": "guardrail",
+      "enforcement": "suggest",
+      "priority": "high",
+      "description": "React/TypeScript component development best practices",
+      "skillPath": "react-component-dev/SKILL.md",
+      "promptTriggers": {
+        "keywords": [
+          "component",
+          "react component",
+          "UI",
+          "page",
+          "modal",
+          "dialog",
+          "form",
+          "styling",
+          "frontend",
+          "React",
+          "TailwindCSS",
+          "Tailwind"
+        ],
+        "intentPatterns": [
+          "(create|add|make|build|update|modify|edit).*?(component|UI|page|modal|dialog|form)",
+          "(how to|best practice).*?(component|react)",
+          "(style|design|layout).*?(component|UI)"
+        ]
+      },
+      "fileTriggers": {
+        "pathPatterns": ["src/components/**/*.tsx", "src/components/**/*.ts"],
+        "pathExclusions": ["**/*.test.tsx", "**/*.test.ts"]
+      }
+    },
+    "electron-dev": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "high",
+      "description": "Electron main process and IPC development patterns",
+      "skillPath": "electron-dev/SKILL.md",
+      "promptTriggers": {
+        "keywords": [
+          "electron",
+          "main process",
+          "preload",
+          "IPC",
+          "ipcMain",
+          "ipcRenderer",
+          "contextBridge",
+          "desktop",
+          "native",
+          "ffmpeg",
+          "whisper",
+          "yt-dlp"
+        ],
+        "intentPatterns": [
+          "(create|add|implement).*?(IPC|handler|channel)",
+          "(electron|desktop|native).*?(feature|function)",
+          "(how to|best practice).*?(electron|IPC|preload)"
+        ]
+      },
+      "fileTriggers": {
+        "pathPatterns": ["electron/**/*.ts"]
+      }
+    },
+    "subtitle-service": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "high",
+      "description": "Subtitle parsing, generation, and translation services",
+      "skillPath": "subtitle-service/SKILL.md",
+      "promptTriggers": {
+        "keywords": [
+          "subtitle",
+          "SRT",
+          "ASS",
+          "VTT",
+          "translation",
+          "transcription",
+          "Gemini",
+          "Whisper",
+          "pipeline",
+          "glossary",
+          "speaker"
+        ],
+        "intentPatterns": [
+          "(parse|generate|create|convert).*?(subtitle|SRT|ASS|VTT)",
+          "(translate|transcribe|refine).*?(subtitle|audio|video)",
+          "(pipeline|workflow).*?(subtitle|translation)"
+        ]
+      },
+      "fileTriggers": {
+        "pathPatterns": [
+          "src/services/subtitle/**/*.ts",
+          "src/services/generation/**/*.ts",
+          "src/services/api/gemini/**/*.ts"
+        ]
+      }
+    },
+    "audio-processing": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "description": "Audio processing, VAD, and sampling services",
+      "promptTriggers": {
+        "keywords": [
+          "audio",
+          "VAD",
+          "voice activity",
+          "sampling",
+          "decoding",
+          "waveform",
+          "audio segment"
+        ],
+        "intentPatterns": [
+          "(process|decode|sample).*?audio",
+          "(VAD|voice activity|speech detection)"
+        ]
+      },
+      "fileTriggers": {
+        "pathPatterns": ["src/services/audio/**/*.ts", "src/workers/**/*.ts"]
+      }
+    },
+    "api-integration": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "description": "API integration patterns for Gemini and OpenAI",
+      "promptTriggers": {
+        "keywords": ["API", "Gemini API", "OpenAI API", "endpoint", "prompt", "schema", "API key"],
+        "intentPatterns": [
+          "(create|add|implement|modify).*?(API|endpoint|prompt)",
+          "(how to|best practice).*?(API|Gemini|OpenAI)"
+        ]
+      },
+      "fileTriggers": {
+        "pathPatterns": ["src/services/api/**/*.ts"]
+      }
+    },
+    "i18n-localization": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "description": "Internationalization and localization patterns",
+      "promptTriggers": {
+        "keywords": ["i18n", "localization", "translation key", "locale", "zh-CN", "en-US"],
+        "intentPatterns": [
+          "(add|create|update).*?(translation|locale|i18n)",
+          "(localize|internationalize)"
+        ]
+      },
+      "fileTriggers": {
+        "pathPatterns": ["src/locales/**/*.ts", "src/locales/**/*.json"]
+      }
+    },
+    "error-tracking": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "high",
+      "description": "Error handling and debugging patterns",
+      "promptTriggers": {
+        "keywords": ["error handling", "exception", "debug", "error tracking", "logging"],
+        "intentPatterns": [
+          "(add|create|implement|setup).*?(error handling|logging)",
+          "(fix|handle|catch).*?(error|exception)",
+          "(how to|best practice).*?(error|debug)"
+        ]
+      }
+    }
+  },
+  "notes": {
+    "enforcement_types": {
+      "suggest": "Skill suggestion appears but doesn't block execution",
+      "block": "Requires skill to be used before proceeding (guardrail)",
+      "warn": "Shows warning but allows proceeding"
+    },
+    "priority_levels": {
+      "critical": "Highest - Always trigger when matched",
+      "high": "Important - Trigger for most matches",
+      "medium": "Moderate - Trigger for clear matches",
+      "low": "Optional - Trigger only for explicit matches"
+    }
+  }
+}

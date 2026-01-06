@@ -275,8 +275,8 @@ export class LocalWhisperService {
             const jsonContent = await fs.promises.readFile(outputPath, 'utf-8');
 
             // Log the raw JSON content (or a summary if too large, but user asked for "all")
-            console.log(`[DEBUG] [LocalWhisper] JSON Output: ${jsonContent}`);
-            if (onLog) onLog(`[DEBUG] [LocalWhisper] JSON Output: ${jsonContent}`);
+            // console.log(`[DEBUG] [LocalWhisper] JSON Output: ${jsonContent}`);
+            // if (onLog) onLog(`[DEBUG] [LocalWhisper] JSON Output: ${jsonContent}`);
 
             const result = JSON.parse(jsonContent);
 
