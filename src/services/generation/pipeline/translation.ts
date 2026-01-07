@@ -28,6 +28,7 @@ import {
   type RawTranslationResult,
 } from '@/services/generation/pipeline/postProcessors';
 import i18n from '@/i18n';
+import { toTranslationPayloads } from '@/services/subtitle/payloads';
 
 /**
  * Process a translation batch with post-check validation.
@@ -48,11 +49,9 @@ export async function processTranslationBatch(
   useDiarization: boolean = false,
   targetLanguage?: string
 ): Promise<any[]> {
-  const payload = batch.map((item) => ({
-    id: item.id,
-    text: item.original,
-    ...(useDiarization ? { speaker: item.speaker } : {}),
-  }));
+  const payload = toTranslationPayloads(batch, {
+    includeSpeaker: useDiarization,
+  });
 
   const prompt = getTranslationBatchPrompt(batch.length, payload, targetLanguage);
 

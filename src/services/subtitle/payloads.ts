@@ -26,7 +26,7 @@ export interface TranslationPayload {
   id: string;
   start: string;
   end: string;
-  original: string;
+  text_original: string;
   speaker?: string;
 }
 
@@ -99,7 +99,7 @@ export function toTranslationPayload(
     id: seg.id,
     start: seg.startTime,
     end: seg.endTime,
-    original: seg.original,
+    text_original: seg.original,
   };
 
   if (options?.includeSpeaker && seg.speaker) {
