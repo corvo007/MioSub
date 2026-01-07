@@ -83,6 +83,10 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
     const [muted, setMuted] = useState(false);
     const [ready, setReady] = useState(false);
     const [isFloating, setIsFloating] = useState(false);
+    const [videoDimensions, setVideoDimensions] = useState<{
+      width: number;
+      height: number;
+    } | null>(null);
 
     const [isResizing, setIsResizing] = useState(false);
     const [dockedHeight, setDockedHeight] = useState(320);
@@ -242,7 +246,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
           assRef.current = null;
         }
       };
-    }, [assContent, ready]);
+    }, [assContent, ready, isFloating]);
 
     // Update time for external sync (not handled by ASS automatically?)
     // ASS handles sync automatically via video events! We just need to manage lifecycle.
@@ -380,7 +384,16 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
           {/* Player Container */}
           <div className="relative bg-black overflow-hidden flex-1 flex items-center justify-center w-full h-full">
             {videoSrc ? (
-              <>
+              <div
+                className="relative bg-black"
+                style={{
+                  aspectRatio: videoDimensions
+                    ? `${videoDimensions.width} / ${videoDimensions.height}`
+                    : '16 / 9',
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                }}
+              >
                 <video
                   ref={videoRef}
                   src={videoSrc}
@@ -391,6 +404,10 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
                   onTimeUpdate={handleTimeUpdate}
                   onLoadedMetadata={() => {
                     if (videoRef.current) {
+                      setVideoDimensions({
+                        width: videoRef.current.videoWidth,
+                        height: videoRef.current.videoHeight,
+                      });
                       setDuration(videoRef.current.duration);
                       setReady(true);
                       // Restore time if switching modes (use ref to get latest value)
@@ -422,13 +439,13 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
                   }}
                 />
 
-                {/* Loading overlay */}
+                {/* Loading overlay - Inside wrapper to show over video area */}
                 {!ready && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
                     <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   </div>
                 )}
-              </>
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-slate-500 text-sm gap-2">
                 {isTranscoding ? (
@@ -447,9 +464,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
           <div
             className={cn(
               'flex items-center gap-2 px-2 py-1.5 bg-slate-900/90 w-full z-20',
-              isFloating && 'absolute bottom-0 left-0 right-0' // Overlay controls in floating mode usually looks better or just stack them?
-              // Actually let's keep them stacked below video for consistency, unless it's floating where space is tight.
-              // For Rnd, simpler is just flex-col.
+              isFloating && 'border-t border-slate-800' // Add border top for separation in floating mode
             )}
           >
             {/* Play/Pause */}
@@ -578,6 +593,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
         t,
         isTranscoding,
         onToggleSourceText,
+        videoDimensions,
       ]
     ); // Removed dockedHeight dependency
 
