@@ -38,7 +38,7 @@ export const TRANSLATION_SCHEMA = {
       text_original: { type: Type.STRING },
       text_translated: { type: Type.STRING, description: 'Simplified Chinese translation' },
     },
-    required: ['id', 'text_translated'],
+    required: ['id', 'text_original', 'text_translated'],
   },
 };
 
@@ -52,7 +52,7 @@ export const TRANSLATION_WITH_DIARIZATION_SCHEMA = {
       text_translated: { type: Type.STRING, description: 'Simplified Chinese translation' },
       speaker: { type: Type.STRING, description: 'Speaker identifier' },
     },
-    required: ['id', 'text_translated', 'speaker'],
+    required: ['id', 'text_original', 'text_translated', 'speaker'],
   },
 };
 
