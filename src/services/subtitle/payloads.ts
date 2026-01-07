@@ -6,7 +6,7 @@
  */
 
 import type { SubtitleItem } from '@/types/subtitle';
-import { timeToSeconds } from '@/services/subtitle/time';
+import { timeToSeconds, formatTime } from '@/services/subtitle/time';
 
 // ============================================================================
 // 类型定义
@@ -175,8 +175,20 @@ export function toTranslationPayloads(
 /**
  * 批量转换为 Batch Payload
  */
-export function toBatchPayloads(segs: SubtitleItem[]): BatchPayload[] {
-  return segs.map((seg) => toBatchPayload(seg));
+export function toBatchPayloads(segs: SubtitleItem[], audioOffset?: number): BatchPayload[] {
+  return segs.map((seg) => {
+    let relativeStart: string | undefined;
+    let relativeEnd: string | undefined;
+
+    if (audioOffset && audioOffset > 0) {
+      const startTimeSec = timeToSeconds(seg.startTime);
+      const endTimeSec = timeToSeconds(seg.endTime);
+      relativeStart = formatTime(startTimeSec - audioOffset);
+      relativeEnd = formatTime(endTimeSec - audioOffset);
+    }
+
+    return toBatchPayload(seg, relativeStart, relativeEnd);
+  });
 }
 
 /**

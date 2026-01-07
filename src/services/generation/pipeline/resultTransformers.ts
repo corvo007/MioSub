@@ -46,24 +46,3 @@ export function adjustTimestampOffset(
 
   return items;
 }
-
-/**
- * Preserve speaker information from original items.
- *
- * If a processed item has no speaker but the original did, preserve it.
- *
- * @param processed - Processed subtitle items
- * @param originalSpeakers - Map of id -> speaker from original items
- * @returns Items with preserved speaker info
- */
-export function preserveSpeakerInfo(
-  processed: SubtitleItem[],
-  originalSpeakers: Map<string, string | undefined>
-): SubtitleItem[] {
-  return processed.map((p) => {
-    if (!p.speaker && originalSpeakers.has(p.id)) {
-      return { ...p, speaker: originalSpeakers.get(p.id) };
-    }
-    return p;
-  });
-}

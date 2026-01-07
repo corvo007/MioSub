@@ -4,9 +4,9 @@ import { type SubtitleItem, type BatchOperationMode } from '@/types/subtitle';
 import { type AppSettings } from '@/types/settings';
 import { type ChunkStatus, type TokenUsage } from '@/types/api';
 import { parseGeminiResponse } from '@/services/subtitle/parser';
-import { timeToSeconds, formatTime } from '@/services/subtitle/time';
+import { timeToSeconds } from '@/services/subtitle/time';
 import { reconcile } from '@/services/subtitle/reconciler';
-import { toBatchPayload } from '@/services/subtitle/payloads';
+import { toBatchPayloads } from '@/services/subtitle/payloads';
 import { decodeAudio } from '@/services/audio/decoder';
 import { sliceAudioBuffer } from '@/services/audio/processor';
 import { blobToBase64 } from '@/services/audio/converter';
@@ -75,15 +75,7 @@ async function processBatch(
 
   // Convert timestamps to relative time (relative to audioOffset) for consistency with audio slice
   // This prevents AI confusion when processing audio that starts at a different time than absolute timestamps
-  const payload = batch.map((s) => {
-    const startTimeSec = timeToSeconds(s.startTime);
-    const endTimeSec = timeToSeconds(s.endTime);
-    // Convert to relative timestamps if we have audio offset
-    const relativeStart = audioOffset > 0 ? formatTime(startTimeSec - audioOffset) : undefined;
-    const relativeEnd = audioOffset > 0 ? formatTime(endTimeSec - audioOffset) : undefined;
-
-    return toBatchPayload(s, relativeStart, relativeEnd);
-  });
+  const payload = toBatchPayloads(batch, audioOffset);
 
   let prompt = '';
   const hasBatchComment = batchComment && batchComment.trim().length > 0;
