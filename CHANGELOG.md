@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.12.1] - 2026-01-08
+
+### Features
+
+- **Video Preview**: Improve aspect ratio handling and loading state.
+
+### Fixes
+
+- **Config**: Adjust thinking level to medium for refinement and translation.
+- **Workspace**: Prevent snapshot history clearing when loading new files.
+- **API**: Include `text_original` in translation schema for reference.
+- **Pipeline**: Fix diarization flag logic in batch operations.
+- **Subtitle**: Improve non-speech filtering and cleanup test exports.
+
+### Refactor
+
+- **Pipeline**: Simplify translation payload structure and improve metadata inheritance.
+
 ## [2.12.0] - 2026-01-06
 
 ### Features
