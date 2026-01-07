@@ -55,13 +55,13 @@ export interface StepConfig {
 
 export const STEP_CONFIGS: Record<StepName, StepConfig> = {
   refinement: {
-    thinkingLevel: 'high',
+    thinkingLevel: 'medium',
     useSearch: false,
     maxOutputTokens: 65536,
   },
 
   translation: {
-    thinkingLevel: 'high',
+    thinkingLevel: 'medium',
     useSearch: true,
     maxOutputTokens: 65536,
   },
@@ -85,7 +85,7 @@ export const STEP_CONFIGS: Record<StepName, StepConfig> = {
   },
 
   batchFixTimestamps: {
-    thinkingLevel: 'high',
+    thinkingLevel: 'medium',
     useSearch: false,
     maxOutputTokens: 65536,
   },
