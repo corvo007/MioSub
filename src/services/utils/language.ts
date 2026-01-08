@@ -276,5 +276,17 @@ const ISO_639_3_TO_NAME: Record<string, string> = {
  * @returns Full language name (e.g., 'Simplified Chinese', 'Japanese')
  */
 export function toLanguageName(code: string): string {
-  return ISO_639_3_TO_NAME[code.toLowerCase()] || 'English';
+  // If the input is already a full name (exists in values), return it as is
+  // This supports backward compatibility if settings still have full names
+  const lowerCode = code.toLowerCase();
+  const knownNames = Object.values(ISO_639_3_TO_NAME).map((n) => n.toLowerCase());
+  if (knownNames.includes(lowerCode)) {
+    // Return the properly cased name from map if possible, or title case it, or just return original
+    const entry = Object.entries(ISO_639_3_TO_NAME).find(
+      ([, name]) => name.toLowerCase() === lowerCode
+    );
+    return entry ? entry[1] : code;
+  }
+
+  return ISO_639_3_TO_NAME[lowerCode] || 'English';
 }

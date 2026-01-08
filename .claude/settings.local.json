@@ -41,7 +41,8 @@
       "Bash(git push:*)",
       "Bash(gh run list:*)",
       "Bash(gh run watch:*)",
-      "Bash(gh release view:*)"
+      "Bash(gh release view:*)",
+      "Skill(superpowers:using-superpowers)"
     ]
   },
   "hooks": {

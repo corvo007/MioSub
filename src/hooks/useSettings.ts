@@ -23,6 +23,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   useSmartSplit: true,
   glossaries: [],
   activeGlossaryId: null,
+  targetLanguage: 'zh-CN',
   requestTimeout: 600,
   enableDiarization: true,
   enableSpeakerPreAnalysis: true,

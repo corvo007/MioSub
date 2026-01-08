@@ -97,6 +97,12 @@ export function useGeneration({
       setShowSettings(true);
       return;
     }
+
+    if (!settings.targetLanguage) {
+      setError(t('workspace:hooks.generation.errors.targetLanguageRequired'));
+      addToast(t('workspace:hooks.generation.errors.targetLanguageRequired'), 'error');
+      return;
+    }
     setStatus(GenerationStatus.UPLOADING);
     setError(null);
     setSubtitles([]);

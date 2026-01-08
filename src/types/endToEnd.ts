@@ -61,7 +61,6 @@ export interface EndToEndConfig {
   downloadThumbnail?: boolean; // 是否下载封面
 
   // 字幕选项
-  sourceLanguage: string; // 源语言 (如 'ja', 'en')
   targetLanguage: string; // 目标语言 (如 'zh-CN')
   genre: string; // 内容类型
 
@@ -97,12 +96,13 @@ export interface EndToEndConfig {
 /** 默认配置 */
 export const DEFAULT_END_TO_END_CONFIG: Partial<EndToEndConfig> = {
   downloadThumbnail: true,
-  sourceLanguage: 'ja',
   targetLanguage: 'zh-CN',
   genre: 'anime',
   useLocalWhisper: false,
   enableGlossary: true,
   enableDiarization: true,
+  minSpeakers: undefined,
+  maxSpeakers: undefined,
   enableSpeakerPreAnalysis: false,
   enableCompression: true,
   compressionEncoder: 'libx264',

@@ -160,13 +160,6 @@ export function StepConfig({
 
           {/* Glossary & Speaker Detection */}
           <div className="space-y-2">
-            <ToggleOptionInline
-              label={t('config.subtitle.autoGlossary.label')}
-              description={t('config.subtitle.autoGlossary.desc')}
-              checked={config.enableGlossary !== false}
-              onChange={(v) => onConfigChange({ enableGlossary: v })}
-            />
-
             {/* Glossary Selection */}
             <div className="flex items-center justify-between py-2">
               <div>
@@ -196,82 +189,38 @@ export function StepConfig({
               </div>
             </div>
 
-            <ToggleOptionInline
-              label={t('config.subtitle.diarization.label')}
-              description={t('config.subtitle.diarization.desc')}
-              checked={config.enableDiarization !== false}
-              onChange={(v) => onConfigChange({ enableDiarization: v })}
-            />
-
-            {config.enableDiarization !== false && (
-              <div className="ml-8 mt-1 space-y-2 border-l-2 border-white/10 pl-3">
-                <ToggleOptionInline
-                  label={t('config.subtitle.speakerPreAnalysis.label')}
-                  description={t('config.subtitle.speakerPreAnalysis.desc')}
-                  checked={!!config.enableSpeakerPreAnalysis}
-                  onChange={(v) =>
-                    onConfigChange({
-                      enableSpeakerPreAnalysis: v,
-                      // Auto-disable styled translation when pre-analysis is disabled
-                      ...(v ? {} : { useSpeakerStyledTranslation: false }),
-                    })
-                  }
-                />
-                <ToggleOptionInline
-                  label={t('config.subtitle.includeSpeaker.label')}
-                  description={t('config.subtitle.includeSpeaker.desc')}
-                  checked={!!config.includeSpeaker}
-                  onChange={(v) => onConfigChange({ includeSpeaker: v })}
-                />
-                <ToggleOptionInline
-                  label={t('config.subtitle.speakerColors.label')}
-                  description={t('config.subtitle.speakerColors.desc')}
-                  checked={!!config.useSpeakerColors}
-                  onChange={(v) => onConfigChange({ useSpeakerColors: v })}
-                />
-                <ToggleOptionInline
-                  label={t('config.subtitle.visualStyle.label')}
-                  description={
-                    config.enableSpeakerPreAnalysis
-                      ? t('config.subtitle.visualStyle.descEnabled')
-                      : t('config.subtitle.visualStyle.descDisabled')
-                  }
-                  checked={!!config.useSpeakerStyledTranslation}
-                  onChange={(v) => onConfigChange({ useSpeakerStyledTranslation: v })}
-                  disabled={!config.enableSpeakerPreAnalysis}
-                />
-                {/* Min/Max Speaker Count */}
-                <div className="pt-3">
-                  <span className="text-sm text-white/90 block mb-2">
-                    {t('config.subtitle.speakerCount.label')}
-                  </span>
-                  <div className="flex flex-wrap items-center gap-4 md:gap-6">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-white/70">
-                        {t('config.subtitle.speakerCount.min')}
-                      </span>
-                      <NumberInput
-                        value={config.minSpeakers}
-                        onChange={(v) => onConfigChange({ minSpeakers: v })}
-                        min={1}
-                        max={99}
-                        placeholder="-"
-                        className="w-12 text-center bg-white/5 border-white/10 focus:border-violet-500/50"
-                      />
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-white/70">
-                        {t('config.subtitle.speakerCount.max')}
-                      </span>
-                      <NumberInput
-                        value={config.maxSpeakers}
-                        onChange={(v) => onConfigChange({ maxSpeakers: v })}
-                        min={1}
-                        max={99}
-                        placeholder="-"
-                        className="w-12 text-center bg-white/5 border-white/10 focus:border-violet-500/50"
-                      />
-                    </div>
+            {/* Speaker Count - Only visible if Global Diarization is enabled */}
+            {settings?.enableDiarization && (
+              <div className="pt-3 border-t border-white/5 mt-2">
+                <span className="text-sm text-white/90 block mb-2">
+                  {t('config.subtitle.speakerCount.label')}
+                </span>
+                <div className="flex flex-wrap items-center gap-4 md:gap-6">
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-white/70">
+                      {t('config.subtitle.speakerCount.min')}
+                    </span>
+                    <NumberInput
+                      value={config.minSpeakers}
+                      onChange={(v) => onConfigChange({ minSpeakers: v })}
+                      min={1}
+                      max={99}
+                      placeholder="-"
+                      className="w-12 text-center bg-white/5 border-white/10 focus:border-violet-500/50"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-white/70">
+                      {t('config.subtitle.speakerCount.max')}
+                    </span>
+                    <NumberInput
+                      value={config.maxSpeakers}
+                      onChange={(v) => onConfigChange({ maxSpeakers: v })}
+                      min={1}
+                      max={99}
+                      placeholder="-"
+                      className="w-12 text-center bg-white/5 border-white/10 focus:border-violet-500/50"
+                    />
                   </div>
                 </div>
               </div>

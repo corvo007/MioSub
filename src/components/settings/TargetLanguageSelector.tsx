@@ -11,7 +11,7 @@ interface TargetLanguageSelectorProps {
 }
 
 export const TargetLanguageSelector: React.FC<TargetLanguageSelectorProps> = ({
-  value = 'Simplified Chinese',
+  value = 'zh-CN',
   onChange,
   className = '',
   variant = 'default',
@@ -19,20 +19,20 @@ export const TargetLanguageSelector: React.FC<TargetLanguageSelectorProps> = ({
   const { t } = useTranslation('settings');
 
   const languages = [
-    { value: 'Simplified Chinese', label: t('languages.simplifiedChinese') },
-    { value: 'Traditional Chinese', label: t('languages.traditionalChinese') },
-    { value: 'English', label: t('languages.english') },
-    { value: 'Japanese', label: t('languages.japanese') },
-    { value: 'Korean', label: t('languages.korean') },
-    { value: 'Spanish', label: t('languages.spanish') },
-    { value: 'French', label: t('languages.french') },
-    { value: 'German', label: t('languages.german') },
-    { value: 'Russian', label: t('languages.russian') },
-    { value: 'Portuguese', label: t('languages.portuguese') },
-    { value: 'Italian', label: t('languages.italian') },
-    { value: 'Vietnamese', label: t('languages.vietnamese') },
-    { value: 'Thai', label: t('languages.thai') },
-    { value: 'Indonesian', label: t('languages.indonesian') },
+    { value: 'zh-CN', label: t('languages.simplifiedChinese') },
+    { value: 'zh-TW', label: t('languages.traditionalChinese') },
+    { value: 'en', label: t('languages.english') },
+    { value: 'ja', label: t('languages.japanese') },
+    { value: 'ko', label: t('languages.korean') },
+    { value: 'es', label: t('languages.spanish') },
+    { value: 'fr', label: t('languages.french') },
+    { value: 'de', label: t('languages.german') },
+    { value: 'ru', label: t('languages.russian') },
+    { value: 'pt', label: t('languages.portuguese') },
+    { value: 'it', label: t('languages.italian') },
+    { value: 'vi', label: t('languages.vietnamese') },
+    { value: 'th', label: t('languages.thai') },
+    { value: 'id', label: t('languages.indonesian') },
   ];
 
   if (variant === 'inline') {

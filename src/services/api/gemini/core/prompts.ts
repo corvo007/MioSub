@@ -1,4 +1,5 @@
 import { type GlossaryItem } from '@/types/glossary';
+import { toLanguageName } from '@/services/utils/language';
 import { type SpeakerProfile } from '@/services/generation/extractors/speakerProfile';
 import { formatTime } from '@/services/subtitle/time';
 import { type RefinementPayload } from '@/services/subtitle/payloads';
@@ -33,10 +34,11 @@ function getSearchEnhancedTranslationPrompt(
   step: StepName,
   targetLanguage: string = 'Simplified Chinese'
 ): string {
+  const languageName = toLanguageName(targetLanguage);
   if (!isSearchEnabled(step)) return '';
   return `
-    → **[SEARCH]** For terms NOT in glossary: use Google Search to verify standard ${targetLanguage} translations for proper nouns, names, and places.
-    → **[SEARCH]** Search for cultural references, idioms, or slang to find natural ${targetLanguage} equivalents (glossary terms always take priority).
+    → **[SEARCH]** For terms NOT in glossary: use Google Search to verify standard ${languageName} translations for proper nouns, names, and places.
+    → **[SEARCH]** Search for cultural references, idioms, or slang to find natural ${languageName} equivalents (glossary terms always take priority).
     → **[SEARCH]** When unsure about a translation AND it's not in the glossary, search for authoritative sources.`;
 }
 
@@ -49,9 +51,10 @@ function getSearchEnhancedProofreadPrompt(
   step: StepName,
   targetLanguage: string = 'Simplified Chinese'
 ): string {
+  const languageName = toLanguageName(targetLanguage);
   if (!isSearchEnabled(step)) return '';
   return `
-    → **[SEARCH]** For terms NOT in glossary: search to verify ${targetLanguage} translations for names, places, and organizations.
+    → **[SEARCH]** For terms NOT in glossary: search to verify ${languageName} translations for names, places, and organizations.
     → **[SEARCH]** Verify specialized terms not covered by glossary (glossary terms always take priority).
     → **[SEARCH]** If a non-glossary translation looks wrong, search to verify and correct it.`;
 }

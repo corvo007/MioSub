@@ -76,15 +76,18 @@ export function EndToEndWizard({
       return !!videoInfo;
     }
     if (state.currentStep === 'config') {
-      return !!state.config.outputDir;
+      if (!state.config.outputDir || !state.config.targetLanguage) {
+        return false;
+      }
+      return true;
     }
     return false;
   };
 
   const handleNext = async () => {
     if (state.currentStep === 'config') {
-      // Start pipeline
-      await startPipeline();
+      // Start pipeline, passing global settings to ensure user preferences (like diarization) are respected
+      await startPipeline(settings);
     } else {
       goNext();
     }

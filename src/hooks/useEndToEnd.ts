@@ -13,6 +13,7 @@ import type {
   WizardStep,
 } from '@/types/endToEnd';
 import type { VideoInfo } from '@electron/services/ytdlp';
+import type { AppSettings } from '@/types/settings';
 
 // Re-export types for convenience
 export type { EndToEndConfig, PipelineProgress, PipelineResult, WizardStep };
@@ -35,7 +36,7 @@ interface UseEndToEndReturn {
   videoInfo: VideoInfo | null;
 
   // Pipeline execution
-  startPipeline: () => Promise<PipelineResult | null>;
+  startPipeline: (globalSettings?: AppSettings) => Promise<PipelineResult | null>;
   abortPipeline: () => void;
   resetToConfig: () => void;
   retryPipeline: () => Promise<PipelineResult | null>;
@@ -47,23 +48,16 @@ interface UseEndToEndReturn {
 
 const DEFAULT_CONFIG: Partial<EndToEndConfig> = {
   downloadThumbnail: true,
-  sourceLanguage: 'ja',
   targetLanguage: 'zh-CN',
-  genre: 'general',
-  useLocalWhisper: false,
-  enableGlossary: true,
-  enableDiarization: true,
-  enableSpeakerPreAnalysis: true,
-  includeSpeaker: false,
-  useSpeakerColors: true,
-  useSpeakerStyledTranslation: true,
+  minSpeakers: undefined,
+  maxSpeakers: undefined,
+  // Feature Toggles (Global settings handled in SettingsModal)
   enableCompression: true,
   compressionEncoder: 'libx264',
   compressionCrf: 23,
   compressionResolution: 'original',
   useHardwareAccel: true,
   embedSubtitle: true,
-  outputMode: 'bilingual',
   subtitleFormat: 'ass',
 };
 
@@ -209,67 +203,84 @@ export function useEndToEnd(): UseEndToEndReturn {
   );
 
   // Pipeline execution
-  const startPipeline = useCallback(async (): Promise<PipelineResult | null> => {
-    if (!isElectron || !window.electronAPI?.endToEnd?.start) {
-      throw new Error(t('errors.desktopOnly'));
-    }
+  const startPipeline = useCallback(
+    async (globalSettings?: AppSettings): Promise<PipelineResult | null> => {
+      if (!isElectron || !window.electronAPI?.endToEnd?.start) {
+        throw new Error(t('errors.desktopOnly'));
+      }
 
-    // Validate config
-    const config = state.config as EndToEndConfig;
-    if (!config.url) {
-      throw new Error(t('errors.enterUrl'));
-    }
-    if (!config.outputDir) {
-      throw new Error(t('errors.selectOutputDir'));
-    }
-
-    setState((prev) => ({
-      ...prev,
-      isExecuting: true,
-      currentStep: 'progress',
-      progress: {
-        stage: 'idle',
-        stageProgress: 0,
-        overallProgress: 0,
-        message: t('status.initializing'),
-      },
-    }));
-
-    try {
-      // Include videoInfo in config to avoid re-parsing
-      const configWithVideoInfo = {
-        ...config,
-        videoInfo: state.videoInfo,
-      };
-      const result = await window.electronAPI.endToEnd.start(configWithVideoInfo);
+      // Validate config
+      const config = state.config as EndToEndConfig;
+      if (!config.url) {
+        throw new Error(t('errors.enterUrl'));
+      }
+      if (!config.outputDir) {
+        throw new Error(t('errors.selectOutputDir'));
+      }
 
       setState((prev) => ({
         ...prev,
-        isExecuting: false,
-        currentStep: 'result',
-        result: result as PipelineResult,
+        isExecuting: true,
+        currentStep: 'progress',
+        progress: {
+          stage: 'idle',
+          stageProgress: 0,
+          overallProgress: 0,
+          message: t('status.initializing'),
+        },
       }));
 
-      return result as PipelineResult;
-    } catch (error: any) {
-      const errorResult = {
-        success: false,
-        finalStage: 'failed' as const,
-        outputs: {},
-        duration: 0,
-        error: error.message || t('errors.executionFailed'),
-      } as PipelineResult;
+      try {
+        // Merge global settings into config to ensure user preferences are respected
+        const mergedConfig = {
+          ...config,
+          // Map global settings to EndToEndConfig fields
+          enableDiarization: globalSettings?.enableDiarization ?? config.enableDiarization ?? true,
+          enableSpeakerPreAnalysis:
+            globalSettings?.enableSpeakerPreAnalysis ?? config.enableSpeakerPreAnalysis ?? true,
+          includeSpeaker: globalSettings?.includeSpeakerInExport ?? config.includeSpeaker ?? false,
+          useSpeakerColors: globalSettings?.useSpeakerColors ?? config.useSpeakerColors ?? true,
+          useSpeakerStyledTranslation:
+            globalSettings?.useSpeakerStyledTranslation ??
+            config.useSpeakerStyledTranslation ??
+            true,
+          enableGlossary: globalSettings?.enableAutoGlossary ?? config.enableGlossary ?? true,
+          outputMode: globalSettings?.outputMode ?? config.outputMode ?? 'bilingual',
+          // Include videoInfo to avoid re-parsing
+          videoInfo: state.videoInfo,
+        };
 
-      setState((prev) => ({
-        ...prev,
-        isExecuting: false,
-        currentStep: 'result',
-        result: errorResult,
-      }));
+        const result = await window.electronAPI.endToEnd.start(mergedConfig);
 
-      return errorResult;
-    }
-  }, [isElectron, state.config, state.videoInfo, t]);
+        setState((prev) => ({
+          ...prev,
+          isExecuting: false,
+          currentStep: 'result',
+          result: result as PipelineResult,
+        }));
+
+        return result as PipelineResult;
+      } catch (error: any) {
+        const errorResult = {
+          success: false,
+          finalStage: 'failed' as const,
+          outputs: {},
+          duration: 0,
+          error: error.message || t('errors.executionFailed'),
+        } as PipelineResult;
+
+        setState((prev) => ({
+          ...prev,
+          isExecuting: false,
+          currentStep: 'result',
+          result: errorResult,
+        }));
+
+        return errorResult;
+      }
+    },
+    [isElectron, state.config, state.videoInfo, t]
+  );
 
   const abortPipeline = useCallback(() => {
     if (!isElectron || !window.electronAPI?.endToEnd?.abort) return;
