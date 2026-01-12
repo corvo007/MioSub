@@ -99,18 +99,19 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
         >
           <div className="flex items-center space-x-3">
             {/* Hide batch checkbox in delete mode */}
-            {status === GenerationStatus.COMPLETED && !isDeleteMode && (
-              <button
-                onClick={() => toggleBatch(chunkIdx)}
-                className="text-slate-400 hover:text-indigo-400 focus:outline-none"
-              >
-                {isSelected ? (
-                  <CheckSquare className="w-5 h-5 text-indigo-400" />
-                ) : (
-                  <Square className="w-5 h-5" />
-                )}
-              </button>
-            )}
+            {(status === GenerationStatus.COMPLETED || status === GenerationStatus.CANCELLED) &&
+              !isDeleteMode && (
+                <button
+                  onClick={() => toggleBatch(chunkIdx)}
+                  className="text-slate-400 hover:text-indigo-400 focus:outline-none"
+                >
+                  {isSelected ? (
+                    <CheckSquare className="w-5 h-5 text-indigo-400" />
+                  ) : (
+                    <Square className="w-5 h-5" />
+                  )}
+                </button>
+              )}
             <div>
               <h3
                 className={cn(
@@ -135,17 +136,18 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
             />
           </div>
           {/* Hide proofread button in delete mode */}
-          {status === GenerationStatus.COMPLETED && !isDeleteMode && (
-            <div className="flex items-center space-x-1">
-              <button
-                onClick={() => handleBatchAction('proofread', chunkIdx)}
-                title={t('batch.proofread')}
-                className="p-2 text-slate-500 hover:text-indigo-400 hover:bg-slate-700 rounded-lg transition-colors"
-              >
-                <Wand2 className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+          {(status === GenerationStatus.COMPLETED || status === GenerationStatus.CANCELLED) &&
+            !isDeleteMode && (
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => handleBatchAction('proofread', chunkIdx)}
+                  title={t('batch.proofread')}
+                  className="p-2 text-slate-500 hover:text-indigo-400 hover:bg-slate-700 rounded-lg transition-colors"
+                >
+                  <Wand2 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
         </div>
         <div className="divide-y divide-slate-800/50">
           {chunk.map((sub, indexInChunk) => {

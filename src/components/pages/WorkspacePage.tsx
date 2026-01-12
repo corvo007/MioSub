@@ -631,7 +631,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
               </div>
             )}
 
-            {(status === GenerationStatus.COMPLETED || status === GenerationStatus.PROOFREADING) &&
+            {(status === GenerationStatus.COMPLETED ||
+              status === GenerationStatus.PROOFREADING ||
+              status === GenerationStatus.CANCELLED) &&
               subtitles.length > 0 && (
                 <button
                   onClick={() => setShowExportModal(true)}
