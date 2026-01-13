@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { GenerationStatus } from '@/types/api';
 import { logger, type LogEntry } from '@/services/utils/logger';
-import { getSpeakerColor } from '@/services/utils/colors';
 import { type SpeakerUIProfile } from '@/types/speaker';
 
 import { GlossaryManager } from '@/components/glossary/GlossaryManager';
@@ -393,7 +392,6 @@ export default function App() {
                 const profiles: SpeakerUIProfile[] = uniqueSpeakers.map((name) => ({
                   id: name,
                   name: name,
-                  color: getSpeakerColor(name),
                 }));
                 workspace.setSpeakerProfiles(profiles);
 

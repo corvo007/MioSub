@@ -6,7 +6,6 @@ import { type SubtitleItem } from '@/types/subtitle';
 import { GenerationStatus } from '@/types/api';
 import { type SpeakerUIProfile } from '@/types/speaker';
 import { logger } from '@/services/utils/logger';
-import { getSpeakerColor } from '@/services/utils/colors';
 import { type SnapshotsValuesProps } from '@/types/workspace';
 
 interface UseFileOperationsProps {
@@ -317,7 +316,6 @@ export function useFileOperations({
           const profiles: SpeakerUIProfile[] = uniqueSpeakers.map((name) => ({
             id: name,
             name: name,
-            color: getSpeakerColor(name),
           }));
           // Actually, import replaces subtitles, so we should replace profiles too.
           setSpeakerProfiles(profiles);
@@ -391,7 +389,6 @@ export function useFileOperations({
       const profiles: SpeakerUIProfile[] = uniqueSpeakers.map((name) => ({
         id: name,
         name: name,
-        color: getSpeakerColor(name),
       }));
       setSpeakerProfiles(profiles);
 
