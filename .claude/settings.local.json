@@ -49,7 +49,8 @@
       "Bash(yarn build:main)",
       "mcp__serena__find_referencing_symbols",
       "mcp__serena__think_about_collected_information",
-      "Bash(if not exist \"D:\\\\onedrive\\\\codelab\\\\Gemini-Subtitle-Pro\\\\docs\\\\plans\" mkdir \"D:\\\\onedrive\\\\codelab\\\\Gemini-Subtitle-Pro\\\\docs\\\\plans\")"
+      "Bash(if not exist \"D:\\\\onedrive\\\\codelab\\\\Gemini-Subtitle-Pro\\\\docs\\\\plans\" mkdir \"D:\\\\onedrive\\\\codelab\\\\Gemini-Subtitle-Pro\\\\docs\\\\plans\")",
+      "mcp__serena__list_memories"
     ]
   },
   "hooks": {

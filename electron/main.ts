@@ -1524,14 +1524,19 @@ async function getSystemConfigHash() {
 
   // Get commit hash (cached)
   if (!cachedCommitHash) {
-    const { execSync } = await import('child_process');
-    try {
-      cachedCommitHash = execSync('git rev-parse --short HEAD', {
-        encoding: 'utf-8',
-        windowsHide: true,
-      }).trim();
-    } catch {
-      cachedCommitHash = 'N/A';
+    // Check if injected via build process
+    if (app.isPackaged && process.env.COMMIT_HASH) {
+      cachedCommitHash = process.env.COMMIT_HASH;
+    } else {
+      const { execSync } = await import('child_process');
+      try {
+        cachedCommitHash = execSync('git rev-parse --short HEAD', {
+          encoding: 'utf-8',
+          windowsHide: true,
+        }).trim();
+      } catch {
+        cachedCommitHash = 'N/A';
+      }
     }
   }
 
@@ -1568,8 +1573,17 @@ async function getSystemInfo(preConfig?: any) {
   let ffmpegVersion = 'unknown';
   let ffprobeVersion = 'unknown';
   try {
-    const ffmpegOutput = execSync('ffmpeg -version', { encoding: 'utf-8', windowsHide: true });
-    const ffprobeOutput = execSync('ffprobe -version', { encoding: 'utf-8', windowsHide: true });
+    const ffmpegPath = getBinaryPath('ffmpeg');
+    const ffprobePath = getBinaryPath('ffprobe');
+
+    const ffmpegOutput = execSync(`"${ffmpegPath}" -version`, {
+      encoding: 'utf-8',
+      windowsHide: true,
+    });
+    const ffprobeOutput = execSync(`"${ffprobePath}" -version`, {
+      encoding: 'utf-8',
+      windowsHide: true,
+    });
 
     const ffmpegMatch = ffmpegOutput.match(/ffmpeg version (.*?) Copyright/);
     if (ffmpegMatch) ffmpegVersion = ffmpegMatch[1].trim();
