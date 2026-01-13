@@ -3,7 +3,6 @@
  * Reference: Youtube-dl-REST and YoutubeDownloader repositories
  */
 
-import { app } from 'electron';
 import { spawn, type ChildProcess } from 'child_process';
 import path from 'path';
 import os from 'os';
@@ -11,6 +10,7 @@ import fs from 'fs';
 import http from 'http';
 import https from 'https';
 import { t } from '../i18n.ts';
+import { getBinaryPath } from '../utils/paths.ts';
 
 export interface VideoInfo {
   id: string;
@@ -659,23 +659,11 @@ class YtDlpService {
   private quickjsPath: string;
 
   constructor() {
-    const binaryName = process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp';
-    const quickjsName = process.platform === 'win32' ? 'qjs.exe' : 'qjs';
+    this.binaryPath = getBinaryPath('yt-dlp');
+    this.quickjsPath = getBinaryPath('qjs');
 
-    if (app.isPackaged) {
-      // Production: binaries are in resources folder via extraResources
-      this.binaryPath = path.join(process.resourcesPath, binaryName);
-      this.quickjsPath = path.join(process.resourcesPath, quickjsName);
-    } else {
-      // Development: app.getAppPath() points to 'electron/' dir
-      // resources folder is at project root (one level up)
-      const projectRoot = path.join(app.getAppPath(), '..');
-      this.binaryPath = path.join(projectRoot, 'resources', binaryName);
-      this.quickjsPath = path.join(projectRoot, 'resources', quickjsName);
-    }
-
-    console.log('[DEBUG] [YtDlpService] Binary path:', this.binaryPath);
-    console.log('[DEBUG] [YtDlpService] QuickJS path:', this.quickjsPath);
+    // console.log('[DEBUG] [YtDlpService] Binary path:', this.binaryPath);
+    // console.log('[DEBUG] [YtDlpService] QuickJS path:', this.quickjsPath);
   }
 
   private execute(args: string[], timeoutMs: number = 60000): Promise<string> {

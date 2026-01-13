@@ -18,6 +18,7 @@ const __dirname = path.dirname(__filename);
 
 import squirrelStartup from 'electron-squirrel-startup';
 import fs from 'fs';
+import { getBinaryPath, getFileHash } from './utils/paths.ts';
 import {
   extractAudioFromVideo,
   readAudioBuffer,
@@ -1238,6 +1239,46 @@ app.on('ready', async () => {
   // Initialize logger file system (requires app to be ready for getPath)
   mainLogger.init();
 
+  // Print startup system info and cache it
+  void (async () => {
+    try {
+      const info = await getSystemInfo();
+      // Cache the info at startup so About tab can use it immediately
+      lastAboutInfo = info;
+      lastAboutConfigHash = info.hash;
+
+      console.log('========================================');
+      console.log('  Gemini Subtitle Pro - System Info');
+      console.log('========================================');
+      console.log(`  Version:      v${info.version} (${info.commitHash})`);
+      console.log(`  Environment:  ${info.isPackaged ? 'Production' : 'Development'}`);
+      console.log('');
+      console.log('  Dependencies:');
+      console.log(`    FFmpeg:     ${info.versions.ffmpeg}`);
+      console.log(`    FFprobe:    ${info.versions.ffprobe}`);
+      console.log(`    yt-dlp:     ${info.versions.ytdlp}`);
+      console.log(`    QuickJS:    ${info.versions.qjs}`);
+      console.log(`    Whisper:    ${info.versions.whisper}`);
+      console.log('');
+      console.log('  GPU Acceleration:');
+      console.log(
+        `    Encoder:    ${info.gpu.available ? `Supported (${info.gpu.preferredH264}/${info.gpu.preferredH265})` : 'Not Supported'}`
+      );
+      console.log(
+        `    Whisper:    ${info.versions.whisperDetails.gpuSupport ? 'Supported (GPU)' : 'Not Supported'}`
+      );
+      console.log('');
+      console.log('  Paths:');
+      console.log(`    App:        ${info.paths.appPath}`);
+      console.log(`    UserData:   ${info.paths.userDataPath}`);
+      console.log(`    Executable: ${info.paths.exePath}`);
+      console.log(`    Whisper:    ${info.paths.whisperPath || 'N/A'}`);
+      console.log('========================================\n');
+    } catch (error) {
+      console.error('[Main] Failed to print startup info:', error);
+    }
+  })();
+
   // Register custom protocol for streaming local video files
   // This supports HTTP range requests for large files
   protocol.handle('local-video', async (request) => {
@@ -1450,91 +1491,144 @@ app.on('web-contents-created', (_event, contents) => {
 // About info cache
 let lastAboutInfo: any = null;
 let lastAboutConfigHash: string | null = null;
+let cachedCommitHash: string | null = null;
+
+/**
+ * Calculate system configuration hash based on settings, environment AND file mtimes.
+ * This ensures updates to binaries (even in-place) are detected.
+ */
+async function getSystemConfigHash() {
+  const pkgPath = path.join(__dirname, '../package.json');
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+
+  // Read settings
+  const settings = await storageService.readSettings();
+  const customWhisperPath = settings?.debug?.whisperPath;
+
+  // Resolve ACTUAL binary paths to detect auto-discovery or in-place updates
+  const whisperInfo = localWhisperService.getBinaryPathWithSource(customWhisperPath);
+
+  // For FFmpeg/FFprobe, check custom path or fallback to bundled path
+  // This ensures that if auto-updater updates the bundled binary, we detect it
+  const ffmpegPath = settings?.debug?.ffmpegPath || getBinaryPath('ffmpeg');
+  const ffprobePath = settings?.debug?.ffprobePath || getBinaryPath('ffprobe');
+  const ytDlpPath = getBinaryPath('yt-dlp');
+  const qjsPath = getBinaryPath('qjs');
+
+  // Check mtime for both (whether custom or bundled)
+  const ffmpegHash = getFileHash(ffmpegPath);
+  const ffprobeHash = getFileHash(ffprobePath);
+  const ytDlpHash = getFileHash(ytDlpPath);
+  const qjsHash = getFileHash(qjsPath);
+  const whisperHash = getFileHash(whisperInfo.path);
+
+  // Get commit hash (cached)
+  if (!cachedCommitHash) {
+    const { execSync } = await import('child_process');
+    try {
+      cachedCommitHash = execSync('git rev-parse --short HEAD', {
+        encoding: 'utf-8',
+        windowsHide: true,
+      }).trim();
+    } catch {
+      cachedCommitHash = 'N/A';
+    }
+  }
+
+  // Create hash
+  const hash = [
+    `v:${pkg.version}`,
+    `c:${cachedCommitHash}`,
+    `w:${whisperHash}`, // Now includes path + mtime
+    `ff:${ffmpegHash}`, // Now includes path + mtime (if custom)
+    `fp:${ffprobeHash}`,
+    `yd:${ytDlpHash}`,
+    `qj:${qjsHash}`,
+    `p:${process.env.PORTABLE_EXECUTABLE_DIR || 'none'}`,
+  ].join('|');
+
+  return { hash, settings, pkg, commitHash: cachedCommitHash, customWhisperPath };
+}
+
+/**
+ * Get system information (versions, GPU status, paths)
+ * Uses pre-calculated config to avoid redundant settings reads
+ */
+async function getSystemInfo(preConfig?: any) {
+  const config = preConfig || (await getSystemConfigHash());
+  const { execSync } = await import('child_process');
+
+  // Get dependency versions
+  // These are the "heavy" operations
+  const ytDlpInfo = await ytDlpService.getVersions();
+  const whisperDetails = await localWhisperService.getWhisperDetails(config.customWhisperPath);
+  const whisperVersionStr = `${whisperDetails.version} (${whisperDetails.source}${whisperDetails.gpuSupport ? ' + GPU' : ''})`;
+
+  // Get FFmpeg/FFprobe versions
+  let ffmpegVersion = 'unknown';
+  let ffprobeVersion = 'unknown';
+  try {
+    const ffmpegOutput = execSync('ffmpeg -version', { encoding: 'utf-8', windowsHide: true });
+    const ffprobeOutput = execSync('ffprobe -version', { encoding: 'utf-8', windowsHide: true });
+
+    const ffmpegMatch = ffmpegOutput.match(/ffmpeg version (.*?) Copyright/);
+    if (ffmpegMatch) ffmpegVersion = ffmpegMatch[1].trim();
+
+    const ffprobeMatch = ffprobeOutput.match(/ffprobe version (.*?) Copyright/);
+    if (ffprobeMatch) ffprobeVersion = ffprobeMatch[1].trim();
+  } catch {
+    // FFmpeg not found
+  }
+
+  const hwAccelInfo = videoCompressorService.getHardwareAccelInfo();
+
+  return {
+    hash: config.hash,
+    appName: config.pkg.productName || config.pkg.name,
+    version: config.pkg.version,
+    isPackaged: app.isPackaged,
+    commitHash: config.commitHash,
+    versions: {
+      ffmpeg: ffmpegVersion,
+      ffprobe: ffprobeVersion,
+      ytdlp: ytDlpInfo.ytdlp,
+      qjs: ytDlpInfo.qjs,
+      whisper: whisperVersionStr,
+      whisperDetails,
+    },
+    gpu: hwAccelInfo,
+    paths: {
+      appPath: app.getAppPath(),
+      userDataPath: app.getPath('userData'),
+      exePath: app.getPath('exe'),
+      whisperPath: whisperDetails.path,
+    },
+  };
+}
 
 // IPC Handler: Get About Information
 ipcMain.handle('util:get-about-info', async (_event, lastHash?: string) => {
   try {
-    const pkgPath = path.join(__dirname, '../package.json');
-    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    // 1. Calculate current config hash (Previous implementation checks this too late)
+    const config = await getSystemConfigHash();
 
-    // Read settings for custom binary paths
-    const settings = await storageService.readSettings();
-    const customWhisperPath = settings?.debug?.whisperPath;
-    const { execSync } = await import('child_process');
-
-    let commitHash = 'N/A';
-    try {
-      commitHash = execSync('git rev-parse --short HEAD', {
-        encoding: 'utf-8',
-        windowsHide: true,
-      }).trim();
-    } catch (e) {
-      // In production, git might not be available
+    // 2. Client cache check: If client has same hash, return notModified
+    if (lastHash && lastHash === config.hash) {
+      return { notModified: true, hash: config.hash };
     }
 
-    // Create a configuration hash to detect changes
-    // We include pkg version, commit hash, paths, and platform-specific portable dir
-    const configStr = [
-      `v:${pkg.version}`,
-      `c:${commitHash}`,
-      `w:${customWhisperPath || 'bundled'}`,
-      `ff:${settings?.debug?.ffmpegPath || 'default'}`,
-      `fp:${settings?.debug?.ffprobePath || 'default'}`,
-      `p:${process.env.PORTABLE_EXECUTABLE_DIR || 'none'}`,
-    ].join('|');
-
-    // If the tool configurations haven't changed and the requester has the last hash
-    if (lastHash === configStr && lastAboutInfo) {
-      return { notModified: true, hash: configStr };
+    // 3. Server cache check: If our cache matches current config, return it
+    // This fixes the "loading" issue when client has no cache (first load) but server does (startup)
+    if (lastAboutInfo && lastAboutConfigHash === config.hash) {
+      return lastAboutInfo;
     }
 
-    // Get dependency versions
-    const ytDlpInfo = await ytDlpService.getVersions();
-    const whisperDetails = await localWhisperService.getWhisperDetails(customWhisperPath);
-    const whisperVersionStr = `${whisperDetails.version} (${whisperDetails.source}${whisperDetails.gpuSupport ? ' + GPU' : ''})`;
+    // 4. Cache miss: Fetch fresh info
+    const info = await getSystemInfo(config);
 
-    // Get FFmpeg/FFprobe versions
-    let ffmpegVersion = 'unknown';
-    let ffprobeVersion = 'unknown';
-    try {
-      const ffmpegOutput = execSync('ffmpeg -version', { encoding: 'utf-8', windowsHide: true });
-      const ffprobeOutput = execSync('ffprobe -version', { encoding: 'utf-8', windowsHide: true });
-
-      const ffmpegMatch = ffmpegOutput.match(/ffmpeg version (.*?) Copyright/);
-      if (ffmpegMatch) ffmpegVersion = ffmpegMatch[1].trim();
-
-      const ffprobeMatch = ffprobeOutput.match(/ffprobe version (.*?) Copyright/);
-      if (ffprobeMatch) ffprobeVersion = ffprobeMatch[1].trim();
-    } catch (e) {
-      console.warn('[Main] Failed to get FFmpeg/FFprobe versions:', e);
-    }
-
-    const hwAccelInfo = videoCompressorService.getHardwareAccelInfo();
-
-    const info = {
-      hash: configStr,
-      appName: pkg.productName || pkg.name,
-      version: pkg.version,
-      isPackaged: app.isPackaged,
-      commitHash,
-      versions: {
-        ffmpeg: ffmpegVersion,
-        ffprobe: ffprobeVersion,
-        ytdlp: ytDlpInfo.ytdlp,
-        qjs: ytDlpInfo.qjs,
-        whisper: whisperVersionStr,
-        whisperDetails,
-      },
-      gpu: hwAccelInfo,
-      paths: {
-        appPath: app.getAppPath(),
-        userDataPath: app.getPath('userData'),
-        exePath: app.getPath('exe'),
-      },
-    };
-
+    // Update cache
     lastAboutInfo = info;
-    lastAboutConfigHash = configStr;
+    lastAboutConfigHash = info.hash;
 
     return info;
   } catch (error: any) {
