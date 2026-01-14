@@ -238,7 +238,9 @@ export function useGeneration({
             }
           });
         },
-        signal
+        signal,
+        // Video info for artifact metadata
+        { filename: file.name, duration }
       );
 
       // Then check subtitle results

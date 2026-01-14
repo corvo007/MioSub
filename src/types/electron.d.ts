@@ -120,7 +120,7 @@ export interface ElectronAPI {
     error?: string;
   }>;
   onAudioExtractionProgress: (callback: (progress: AudioExtractionProgress) => void) => () => void;
-  onNewLog: (callback: (log: string) => void) => () => void;
+  onNewLog: (callback: (log: any) => void) => () => void;
 
   // Storage
   storage: {
@@ -318,7 +318,8 @@ export interface ElectronAPI {
     save: (snapshots: SubtitleSnapshot[]) => Promise<boolean>;
   };
 
-  getMainLogs: () => Promise<string[]>;
+  getMainLogs: () => Promise<any[]>;
+  sendLog: (entry: { level: string; message: string; data?: any }) => void;
 
   // End-to-End Pipeline APIs
   endToEnd: {
@@ -358,6 +359,7 @@ export interface ElectronAPI {
         downloadProgress?: any;
         transcribeProgress?: any;
         compressProgress?: any;
+        finalStage?: string;
       }) => void
     ) => () => void;
     onGenerateSubtitles: (

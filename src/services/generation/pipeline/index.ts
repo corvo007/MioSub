@@ -6,7 +6,7 @@ import { preprocessAudio } from './preprocessor';
 import { SmartSegmenter } from '@/services/audio/segmenter';
 import { SpeakerAnalyzer } from './speakerAnalyzer';
 import { GlossaryHandler } from './glossaryHandler';
-import { type PipelineContext } from '@/types/pipeline';
+import { type PipelineContext, type VideoInfo } from '@/types/pipeline';
 import { type SubtitleItem } from '@/types/subtitle';
 import { type AppSettings } from '@/types/settings';
 import { type ChunkStatus } from '@/types/api';
@@ -32,7 +32,8 @@ export const generateSubtitles = async (
   onProgress?: (update: ChunkStatus) => void,
   onIntermediateResult?: (subs: SubtitleItem[]) => void,
   onGlossaryReady?: (metadata: GlossaryExtractionMetadata) => Promise<GlossaryItem[]>,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  videoInfo?: VideoInfo
 ): Promise<{ subtitles: SubtitleItem[]; glossaryResults?: GlossaryExtractionResult[] }> => {
   const geminiKey = ENV.GEMINI_API_KEY || settings.geminiKey?.trim();
   const openaiKey = ENV.OPENAI_API_KEY || settings.openaiKey?.trim();
@@ -63,6 +64,7 @@ export const generateSubtitles = async (
     isDebug,
     geminiKey,
     openaiKey,
+    videoInfo,
   };
 
   // Check if we can skip audio preprocessing (decoding/segmentation)
@@ -317,7 +319,8 @@ export const generateSubtitles = async (
     refinedChunksMap,
     alignedChunksMap,
     translatedChunksMap,
-    settings
+    settings,
+    { videoInfo, totalChunks: totalChunks }
   );
 
   // Cleanup: Dispose SmartSegmenter singleton to free VAD Worker resources

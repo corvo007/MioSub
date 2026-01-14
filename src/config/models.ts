@@ -2,6 +2,8 @@
 // This allows customizing which model to use for each processing step
 // without exposing this to the UI
 
+import { SAFETY_SETTINGS } from '@/services/api/gemini/core/schemas';
+
 // Base model definitions
 export const MODELS = {
   FLASH: 'gemini-2.5-flash',
@@ -61,7 +63,7 @@ export const STEP_CONFIGS: Record<StepName, StepConfig> = {
   },
 
   translation: {
-    thinkingLevel: 'medium',
+    thinkingLevel: 'high',
     useSearch: true,
     maxOutputTokens: 65536,
   },
@@ -75,7 +77,7 @@ export const STEP_CONFIGS: Record<StepName, StepConfig> = {
   speakerProfile: {
     thinkingLevel: 'high',
     useSearch: true,
-    maxOutputTokens: 8192,
+    maxOutputTokens: 65536,
   },
 
   batchProofread: {
@@ -92,10 +94,15 @@ export const STEP_CONFIGS: Record<StepName, StepConfig> = {
 };
 
 // Helper to build config object for API calls
+// Includes common parameters used by all Gemini API calls
 export function buildStepConfig(step: StepName) {
   const config = STEP_CONFIGS[step];
   return {
+    // Common parameters for all API calls
+    responseMimeType: 'application/json' as const,
+    safetySettings: SAFETY_SETTINGS,
     maxOutputTokens: config.maxOutputTokens ?? 65536,
+    // Step-specific parameters
     ...(config.useSearch && { tools: [{ googleSearch: {} }] }),
     ...(config.thinkingLevel &&
       config.thinkingLevel !== 'none' && {

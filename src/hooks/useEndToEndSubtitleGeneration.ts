@@ -257,7 +257,9 @@ export function useEndToEndSubtitleGeneration({
 
             return result.terms;
           },
-          signal
+          signal,
+          // Video info for artifact metadata
+          { filename: audioFile.name, duration: audioBuffer.duration }
         );
 
         // Guard: No subtitles generated
