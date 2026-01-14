@@ -22,7 +22,6 @@ import { generateContentWithRetry, formatGeminiError } from '@/services/api/gemi
 import {
   TRANSLATION_SCHEMA,
   TRANSLATION_WITH_DIARIZATION_SCHEMA,
-  SAFETY_SETTINGS,
 } from '@/services/api/gemini/core/schemas';
 import {
   STEP_MODELS,
@@ -204,8 +203,6 @@ export function createTranslationPostProcessor(
             model: STEP_MODELS.translation,
             contents: { parts: [{ text: retryPrompt }] },
             config: {
-              responseMimeType: 'application/json',
-              safetySettings: SAFETY_SETTINGS,
               responseSchema: useDiarization
                 ? TRANSLATION_WITH_DIARIZATION_SCHEMA
                 : TRANSLATION_SCHEMA,

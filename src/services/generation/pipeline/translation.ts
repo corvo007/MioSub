@@ -19,7 +19,6 @@ import {
 import {
   TRANSLATION_SCHEMA,
   TRANSLATION_WITH_DIARIZATION_SCHEMA,
-  SAFETY_SETTINGS,
 } from '@/services/api/gemini/core/schemas';
 import { STEP_MODELS, buildStepConfig } from '@/config';
 import { withPostCheck } from '@/services/subtitle/postCheck';
@@ -65,12 +64,10 @@ export async function processTranslationBatch(
             model: STEP_MODELS.translation,
             contents: { parts: [{ text: prompt }] },
             config: {
-              responseMimeType: 'application/json',
               responseSchema: useDiarization
                 ? TRANSLATION_WITH_DIARIZATION_SCHEMA
                 : TRANSLATION_SCHEMA,
               systemInstruction: systemInstruction,
-              safetySettings: SAFETY_SETTINGS,
               ...buildStepConfig('translation'),
             },
           },
