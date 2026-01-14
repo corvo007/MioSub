@@ -51,6 +51,10 @@ export function splitAtWordBoundary(text: string, locale: string, maxWidth: numb
     return [{ text, ratio: 1 }];
   }
 
+  logger.debug(
+    `[TextSplitter] Splitting text exceeding width: "${text}" (width: ${getVisualWidth(text)}, max: ${maxWidth})`
+  );
+
   try {
     const segmenter = new Intl.Segmenter(locale, { granularity: 'word' });
     const segments = [...segmenter.segment(text)];

@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-01-14T16:16:59.484Z",
+  "languages": {
+    "en-US": {
+      "missingCount": 0,
+      "missingKeys": [],
+      "unusedCount": 0,
+      "unusedKeys": []
+    },
+    "ja-JP": {
+      "missingCount": 0,
+      "missingKeys": [],
+      "unusedCount": 0,
+      "unusedKeys": []
+    },
+    "zh-CN": {
+      "missingCount": 0,
+      "missingKeys": [],
+      "unusedCount": 0,
+      "unusedKeys": []
+    }
+  },
+  "summary": {
+    "totalUsages": 1026,
+    "missingCount": 0,
+    "unusedCount": 0
+  }
+}

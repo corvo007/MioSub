@@ -19,8 +19,8 @@ export {
 } from './models';
 
 // Subtitle visual width constraints (CJK chars count as 2, others as 1)
-export const SUBTITLE_MAX_WIDTH = 55; // Max visual width before splitting
-export const SUBTITLE_MIN_SPLIT_WIDTH = 10; // Minimum width after split to avoid tiny fragments
+export const SUBTITLE_MAX_WIDTH = 65; // Max visual width before splitting
+export const SUBTITLE_MIN_SPLIT_WIDTH = 20; // Minimum width after split to avoid tiny fragments
 
 /** Maximum segment duration before splitting (seconds) */
 export const MAX_SEGMENT_DURATION_SECONDS = 4;
