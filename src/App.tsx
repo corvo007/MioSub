@@ -106,10 +106,6 @@ export default function App() {
   const [showLogs, setShowLogs] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
 
-  // Import log parser
-  // Note: We need to import this at the top, but for this replace block we'll assume it's available or add import separately if needed.
-  // Since I can't easily add import at top with this block, I will add a separate replace for imports.
-
   useEffect(() => {
     // Initial load of frontend logs
     setLogs(logger.getLogs());
@@ -133,24 +129,37 @@ export default function App() {
   }, [addToast]);
 
   // Backend logs handling - Global subscription
+  const initRef = React.useRef(false);
   useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+
     let unsubscribeBackend: (() => void) | undefined;
 
     const initBackendLogs = async () => {
       if (window.electronAPI && window.electronAPI.getMainLogs) {
         try {
+          // historyLogs can be string[] (legacy) or LogEntry[] (new)
           const historyLogs = await window.electronAPI.getMainLogs();
           logger.info(`[App] Loaded ${historyLogs.length} historical logs from backend`);
 
           const { parseBackendLog } = await import('@/services/utils/logParser');
 
           const parsedHistory = historyLogs
-            .map((logLine) => {
-              try {
-                return parseBackendLog(logLine);
-              } catch (e) {
-                return null;
+            .map((logItem) => {
+              // If it's already a structured log object from new backend
+              if (typeof logItem === 'object' && logItem !== null && 'level' in logItem) {
+                return logItem as LogEntry;
               }
+              // Fallback for legacy string logs
+              if (typeof logItem === 'string') {
+                try {
+                  return parseBackendLog(logItem);
+                } catch {
+                  return null;
+                }
+              }
+              return null;
             })
             .filter((l) => l !== null) as LogEntry[];
 
@@ -158,7 +167,16 @@ export default function App() {
             // Merge avoiding duplicates
             const newLogs = [...prev];
             parsedHistory.forEach((pl) => {
-              if (!newLogs.some((existing) => existing.data?.raw === pl.data?.raw)) {
+              // Deduplicate based on timestamp + message to avoid exact dupes
+              // or raw string match if available
+              if (
+                !newLogs.some(
+                  (existing) =>
+                    existing.timestamp === pl.timestamp &&
+                    existing.message === pl.message &&
+                    JSON.stringify(existing.data) === JSON.stringify(pl.data) // Rough deep eq
+                )
+              ) {
                 newLogs.push(pl);
               }
             });
@@ -175,15 +193,51 @@ export default function App() {
       // Initialize history first
       initBackendLogs().catch((err) => logger.error('[App] Failed to init backend logs', err));
 
-      unsubscribeBackend = window.electronAPI.onNewLog(async (logLine) => {
+      unsubscribeBackend = window.electronAPI.onNewLog(async (newLog) => {
         // Print to DevTools console for visibility
-        // logger.debug(`[Main] ${logLine}`);
+        // logger.debug(`[Main]`, newLog);
 
         try {
-          const { parseBackendLog } = await import('@/services/utils/logParser');
-          const parsed = parseBackendLog(logLine);
+          let parsed: LogEntry;
+
+          if (typeof newLog === 'object' && newLog !== null) {
+            parsed = newLog as LogEntry;
+          } else {
+            const { parseBackendLog } = await import('@/services/utils/logParser');
+            parsed = parseBackendLog(String(newLog));
+          }
+
           setLogs((prev) => {
-            if (prev.some((l) => l.data?.raw === logLine)) return prev;
+            // Deduplication Logic
+            const isDuplicate = prev.some((l) => {
+              // 1. Exact match (already covered)
+              if (
+                l.timestamp === parsed.timestamp &&
+                l.message === parsed.message &&
+                JSON.stringify(l.data) === JSON.stringify(parsed.data)
+              )
+                return true;
+
+              // 2. Renderer Echo Match
+              // Backend prepends "[Renderer] " to logs originating from frontend
+              if (parsed.message.startsWith('[Renderer] ')) {
+                const cleanMessage = parsed.message.replace('[Renderer] ', '');
+                // Check if we have a local log with same message and data
+                // Timestamp check: backend timestamp might differ slightly if generated there?
+                // But in our current impl, backend just passes through.
+                // However, logger.ts generates simple timestamp.
+                // Let's rely on message + data content strict match.
+                if (
+                  l.message === cleanMessage &&
+                  JSON.stringify(l.data) === JSON.stringify(parsed.data)
+                ) {
+                  return true;
+                }
+              }
+              return false;
+            });
+
+            if (isDuplicate) return prev;
             return [...prev, parsed];
           });
         } catch (err) {

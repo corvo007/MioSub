@@ -23,6 +23,7 @@
   "dependencies": {
     "@google/genai": "^1.30.0",
     "@ricky0123/vad-web": "^0.0.30",
+    "@uiw/react-json-view": "^2.0.0-alpha.40",
     "assjs": "^0.1.4",
     "clsx": "^2.1.1",
     "eld": "^2.0.1",

@@ -43,7 +43,8 @@ class Logger {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
-    const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
+    const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
 
     const entry: LogEntry = { timestamp, level, message, data };
 
@@ -53,6 +54,11 @@ class Logger {
     }
 
     this.listeners.forEach((l) => l(entry));
+
+    // Sync to main process for file logging (Electron only)
+    if (typeof window !== 'undefined' && window.electronAPI?.sendLog) {
+      window.electronAPI.sendLog({ level, message, data });
+    }
 
     // Also log to console
     const consoleMsg = this.formatMessage(level, message, data);

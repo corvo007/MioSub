@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { logger, type LogEntry } from '@/services/utils/logger';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { cn } from '@/lib/cn';
+import JsonView from '@uiw/react-json-view';
+import { vscodeTheme } from '@uiw/react-json-view/vscode';
 
 interface LogViewerModalProps {
   isOpen: boolean;
@@ -58,7 +60,7 @@ export const LogViewerModal: React.FC<LogViewerModalProps> = ({ isOpen, logs, on
         }
         return line;
       })
-      .join('\n\n');
+      .join('\n');
 
     // Use Electron IPC if available (Desktop App)
     if (window.electronAPI?.saveLogsDialog) {
@@ -171,6 +173,7 @@ export const LogViewerModal: React.FC<LogViewerModalProps> = ({ isOpen, logs, on
                     {log.data &&
                       (() => {
                         let dataToShow = log.data;
+                        // Filter out raw/source fields from objects
                         if (
                           typeof log.data === 'object' &&
                           log.data !== null &&
@@ -180,9 +183,30 @@ export const LogViewerModal: React.FC<LogViewerModalProps> = ({ isOpen, logs, on
                           if (Object.keys(rest).length === 0) return null;
                           dataToShow = rest;
                         }
+
+                        // For primitives (string, number, boolean), display inline
+                        if (
+                          typeof dataToShow === 'string' ||
+                          typeof dataToShow === 'number' ||
+                          typeof dataToShow === 'boolean'
+                        ) {
+                          return (
+                            <span className="text-xs text-emerald-400 font-mono ml-1">
+                              {JSON.stringify(dataToShow)}
+                            </span>
+                          );
+                        }
+
+                        // For objects/arrays, use JsonView
+                        // collapsed={1} expands the first level, allowing users to see the content immediately
                         return (
-                          <div className="text-xs opacity-70 pl-24 break-all whitespace-pre-wrap font-mono">
-                            {JSON.stringify(dataToShow)}
+                          <div className="text-xs pl-24 font-mono">
+                            <JsonView
+                              value={dataToShow}
+                              style={{ ...vscodeTheme, backgroundColor: 'transparent' }}
+                              collapsed={1}
+                              displayDataTypes={false}
+                            />
                           </div>
                         );
                       })()}

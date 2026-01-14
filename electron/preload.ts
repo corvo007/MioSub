@@ -170,6 +170,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Logs APIs
   getMainLogs: () => ipcRenderer.invoke('log:get-history'),
+  sendLog: (entry: { level: string; message: string; data?: any }) =>
+    ipcRenderer.send('log:from-renderer', entry),
 
   // End-to-End Pipeline APIs
   endToEnd: {

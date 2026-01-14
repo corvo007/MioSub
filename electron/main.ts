@@ -1048,6 +1048,36 @@ ipcMain.handle('log:get-history', async () => {
   return mainLogger.getLogs();
 });
 
+// IPC Handler: Receive logs from renderer process and write to file
+ipcMain.on('log:from-renderer', (_event, entry: { level: string; message: string; data?: any }) => {
+  const { level, message, data } = entry;
+  // Prepend [Renderer] to distinguish from main process logs
+  const prefixedMessage = `[Renderer] ${message}`;
+  // Log directly with data object - MainLogger will handle both
+  // structuring it for UI and stringifying it for file/terminal
+  switch (level) {
+    case 'DEBUG':
+      if (data !== undefined) console.debug(prefixedMessage, data);
+      else console.debug(prefixedMessage);
+      break;
+    case 'INFO':
+      if (data !== undefined) console.log(prefixedMessage, data);
+      else console.log(prefixedMessage);
+      break;
+    case 'WARN':
+      if (data !== undefined) console.warn(prefixedMessage, data);
+      else console.warn(prefixedMessage);
+      break;
+    case 'ERROR':
+      if (data !== undefined) console.error(prefixedMessage, data);
+      else console.error(prefixedMessage);
+      break;
+    default:
+      if (data !== undefined) console.log(prefixedMessage, data);
+      else console.log(prefixedMessage);
+  }
+});
+
 // ============================================================================
 // End-to-End Pipeline IPC Handlers
 // ============================================================================
