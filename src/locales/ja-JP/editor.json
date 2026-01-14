@@ -44,7 +44,12 @@
     "addAfter": "後に追加",
     "addComment": "コメントを追加",
     "deleteRow": "行を削除",
-    "lowConfidence": "タイムスタンプの信頼度が低い ({{score}}%)"
+    "lowConfidence": "タイムスタンプの信頼度が低い ({{score}}%)",
+    "errors": {
+      "emptyContent": "字幕の内容は空にできません",
+      "startTimeAfterEndTime": "開始時間は終了時間より後にできません",
+      "durationTooShort": "長さが短すぎます (< 0.2秒)"
+    }
   },
   "batchHeader": {
     "searchPlaceholder": "検索...",

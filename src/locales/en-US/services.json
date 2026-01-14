@@ -97,7 +97,12 @@
       "waitingSpeakerAnalysis": "Waiting for speaker analysis...",
       "refinementFailed": "Refinement failed (Chunk {{index}})",
       "audioLoaded": "Audio loaded",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "waitingTranscribe": "Waiting for transcription...",
+      "waitingRefinement": "Waiting for refinement...",
+      "waitingAlignment": "Waiting for alignment...",
+      "waitingTranslation": "Waiting for translation...",
+      "waitingWaitDeps": "Waiting for dependencies..."
     },
     "errors": {
       "translationFailed": "Translation failed: {{error}}",

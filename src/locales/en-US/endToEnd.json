@@ -99,7 +99,9 @@
       "glossary": {
         "label": "Use Glossary",
         "desc": "Select an existing glossary to assist translation",
-        "none": "(None)"
+        "none": "(None)",
+        "autoConfirmHint": "In end-to-end mode, newly extracted terms will be auto-merged into this glossary",
+        "noGlossaryHint": "Newly extracted terms will be saved to a new glossary"
       },
       "diarization": {
         "label": "Enable Speaker Diarization",
