@@ -1,6 +1,9 @@
 import ffmpeg from 'fluent-ffmpeg';
 import fs from 'fs';
-import { execSync } from 'child_process';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 import { getBinaryPath } from '../utils/paths.ts';
 
 // GPU Encoder definitions with priority order
@@ -99,7 +102,7 @@ export class VideoCompressorService {
    * Detect available GPU encoders by running ffmpeg -encoders
    * Results are cached for subsequent calls
    */
-  detectHardwareAccel(): HardwareAccelInfo {
+  async detectHardwareAccel(): Promise<HardwareAccelInfo> {
     if (this.hwAccelInfo) {
       return this.hwAccelInfo;
     }
@@ -125,29 +128,32 @@ export class VideoCompressorService {
     try {
       // Get the FFmpeg binary path (already correctly set based on environment)
       const ffmpegBinary = ffmpegPath || 'ffmpeg';
+      const nullDevice = process.platform === 'win32' ? 'NUL' : '/dev/null';
 
-      // For each encoder, actually TEST if it works by trying to encode 1 frame
-      // This is more reliable than just checking if FFmpeg lists the encoder
-      for (const encoder of encodersToCheck) {
+      // Test all encoders in parallel for faster startup
+      const testPromises = encodersToCheck.map(async (encoder) => {
         try {
           // Use lavfi color source to generate 1 test frame, encode it with the GPU encoder
           // Use 1280x720 for maximum compatibility with all encoder minimum requirements
-          // Output to null (NUL on Windows, /dev/null on Unix)
-          const nullDevice = process.platform === 'win32' ? 'NUL' : '/dev/null';
-          execSync(
+          await execAsync(
             `"${ffmpegBinary}" -f lavfi -i color=black:s=1280x720:d=0.1 -c:v ${encoder} -frames:v 1 -f null ${nullDevice}`,
             {
               encoding: 'utf-8',
               timeout: 10000, // 10s timeout for GPU initialization
               windowsHide: true,
-              stdio: ['pipe', 'pipe', 'pipe'], // Suppress all output
             }
           );
           // If we get here without exception, the encoder works!
-          encoderStatus[encoder] = true;
+          return { encoder, available: true };
         } catch {
           // Encoder failed - not available on this system
+          return { encoder, available: false };
         }
+      });
+
+      const results = await Promise.all(testPromises);
+      for (const { encoder, available } of results) {
+        encoderStatus[encoder] = available;
       }
     } catch (error) {
       console.warn('[VideoCompressor] Failed to detect encoders:', error);
@@ -186,21 +192,24 @@ export class VideoCompressorService {
   }
 
   /**
-   * Get cached hardware acceleration info
+   * Get cached hardware acceleration info (async)
    */
-  getHardwareAccelInfo(): HardwareAccelInfo {
+  async getHardwareAccelInfo(): Promise<HardwareAccelInfo> {
     return this.detectHardwareAccel();
   }
 
   /**
    * Select the best encoder based on options and hardware availability
    */
-  private selectEncoder(baseEncoder: 'libx264' | 'libx265', hwAccel: 'auto' | 'off'): EncoderType {
+  private async selectEncoder(
+    baseEncoder: 'libx264' | 'libx265',
+    hwAccel: 'auto' | 'off'
+  ): Promise<EncoderType> {
     if (hwAccel === 'off') {
       return baseEncoder;
     }
 
-    const hwInfo = this.detectHardwareAccel();
+    const hwInfo = await this.detectHardwareAccel();
     if (baseEncoder === 'libx264') {
       return hwInfo.preferredH264;
     } else {
@@ -219,7 +228,7 @@ export class VideoCompressorService {
     const hwAccel = options.hwAccel ?? 'auto';
 
     // Select the best encoder based on options and hardware availability
-    const selectedEncoder = this.selectEncoder(options.encoder, hwAccel);
+    const selectedEncoder = await this.selectEncoder(options.encoder, hwAccel);
     const isGpuEncoder = selectedEncoder !== options.encoder;
 
     log(`[Compression] Starting compression: ${inputPath}`);

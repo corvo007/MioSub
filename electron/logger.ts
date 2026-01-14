@@ -1,6 +1,7 @@
-import { app, BrowserWindow } from 'electron';
+import { BrowserWindow } from 'electron';
 import fs from 'fs';
 import path from 'path';
+import { getLogDir } from './utils/paths.ts';
 import util from 'util';
 import os from 'os';
 
@@ -26,8 +27,7 @@ class MainLogger {
     if (this.isReady) return;
 
     try {
-      const userDataPath = app.getPath('userData');
-      const logDir = path.join(userDataPath, 'logs');
+      const logDir = getLogDir();
 
       if (!fs.existsSync(logDir)) {
         fs.mkdirSync(logDir, { recursive: true });

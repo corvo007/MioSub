@@ -286,7 +286,7 @@ export async function transcodeForPreview(
 
   // Detect GPU encoder
   const compressor = getCompressor();
-  const hwInfo = compressor.detectHardwareAccel();
+  const hwInfo = await compressor.detectHardwareAccel();
   const encoder = hwInfo.preferredH264;
   const isGpuEncoder = !encoder.startsWith('lib');
 

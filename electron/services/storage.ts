@@ -1,6 +1,6 @@
-import { app } from 'electron';
 import path from 'path';
 import fs from 'fs';
+import { getStorageDir } from '../utils/paths.ts';
 
 const SETTINGS_FILE = 'gemini-subtitle-pro-settings.json';
 const HISTORY_FILE = 'gemini-subtitle-pro-history.json';
@@ -20,10 +20,18 @@ export class StorageService {
   private snapshotsPath: string;
 
   constructor() {
-    const userDataPath = app.getPath('userData');
-    this.settingsPath = path.join(userDataPath, SETTINGS_FILE);
-    this.historyPath = path.join(userDataPath, HISTORY_FILE);
-    this.snapshotsPath = path.join(userDataPath, SNAPSHOTS_FILE);
+    const storageDir = getStorageDir();
+    if (!fs.existsSync(storageDir)) {
+      try {
+        fs.mkdirSync(storageDir, { recursive: true });
+      } catch (error) {
+        console.error('Failed to create storage directory:', error);
+      }
+    }
+
+    this.settingsPath = path.join(storageDir, SETTINGS_FILE);
+    this.historyPath = path.join(storageDir, HISTORY_FILE);
+    this.snapshotsPath = path.join(storageDir, SNAPSHOTS_FILE);
   }
 
   // Settings methods

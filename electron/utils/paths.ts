@@ -32,3 +32,27 @@ export function getFileHash(filePath: string): string {
     return 'error';
   }
 }
+
+/**
+ * Get the directory for storing configuration and state files.
+ * Production: directory of the executable + /config
+ * Development: project root (process.cwd())
+ */
+export function getStorageDir(): string {
+  if (app.isPackaged) {
+    return path.join(path.dirname(app.getPath('exe')), 'config');
+  }
+  return path.join(process.cwd(), 'config');
+}
+
+/**
+ * Get the directory for storing log files.
+ * Production: directory of the executable + /logs
+ * Development: project root + /logs
+ */
+export function getLogDir(): string {
+  if (app.isPackaged) {
+    return path.join(path.dirname(app.getPath('exe')), 'logs');
+  }
+  return path.join(process.cwd(), 'logs');
+}

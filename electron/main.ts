@@ -18,7 +18,7 @@ const __dirname = path.dirname(__filename);
 
 import squirrelStartup from 'electron-squirrel-startup';
 import fs from 'fs';
-import { getBinaryPath, getFileHash } from './utils/paths.ts';
+import { getBinaryPath, getFileHash, getLogDir, getStorageDir } from './utils/paths.ts';
 import {
   extractAudioFromVideo,
   readAudioBuffer,
@@ -521,10 +521,10 @@ ipcMain.handle('save-logs-dialog', async (_event, content: string) => {
 // IPC Handler: Save Debug Artifact (Invisible to user, for debugging)
 ipcMain.handle('debug:save-artifact', async (_event, name: string, content: string) => {
   try {
-    const userDataPath = app.getPath('userData');
+    const logDir = getLogDir();
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
-    const artifactsDir = path.join(userDataPath, 'logs', 'artifacts', dateStr);
+    const artifactsDir = path.join(logDir, 'artifacts', dateStr);
 
     if (!fs.existsSync(artifactsDir)) {
       await fs.promises.mkdir(artifactsDir, { recursive: true });
@@ -843,7 +843,7 @@ ipcMain.handle('video:cancel', async () => {
 // IPC Handler: Get Hardware Acceleration Info
 ipcMain.handle('video:hw-accel-info', async () => {
   try {
-    return videoCompressorService.getHardwareAccelInfo();
+    return await videoCompressorService.getHardwareAccelInfo();
   } catch (error: any) {
     console.error('[Main] Failed to get hardware acceleration info:', error);
     return {
@@ -1591,7 +1591,9 @@ async function getSystemConfigHash() {
  */
 async function getSystemInfo(preConfig?: any) {
   const config = preConfig || (await getSystemConfigHash());
-  const { execSync } = await import('child_process');
+  const { exec } = await import('child_process');
+  const { promisify } = await import('util');
+  const execAsync = promisify(exec);
 
   // Get dependency versions
   // These are the "heavy" operations
@@ -1599,32 +1601,29 @@ async function getSystemInfo(preConfig?: any) {
   const whisperDetails = await localWhisperService.getWhisperDetails(config.customWhisperPath);
   const whisperVersionStr = `${whisperDetails.version} (${whisperDetails.source}${whisperDetails.gpuSupport ? ' + GPU' : ''})`;
 
-  // Get FFmpeg/FFprobe versions
+  // Get FFmpeg/FFprobe versions (async to avoid blocking main thread)
   let ffmpegVersion = 'unknown';
   let ffprobeVersion = 'unknown';
   try {
     const ffmpegPath = getBinaryPath('ffmpeg');
     const ffprobePath = getBinaryPath('ffprobe');
 
-    const ffmpegOutput = execSync(`"${ffmpegPath}" -version`, {
-      encoding: 'utf-8',
-      windowsHide: true,
-    });
-    const ffprobeOutput = execSync(`"${ffprobePath}" -version`, {
-      encoding: 'utf-8',
-      windowsHide: true,
-    });
+    // Run both version checks in parallel
+    const [ffmpegResult, ffprobeResult] = await Promise.all([
+      execAsync(`"${ffmpegPath}" -version`, { windowsHide: true }).catch(() => ({ stdout: '' })),
+      execAsync(`"${ffprobePath}" -version`, { windowsHide: true }).catch(() => ({ stdout: '' })),
+    ]);
 
-    const ffmpegMatch = ffmpegOutput.match(/ffmpeg version (.*?) Copyright/);
+    const ffmpegMatch = ffmpegResult.stdout.match(/ffmpeg version (.*?) Copyright/);
     if (ffmpegMatch) ffmpegVersion = ffmpegMatch[1].trim();
 
-    const ffprobeMatch = ffprobeOutput.match(/ffprobe version (.*?) Copyright/);
+    const ffprobeMatch = ffprobeResult.stdout.match(/ffprobe version (.*?) Copyright/);
     if (ffprobeMatch) ffprobeVersion = ffprobeMatch[1].trim();
   } catch {
     // FFmpeg not found
   }
 
-  const hwAccelInfo = videoCompressorService.getHardwareAccelInfo();
+  const hwAccelInfo = await videoCompressorService.getHardwareAccelInfo();
 
   return {
     hash: config.hash,
@@ -1643,7 +1642,8 @@ async function getSystemInfo(preConfig?: any) {
     gpu: hwAccelInfo,
     paths: {
       appPath: app.getAppPath(),
-      userDataPath: app.getPath('userData'),
+      userDataPath: getStorageDir(),
+      logPath: getLogDir(),
       exePath: app.getPath('exe'),
       whisperPath: whisperDetails.path,
     },
