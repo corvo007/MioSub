@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.13.0] - 2026-01-15
+
+### Features
+
+- **Batch Operations**: Replace "Fix Timestamps" with "Regenerate" - full pipeline re-run (transcription → refinement → alignment → translation) on selected batches with optional user hints.
+- **RegenerateModal**: New modal for regenerate operation with transcription and translation hint inputs.
+- **Speaker Manager**: Add custom color editing and merge functionality for speakers.
+- **About Tab**: Add system info display with Whisper details, GPU detection, and separate log path.
+- **Logging**: Enhanced logging system with JSON view and IPC handlers.
+- **Editor**: Add subtitle validation rules with visual markers for timing issues.
+- **i18n**: Complete Japanese (ja-JP) translations and regenerate modal strings for all locales.
+
+### Fixes
+
+- **Pipeline**: Update generation hooks and configuration to support new step architecture.
+- **UI**: Improve glossary configuration explanation and color picker validation.
+- **Core**: Resolve lint warnings and binary path resolution issues.
+- **Video Preview**: Fix ASS renderer dependency on collapsed state.
+- **Reconciler**: Stop inheriting comment field after processing.
+- **Editor**: Reset auto-scroll when exiting filter mode, support CANCELLED status.
+
+### Refactor
+
+- **Electron**: Portable storage paths (config/logs in exe directory) and async hardware detection for faster startup.
+- **Pipeline**: Extract shared context to pipelineCore.ts, add ProofreadStep for future integration.
+- **Pipeline**: Simplify chunk processor architecture with new step-based design.
+- **Batch**: Split operations.ts into proofread.ts and regenerate.ts for cleaner separation.
+- **Prompts**: Remove fix_timestamps mode, simplify to refinement/translation/proofread only.
+- **Settings**: Migrate console logs to logger, split settings modal into modular components.
+- **Workspace**: Optimize auto-save and update data types for speaker profiles.
+
+### Chore
+
+- **i18n Checker**: Add --check-missing and --check-unused flags with improved detection.
+- **Config**: Increase subtitle max width (55→65) and min split width (10→20).
+- **Config**: Disable thinking level for cost optimization (can be re-enabled).
+- **OpenSpec**: Archive completed proposals and add permanent specs for batch operations.
+- **Build**: Update build system for git commit hash injection.
+
 ## [2.12.1] - 2026-01-08
 
 ### Features
