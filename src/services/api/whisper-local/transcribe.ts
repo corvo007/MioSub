@@ -84,7 +84,14 @@ export const transcribeWithLocalWhisper = async (
       translated: '',
     }));
   } catch (error: any) {
-    logger.error(`[LocalWhisper] Error: ${error.message}`);
+    logger.error('[LocalWhisper] Transcription failed', {
+      error: error.message,
+      code: error.code,
+      modelPath,
+      threads,
+      customBinaryPath,
+      blobSize: audioBlob.size,
+    });
     if (error instanceof WhisperLocalError) {
       throw error;
     }

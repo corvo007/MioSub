@@ -53,7 +53,11 @@
       "mcp__serena__list_memories",
       "Bash(npx openspec list)",
       "Bash(npx openspec list:*)",
-      "Bash(npx openspec validate:*)"
+      "Bash(npx openspec validate:*)",
+      "Bash(git -C \"D:\\\\onedrive\\\\codelab\\\\Gemini-Subtitle-Pro\" status)",
+      "Bash(git -C \"D:\\\\onedrive\\\\codelab\\\\Gemini-Subtitle-Pro\" diff --stat)",
+      "Bash(git -C \"D:\\\\onedrive\\\\codelab\\\\Gemini-Subtitle-Pro\" log --oneline -5)",
+      "Bash(git -C \"D:\\\\onedrive\\\\codelab\\\\Gemini-Subtitle-Pro\" diff src/services/generation/pipeline/chunkProcessor.ts)"
     ]
   },
   "hooks": {

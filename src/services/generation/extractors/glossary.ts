@@ -9,7 +9,7 @@ import { blobToBase64 } from '@/services/audio/converter';
 import { sliceAudioBuffer } from '@/services/audio/processor';
 import { mapInParallel } from '@/services/utils/concurrency';
 import { logger } from '@/services/utils/logger';
-import { GLOSSARY_SCHEMA, SAFETY_SETTINGS } from '@/services/api/gemini/core/schemas';
+import { GLOSSARY_SCHEMA } from '@/services/api/gemini/core/schemas';
 import {
   generateContentWithRetry,
   isRetryableError,
@@ -56,9 +56,7 @@ export const extractGlossaryFromAudio = async (
             parts: [{ inlineData: { mimeType: 'audio/wav', data: base64Audio } }, { text: prompt }],
           },
           config: {
-            responseMimeType: 'application/json',
             responseSchema: GLOSSARY_SCHEMA,
-            safetySettings: SAFETY_SETTINGS,
             ...buildStepConfig('glossaryExtraction'),
           },
         },

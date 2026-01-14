@@ -52,8 +52,11 @@ export async function extractAudioWithFFmpeg(
         customFfmpegPath = settings.debug.ffmpegPath;
         logger.info('Using custom FFmpeg path from settings:', customFfmpegPath);
       }
-    } catch (e) {
-      logger.warn('Failed to read settings for FFmpeg path:', e);
+    } catch (e: any) {
+      logger.warn('Failed to read settings for FFmpeg path', {
+        error: e.message,
+        code: e.code,
+      });
     }
 
     const options: AudioExtractionOptions = {
@@ -94,8 +97,11 @@ export async function extractAudioWithFFmpeg(
       try {
         await window.electronAPI.cleanupTempAudio(extractedAudioPath);
         logger.info('Temp audio cleaned up');
-      } catch (err) {
-        logger.warn('Failed to cleanup temp audio:', err);
+      } catch (err: any) {
+        logger.warn('Failed to cleanup temp audio', {
+          error: err.message,
+          path: extractedAudioPath,
+        });
       }
     }
   }
@@ -124,7 +130,12 @@ export async function smartDecodeAudio(
     logger.info('Attempting FFmpeg extraction...');
     return await extractAudioWithFFmpeg(file, onProgress);
   } catch (err: any) {
-    logger.warn('FFmpeg extraction failed, falling back to Web Audio API:', err.message);
+    logger.warn('FFmpeg extraction failed, falling back to Web Audio API', {
+      error: err.message,
+      code: err.code,
+      fileName: file.name,
+      fileSize: file.size,
+    });
     throw new Error('FFmpeg failed, use fallback');
   }
 }

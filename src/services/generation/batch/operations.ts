@@ -25,7 +25,7 @@ import {
   PROOFREAD_BATCH_SIZE,
 } from '@/services/api/gemini/core/schemas';
 import { generateContentWithLongOutput } from '@/services/api/gemini/core/client';
-import { STEP_MODELS, STEP_CONFIGS } from '@/config';
+import { STEP_MODELS, buildStepConfig } from '@/config';
 import { translateBatch } from '@/services/generation/pipeline/translation';
 import { UsageReporter } from '@/services/generation/pipeline/usageReporter';
 import { adjustTimestampOffset } from '@/services/generation/pipeline/resultTransformers';
@@ -151,9 +151,9 @@ async function processBatch(
     // Fix Timestamps / Retranslate -> Gemini Flash series model (Fast/Efficient)
     const model =
       mode === 'proofread' ? STEP_MODELS.batchProofread : STEP_MODELS.batchFixTimestamps;
-    const stepConfig =
-      mode === 'proofread' ? STEP_CONFIGS.batchProofread : STEP_CONFIGS.batchFixTimestamps;
-    const tools = stepConfig.useSearch ? [{ googleSearch: {} }] : undefined;
+    const stepConfig = buildStepConfig(
+      mode === 'proofread' ? 'batchProofread' : 'batchFixTimestamps'
+    );
 
     // Use the new Long Output handler
     const text = await generateContentWithLongOutput(
@@ -162,7 +162,7 @@ async function processBatch(
       systemInstruction,
       parts,
       settings.enableDiarization ? BATCH_WITH_DIARIZATION_SCHEMA : BATCH_SCHEMA, // Use strict schema if diarization enabled
-      tools, // Enable Search Grounding for proofread
+      stepConfig, // Pass complete step config (tools, thinking, maxOutputTokens)
       signal,
       onUsage,
       (settings.requestTimeout || 600) * 1000 // Custom timeout in milliseconds
