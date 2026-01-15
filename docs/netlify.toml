@@ -1,6 +1,6 @@
 [build]
   base = ".."
-  command = "yarn docs:build"
+  command = "git config --global url.\"https://github.com/\".insteadOf ssh://git@github.com/ && yarn docs:build"
   publish = "docs/.vitepress/dist"
   ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- docs/ package.json yarn.lock docs/netlify.toml"
 
