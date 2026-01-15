@@ -185,9 +185,9 @@ flowchart TB
 
         subgraph GENERATION_SVC["生成服务"]
             direction TB
-            PIPELINE["pipeline/<br/>index.ts (流程编排)<br/>chunkProcessor.ts"]
+            PIPELINE["pipeline/<br/>index.ts (流程编排)<br/>pipelineCore.ts<br/>steps/*.ts"]
             EXTRACTORS["extractors/<br/>glossary.ts<br/>speakerProfile.ts"]
-            BATCH_OPS["batch/<br/>operations.ts"]
+            BATCH_OPS["batch/<br/>proofread.ts<br/>regenerate.ts"]
         end
 
         subgraph AUDIO_SVC["音频服务"]
@@ -255,14 +255,15 @@ flowchart TB
         PRELOAD_SCRIPT["preload.ts<br/>安全桥接"]
 
         subgraph ELECTRON_SVC["桌面服务"]
-            LOCAL_WHISPER_SVC["localWhisper.ts (13KB)"]
+            LOCAL_WHISPER_SVC["localWhisper.ts (13KB)<br/>GPU 检测"]
             FFMPEG_SVC["ffmpegAudioExtractor.ts"]
-            COMPRESSOR_SVC["videoCompressor.ts"]
+            COMPRESSOR_SVC["videoCompressor.ts<br/>硬件加速"]
             YTDLP_SVC["ytdlp.ts"]
             PIPELINE_SVC["endToEndPipeline.ts<br/>全自动流水线"]
             PREVIEW_SVC["videoPreviewTranscoder.ts<br/>视频预览与缓存"]
-            STORAGE_SVC["storage.ts"]
-            LOGGER_SVC["logger.ts"]
+            STORAGE_SVC["storage.ts<br/>便携式存储"]
+            LOGGER_SVC["logger.ts<br/>JSON 视图"]
+            PATHS_UTIL["utils/paths.ts<br/>路径解析"]
         end
 
         MAIN_PROCESS --> ELECTRON_SVC
@@ -291,7 +292,7 @@ flowchart LR
     end
 
     subgraph CORE_DEPS["核心依赖"]
-        BATCH_OPS["generation/batch/operations.ts"]
+        BATCH_OPS["generation/batch/<br/>proofread.ts, regenerate.ts"]
         GEMINI_CLIENT["api/gemini/core/client.ts"]
         PROMPTS_TS["api/gemini/core/prompts.ts"]
         SCHEMAS_TS["api/gemini/core/schemas.ts"]
@@ -358,15 +359,18 @@ Gemini-Subtitle-Pro/
 │   │   ├── 📂 common/               # 通用业务组件 (Header, PageHeader 等)
 │   │   ├── 📂 editor/               # 字幕编辑器与视频预览组件
 │   │   │   ├── 📄 VideoPlayerPreview.tsx  # [NEW] 渐进式视频播放器，支持 ASS 字幕渲染
+│   │   │   ├── 📄 RegenerateModal.tsx     # [NEW] 批量重新生成模态框
 │   │   │   └── 📄 ...               # SubtitleRow, Batch 等
 │   │   ├── 📂 compression/          # [NEW] 视频压制页面组件
 │   │   │   ├── 📄 EncoderSelector.tsx # 编码器选择与配置
 │   │   │   └── 📄 ...
 │   │   ├── 📂 pages/                # 页面级组件 (HomePage, WorkspacePage 等)
 │   │   ├── 📂 ui/                   # 基础 UI 组件库 (Modal, Toggle, TextInput...)
-│   │   ├── 📂 settings/             # 设置相关组件 (SettingsModal, SettingsPanel 等)
+│   │   ├── 📂 settings/             # 设置相关组件
+│   │   │   ├── 📂 tabs/             # [NEW] 模块化设置面板 (GeneralTab, AboutTab 等)
+│   │   │   └── 📄 SettingsModal.tsx # 设置弹窗容器
 │   │   ├── 📂 layout/               # 布局容器
-│   │   ├── 📂 modals/               # 业务弹窗 (SettingsModal 等)
+│   │   ├── 📂 modals/               # 业务弹窗 (GlossaryConfirmationModal, SpeakerManagerModal 等)
 │   │   ├── 📂 endToEnd/             # 端到端向导组件
 │   │   └── 📂 ...                   # 其他按照功能划分的组件目录
 │   │
@@ -377,14 +381,17 @@ Gemini-Subtitle-Pro/
 │   │
 │   ├── 📂 locales/                  # [NEW] 国际化资源目录
 │   │   ├── 📂 zh-CN/                # 简体中文
-│   │   └── 📂 en-US/                # 英语
+│   │   ├── 📂 en-US/                # 英语
+│   │   └── 📂 ja-JP/                # 日语 (v2.13 新增)
 │   │
 │   ├── 📂 services/                 # 服务层 (纯逻辑)
 │   │   ├── 📂 api/                  # API 集成 (Gemini Core, OpenAI)
 │   │   ├── 📂 generation/           # 生成服务 (核心业务逻辑)
 │   │   │   ├── 📂 pipeline/         # 完整流水线 (Orchestrator, ChunkProcessor)
+│   │   │   │   ├── 📂 core/         # [NEW] 步骤基类与类型定义
+│   │   │   │   └── 📂 steps/        # [NEW] 步骤实现 (Transcription, Refinement, Alignment, Translation, Proofread)
 │   │   │   ├── 📂 extractors/       # 信息提取 (Glossary, Speaker)
-│   │   │   └── 📂 batch/            # 批量操作
+│   │   │   └── 📂 batch/            # 批量操作 (proofread.ts, regenerate.ts)
 │   │   ├── 📂 audio/                # 音频处理 (Segmenter, Sampler)
 │   │   ├── 📂 subtitle/             # 字幕解析与生成 (Parser, Generator)
 │   │   │   ├── 📄 reconciler.ts     # [NEW] 数据协调器 (数据枢纽)
@@ -413,10 +420,13 @@ Gemini-Subtitle-Pro/
 ├── 📂 electron/                     # Electron 桌面端代码
 │   ├── 📄 main.ts                   # 主进程入口
 │   ├── 📄 preload.ts                # 预加载脚本
+│   ├── 📄 logger.ts                 # 统一日志服务 (支持 JSON 视图)
+│   ├── 📂 utils/                    # [NEW] 工具模块
+│   │   └── 📄 paths.ts              # 便携式路径解析
 │   └── 📂 services/                 # 桌面服务 (Node.js 环境)
-│       ├── 📄 localWhisper.ts       # 本地 Whisper 调用
-│       ├── 📄 videoPreviewTranscoder.ts # [NEW] 视频预览与缓存
-│       ├── 📄 logger.ts             # 统一日志服务
+│       ├── 📄 localWhisper.ts       # 本地 Whisper 调用 (支持 GPU 检测)
+│       ├── 📄 videoPreviewTranscoder.ts # 视频预览与缓存
+│       ├── 📄 storage.ts            # 便携式存储服务
 │       └── ...                      # 其他系统级服务
 │
 └── 📄 package.json                  # 项目配置
@@ -630,6 +640,108 @@ sequenceDiagram
 
 ---
 
+### 3.5 Pipeline 步骤架构 (v2.13 新增)
+
+v2.13 引入了基于类的步骤架构，将 Chunk 处理逻辑模块化：
+
+```mermaid
+classDiagram
+    class BaseStep~TInput, TOutput~ {
+        <<abstract>>
+        #context: StepContext
+        #pipelineContext: PipelineContext
+        +execute(input: TInput) StepResult~TOutput~
+        #run(input: TInput)* TOutput
+        #shouldSkip(input: TInput) boolean
+        #getMockOutput(input: TInput) TOutput
+    }
+
+    class TranscriptionStep {
+        +run(input) SubtitleItem[]
+        -transcribeWithWhisper()
+    }
+
+    class WaitForDepsStep {
+        +run(input) WaitForDepsOutput
+        -awaitGlossary()
+        -awaitSpeakers()
+    }
+
+    class RefinementStep {
+        +run(input) SubtitleItem[]
+        -refineWithGemini()
+    }
+
+    class AlignmentStep {
+        +run(input) SubtitleItem[]
+        -alignWithCTC()
+    }
+
+    class TranslationStep {
+        +run(input) SubtitleItem[]
+        -translateWithGemini()
+    }
+
+    class ProofreadStep {
+        +run(input) SubtitleItem[]
+        -proofreadWithGemini()
+    }
+
+    BaseStep <|-- TranscriptionStep
+    BaseStep <|-- WaitForDepsStep
+    BaseStep <|-- RefinementStep
+    BaseStep <|-- AlignmentStep
+    BaseStep <|-- TranslationStep
+    BaseStep <|-- ProofreadStep
+```
+
+**步骤说明：**
+
+| 步骤                | 文件                   | 输入             | 输出                | 用途                       |
+| :------------------ | :--------------------- | :--------------- | :------------------ | :------------------------- |
+| `TranscriptionStep` | `TranscriptionStep.ts` | AudioChunk       | `SubtitleItem[]`    | Whisper 语音转文字         |
+| `WaitForDepsStep`   | `WaitForDepsStep.ts`   | -                | Glossary + Speakers | 等待术语表和说话人提取完成 |
+| `RefinementStep`    | `RefinementStep.ts`    | `SubtitleItem[]` | `SubtitleItem[]`    | 时间轴校正、术语应用       |
+| `AlignmentStep`     | `AlignmentStep.ts`     | `SubtitleItem[]` | `SubtitleItem[]`    | CTC 强制对齐               |
+| `TranslationStep`   | `TranslationStep.ts`   | `SubtitleItem[]` | `SubtitleItem[]`    | AI 翻译                    |
+| `ProofreadStep`     | `ProofreadStep.ts`     | `SubtitleItem[]` | `SubtitleItem[]`    | 批量校对 (可选)            |
+
+---
+
+### 3.6 批量操作对比 (v2.13 新增)
+
+v2.13 将批量操作拆分为两种独立模式：
+
+| 特性         | Proofread (校对)         | Regenerate (重新生成)                    |
+| :----------- | :----------------------- | :--------------------------------------- |
+| **文件**     | `batch/proofread.ts`     | `batch/regenerate.ts`                    |
+| **用途**     | 润色和校对已有翻译       | 完全重新处理选中片段                     |
+| **流程**     | 仅调用 Gemini Pro 校对   | 转录 → 润色 → 对齐 → 翻译 (完整流水线)   |
+| **输入**     | 已有的 `SubtitleItem[]`  | 原始音频 + 时间范围                      |
+| **保留内容** | 保留原始时间轴           | 全部重新生成                             |
+| **适用场景** | 改善翻译质量、修正错别字 | 修复转录错误、重新分句、更新术语表后重跑 |
+| **用户提示** | 不支持                   | 支持转录提示和翻译提示                   |
+| **模型**     | Gemini 3 Pro             | Whisper + Gemini Flash                   |
+
+```mermaid
+flowchart LR
+    subgraph PROOFREAD["校对模式 (Proofread)"]
+        P_IN["选中片段"] --> P_GEMINI["Gemini Pro<br/>校对润色"]
+        P_GEMINI --> P_OUT["校对后片段"]
+    end
+
+    subgraph REGENERATE["重新生成模式 (Regenerate)"]
+        R_IN["选中片段<br/>+ 时间范围"] --> R_AUDIO["提取音频片段"]
+        R_AUDIO --> R_TRANS["Whisper 转录"]
+        R_TRANS --> R_REFINE["Refinement"]
+        R_REFINE --> R_ALIGN["CTC 对齐"]
+        R_ALIGN --> R_TRANSLATE["Translation"]
+        R_TRANSLATE --> R_OUT["重新生成片段"]
+    end
+```
+
+---
+
 ### 4. 数据完整性与协调 ("数据枢纽")
 
 系统采用严格的 **数据协调策略** (`src/services/subtitle/reconciler.ts`) 以确保在流水线各个阶段（Refinement, Alignment, Translation）之间，即使片段数量发生变化（如拆分或合并），元数据也能保持一致。
@@ -780,7 +892,7 @@ flowchart LR
 
     subgraph COMPRESS["🎬 最终压制"]
         direction TB
-        LOCAL_FILE --> COMPRESSOR["视频压制引擎<br/>(FFmpeg)"]
+        LOCAL_FILE --> COMPRESSOR["视频压制引擎<br/>(FFmpeg + HW加速)"]
         EDIT -.-|"自动传递字幕路径"| COMPRESSOR
         SRT_ASS -.-|"手动选择字幕"| COMPRESSOR
 
@@ -967,16 +1079,20 @@ sequenceDiagram
 
 这是重构后的核心业务逻辑模块，将原有的 Gemini API 逻辑按职责拆分：
 
-| 子模块       | 文件/目录               | 功能描述                                                |
-| ------------ | ----------------------- | ------------------------------------------------------- |
-| `pipeline`   | `index.ts`              | 生成流程总管 (Orchestrator)，协调转写、提取、生成全流程 |
-|              | `chunkProcessor.ts`     | 单个 Chunk 的处理逻辑 (转写 -> 术语/说话人等待 -> 翻译) |
-|              | `translation.ts`        | 具体翻译执行逻辑                                        |
-|              | `glossaryHandler.ts`    | 术语应用逻辑                                            |
-|              | `resultTransformers.ts` | 结果转换与后处理逻辑                                    |
-| `extractors` | `glossary.ts`           | 术语提取器 (Gemini Pro + Search)                        |
-|              | `speakerProfile.ts`     | 说话人档案提取器                                        |
-| `batch`      | `operations.ts`         | 批量校对与时间轴修复操作                                |
+| 子模块       | 文件/目录               | 功能描述                                                                          |
+| ------------ | ----------------------- | --------------------------------------------------------------------------------- |
+| `pipeline`   | `index.ts`              | 生成流程总管 (Orchestrator)，协调转写、提取、生成全流程                           |
+|              | `pipelineCore.ts`       | **[NEW]** 共享上下文与依赖注入                                                    |
+|              | `chunkProcessor.ts`     | 单个 Chunk 的处理逻辑 (转写 -> 术语/说话人等待 -> 翻译)                           |
+|              | `translation.ts`        | 具体翻译执行逻辑                                                                  |
+|              | `glossaryHandler.ts`    | 术语应用逻辑                                                                      |
+|              | `resultTransformers.ts` | 结果转换与后处理逻辑                                                              |
+|              | `core/BaseStep.ts`      | **[NEW]** 步骤基类，定义统一接口                                                  |
+|              | `steps/*.ts`            | **[NEW]** 步骤实现 (Transcription, Refinement, Alignment, Translation, Proofread) |
+| `extractors` | `glossary.ts`           | 术语提取器 (Gemini Pro + Search)                                                  |
+|              | `speakerProfile.ts`     | 说话人档案提取器                                                                  |
+| `batch`      | `proofread.ts`          | **[NEW]** 批量校对操作                                                            |
+|              | `regenerate.ts`         | **[NEW]** 批量重新生成操作 (完整流水线重跑)                                       |
 
 ### 2. Gemini API 核心 (`src/services/api/gemini/core/`)
 
@@ -1019,17 +1135,19 @@ sequenceDiagram
 
 ### 6. Electron 桌面端 (`electron/`)
 
-| 文件                                 | 功能描述                                          |
-| ------------------------------------ | ------------------------------------------------- |
-| `main.ts`                            | Electron 主进程，窗口管理、IPC 通信               |
-| `preload.ts`                         | 预加载脚本，暴露安全的 Node.js API                |
-| `logger.ts`                          | **统一日志系统**，支持文件轮转和多级别日志        |
-| `services/localWhisper.ts`           | 本地 Whisper 模型调用 (whisper.cpp)               |
-| `services/ffmpegAudioExtractor.ts`   | FFmpeg 音频提取，支持视频文件                     |
-| `services/ytdlp.ts`                  | 视频下载服务 (YouTube/Bilibili)                   |
-| `services/videoCompressor.ts`        | 视频压制服务 (支持 GPU 加速)                      |
-| `services/videoPreviewTranscoder.ts` | **[NEW] 视频预览转码**，fMP4 渐进式播放、缓存管理 |
-| `services/endToEndPipeline.ts`       | **全自动流水线**，编排下载-转写-压制全流程        |
+| 文件                                 | 功能描述                                              |
+| ------------------------------------ | ----------------------------------------------------- |
+| `main.ts`                            | Electron 主进程，窗口管理、IPC 通信                   |
+| `preload.ts`                         | 预加载脚本，暴露安全的 Node.js API                    |
+| `logger.ts`                          | **统一日志系统**，支持文件轮转、JSON 视图和多级别日志 |
+| `utils/paths.ts`                     | **[NEW]** 便携式路径解析，支持 exe 同级目录存储       |
+| `services/localWhisper.ts`           | 本地 Whisper 模型调用 (whisper.cpp)，支持 GPU 检测    |
+| `services/ffmpegAudioExtractor.ts`   | FFmpeg 音频提取，支持视频文件                         |
+| `services/ytdlp.ts`                  | 视频下载服务 (YouTube/Bilibili)                       |
+| `services/videoCompressor.ts`        | 视频压制服务 (支持 NVENC/QSV/AMF 硬件加速)            |
+| `services/videoPreviewTranscoder.ts` | **视频预览转码**，fMP4 渐进式播放、缓存管理           |
+| `services/endToEndPipeline.ts`       | **全自动流水线**，编排下载-转写-压制全流程            |
+| `services/storage.ts`                | 便携式存储服务，配置和日志存储在 exe 同级目录         |
 
 ### 7. 国际化模块 (`src/locales/`, `src/i18n.ts`) [NEW]
 
@@ -1041,6 +1159,7 @@ sequenceDiagram
 | `locales/` | 翻译资源根目录                               |
 | `zh-CN/`   | 简体中文翻译，包含 14 个命名空间文件         |
 | `en-US/`   | 英文翻译，与 zh-CN 结构相同                  |
+| `ja-JP/`   | 日语翻译，与 zh-CN 结构相同 (v2.13 新增)     |
 
 **命名空间组织：**
 
@@ -1059,6 +1178,33 @@ sequenceDiagram
 | `progress`    | 进度指示器                  |
 | `ui`          | UI 组件                     |
 | `app`         | 应用级文本                  |
+
+---
+
+### 8. 设置模块 (`src/components/settings/`) [v2.13 重构]
+
+v2.13 将设置面板重构为模块化 tabs 结构：
+
+| 文件/目录                  | 功能描述                                          |
+| -------------------------- | ------------------------------------------------- |
+| `SettingsModal.tsx`        | 设置弹窗容器，管理 tab 切换                       |
+| `tabs/GeneralTab.tsx`      | 常规设置 (语言、主题等)                           |
+| `tabs/ServicesTab.tsx`     | API 服务配置 (Gemini、OpenAI 密钥)                |
+| `tabs/EnhanceTab.tsx`      | 增强功能 (术语提取、说话人识别开关)               |
+| `tabs/PerformanceTab.tsx`  | 性能设置 (并发数、缓存等)                         |
+| `tabs/DebugTab.tsx`        | 调试选项 (Mock 模式、日志级别)                    |
+| `tabs/AboutTab.tsx`        | **[NEW]** 关于页面 (版本、Whisper 状态、GPU 检测) |
+| `AlignmentSettings.tsx`    | 对齐服务配置                                      |
+| `LocalWhisperSettings.tsx` | 本地 Whisper 配置                                 |
+| `CacheManagement.tsx`      | 缓存管理 UI                                       |
+
+**关于页面 (AboutTab) 功能：**
+
+- 显示应用版本和构建信息
+- 本地 Whisper 状态检测
+- GPU 硬件加速检测 (NVENC/QSV/AMF)
+- 日志文件路径和查看入口
+- 系统信息概览
 
 ---
 
@@ -1090,7 +1236,8 @@ await mapInParallel(chunks, async (chunk) => {
 | `glossaryExtraction` | Gemini 3 Pro Preview   | 多模态、术语提取                 |
 | `speakerProfile`     | Gemini 3 Pro Preview   | 说话人分析                       |
 | `batchProofread`     | Gemini 3 Pro Preview   | 高质量校对、Search Grounding     |
-| `batchFixTimestamps` | Gemini 2.5 Flash       | 时间轴修复                       |
+
+> **注意**: v2.13 起，`batchFixTimestamps` 已被 `regenerate` 操作取代。重新生成会重跑完整流水线（转录→润色→对齐→翻译）。
 
 每个步骤可独立配置：
 

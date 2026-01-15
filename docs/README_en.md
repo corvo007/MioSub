@@ -10,19 +10,20 @@
 
 Open-source subtitle tools on the market each have their focuses, but often have shortcomings in certain areas: timeline alignment requires manual adjustment, or proper noun translation is inaccurate without a glossary.
 
-| Feature                              | Description                                                                                        |
-| :----------------------------------- | :------------------------------------------------------------------------------------------------- |
-| 🎧 **Auto Glossary Extraction**      | Intelligently extracts proper nouns from audio, verifying standard translations with Google Search |
-| ⚡ **Long Context Translation**      | Splits by semantics into 5-10 minute segments, retaining full context for translation              |
-| 💎 **Post-Transcription Processing** | Smart sentence splitting, timeline correction, and term replacement in one go                      |
-| 🎯 **Forced Alignment**              | High-precision timeline alignment based on CTC technology, supporting millisecond-level accuracy   |
-| 🗣️ **Speaker Recognition**           | Automatically infers and labels multiple speakers' identities                                      |
-| 🧠 **Smart Concurrency**             | Dynamically adjusts concurrency based on models; ~8-10 mins to process a 30 min video              |
-| 🚀 **Full Auto Mode**                | Input a video link to automatically complete download, transcription, translation, and encoding    |
-| 📺 **WYSIWYG Preview**               | Real-time subtitle rendering using `assjs` for accurate style representation (font, color, etc.)   |
-| 🎬 **Video Download**                | Supports YouTube / Bilibili video download (Desktop version)                                       |
-| ✂️ **Video Encoding**                | Built-in FFmpeg, supporting H.264/H.265 encoding and subtitle burning (Desktop version)            |
-| 📦 **Other Features**                | Bilingual SRT/ASS export, version snapshots, custom API endpoints, cache management                |
+| Feature                              | Description                                                                                                                        |
+| :----------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------- |
+| 🎧 **Auto Glossary Extraction**      | Intelligently extracts proper nouns from audio, verifying standard translations with Google Search                                 |
+| ⚡ **Long Context Translation**      | Splits by semantics into 5-10 minute segments, retaining full context for translation                                              |
+| 💎 **Post-Transcription Processing** | Smart sentence splitting, timeline correction, and term replacement in one go                                                      |
+| 🎯 **Forced Alignment**              | High-precision timeline alignment based on CTC technology, supporting millisecond-level accuracy                                   |
+| 🗣️ **Speaker Recognition**           | Automatically infers and labels multiple speakers, with custom color editing and merge support                                     |
+| 🧠 **Smart Concurrency**             | Dynamically adjusts concurrency based on models; ~8-10 mins to process a 30 min video                                              |
+| 🚀 **Full Auto Mode**                | Input a video link to automatically complete download, transcription, translation, and encoding                                    |
+| 📺 **WYSIWYG Preview**               | Real-time subtitle rendering using `assjs` for accurate style representation (font, color, etc.)                                   |
+| 🔄 **Batch Regenerate**              | One-click full pipeline re-run (transcription → refinement → alignment → translation) on selected segments                         |
+| 🎬 **Video Download**                | Supports YouTube / Bilibili video download (Desktop version)                                                                       |
+| ✂️ **Video Encoding**                | Built-in FFmpeg with hardware acceleration (NVENC/QSV/AMF), supporting H.264/H.265 encoding and subtitle burning (Desktop version) |
+| 📦 **Other Features**                | Bilingual SRT/ASS export, version snapshots, custom API endpoints, cache management, log viewer                                    |
 
 ---
 
@@ -118,6 +119,8 @@ We provide auto-built installation packages so you can use it directly without c
 
 **Function Description**: Automatically infers speaker identity, name, etc., based on context, automatically labeling different speakers (Hina Yomiya, Rin Tateishi, Hina Aoki, Mika Kohinata, Coco Hayashi, ...).
 
+**New in v2.13**: Speaker Manager now supports custom color editing and speaker merging for better organization.
+
 **Applicable Scenarios**:
 
 - Multi-person dialogue scenarios (interviews, radio)
@@ -135,6 +138,25 @@ We provide auto-built installation packages so you can use it directly without c
 - Gemini 3 Pro: Concurrency 2 (Avoid limits)
 
 **Effect**: A 30-minute video is processed in about 8-10 minutes.
+
+---
+
+### 🔄 Batch Regenerate (New in v2.13)
+
+**Problem Solved**: Previously, fixing problematic segments required manually re-running the entire pipeline or using limited "Fix Timestamps" functionality.
+
+**Function Description**: Select any subtitle segments and trigger a complete pipeline re-run with optional user hints:
+
+1. **Re-transcription**: Fresh Whisper transcription of the audio segment
+2. **Refinement**: Apply glossary terms and sentence splitting
+3. **Alignment**: CTC forced alignment for precise timestamps
+4. **Translation**: Context-aware translation with your glossary
+
+**Use Cases**:
+
+- Fix segments with transcription errors
+- Improve translations with additional context hints
+- Re-process segments after updating glossary terms
 
 ---
 
@@ -191,7 +213,8 @@ Built-in FFmpeg engine, supporting high-performance video encoding and subtitle 
 
 | Feature                | Description                                                        |
 | :--------------------- | :----------------------------------------------------------------- |
-| **Encoder**            | H.264 (AVC) / H.265 (HEVC)                                         |
+| **Encoder**            | H.264 (AVC) / H.265 (HEVC) with hardware acceleration              |
+| **Hardware Accel**     | Auto-detects NVIDIA NVENC, Intel QSV, AMD AMF                      |
 | **Quality Control**    | CRF mode (0-51, smaller value means higher quality)                |
 | **Resolution**         | Original / 1080P / 720P / 480P / Custom                            |
 | **Subtitle Embedding** | Supports local ASS/SRT files or direct use of workspace subtitles  |

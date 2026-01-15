@@ -185,9 +185,9 @@ flowchart TB
 
         subgraph GENERATION_SVC["Generation Services"]
             direction TB
-            PIPELINE["pipeline/<br/>index.ts (Orchestrator)<br/>chunkProcessor.ts"]
+            PIPELINE["pipeline/<br/>index.ts (Orchestrator)<br/>pipelineCore.ts<br/>steps/*.ts"]
             EXTRACTORS["extractors/<br/>glossary.ts<br/>speakerProfile.ts"]
-            BATCH_OPS["batch/<br/>operations.ts"]
+            BATCH_OPS["batch/<br/>proofread.ts<br/>regenerate.ts"]
         end
 
         subgraph AUDIO_SVC["Audio Services"]
@@ -255,14 +255,15 @@ flowchart TB
         PRELOAD_SCRIPT["preload.ts<br/>Security Bridge"]
 
         subgraph ELECTRON_SVC["Desktop Services"]
-            LOCAL_WHISPER_SVC["localWhisper.ts (13KB)"]
+            LOCAL_WHISPER_SVC["localWhisper.ts (13KB)<br/>GPU Detection"]
             FFMPEG_SVC["ffmpegAudioExtractor.ts"]
-            COMPRESSOR_SVC["videoCompressor.ts"]
+            COMPRESSOR_SVC["videoCompressor.ts<br/>HW Acceleration"]
             YTDLP_SVC["ytdlp.ts"]
             PIPELINE_SVC["endToEndPipeline.ts<br/>Full Auto Pipeline"]
             PREVIEW_SVC["videoPreviewTranscoder.ts<br/>Video Preview & Caching"]
-            STORAGE_SVC["storage.ts"]
-            LOGGER_SVC["logger.ts"]
+            STORAGE_SVC["storage.ts<br/>Portable Storage"]
+            LOGGER_SVC["logger.ts<br/>JSON View"]
+            PATHS_UTIL["utils/paths.ts<br/>Path Resolution"]
         end
 
         MAIN_PROCESS --> ELECTRON_SVC
@@ -291,7 +292,7 @@ flowchart LR
     end
 
     subgraph CORE_DEPS["Core Dependencies"]
-        BATCH_OPS["generation/batch/operations.ts"]
+        BATCH_OPS["generation/batch/<br/>proofread.ts, regenerate.ts"]
         GEMINI_CLIENT["api/gemini/core/client.ts"]
         PROMPTS_TS["api/gemini/core/prompts.ts"]
         SCHEMAS_TS["api/gemini/core/schemas.ts"]
@@ -358,15 +359,18 @@ Gemini-Subtitle-Pro/
 │   │   ├── 📂 common/               # Common Business Components (Header, PageHeader, etc.)
 │   │   ├── 📂 editor/               # Subtitle Editor & Video Preview Components
 │   │   │   ├── 📄 VideoPlayerPreview.tsx  # [NEW] Progressive Video Player with ASS Rendering
+│   │   │   ├── 📄 RegenerateModal.tsx     # [NEW] Batch Regenerate Modal
 │   │   │   └── 📄 ...               # SubtitleRow, Batch, etc.
 │   │   ├── 📂 compression/          # [NEW] Video Compression Page Components
 │   │   │   ├── 📄 EncoderSelector.tsx # Encoder Selection & Config
 │   │   │   └── 📄 ...
 │   │   ├── 📂 pages/                # Page-level Components (HomePage, WorkspacePage, etc.)
 │   │   ├── 📂 ui/                   # Base UI Component Library (Modal, Toggle, TextInput...)
-│   │   ├── 📂 settings/             # Settings-related Components (SettingsModal, etc.)
+│   │   ├── 📂 settings/             # Settings-related Components
+│   │   │   ├── 📂 tabs/             # [NEW] Modular Settings Panels (GeneralTab, AboutTab, etc.)
+│   │   │   └── 📄 SettingsModal.tsx # Settings Modal Container
 │   │   ├── 📂 layout/               # Layout Containers
-│   │   ├── 📂 modals/               # Business Modals
+│   │   ├── 📂 modals/               # Business Modals (GlossaryConfirmationModal, SpeakerManagerModal, etc.)
 │   │   ├── 📂 endToEnd/             # End-to-End Wizard Components
 │   │   └── 📂 ...                   # Other feature-divided component directories
 │   │
@@ -377,14 +381,17 @@ Gemini-Subtitle-Pro/
 │   │
 │   ├── 📂 locales/                  # [NEW] Internationalization Resources
 │   │   ├── 📂 zh-CN/                # Chinese (Simplified)
-│   │   └── 📂 en-US/                # English
+│   │   ├── 📂 en-US/                # English
+│   │   └── 📂 ja-JP/                # Japanese (New in v2.13)
 │   │
 │   ├── 📂 services/                 # Service Layer (Pure Logic)
 │   │   ├── 📂 api/                  # API Integration
 │   │   ├── 📂 generation/           # Generation Services (Core Business Logic)
 │   │   │   ├── 📂 pipeline/         # Complete Pipeline
+│   │   │   │   ├── 📂 core/         # [NEW] Base step class and type definitions
+│   │   │   │   └── 📂 steps/        # [NEW] Step implementations (Transcription, Refinement, Alignment, Translation, Proofread)
 │   │   │   ├── 📂 extractors/       # Information Extraction
-│   │   │   └── 📂 batch/            # Batch Operations
+│   │   │   └── 📂 batch/            # Batch Operations (proofread.ts, regenerate.ts)
 │   │   ├── 📂 audio/                # Audio Processing
 │   │   ├── 📂 subtitle/             # Subtitle Parsing and Generation
 │   │   │   ├── 📄 reconciler.ts     # [NEW] Data Reconciler (Data Hub)
@@ -411,10 +418,13 @@ Gemini-Subtitle-Pro/
 ├── 📂 electron/                     # Electron Desktop Code
 │   ├── 📄 main.ts                   # Main Process Entry
 │   ├── 📄 preload.ts                # Preload Script
+│   ├── 📄 logger.ts                 # Unified Logging Service (with JSON View)
+│   ├── 📂 utils/                    # [NEW] Utility Modules
+│   │   └── 📄 paths.ts              # Portable path resolution
 │   └── 📂 services/                 # Desktop Services (Node.js Env)
-│       ├── 📄 localWhisper.ts       # Local Whisper Call
-│       ├── 📄 videoPreviewTranscoder.ts # [NEW] Video Preview & Caching
-│       ├── 📄 logger.ts             # Unified Logging Service
+│       ├── 📄 localWhisper.ts       # Local Whisper Call (with GPU Detection)
+│       ├── 📄 videoPreviewTranscoder.ts # Video Preview & Caching
+│       ├── 📄 storage.ts            # Portable storage service
 │       └── ...                      # Other System-level Services
 │
 └── 📄 package.json                  # Project Config
@@ -628,6 +638,108 @@ sequenceDiagram
 
 ---
 
+### 3.5 Pipeline Step Architecture (New in v2.13)
+
+v2.13 introduces a class-based step architecture, modularizing Chunk processing logic:
+
+```mermaid
+classDiagram
+    class BaseStep~TInput, TOutput~ {
+        <<abstract>>
+        #context: StepContext
+        #pipelineContext: PipelineContext
+        +execute(input: TInput) StepResult~TOutput~
+        #run(input: TInput)* TOutput
+        #shouldSkip(input: TInput) boolean
+        #getMockOutput(input: TInput) TOutput
+    }
+
+    class TranscriptionStep {
+        +run(input) SubtitleItem[]
+        -transcribeWithWhisper()
+    }
+
+    class WaitForDepsStep {
+        +run(input) WaitForDepsOutput
+        -awaitGlossary()
+        -awaitSpeakers()
+    }
+
+    class RefinementStep {
+        +run(input) SubtitleItem[]
+        -refineWithGemini()
+    }
+
+    class AlignmentStep {
+        +run(input) SubtitleItem[]
+        -alignWithCTC()
+    }
+
+    class TranslationStep {
+        +run(input) SubtitleItem[]
+        -translateWithGemini()
+    }
+
+    class ProofreadStep {
+        +run(input) SubtitleItem[]
+        -proofreadWithGemini()
+    }
+
+    BaseStep <|-- TranscriptionStep
+    BaseStep <|-- WaitForDepsStep
+    BaseStep <|-- RefinementStep
+    BaseStep <|-- AlignmentStep
+    BaseStep <|-- TranslationStep
+    BaseStep <|-- ProofreadStep
+```
+
+**Step Descriptions:**
+
+| Step                | File                   | Input            | Output              | Purpose                                  |
+| :------------------ | :--------------------- | :--------------- | :------------------ | :--------------------------------------- |
+| `TranscriptionStep` | `TranscriptionStep.ts` | AudioChunk       | `SubtitleItem[]`    | Whisper speech-to-text                   |
+| `WaitForDepsStep`   | `WaitForDepsStep.ts`   | -                | Glossary + Speakers | Wait for glossary and speaker extraction |
+| `RefinementStep`    | `RefinementStep.ts`    | `SubtitleItem[]` | `SubtitleItem[]`    | Timeline correction, apply glossary      |
+| `AlignmentStep`     | `AlignmentStep.ts`     | `SubtitleItem[]` | `SubtitleItem[]`    | CTC forced alignment                     |
+| `TranslationStep`   | `TranslationStep.ts`   | `SubtitleItem[]` | `SubtitleItem[]`    | AI translation                           |
+| `ProofreadStep`     | `ProofreadStep.ts`     | `SubtitleItem[]` | `SubtitleItem[]`    | Batch proofreading (optional)            |
+
+---
+
+### 3.6 Batch Operations Comparison (New in v2.13)
+
+v2.13 splits batch operations into two independent modes:
+
+| Feature        | Proofread                                  | Regenerate                                                         |
+| :------------- | :----------------------------------------- | :----------------------------------------------------------------- |
+| **File**       | `batch/proofread.ts`                       | `batch/regenerate.ts`                                              |
+| **Purpose**    | Polish and proofread existing translations | Completely reprocess selected segments                             |
+| **Pipeline**   | Gemini Pro proofreading only               | Transcribe → Refine → Align → Translate (full pipeline)            |
+| **Input**      | Existing `SubtitleItem[]`                  | Raw audio + time range                                             |
+| **Preserved**  | Original timeline preserved                | Everything regenerated                                             |
+| **Use Cases**  | Improve translation quality, fix typos     | Fix transcription errors, re-segment, re-run after glossary update |
+| **User Hints** | Not supported                              | Supports transcription and translation hints                       |
+| **Model**      | Gemini 3 Pro                               | Whisper + Gemini Flash                                             |
+
+```mermaid
+flowchart LR
+    subgraph PROOFREAD["Proofread Mode"]
+        P_IN["Selected Segments"] --> P_GEMINI["Gemini Pro<br/>Proofreading"]
+        P_GEMINI --> P_OUT["Proofread Segments"]
+    end
+
+    subgraph REGENERATE["Regenerate Mode"]
+        R_IN["Selected Segments<br/>+ Time Range"] --> R_AUDIO["Extract Audio"]
+        R_AUDIO --> R_TRANS["Whisper Transcribe"]
+        R_TRANS --> R_REFINE["Refinement"]
+        R_REFINE --> R_ALIGN["CTC Alignment"]
+        R_ALIGN --> R_TRANSLATE["Translation"]
+        R_TRANSLATE --> R_OUT["Regenerated Segments"]
+    end
+```
+
+---
+
 ### 4. Data Integrity & Reconciliation (The "Data Hub")
 
 The system employs a rigorous **Data Reconciliation Strategy** (`src/services/subtitle/reconciler.ts`) to ensure metadata persistence across the pipeline matches (Refinement, Alignment, Translation), even when the number of segments changes due to splitting or merging.
@@ -778,7 +890,7 @@ flowchart LR
 
     subgraph COMPRESS["🎬 Final Encoding"]
         direction TB
-        LOCAL_FILE --> COMPRESSOR["Video Encoding Engine<br/>(FFmpeg)"]
+        LOCAL_FILE --> COMPRESSOR["Video Encoding Engine<br/>(FFmpeg + HW Accel)"]
         EDIT -.-|"Auto Pass Subtitle Path"| COMPRESSOR
         SRT_ASS -.-|"Manually Select Subtitle"| COMPRESSOR
 
@@ -965,16 +1077,20 @@ sequenceDiagram
 
 This is the refactored core business logic module, splitting the original Gemini API logic by responsibility:
 
-| Submodule    | File/Directory          | Function Description                                                                      |
-| :----------- | :---------------------- | :---------------------------------------------------------------------------------------- |
-| `pipeline`   | `index.ts`              | Generation Flow Orchestrator, Coordinates Transcription, Extraction, Generation Full Flow |
-|              | `chunkProcessor.ts`     | Single Chunk Processing Logic (Transcribe -> Wait Glossary/Speaker -> Translate)          |
-|              | `translation.ts`        | Specific Translation Execution Logic                                                      |
-|              | `glossaryHandler.ts`    | Glossary Application Logic                                                                |
-|              | `resultTransformers.ts` | Result Transformation and Post-processing Logic                                           |
-| `extractors` | `glossary.ts`           | Glossary Extractor (Gemini Pro + Search)                                                  |
-|              | `speakerProfile.ts`     | Speaker Profile Extractor                                                                 |
-| `batch`      | `operations.ts`         | Batch Proofreading and Timeline Fix Operations                                            |
+| Submodule    | File/Directory          | Function Description                                                                          |
+| :----------- | :---------------------- | :-------------------------------------------------------------------------------------------- |
+| `pipeline`   | `index.ts`              | Generation Flow Orchestrator, Coordinates Transcription, Extraction, Generation Full Flow     |
+|              | `pipelineCore.ts`       | **[NEW]** Shared context and dependency injection                                             |
+|              | `chunkProcessor.ts`     | Single Chunk Processing Logic (Transcribe -> Wait Glossary/Speaker -> Translate)              |
+|              | `translation.ts`        | Specific Translation Execution Logic                                                          |
+|              | `glossaryHandler.ts`    | Glossary Application Logic                                                                    |
+|              | `resultTransformers.ts` | Result Transformation and Post-processing Logic                                               |
+|              | `core/BaseStep.ts`      | **[NEW]** Base step class, defines unified interface                                          |
+|              | `steps/*.ts`            | **[NEW]** Step implementations (Transcription, Refinement, Alignment, Translation, Proofread) |
+| `extractors` | `glossary.ts`           | Glossary Extractor (Gemini Pro + Search)                                                      |
+|              | `speakerProfile.ts`     | Speaker Profile Extractor                                                                     |
+| `batch`      | `proofread.ts`          | **[NEW]** Batch proofreading operations                                                       |
+|              | `regenerate.ts`         | **[NEW]** Batch regenerate operations (full pipeline re-run)                                  |
 
 ### 2. Gemini API Core (`src/services/api/gemini/core/`)
 
@@ -1017,17 +1133,19 @@ Retains only the most basic API interaction capabilities:
 
 ### 6. Electron Desktop (`electron/`)
 
-| File                                 | Function Description                                                                 |
-| :----------------------------------- | :----------------------------------------------------------------------------------- |
-| `main.ts`                            | Electron Main Process, Window Management, IPC Communication                          |
-| `preload.ts`                         | Preload Script, Exposes Secure Node.js API                                           |
-| `logger.ts`                          | **Unified Logging System**, Supports File Rotation and Multi-level Logs              |
-| `services/localWhisper.ts`           | Local Whisper Model Call (whisper.cpp)                                               |
-| `services/ffmpegAudioExtractor.ts`   | FFmpeg Audio Extraction, Supports Video Files                                        |
-| `services/ytdlp.ts`                  | Video Download Service (YouTube/Bilibili)                                            |
-| `services/videoCompressor.ts`        | Video Encoding Service (Supports GPU Acceleration)                                   |
-| `services/videoPreviewTranscoder.ts` | **[NEW] Video Preview Transcoding**, fMP4 for progressive playback, cache management |
-| `services/endToEndPipeline.ts`       | **Full Auto Pipeline**, Orchestrates Download-Transcribe-Encode Full Flow            |
+| File                                 | Function Description                                                                |
+| :----------------------------------- | :---------------------------------------------------------------------------------- |
+| `main.ts`                            | Electron Main Process, Window Management, IPC Communication                         |
+| `preload.ts`                         | Preload Script, Exposes Secure Node.js API                                          |
+| `logger.ts`                          | **Unified Logging System**, Supports File Rotation, JSON View, and Multi-level Logs |
+| `utils/paths.ts`                     | **[NEW]** Portable path resolution, supports exe-relative storage                   |
+| `services/localWhisper.ts`           | Local Whisper Model Call (whisper.cpp), with GPU detection                          |
+| `services/ffmpegAudioExtractor.ts`   | FFmpeg Audio Extraction, Supports Video Files                                       |
+| `services/ytdlp.ts`                  | Video Download Service (YouTube/Bilibili)                                           |
+| `services/videoCompressor.ts`        | Video Encoding Service (Supports NVENC/QSV/AMF Hardware Acceleration)               |
+| `services/videoPreviewTranscoder.ts` | **Video Preview Transcoding**, fMP4 for progressive playback, cache management      |
+| `services/endToEndPipeline.ts`       | **Full Auto Pipeline**, Orchestrates Download-Transcribe-Encode Full Flow           |
+| `services/storage.ts`                | Portable storage service, config and logs stored in exe-relative directory          |
 
 ### 7. Internationalization Module (`src/locales/`, `src/i18n.ts`) [NEW]
 
@@ -1039,6 +1157,7 @@ Full i18n support powered by i18next, enabling bilingual UI (Chinese/English):
 | `locales/`     | Translation Resources Root Directory                              |
 | `zh-CN/`       | Chinese (Simplified) translations, 14 namespace files             |
 | `en-US/`       | English translations, mirrors zh-CN structure                     |
+| `ja-JP/`       | Japanese translations, mirrors zh-CN structure (New in v2.13)     |
 
 **Namespace Organization:**
 
@@ -1057,6 +1176,33 @@ Full i18n support powered by i18next, enabling bilingual UI (Chinese/English):
 | `progress`    | Progress indicators                    |
 | `ui`          | UI components                          |
 | `app`         | App-level texts                        |
+
+---
+
+### 8. Settings Module (`src/components/settings/`) [Refactored in v2.13]
+
+v2.13 refactors the settings panel into a modular tabs structure:
+
+| File/Directory             | Function Description                                          |
+| :------------------------- | :------------------------------------------------------------ |
+| `SettingsModal.tsx`        | Settings modal container, manages tab switching               |
+| `tabs/GeneralTab.tsx`      | General settings (language, theme, etc.)                      |
+| `tabs/ServicesTab.tsx`     | API service config (Gemini, OpenAI keys)                      |
+| `tabs/EnhanceTab.tsx`      | Enhancement features (glossary, speaker toggles)              |
+| `tabs/PerformanceTab.tsx`  | Performance settings (concurrency, cache, etc.)               |
+| `tabs/DebugTab.tsx`        | Debug options (mock mode, log level)                          |
+| `tabs/AboutTab.tsx`        | **[NEW]** About page (version, Whisper status, GPU detection) |
+| `AlignmentSettings.tsx`    | Alignment service configuration                               |
+| `LocalWhisperSettings.tsx` | Local Whisper configuration                                   |
+| `CacheManagement.tsx`      | Cache management UI                                           |
+
+**About Page (AboutTab) Features:**
+
+- Display app version and build info
+- Local Whisper status detection
+- GPU hardware acceleration detection (NVENC/QSV/AMF)
+- Log file path and viewer entry
+- System information overview
 
 ---
 
@@ -1088,7 +1234,8 @@ Model configuration is centralized in `src/config/models.ts`, supporting differe
 | `glossaryExtraction` | Gemini 3 Pro Preview   | Multimodal, Term Extraction                    |
 | `speakerProfile`     | Gemini 3 Pro Preview   | Speaker Analysis                               |
 | `batchProofread`     | Gemini 3 Pro Preview   | High Quality Proofreading, Search Grounding    |
-| `batchFixTimestamps` | Gemini 2.5 Flash       | Timeline Fix                                   |
+
+> **Note**: As of v2.13, `batchFixTimestamps` has been replaced by the `regenerate` operation. Regenerate re-runs the full pipeline (transcription → refinement → alignment → translation).
 
 Each step can be independently configured:
 
