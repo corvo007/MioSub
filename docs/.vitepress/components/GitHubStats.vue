@@ -127,5 +127,11 @@ onMounted(async () => {
   height: 12px;
   fill: currentColor;
 }
+
+@media (max-width: 768px) {
+  .info-container {
+    display: none;
+  }
+}
 </style>
 
