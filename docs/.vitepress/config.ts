@@ -1,6 +1,8 @@
 import { defineConfig } from 'vitepress';
 import { withMermaid } from 'vitepress-plugin-mermaid';
 
+const SITE_URL = 'https://aisub.netlify.app';
+
 export default withMermaid(
   defineConfig({
     title: 'Gemini Subtitle Pro',
@@ -8,7 +10,73 @@ export default withMermaid(
     srcExclude: ['plans/**'],
     cleanUrls: true,
 
-    head: [['link', { rel: 'icon', href: '/icon.png' }]],
+    // SEO: Sitemap generation
+    sitemap: {
+      hostname: SITE_URL,
+    },
+
+    head: [
+      ['link', { rel: 'icon', href: '/icon.png' }],
+      // SEO: Basic meta tags
+      ['meta', { name: 'author', content: 'Corvo007' }],
+      [
+        'meta',
+        {
+          name: 'keywords',
+          content:
+            'subtitle, AI, Gemini, transcription, translation, speaker recognition, 字幕, 翻译, 转写',
+        },
+      ],
+      // Open Graph
+      ['meta', { property: 'og:type', content: 'website' }],
+      ['meta', { property: 'og:site_name', content: 'Gemini Subtitle Pro' }],
+      ['meta', { property: 'og:image', content: `${SITE_URL}/icon.png` }],
+      // Twitter Card
+      ['meta', { name: 'twitter:card', content: 'summary' }],
+      ['meta', { name: 'twitter:image', content: `${SITE_URL}/icon.png` }],
+    ],
+
+    // SEO/GEO: Dynamic meta tags per page
+    transformPageData(pageData) {
+      const canonicalUrl = `${SITE_URL}/${pageData.relativePath}`
+        .replace(/index\.md$/, '')
+        .replace(/\.md$/, '');
+
+      const isEnglish = pageData.relativePath.startsWith('en/');
+      const pageTitle = pageData.title || 'Gemini Subtitle Pro';
+      const siteTitle = 'Gemini Subtitle Pro';
+      const fullTitle =
+        pageData.frontmatter.layout === 'home' ? siteTitle : `${pageTitle} | ${siteTitle}`;
+
+      const description = isEnglish
+        ? 'AI-powered professional subtitle generation with auto glossary, speaker recognition, and millisecond alignment.'
+        : '专业级 AI 字幕生成工具，支持术语自动提取、说话人识别、毫秒级对齐。';
+
+      pageData.frontmatter.head ??= [];
+      pageData.frontmatter.head.push(
+        ['link', { rel: 'canonical', href: canonicalUrl }],
+        ['meta', { property: 'og:title', content: fullTitle }],
+        ['meta', { property: 'og:description', content: description }],
+        ['meta', { property: 'og:url', content: canonicalUrl }],
+        ['meta', { name: 'twitter:title', content: fullTitle }],
+        ['meta', { name: 'twitter:description', content: description }]
+      );
+
+      // hreflang for i18n
+      if (isEnglish) {
+        const zhUrl = canonicalUrl.replace('/en/', '/');
+        pageData.frontmatter.head.push(
+          ['link', { rel: 'alternate', hreflang: 'zh-CN', href: zhUrl }],
+          ['link', { rel: 'alternate', hreflang: 'en-US', href: canonicalUrl }]
+        );
+      } else {
+        const enUrl = canonicalUrl.replace(SITE_URL, `${SITE_URL}/en`);
+        pageData.frontmatter.head.push(
+          ['link', { rel: 'alternate', hreflang: 'zh-CN', href: canonicalUrl }],
+          ['link', { rel: 'alternate', hreflang: 'en-US', href: enUrl }]
+        );
+      }
+    },
 
     locales: {
       root: {

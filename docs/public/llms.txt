@@ -1,0 +1,42 @@
+# Gemini Subtitle Pro
+
+> AI-powered professional subtitle generation tool with auto glossary extraction, speaker recognition, and millisecond alignment.
+
+## About
+
+Gemini Subtitle Pro is an open-source subtitle generation application powered by Google Gemini AI. It transforms 30-minute videos into professionally subtitled content in just 8 minutes, with zero manual proofreading required.
+
+## Key Features
+
+- **Glossary Auto-Extraction**: Automatically extracts domain-specific terms and maintains consistent translations
+- **Speaker Diarization**: Identifies and labels different speakers in conversations
+- **Millisecond Alignment**: Precise subtitle timing using forced alignment technology
+- **Multi-language Support**: Chinese, English, Japanese UI with auto-detection of source language
+- **Full Automation**: Download → Transcribe → Translate → Encode in one seamless pipeline
+
+## Documentation
+
+- [Home (Chinese)](https://aisub.netlify.app/)
+- [Home (English)](https://aisub.netlify.app/en/)
+- [Quick Start Guide](https://aisub.netlify.app/guide/)
+- [Quick Start Guide (English)](https://aisub.netlify.app/en/guide/)
+- [Architecture Overview](https://aisub.netlify.app/architecture/)
+- [Architecture Overview (English)](https://aisub.netlify.app/en/architecture/)
+
+## Technical Stack
+
+- Frontend: React + TypeScript
+- Desktop: Electron
+- AI: Google Gemini API
+- Speech Recognition: Whisper (local or cloud)
+- Forced Alignment: MMS-FA model
+
+## Links
+
+- GitHub: https://github.com/corvo007/Gemini-Subtitle-Pro
+- Live Demo: https://aisub-demo.netlify.app/
+- Documentation: https://aisub.netlify.app/
+
+## License
+
+MIT License - Copyright © 2024 Corvo007
