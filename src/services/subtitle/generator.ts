@@ -102,7 +102,7 @@ export const generateAssContent = (
       const styleName = `Speaker_${sanitizedSpeaker || 'Unknown'}`;
       // MioSub Speaker Style: Inherits branding, defaults to Noto Sans SC for CJK safety on Windows
       // The font for speaker styles will be determined dynamically per line, so we use a default here.
-      return `Style: ${styleName},${defaultFont},75,${bgrColor},&H000000FF,&H00000000,&H00800000,-1,0,0,0,100,100,0,0,1,2,1,2,10,10,10,1`;
+      return `Style: ${styleName},${defaultFont},82,${bgrColor},&H000000FF,&H00000000,&H00800000,0,0,0,0,100,100,0,0,1,2,1,2,10,10,10,1`;
     })
     .join('\n');
 
@@ -118,8 +118,8 @@ PlayResY: 1080
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,${defaultFont},75,&H00FFFFFF,&H000000FF,&H00000000,&H00800000,-1,0,0,0,100,100,0,0,1,2,1,2,10,10,10,1
-Style: Secondary,${defaultFont},48,&H0000FFFF,&H000000FF,&H00000000,&H00800000,-1,0,0,0,100,100,0,0,1,2,1,2,10,10,10,1
+Style: Default,${defaultFont},82,&H00FFFFFF,&H000000FF,&H00000000,&H00800000,0,0,0,0,100,100,0,0,1,2,1,2,10,10,10,1
+Style: Secondary,${defaultFont},54,&H0000FFFF,&H000000FF,&H00000000,&H00800000,0,0,0,0,100,100,0,0,1,2,1,2,10,10,10,1
 ${speakerStyles}
 
 [Events]

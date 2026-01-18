@@ -361,8 +361,10 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
         <div
           className={cn(
             'flex flex-col relative group h-full w-full',
-            isFloating ? 'bg-black border border-slate-700/50 rounded-lg overflow-hidden' : '',
-            isFloating && !isResizing && 'shadow-2xl'
+            isFloating
+              ? 'bg-white/95 backdrop-blur-xl border border-white/60 rounded-xl overflow-hidden ring-1 ring-slate-900/5'
+              : '',
+            isFloating && !isResizing && 'shadow-2xl shadow-brand-purple/20'
           )}
         >
           {/* Floating Mode: Full size drag handle overlay */}
@@ -485,7 +487,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
             </button>
 
             {/* Time */}
-            <span className="text-[10px] text-slate-500 font-mono font-medium min-w-17.5">
+            <span className="text-xs text-slate-500 font-mono font-medium min-w-17.5 text-center">
               {formatDuration(currentTime)} / {formatDuration(displayDuration)}
             </span>
 
