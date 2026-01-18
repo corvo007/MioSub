@@ -180,26 +180,26 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-2 sm:gap-3 bg-slate-800/90 p-2 sm:p-3 rounded-lg border border-slate-700 sticky top-0 z-20 backdrop-blur-md shadow-md min-w-0">
+    <div className="flex flex-col gap-2 sm:gap-3 bg-white/90 p-2 sm:p-3 rounded-lg border border-slate-200 sticky top-0 z-20 backdrop-blur-md shadow-sm min-w-0 transition-all">
       {/* Row 1: Search, Filters & Action Buttons */}
       <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
         {/* Left: Search & Filter Tools */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
           {/* Search Input */}
-          <div className="relative group flex-shrink min-w-0">
-            <Search className="absolute left-2 sm:left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+          <div className="relative group shrink min-w-0">
+            <Search className="absolute left-2 sm:left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-focus-within:text-brand-purple transition-colors" />
             <input
               ref={searchInputRef}
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t('batchHeader.searchPlaceholder')}
-              className="w-full min-w-[80px] max-w-[120px] focus:max-w-[150px] sm:min-w-[100px] sm:max-w-[140px] sm:focus:max-w-[180px] md:max-w-[240px] md:focus:max-w-[300px] bg-slate-900 border border-slate-700 rounded-md pl-7 sm:pl-9 pr-7 sm:pr-8 py-1 sm:py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/20 transition-all"
+              className="w-full min-w-20 max-w-30 focus:max-w-37.5 sm:min-w-25 sm:max-w-35 sm:focus:max-w-45 md:max-w-60 md:focus:max-w-75 bg-white border border-slate-200 rounded-md pl-7 sm:pl-9 pr-7 sm:pr-8 py-1 sm:py-1.5 text-xs text-slate-700 placeholder-slate-400 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple/20 transition-all shadow-sm"
             />
             {searchQuery && (
               <button
                 onClick={handleClearSearch}
-                className="absolute right-1 sm:right-1.5 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-700 rounded text-slate-500 hover:text-slate-300 transition-colors"
+                className="absolute right-1 sm:right-1.5 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors"
                 title={t('batchHeader.clearSearch')}
               >
                 <X className="w-3 h-3" />
@@ -207,30 +207,30 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
             )}
           </div>
 
-          <div className="h-4 w-px bg-slate-700/50 hidden sm:block"></div>
+          <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
 
           {/* Issue Filter */}
-          <div className="relative flex-shrink-0" ref={issueFilterRef}>
+          <div className="relative shrink-0" ref={issueFilterRef}>
             <button
               onClick={toggleIssueFilter}
               className={cn(
-                'flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md text-xs transition-all border',
+                'flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md text-xs transition-all border shadow-sm',
                 activeIssueFilterCount > 0
-                  ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
-                  : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
+                  ? 'bg-brand-purple/10 border-brand-purple/20 text-brand-purple font-medium'
+                  : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-50'
               )}
               title={t('batchHeader.filterIssues')}
             >
               <Filter className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span className="hidden sm:inline">{t('batchHeader.issues')}</span>
               {activeIssueFilterCount > 0 && (
-                <span className="bg-indigo-500 text-white text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded-full font-medium">
+                <span className="bg-brand-purple text-white text-[9px] sm:text-[10px] px-1.5 sm:px-1.5 py-0.5 rounded-full font-bold">
                   {activeIssueFilterCount}
                 </span>
               )}
               <ChevronDown
                 className={cn(
-                  'w-2.5 h-2.5 sm:w-3 sm:h-3 transition-transform',
+                  'w-2.5 h-2.5 sm:w-3 sm:h-3 transition-transform opacity-70',
                   isIssueFilterOpen && 'rotate-180'
                 )}
               />
@@ -239,7 +239,7 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
             {isIssueFilterOpen && (
               <div
                 className={cn(
-                  'absolute left-0 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-30 min-w-[180px] py-1 animate-fade-in',
+                  'absolute left-0 bg-white border border-slate-200 rounded-lg shadow-xl z-30 min-w-45 py-1 animate-fade-in ring-1 ring-slate-900/5',
                   issueDropUp
                     ? 'bottom-full mb-1.5 origin-bottom-left'
                     : 'top-full mt-1.5 origin-top-left'
@@ -248,13 +248,15 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                 {/* Duration Filter */}
                 <button
                   onClick={() => toggleFilter('duration')}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-800 transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center space-x-2">
-                    <Timer className="w-3.5 h-3.5 text-amber-400" />
+                    <Timer className="w-3.5 h-3.5 text-amber-500" />
                     <span
                       className={
-                        filters.issues.has('duration') ? 'text-amber-300' : 'text-slate-300'
+                        filters.issues.has('duration')
+                          ? 'text-amber-600 font-medium'
+                          : 'text-slate-600'
                       }
                     >
                       {t('batchHeader.durationTooLong')}
@@ -262,12 +264,12 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                   </div>
                   <div className="flex items-center space-x-2">
                     {issueCounts && (
-                      <span className="text-slate-500 text-[10px]">({issueCounts.duration})</span>
+                      <span className="text-slate-400 text-[10px]">({issueCounts.duration})</span>
                     )}
                     {filters.issues.has('duration') ? (
-                      <CheckSquare className="w-4 h-4 text-indigo-400" />
+                      <CheckSquare className="w-4 h-4 text-brand-purple" />
                     ) : (
-                      <Square className="w-4 h-4 text-slate-600" />
+                      <Square className="w-4 h-4 text-slate-300" />
                     )}
                   </div>
                 </button>
@@ -275,24 +277,28 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                 {/* Length Filter */}
                 <button
                   onClick={() => toggleFilter('length')}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-800 transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center space-x-2">
-                    <Type className="w-3.5 h-3.5 text-rose-400" />
+                    <Type className="w-3.5 h-3.5 text-rose-500" />
                     <span
-                      className={filters.issues.has('length') ? 'text-rose-300' : 'text-slate-300'}
+                      className={
+                        filters.issues.has('length')
+                          ? 'text-rose-600 font-medium'
+                          : 'text-slate-600'
+                      }
                     >
                       {t('batchHeader.tooManyChars')}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
                     {issueCounts && (
-                      <span className="text-slate-500 text-[10px]">({issueCounts.length})</span>
+                      <span className="text-slate-400 text-[10px]">({issueCounts.length})</span>
                     )}
                     {filters.issues.has('length') ? (
-                      <CheckSquare className="w-4 h-4 text-indigo-400" />
+                      <CheckSquare className="w-4 h-4 text-brand-purple" />
                     ) : (
-                      <Square className="w-4 h-4 text-slate-600" />
+                      <Square className="w-4 h-4 text-slate-300" />
                     )}
                   </div>
                 </button>
@@ -300,13 +306,15 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                 {/* Overlap Filter */}
                 <button
                   onClick={() => toggleFilter('overlap')}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-800 transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center space-x-2">
-                    <AlertTriangle className="w-3.5 h-3.5 text-orange-400" />
+                    <AlertTriangle className="w-3.5 h-3.5 text-orange-500" />
                     <span
                       className={
-                        filters.issues.has('overlap') ? 'text-orange-300' : 'text-slate-300'
+                        filters.issues.has('overlap')
+                          ? 'text-orange-600 font-medium'
+                          : 'text-slate-600'
                       }
                     >
                       {t('batchHeader.timeOverlap')}
@@ -314,12 +322,12 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                   </div>
                   <div className="flex items-center space-x-2">
                     {issueCounts && (
-                      <span className="text-slate-500 text-[10px]">({issueCounts.overlap})</span>
+                      <span className="text-slate-400 text-[10px]">({issueCounts.overlap})</span>
                     )}
                     {filters.issues.has('overlap') ? (
-                      <CheckSquare className="w-4 h-4 text-indigo-400" />
+                      <CheckSquare className="w-4 h-4 text-brand-purple" />
                     ) : (
-                      <Square className="w-4 h-4 text-slate-600" />
+                      <Square className="w-4 h-4 text-slate-300" />
                     )}
                   </div>
                 </button>
@@ -327,13 +335,15 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                 {/* Confidence Filter */}
                 <button
                   onClick={() => toggleFilter('confidence')}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-800 transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center space-x-2">
                     <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
                     <span
                       className={
-                        filters.issues.has('confidence') ? 'text-amber-300' : 'text-slate-300'
+                        filters.issues.has('confidence')
+                          ? 'text-amber-600 font-medium'
+                          : 'text-slate-600'
                       }
                     >
                       {t('batchHeader.lowConfidence')}
@@ -341,14 +351,14 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                   </div>
                   <div className="flex items-center space-x-2">
                     {issueCounts && (
-                      <span className="text-slate-500 text-[10px]">
+                      <span className="text-slate-400 text-[10px]">
                         ({issueCounts.confidence || 0})
                       </span>
                     )}
                     {filters.issues.has('confidence') ? (
-                      <CheckSquare className="w-4 h-4 text-indigo-400" />
+                      <CheckSquare className="w-4 h-4 text-brand-purple" />
                     ) : (
-                      <Square className="w-4 h-4 text-slate-600" />
+                      <Square className="w-4 h-4 text-slate-300" />
                     )}
                   </div>
                 </button>
@@ -356,13 +366,15 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                 {/* Regression Filter */}
                 <button
                   onClick={() => toggleFilter('regression')}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-800 transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center space-x-2">
-                    <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
+                    <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
                     <span
                       className={
-                        filters.issues.has('regression') ? 'text-red-300' : 'text-slate-300'
+                        filters.issues.has('regression')
+                          ? 'text-red-600 font-medium'
+                          : 'text-slate-600'
                       }
                     >
                       {t('batchHeader.regression')}
@@ -370,14 +382,14 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                   </div>
                   <div className="flex items-center space-x-2">
                     {issueCounts && (
-                      <span className="text-slate-500 text-[10px]">
+                      <span className="text-slate-400 text-[10px]">
                         ({issueCounts.regression || 0})
                       </span>
                     )}
                     {filters.issues.has('regression') ? (
-                      <CheckSquare className="w-4 h-4 text-indigo-400" />
+                      <CheckSquare className="w-4 h-4 text-brand-purple" />
                     ) : (
-                      <Square className="w-4 h-4 text-slate-600" />
+                      <Square className="w-4 h-4 text-slate-300" />
                     )}
                   </div>
                 </button>
@@ -385,13 +397,15 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                 {/* Corrupted Filter */}
                 <button
                   onClick={() => toggleFilter('corrupted')}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-800 transition-colors"
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
                 >
                   <div className="flex items-center space-x-2">
-                    <AlertTriangle className="w-3.5 h-3.5 text-purple-400" />
+                    <AlertTriangle className="w-3.5 h-3.5 text-purple-500" />
                     <span
                       className={
-                        filters.issues.has('corrupted') ? 'text-purple-300' : 'text-slate-300'
+                        filters.issues.has('corrupted')
+                          ? 'text-purple-600 font-medium'
+                          : 'text-slate-600'
                       }
                     >
                       {t('batchHeader.corrupted')}
@@ -399,14 +413,14 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                   </div>
                   <div className="flex items-center space-x-2">
                     {issueCounts && (
-                      <span className="text-slate-500 text-[10px]">
+                      <span className="text-slate-400 text-[10px]">
                         ({issueCounts.corrupted || 0})
                       </span>
                     )}
                     {filters.issues.has('corrupted') ? (
-                      <CheckSquare className="w-4 h-4 text-indigo-400" />
+                      <CheckSquare className="w-4 h-4 text-brand-purple" />
                     ) : (
-                      <Square className="w-4 h-4 text-slate-600" />
+                      <Square className="w-4 h-4 text-slate-300" />
                     )}
                   </div>
                 </button>
@@ -414,10 +428,10 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                 {/* Clear Issues */}
                 {activeIssueFilterCount > 0 && (
                   <>
-                    <div className="border-t border-slate-700 my-1" />
+                    <div className="border-t border-slate-200 my-1" />
                     <button
                       onClick={clearIssueFilters}
-                      className="w-full flex items-center justify-center px-3 py-2 text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                      className="w-full flex items-center justify-center px-3 py-2 text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors"
                     >
                       <X className="w-3 h-3 mr-1" />
                       {t('batchHeader.clearIssueFilters')}
@@ -430,21 +444,21 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
 
           {/* Speaker Filter */}
           {speakerProfiles && speakerProfiles.length > 0 && (
-            <div className="relative flex-shrink-0" ref={speakerFilterRef}>
+            <div className="relative shrink-0" ref={speakerFilterRef}>
               <button
                 onClick={toggleSpeakerFilter}
                 className={cn(
-                  'flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md text-xs transition-all border',
+                  'flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-md text-xs transition-all border shadow-sm',
                   activeSpeakerFilterCount > 0
-                    ? 'bg-indigo-500/20 border-indigo-500/50 text-indigo-300'
-                    : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white hover:border-slate-600'
+                    ? 'bg-brand-purple/10 border-brand-purple/20 text-brand-purple font-medium'
+                    : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:border-slate-300 hover:bg-slate-50'
                 )}
                 title={t('batchHeader.filterSpeakers')}
               >
                 <User className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 <span className="hidden sm:inline">{t('batchHeader.speaker')}</span>
                 {activeSpeakerFilterCount > 0 && (
-                  <span className="bg-indigo-500 text-white text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded-full font-medium">
+                  <span className="bg-brand-purple text-white text-[9px] sm:text-[10px] px-1.5 sm:px-1.5 py-0.5 rounded-full font-bold">
                     {activeSpeakerFilterCount}
                   </span>
                 )}
@@ -459,7 +473,7 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
               {isSpeakerFilterOpen && (
                 <div
                   className={cn(
-                    'absolute left-0 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-30 min-w-[200px] max-h-[60vh] overflow-y-auto py-1 animate-fade-in',
+                    'absolute left-0 bg-white border border-slate-200 rounded-lg shadow-xl z-30 min-w-50 max-h-[60vh] overflow-y-auto py-1 animate-fade-in ring-1 ring-slate-900/5',
                     speakerDropUp
                       ? 'bottom-full mb-1.5 origin-bottom-left'
                       : 'top-full mt-1.5 origin-top-left'
@@ -469,11 +483,11 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                     <button
                       key={profile.id}
                       onClick={() => toggleSpeaker(profile.name)}
-                      className="w-full flex items-center justify-between px-3 py-1.5 text-xs hover:bg-slate-800 transition-colors"
+                      className="w-full flex items-center justify-between px-3 py-1.5 text-xs hover:bg-slate-50 transition-colors"
                     >
                       <div className="flex items-center space-x-2 overflow-hidden">
                         <span
-                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                          className="w-2.5 h-2.5 rounded-full shrink-0"
                           style={{
                             backgroundColor: getSpeakerColorWithCustom(profile.name, profile.color),
                           }}
@@ -482,23 +496,23 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                           className={cn(
                             'truncate',
                             filters.speakers.has(profile.name)
-                              ? 'text-indigo-300'
-                              : 'text-slate-300'
+                              ? 'text-brand-purple font-medium'
+                              : 'text-slate-700'
                           )}
                         >
                           {profile.name}
                         </span>
                       </div>
-                      <div className="flex items-center space-x-2 pl-2 flex-shrink-0">
+                      <div className="flex items-center space-x-2 pl-2 shrink-0">
                         {speakerCounts && speakerCounts[profile.name] !== undefined && (
-                          <span className="text-slate-500 text-[10px]">
+                          <span className="text-slate-400 text-[10px]">
                             ({speakerCounts[profile.name]})
                           </span>
                         )}
                         {filters.speakers.has(profile.name) ? (
-                          <CheckSquare className="w-4 h-4 text-indigo-400" />
+                          <CheckSquare className="w-4 h-4 text-brand-purple" />
                         ) : (
-                          <Square className="w-4 h-4 text-slate-600" />
+                          <Square className="w-4 h-4 text-slate-300" />
                         )}
                       </div>
                     </button>
@@ -507,10 +521,10 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                   {/* Clear Speakers */}
                   {activeSpeakerFilterCount > 0 && (
                     <>
-                      <div className="border-t border-slate-700 my-1" />
+                      <div className="border-t border-slate-200 my-1" />
                       <button
                         onClick={clearSpeakerFilters}
-                        className="w-full flex items-center justify-center px-3 py-2 text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                        className="w-full flex items-center justify-center px-3 py-2 text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors"
                       >
                         <X className="w-3 h-3 mr-1" />
                         {t('batchHeader.clearSpeakerFilters')}
@@ -521,13 +535,13 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                   {/* Manage Speakers */}
                   {onManageSpeakers && (
                     <>
-                      <div className="border-t border-slate-700 my-1" />
+                      <div className="border-t border-slate-200 my-1" />
                       <button
                         onClick={() => {
                           onManageSpeakers();
                           setIsSpeakerFilterOpen(false);
                         }}
-                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-indigo-400 hover:text-indigo-300 hover:bg-slate-800 transition-colors"
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-brand-purple hover:text-brand-purple-dark hover:bg-slate-50 transition-colors"
                       >
                         <Users className="w-3 h-3" />
                         {t('batchHeader.manageSpeakers')}
@@ -542,7 +556,7 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
 
         {/* Right: Primary Actions */}
         {!isDeleteMode && (
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {file && onRegenerateRequest && (
               <button
                 onClick={onRegenerateRequest}
@@ -551,11 +565,17 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                 className={cn(
                   'flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border',
                   selectedBatches.size > 0
-                    ? 'bg-slate-700 border-slate-600 text-emerald-400 hover:bg-slate-600 hover:border-emerald-400/50'
-                    : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'
+                    ? 'bg-white border-brand-purple/30 text-brand-purple hover:bg-brand-purple/5 hover:border-brand-purple/60 hover:shadow-brand-purple/10'
+                    : 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed'
                 )}
               >
-                <RefreshCw className="w-3 h-3" />
+                <RefreshCw
+                  className={cn(
+                    'w-3 h-3',
+                    selectedBatches.size > 0 &&
+                      'group-hover:rotate-180 transition-transform duration-500'
+                  )}
+                />
                 <span className="hidden sm:inline">{t('batchHeader.regenerate')}</span>
               </button>
             )}
@@ -567,8 +587,8 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
               className={cn(
                 'flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md text-xs font-bold transition-all shadow-sm border',
                 selectedBatches.size > 0
-                  ? 'bg-indigo-600 border-indigo-500 text-white hover:bg-indigo-500'
-                  : 'bg-slate-800 border-slate-800 text-slate-600 cursor-not-allowed'
+                  ? 'bg-linear-to-r from-brand-purple to-brand-orange text-white border-transparent bg-origin-border hover:shadow-md hover:shadow-brand-purple/20 hover:opacity-95'
+                  : 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed'
               )}
             >
               <Sparkles className="w-3 h-3" />
@@ -579,7 +599,7 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
       </div>
 
       {/* Row 2: Batch Selection & Status */}
-      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 pt-2 border-t border-slate-700/50">
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 pt-2 border-t border-slate-300/50">
         {/* Selection Tools */}
         <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto">
           {isDeleteMode ? (
@@ -587,17 +607,17 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
             <>
               <button
                 onClick={onSelectAllForDelete}
-                className="flex items-center space-x-1.5 sm:space-x-2 text-xs text-red-300 hover:text-red-200 transition-colors"
+                className="flex items-center space-x-1.5 sm:space-x-2 text-xs text-red-500 hover:text-red-700 transition-colors"
               >
                 {selectedForDeleteCount === totalVisibleCount && totalVisibleCount! > 0 ? (
-                  <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-400" />
+                  <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" />
                 ) : (
-                  <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-400" />
+                  <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-300" />
                 )}
                 <span>{t('batchHeader.selectAll')}</span>
               </button>
 
-              <div className="h-4 w-px bg-slate-700/50"></div>
+              <div className="h-4 w-px bg-slate-200"></div>
 
               <button
                 onClick={onConfirmDelete}
@@ -605,8 +625,8 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                 className={cn(
                   'flex items-center space-x-1 sm:space-x-1.5 px-2 sm:px-3 py-1 rounded-md text-xs font-bold transition-all shadow-sm border',
                   selectedForDeleteCount && selectedForDeleteCount > 0
-                    ? 'bg-red-600 border-red-500 text-white hover:bg-red-500'
-                    : 'bg-slate-800 border-slate-700 text-slate-500 cursor-not-allowed'
+                    ? 'bg-red-500 border-red-600 text-white hover:bg-red-600'
+                    : 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed'
                 )}
               >
                 <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
@@ -615,7 +635,7 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
 
               <button
                 onClick={onToggleDeleteMode}
-                className="flex items-center space-x-1 text-xs text-slate-400 hover:text-white transition-colors"
+                className="flex items-center space-x-1 text-xs text-slate-500 hover:text-slate-800 transition-colors"
               >
                 <X className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 <span className="hidden sm:inline">{t('batchHeader.cancel')}</span>
@@ -626,12 +646,12 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
             <>
               <button
                 onClick={() => toggleAllBatches(chunks.length)}
-                className="flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm text-slate-300 hover:text-white transition-colors"
+                className="flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm text-slate-600 hover:text-slate-900 transition-colors"
               >
                 {selectedBatches.size === chunks.length ? (
-                  <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-400" />
+                  <CheckSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-brand-purple" />
                 ) : (
-                  <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500" />
+                  <Square className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
                 )}
                 <span>
                   {selectedBatches.size === chunks.length
@@ -642,18 +662,18 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
 
               <button
                 onClick={() => selectBatchesWithComments(chunks)}
-                className="flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm text-slate-300 hover:text-white transition-colors"
+                className="flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm text-slate-600 hover:text-slate-900 transition-colors"
                 title={t('batchHeader.selectWithComments')}
               >
-                <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+                <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
                 <span className="hidden sm:inline">{t('batchHeader.selectWithComments')}</span>
               </button>
 
-              <div className="h-4 w-px bg-slate-700/50 hidden sm:block"></div>
+              <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
 
               <button
                 onClick={() => setShowSourceText(!showSourceText)}
-                className="flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm text-slate-400 hover:text-white transition-colors"
+                className="flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm text-slate-500 hover:text-slate-900 transition-colors"
               >
                 {showSourceText ? (
                   <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -667,13 +687,18 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
             </>
           )}
 
-          <div className="h-4 w-px bg-slate-700/50 hidden sm:block"></div>
+          <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>
 
           {/* Auto Scroll Toggle */}
           {onToggleAutoScroll && (
             <button
               onClick={onToggleAutoScroll}
-              className="flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm text-slate-400 hover:text-white transition-colors"
+              className={cn(
+                'flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm transition-all rounded-full px-2 py-0.5 border',
+                autoScrollEnabled
+                  ? 'bg-brand-purple/10 border-brand-purple/20 text-brand-purple font-medium'
+                  : 'bg-transparent border-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+              )}
               title={
                 autoScrollEnabled
                   ? t('batchHeader.disableAutoScroll')
@@ -683,7 +708,9 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
               <ArrowDownCircle
                 className={cn(
                   'w-3.5 h-3.5 sm:w-4 sm:h-4 transition-colors',
-                  autoScrollEnabled ? 'text-indigo-400' : 'text-slate-500'
+                  autoScrollEnabled
+                    ? 'text-brand-purple'
+                    : 'text-slate-400 group-hover:text-slate-600'
                 )}
               />
               <span className="hidden sm:inline">
@@ -694,13 +721,13 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
         </div>
 
         {/* Right: Status / Delete Toggle */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {!isDeleteMode && (
             <>
               {onToggleDeleteMode && (
                 <button
                   onClick={onToggleDeleteMode}
-                  className="flex items-center space-x-1 sm:space-x-1.5 text-xs sm:text-sm text-red-400 hover:text-red-300 transition-colors opacity-80 hover:opacity-100"
+                  className="flex items-center space-x-1 sm:space-x-1.5 text-xs sm:text-sm text-red-500 hover:text-red-700 transition-colors opacity-80 hover:opacity-100 border border-transparent hover:bg-red-50 hover:border-red-100 rounded-md px-1.5 py-0.5"
                   title={t('batchHeader.batchDelete')}
                 >
                   <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
@@ -708,11 +735,9 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                 </button>
               )}
 
-              {onToggleDeleteMode && (
-                <div className="h-4 w-px bg-slate-700/50 hidden sm:block"></div>
-              )}
+              {onToggleDeleteMode && <div className="h-4 w-px bg-slate-200 hidden sm:block"></div>}
 
-              <span className="text-xs sm:text-sm text-slate-500 font-mono whitespace-nowrap">
+              <span className="text-xs sm:text-sm text-slate-500 font-medium whitespace-nowrap">
                 {t('batchHeader.selectedCount', { count: selectedBatches.size })}
               </span>
             </>

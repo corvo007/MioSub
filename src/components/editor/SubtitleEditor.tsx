@@ -415,7 +415,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
 
     if (chunks.length === 0) {
       return (
-        <div className="h-full flex flex-col items-center justify-center text-slate-600 p-8 min-h-[300px]">
+        <div className="h-full flex flex-col items-center justify-center text-slate-600 p-8 min-h-75">
           <div className="w-16 h-16 border-2 border-slate-700 border-dashed rounded-full flex items-center justify-center mb-4">
             <Languages className="w-6 h-6" />
           </div>
@@ -494,7 +494,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
               <span>
                 {t('editor.foundResults', { count: filteredSubtitles.length })}
                 {hasActiveFilter && (
-                  <span className="ml-2 text-indigo-400">
+                  <span className="ml-2 text-brand-purple font-medium">
                     ({t('editor.filtering')}: {getFilterLabels().join(', ')})
                   </span>
                 )}
@@ -502,7 +502,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
             </div>
 
             {filteredSubtitles.length > 0 ? (
-              <div className="border border-slate-700/50 bg-slate-900/40 rounded-xl overflow-hidden flex-1 min-h-0">
+              <div className="border border-slate-300 bg-white/50 backdrop-blur-sm rounded-xl overflow-hidden flex-1 min-h-0 shadow-sm transition-all">
                 <Virtuoso
                   ref={virtuosoRef}
                   style={{ height: '100%' }}
@@ -513,7 +513,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
                     const prevEndTime =
                       originalIndex > 0 ? subtitles[originalIndex - 1].endTime : undefined;
                     return (
-                      <div className="border-b border-slate-800/50 last:border-b-0">
+                      <div className="border-b border-slate-200 last:border-b-0">
                         <SubtitleRow
                           key={sub.id}
                           sub={sub}
@@ -542,8 +542,8 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
                 />
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-slate-500 bg-slate-900/30 rounded-xl border border-slate-800/50">
-                <Search className="w-8 h-8 opacity-20 mb-3" />
+              <div className="flex flex-col items-center justify-center py-12 text-slate-500 bg-slate-50/50 rounded-xl border border-slate-200/60 border-dashed shadow-sm">
+                <Search className="w-8 h-8 opacity-20 text-slate-400 mb-3" />
                 <p>{t('editor.noMatchingSubtitles')}</p>
               </div>
             )}

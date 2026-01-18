@@ -42,12 +42,12 @@ export const CacheManagement: React.FC = () => {
   return (
     <div className="space-y-3">
       <SectionHeader>{t('performance.cache.title', 'Video Preview Cache')}</SectionHeader>
-      <div className="flex items-center justify-between bg-slate-800/50 rounded-lg p-3">
+      <div className="flex items-center justify-between bg-white border border-slate-200 rounded-lg p-3 shadow-sm">
         <div>
-          <p className="text-sm text-slate-300">
+          <p className="text-sm text-slate-500">
             {t('performance.cache.currentSize', 'Current Size')}
           </p>
-          <p className="text-lg font-semibold text-white">
+          <p className="text-lg font-semibold text-slate-900">
             {cacheInfo ? formatBytes(cacheInfo.size) : '...'}
             <span className="text-sm text-slate-500 ml-2">
               ({cacheInfo?.fileCount ?? 0} {t('performance.cache.files', 'files')})
@@ -57,7 +57,7 @@ export const CacheManagement: React.FC = () => {
         <button
           onClick={handleClearCache}
           disabled={clearing || !cacheInfo || cacheInfo.fileCount === 0}
-          className="flex items-center gap-2 px-4 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 hover:text-red-300 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 hover:text-red-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
         >
           <Trash2 className="w-4 h-4" />
           {clearing

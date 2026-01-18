@@ -370,7 +370,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
 
           {/* Floating Mode Overlay Controls (Buttons) */}
           {isFloating && (
-            <div className="absolute top-0 inset-x-0 h-8 bg-gradient-to-b from-black/60 to-transparent z-20 flex justify-end gap-2 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <div className="absolute top-0 inset-x-0 h-8 bg-linear-to-b from-black/60 to-transparent z-20 flex justify-end gap-2 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
               {/* Buttons need pointer-events-auto because parent is pointer-events-none */}
               <button
                 onClick={() => setIsFloating(false)}
@@ -466,8 +466,8 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
           {/* Controls */}
           <div
             className={cn(
-              'flex items-center gap-2 px-2 py-1.5 bg-slate-900/90 w-full z-20',
-              isFloating && 'border-t border-slate-800' // Add border top for separation in floating mode
+              'flex items-center gap-2 px-3 py-2 bg-white/95 backdrop-blur-md w-full z-20 shadow-sm transition-colors',
+              isFloating ? 'border-t border-slate-200' : 'rounded-b-lg' // Use border if floating, rounded-b if docked
             )}
           >
             {/* Play/Pause */}
@@ -475,29 +475,31 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
               onClick={togglePlay}
               disabled={!videoSrc}
               className={cn(
-                'p-1 rounded transition-colors',
-                videoSrc ? 'text-white hover:text-indigo-400' : 'text-slate-600 cursor-not-allowed'
+                'p-1.5 rounded-lg transition-all',
+                videoSrc
+                  ? 'text-slate-700 hover:text-brand-purple hover:bg-brand-purple/5'
+                  : 'text-slate-400 cursor-not-allowed'
               )}
             >
-              {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 fill-current" />}
             </button>
 
             {/* Time */}
-            <span className="text-[10px] text-slate-400 font-mono min-w-[65px]">
+            <span className="text-[10px] text-slate-500 font-mono font-medium min-w-17.5">
               {formatDuration(currentTime)} / {formatDuration(displayDuration)}
             </span>
 
             {/* Progress Bar */}
-            <div className="flex-1 relative h-1.5 group mx-1">
-              <div className="absolute inset-0 bg-slate-700 rounded" />
+            <div className="flex-1 relative h-1.5 group mx-2 cursor-pointer">
+              <div className="absolute inset-0 bg-slate-200 rounded-full transition-all group-hover:h-2 group-hover:-my-px" />
               {transcodedDuration !== undefined && (
                 <div
-                  className="absolute h-full bg-indigo-500/40 rounded"
+                  className="absolute h-full bg-brand-purple/30 rounded-full transition-all group-hover:h-2 group-hover:-my-px"
                   style={{ width: `${transcodedProgress}%` }}
                 />
               )}
               <div
-                className="absolute h-full bg-indigo-500 rounded"
+                className="absolute h-full bg-brand-purple rounded-full transition-all group-hover:h-2 group-hover:-my-px shadow-sm"
                 style={{ width: `${currentProgress}%` }}
               />
               <input
@@ -508,7 +510,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
                 value={currentTime}
                 onChange={handleSeek}
                 disabled={!videoSrc || isTranscoding}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
                 title={isTranscoding ? t('videoPreview.jumpAfterTranscode') : undefined}
               />
             </div>
@@ -517,17 +519,17 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
             <div className="relative group/volume">
               <button
                 onClick={toggleMute}
-                className="p-1 text-white hover:text-indigo-400 transition-colors"
+                className="p-1.5 text-slate-600 hover:text-brand-purple hover:bg-brand-purple/5 rounded-lg transition-all"
               >
                 {muted || volume === 0 ? (
-                  <VolumeX className="w-3.5 h-3.5" />
+                  <VolumeX className="w-4 h-4" />
                 ) : (
-                  <Volume2 className="w-3.5 h-3.5" />
+                  <Volume2 className="w-4 h-4" />
                 )}
               </button>
               {/* Vertical volume slider popup */}
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 pb-2 hidden group-hover/volume:flex flex-col items-center">
-                <div className="bg-slate-800/95 rounded-lg px-2 py-3 shadow-lg border border-slate-700/50">
+                <div className="bg-white/95 rounded-lg px-2 py-3 shadow-lg border border-slate-200 backdrop-blur-md">
                   <input
                     type="range"
                     min={0}
@@ -535,7 +537,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
                     step={0.05}
                     value={muted ? 0 : volume}
                     onChange={handleVolumeChange}
-                    className="h-16 w-1 bg-slate-600 rounded appearance-none cursor-pointer [writing-mode:vertical-lr] [direction:rtl] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-2.5 [&::-webkit-slider-thumb]:h-2.5 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md"
+                    className="h-20 w-1 bg-slate-200 rounded appearance-none cursor-pointer [writing-mode:vertical-lr] [direction:rtl] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-brand-purple [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white"
                   />
                 </div>
               </div>
@@ -546,10 +548,10 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
               <button
                 onClick={onToggleSourceText}
                 className={cn(
-                  'p-1 transition-colors ml-1',
+                  'p-1.5 transition-all ml-1 rounded-lg',
                   showSourceText
-                    ? 'text-indigo-400 hover:text-indigo-300'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'text-brand-purple bg-brand-purple/10 font-medium'
+                    : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
                 )}
                 title={
                   showSourceText
@@ -557,18 +559,18 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
                     : t('batchHeader.showSource', { ns: 'editor' })
                 }
               >
-                <Languages className="w-3.5 h-3.5" />
+                <Languages className="w-4 h-4" />
               </button>
             )}
 
-            {/* Floating Toggle (only in docked mode here, in floating mode it is on top overlay) */}
+            {/* Floating Toggle */}
             {!isFloating && (
               <button
                 onClick={() => setIsFloating(true)}
-                className="p-1 text-slate-400 hover:text-white transition-colors ml-1"
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-all ml-1"
                 title={t('videoPreview.float')}
               >
-                <Maximize2 className="w-3.5 h-3.5" />
+                <Maximize2 className="w-4 h-4" />
               </button>
             )}
           </div>
@@ -605,12 +607,12 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
       return (
         <button
           onClick={onToggleCollapse}
-          className="w-full p-2 bg-slate-900/50 border-b border-slate-800 flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+          className="w-full p-2 bg-white border-b border-slate-200 flex items-center gap-2 text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-all font-medium"
         >
-          <ChevronDown className="w-4 h-4" />
+          <ChevronDown className="w-4 h-4 text-slate-400" />
           <span className="text-sm">{t('videoPreview.expand')}</span>
           {isTranscoding && (
-            <span className="ml-auto text-xs text-amber-400">
+            <span className="ml-auto text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
               {t('videoPreview.transcoding')} {transcodeProgress}%
             </span>
           )}
@@ -619,27 +621,27 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
     }
 
     return (
-      <div className="bg-slate-900/50 border-b border-slate-800 select-none">
+      <div className="bg-white border-b border-slate-200 select-none shadow-sm z-30 relative">
         {/* Header - Only show in docked mode */}
         {!isFloating && (
-          <div className="flex items-center justify-between px-3 py-2 border-b border-slate-800/50">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 bg-slate-50/50">
             <button
               onClick={onToggleCollapse}
-              className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+              className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-medium"
             >
-              <ChevronUp className="w-4 h-4" />
+              <ChevronUp className="w-4 h-4 text-slate-400" />
               <span className="text-sm">{t('videoPreview.title')}</span>
             </button>
             <div className="flex items-center gap-2">
               {isTranscoding && (
-                <span className="text-xs text-amber-400 animate-pulse">
+                <span className="text-xs text-amber-600 animate-pulse font-medium">
                   {t('videoPreview.transcoding')} {transcodeProgress}%
                 </span>
               )}
               {/* Helper Float Button in Header too */}
               <button
                 onClick={() => setIsFloating(true)}
-                className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white"
+                className="p-1 hover:bg-white rounded text-slate-400 hover:text-brand-purple hover:shadow-sm border border-transparent hover:border-slate-200 transition-all"
                 title={t('videoPreview.float')}
               >
                 <Maximize2 className="w-3.5 h-3.5" />
@@ -651,7 +653,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
         {/* Content Container */}
         {isFloating ? (
           <>
-            <div className="h-10 bg-slate-900/30 flex items-center justify-center text-xs text-slate-500 gap-2">
+            <div className="h-10 bg-slate-100 flex items-center justify-center text-xs text-slate-500 gap-2">
               <span>{t('videoPreview.floatingMode')}</span>
               <button
                 onClick={() => setIsFloating(false)}
@@ -673,7 +675,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
                 minHeight={135}
                 bounds="window"
                 dragHandleClassName="drag-handle"
-                className="z-[9999]"
+                className="z-9999"
                 lockAspectRatio={false}
                 scale={rndScale}
                 onResizeStart={() => setIsResizing(true)}
@@ -686,21 +688,21 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
           </>
         ) : (
           /* Docked Mode - Centered with Resize Handle */
-          <div className="relative w-full bg-black/20 flex flex-col items-center pb-2">
+          <div className="relative w-full flex flex-col items-center">
             <div
-              className="w-full transition-[height] duration-75 ease-out"
+              className="w-full transition-[height] duration-75 ease-out shadow-sm"
               style={{ height: dockedHeight }}
             >
               {playerContent}
             </div>
 
-            {/* Resize Handle - Static Position with larger hit area */}
+            {/* Resize Handle - Integrated look */}
             <div
-              className="w-full h-4 flex items-center justify-center cursor-ns-resize hover:bg-white/5 transition-colors group/handle mt-[-1px] z-50"
+              className="w-full h-3 flex items-center justify-center cursor-ns-resize hover:bg-slate-100/50 transition-colors group/handle z-50 border-b border-slate-100"
               onMouseDown={handleResizeStart}
               title={t('videoPreview.resize')}
             >
-              <div className="w-12 h-1 bg-slate-700 rounded-full group-hover/handle:bg-indigo-500 transition-colors shadow-sm" />
+              <div className="w-12 h-1 bg-slate-300 rounded-full group-hover/handle:bg-brand-purple transition-colors shadow-sm" />
             </div>
           </div>
         )}

@@ -22,11 +22,11 @@ export const OptionButton: React.FC<OptionButtonProps> = ({
 }) => {
   const colorClasses = {
     indigo: selected
-      ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
-      : 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700',
+      ? 'bg-brand-purple/10 border-brand-purple/30 text-brand-purple font-medium shadow-sm ring-1 ring-brand-purple/10'
+      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-900 shadow-sm',
     violet: selected
-      ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
-      : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10',
+      ? 'bg-violet-100 border-violet-200 text-violet-700 font-medium ring-1 ring-violet-200'
+      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300',
   };
 
   const sizeClasses = {

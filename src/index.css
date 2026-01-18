@@ -2,32 +2,73 @@
 
 @import 'tailwindcss';
 
-/* Tailwind v4 自定义主题 */
-@theme {
-  /* 自定义字体 */
-  --font-sans: 'Inter', sans-serif;
+@plugin 'tailwindcss-animate';
 
-  /* 自定义颜色 */
-  --color-primary: #6366f1;
-  --color-primary-dark: #4f46e5;
-  --color-primary-light: #818cf8;
+@custom-variant dark (&:is(.dark *));
+
+/* Tailwind v4 Custom Theme */
+@theme {
+  /* MioSub Typography: CJK Mixed Stack */
+  --font-sans:
+    'Inter', 'PingFang SC', 'Hiragino Sans', 'Microsoft YaHei', 'Yu Gothic', 'Meiryo',
+    'Noto Sans SC', sans-serif;
+
+  /* Custom Animate: Breathing Mesh */
+  --animate-mesh-breathe: meshBreathe 10s ease-in-out infinite;
+
+  /* MioSub Brand Colors (Tailwind v4 Aliases) */
+  --color-brand-purple: #6d28d9;
+  --color-brand-orange: #f59e0b;
 }
 
-/* 全局样式 */
+/* Global Styles */
 body {
   font-family: var(--font-sans);
-  background-color: #0f172a;
-  /* slate-900 */
-  color: #e2e8f0;
-  /* slate-200 */
+  background-color: #f3f4f6; /* Cool White Canvas for Light Mode */
+  color: #1f2937; /* Dark Grey Text */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Electron 窗口拖动区域 - 用于无边框窗口 */
+/* Animation Keyframes */
+@keyframes meshBreathe {
+  0% {
+    background-size: 120% 120%;
+    background-position: 50% 50%;
+  }
+  33% {
+    background-size: 140% 140%;
+    background-position: 40% 60%;
+  }
+  66% {
+    background-size: 130% 130%;
+    background-position: 60% 40%;
+  }
+  100% {
+    background-size: 120% 120%;
+    background-position: 50% 50%;
+  }
+}
+
+/* Warm Mesh Background Utility */
+.bg-warm-mesh {
+  background-image:
+    radial-gradient(circle at 30% 25%, rgba(109, 40, 217, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 70% 75%, rgba(245, 158, 11, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 80% 20%, rgba(109, 40, 217, 0.05) 0%, transparent 35%),
+    radial-gradient(circle at 20% 80%, rgba(245, 158, 11, 0.05) 0%, transparent 35%);
+  background-size: 130% 130%;
+  background-position: center;
+  animation: var(--animate-mesh-breathe);
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Electron Window Drag Region */
 .window-drag-region {
   -webkit-app-region: drag;
 }
 
-/* 拖动区域内的按钮等交互元素需要禁用拖动 */
 .window-drag-region button,
 .window-drag-region a,
 .window-drag-region input,
@@ -37,7 +78,7 @@ body {
   -webkit-app-region: no-drag;
 }
 
-/* 自定义滚动条 */
+/* Custom Scrollbar */
 .custom-scrollbar::-webkit-scrollbar,
 ::-webkit-scrollbar {
   width: 8px;
@@ -45,52 +86,18 @@ body {
 
 .custom-scrollbar::-webkit-scrollbar-track,
 ::-webkit-scrollbar-track {
-  background: #1e293b;
-  /* slate-800 */
+  background: transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb,
 ::-webkit-scrollbar-thumb {
-  background: #475569;
-  /* slate-600 */
+  background: #64748b; /* slate-500 */
   border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover,
 ::-webkit-scrollbar-thumb:hover {
-  background: #64748b;
-  /* slate-500 */
-}
-
-/* 自定义动画 */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes shimmer {
-  from {
-    transform: translateX(-100%);
-  }
-
-  to {
-    transform: translateX(100%);
-  }
-}
-
-.animate-shimmer {
-  animation: shimmer 2s infinite;
+  background: #475569; /* slate-600 */
 }
 
 /* Hide native number input spinners */
@@ -105,74 +112,93 @@ body {
   appearance: none;
 }
 
-/* ========================================
-   High DPI Screen Optimizations
-   For screens with 2x+ pixel density (Retina, HiDPI)
-   ======================================== */
-
+/* High DPI Optimizations */
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-  /* Compact spacing for high DPI screens */
   .hidpi-compact {
     --spacing-multiplier: 0.85;
   }
-
-  /* Reduce sidebar padding on high DPI */
   .workspace-sidebar {
-    padding: 0.625rem; /* 10px instead of 12px */
+    padding: 0.625rem;
   }
-
-  /* Slightly smaller gaps */
   .workspace-grid {
-    gap: 0.75rem; /* 12px instead of 16px */
+    gap: 0.75rem;
   }
-
-  /* Compact scrollbar for high DPI */
   ::-webkit-scrollbar {
     width: 6px;
   }
 }
 
-/* ========================================
-   Fluid Typography
-   Text scales smoothly between min and max sizes
-   ======================================== */
-
-/* Page titles - scales from 18px to 24px based on viewport */
+/* Fluid Typography */
 .fluid-title {
   font-size: clamp(1.125rem, 1.5vw + 0.75rem, 1.5rem);
 }
-
-/* Section headers - scales from 12px to 14px */
 .fluid-heading {
   font-size: clamp(0.75rem, 0.5vw + 0.625rem, 0.875rem);
 }
-
-/* Body text - scales from 12px to 14px */
 .fluid-body {
   font-size: clamp(0.75rem, 0.25vw + 0.6875rem, 0.875rem);
 }
-
-/* Small text - scales from 10px to 12px */
 .fluid-small {
   font-size: clamp(0.625rem, 0.25vw + 0.5625rem, 0.75rem);
 }
 
-/* ========================================
-   Viewport-aware Height Utilities
-   Uses dvh for accurate mobile viewport height
-   with Zoom support via transform
-   ======================================== */
-
+/* Root Variables (Shadcn Light Mode Defaults with MioSub Colors) */
 :root {
-  /* Default: No transform (Electron / Native / Zoom 100%) */
   --app-transform: none;
   --app-width: 100%;
   --app-height: 100%;
   --app-height-safe: 100dvh;
+  --radius: 0.75rem; /* rounded-xl by default */
+
+  /* MioSub Light Theme */
+  --background: 210 20% 98%; /* #F3F4F6 (Cool White) - OKLCH conversion approx */
+  --foreground: 215 28% 17%; /* #1F2937 (Dark Grey) */
+
+  --card: 0 0% 100%; /* White */
+  --card-foreground: 215 28% 17%; /* Dark Grey */
+
+  --popover: 0 0% 100%; /* White */
+  --popover-foreground: 215 28% 17%;
+
+  /* Electric Purple */
+  --primary: 263 70% 50%; /* #6D28D9 via HSL approx */
+  --primary-foreground: 0 0% 100%; /* White */
+
+  /* Soft Violet (Secondary) */
+  --secondary: 258 57% 95%; /* Light violet bg */
+  --secondary-foreground: 263 70% 50%;
+
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+
+  /* Vibrant Orange (Accent) */
+  --accent: 38 92% 50%; /* #F59E0B */
+  --accent-foreground: 0 0% 100%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 263 70% 50%; /* Brand Purple Ring */
+
+  --chart-1: 12 76% 61%;
+  --chart-2: 173 58% 39%;
+  --chart-3: 197 37% 24%;
+  --chart-4: 43 74% 66%;
+  --chart-5: 27 87% 67%;
+
+  --sidebar: 0 0% 98%;
+  --sidebar-foreground: 240 5.3% 26.1%;
+  --sidebar-primary: 240 5.9% 10%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-accent: 240 4.8% 95.9%;
+  --sidebar-accent-foreground: 240 5.9% 10%;
+  --sidebar-border: 220 13% 91%;
+  --sidebar-ring: 217.2 91.2% 59.8%;
 }
 
 #root {
-  /* Using transform for web-based zoom */
   transform: var(--app-transform);
   transform-origin: 0 0;
   width: var(--app-width);
@@ -186,11 +212,81 @@ body {
 .h-screen-safe {
   height: var(--app-height-safe);
 }
-
 .min-h-screen-safe {
   min-height: var(--app-height-safe);
 }
-
 .max-h-screen-safe {
   max-height: var(--app-height-safe);
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xml: calc(var(--radius) + 8px); /* Extra Mio Large */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+.dark {
+  /* Minimal Dark Mode Override - MioSub is primarily Light Mode for now, but keeping definitions safe */
+  --background: 224 71% 4%;
+  --foreground: 213 31% 91%;
+  --card: 224 71% 4%;
+  --card-foreground: 213 31% 91%;
+  --popover: 224 71% 4%;
+  --popover-foreground: 215 20.2% 65.1%;
+  --primary: 263 70% 50%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 222.2 47.4% 11.2%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 223 47% 11%;
+  --muted-foreground: 215.4 16.3% 56.9%;
+  --accent: 216 34% 17%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 216 34% 17%;
+  --input: 216 34% 17%;
+  --ring: 263 70% 50%;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
 }

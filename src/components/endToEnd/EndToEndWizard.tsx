@@ -102,16 +102,16 @@ export function EndToEndWizard({
 
   if (!isElectron) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-8">
-        <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-amber-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">
+      <div className="min-h-screen bg-warm-mesh flex items-center justify-center p-8">
+        <div className="text-center bg-white/50 backdrop-blur-xl p-8 rounded-2xl border border-white/40 shadow-xl">
+          <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">
             {t('wizard.featureUnavailable.title')}
           </h2>
-          <p className="text-white/60 mb-6">{t('wizard.featureUnavailable.desc')}</p>
+          <p className="text-slate-500 mb-6">{t('wizard.featureUnavailable.desc')}</p>
           <button
             onClick={onCancel}
-            className="px-6 py-3 bg-white/10 border border-white/20 rounded-xl text-white"
+            className="px-6 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 hover:bg-slate-50 transition-all font-medium shadow-sm hover:shadow-md"
           >
             {t('wizard.featureUnavailable.return')}
           </button>
@@ -121,14 +121,14 @@ export function EndToEndWizard({
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-slate-950 flex flex-col p-4 md:p-8">
+    <div className="h-screen overflow-hidden bg-warm-mesh flex flex-col p-4 md:p-8">
       <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col min-h-0">
         {/* Header */}
         <PageHeader
           title={
             <>
-              <span className="truncate">{t('wizard.title')}</span>
-              <span className="text-[10px] sm:text-xs font-normal text-slate-500 bg-slate-900 border border-slate-800 px-1.5 sm:px-2 py-0.5 rounded whitespace-nowrap">
+              <span className="truncate text-slate-800">{t('wizard.title')}</span>
+              <span className="text-[10px] sm:text-xs font-normal text-brand-purple bg-brand-purple/5 border border-brand-purple/10 px-1.5 sm:px-2 py-0.5 rounded whitespace-nowrap">
                 {t('wizard.modeBadge')}
               </span>
             </>
@@ -210,11 +210,11 @@ export function EndToEndWizard({
 
         {/* Footer Navigation - 仅在配置页显示，输入页解析成功后自动跳转 */}
         {state.currentStep === 'config' && (
-          <footer className="py-4 border-t border-slate-800 shrink-0">
-            <div className="max-w-3xl mx-auto flex justify-between">
+          <footer className="py-4 border-t border-slate-200/60 shrink-0 bg-white/50">
+            <div className="max-w-3xl mx-auto flex justify-between px-6">
               <button
                 onClick={currentStepIndex > 0 ? goBack : onCancel}
-                className="px-6 py-3 bg-white/10 border border-white/20 rounded-xl text-white font-medium transition-colors hover:bg-white/15"
+                className="px-6 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 font-medium transition-colors hover:bg-slate-50 hover:text-slate-900 shadow-sm"
               >
                 <span className="flex items-center gap-2">
                   <ArrowLeft className="w-4 h-4" />

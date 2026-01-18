@@ -118,7 +118,7 @@ export function DownloadPage({
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col p-4 md:p-8">
+    <div className="h-screen overflow-hidden bg-warm-mesh flex flex-col p-4 md:p-8">
       <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col min-h-0">
         {/* Header */}
         <PageHeader
@@ -148,7 +148,7 @@ export function DownloadPage({
           }
         />
 
-        <div className="max-w-3xl mx-auto w-full mt-6">
+        <div className="max-w-3xl mx-auto w-full mt-6 overflow-y-auto custom-scrollbar pr-2 pb-4">
           <UrlInput
             onParse={parse}
             disabled={status === 'downloading' || status === 'parsing'}
@@ -159,21 +159,21 @@ export function DownloadPage({
           {error && (
             <div
               className={cn(
-                'flex flex-col gap-3 p-4 rounded-lg mb-4 border',
+                'flex flex-col gap-3 p-4 rounded-xl mb-4 border shadow-sm',
                 errorInfo?.retryable
-                  ? 'bg-amber-500/10 border-amber-500/40 text-amber-200'
-                  : 'bg-red-500/10 border-red-500/30 text-red-200'
+                  ? 'bg-amber-50 border-amber-200 text-amber-800'
+                  : 'bg-red-50 border-red-200 text-red-800'
               )}
             >
               <div className="flex items-start gap-3">
                 <span className="text-xl shrink-0">{getErrorIcon()}</span>
-                <span className="leading-relaxed">{error}</span>
+                <span className="leading-relaxed font-medium">{error}</span>
               </div>
               <div className="flex gap-2 justify-end">
                 {errorInfo?.retryable && (
                   <button
                     onClick={retry}
-                    className="px-3 py-1.5 bg-violet-500/20 border border-violet-500/50 rounded-md text-violet-300 text-sm transition-colors hover:bg-violet-500/30"
+                    className="px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-lg text-violet-700 text-sm transition-colors hover:bg-violet-100 font-medium"
                   >
                     <span className="flex items-center gap-1.5">
                       <RefreshCw className="w-3.5 h-3.5" /> {t('retry')}
@@ -182,7 +182,7 @@ export function DownloadPage({
                 )}
                 <button
                   onClick={reset}
-                  className="px-3 py-1.5 bg-white/5 border border-white/20 rounded-md text-white/70 text-sm transition-colors hover:bg-white/10"
+                  className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 text-sm transition-colors hover:bg-slate-50 font-medium shadow-sm"
                 >
                   <span className="flex items-center gap-1.5">
                     <X className="w-3.5 h-3.5" /> {t('clear')}
@@ -194,46 +194,52 @@ export function DownloadPage({
 
           {/* Video Card */}
           {videoInfo && status !== 'downloading' && status !== 'completed' && (
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+            <div className="bg-white/80 backdrop-blur-xl border border-white/20 rounded-2xl p-6 shadow-xl shadow-slate-200/40 animate-in fade-in slide-in-from-bottom-4 duration-300">
               <VideoPreview videoInfo={videoInfo} />
 
-              <QualitySelector
-                formats={videoInfo.formats}
-                selectedFormat={selectedFormat}
-                onSelect={setSelectedFormat}
-              />
+              <div className="my-6">
+                <QualitySelector
+                  formats={videoInfo.formats}
+                  selectedFormat={selectedFormat}
+                  onSelect={setSelectedFormat}
+                />
+              </div>
 
               {/* Output Directory */}
-              <div className="pt-4 mb-4 border-t border-white/10">
-                <label className="block text-sm text-white/60 mb-2">{t('outputDir')}</label>
+              <div className="pt-6 mb-6 border-t border-slate-100">
+                <label className="block text-sm font-semibold text-slate-600 mb-2">
+                  {t('outputDir')}
+                </label>
                 <DirectorySelector
                   value={outputDir}
                   placeholder={t('notSelected')}
                   onSelect={selectDir}
-                  variant="accent"
+                  variant="default"
                 />
               </div>
 
               {/* Download Thumbnail Option (Custom Checkbox) */}
-              <div className="mb-6">
+              <div className="mb-8">
                 <div
                   className="flex items-center gap-2 cursor-pointer select-none group w-fit"
                   onClick={() => setIncludeThumbnail(!includeThumbnail)}
                 >
                   <div
                     className={cn(
-                      'w-5 h-5 rounded flex items-center justify-center transition-all duration-200 border',
+                      'w-5 h-5 rounded flex items-center justify-center transition-all duration-200 border shadow-sm',
                       includeThumbnail
-                        ? 'bg-violet-500 border-violet-500'
-                        : 'bg-white/5 border-white/20 group-hover:border-white/30'
+                        ? 'bg-brand-purple border-brand-purple'
+                        : 'bg-white border-slate-300 group-hover:border-brand-purple/50'
                     )}
                   >
                     {includeThumbnail && <CheckCircle className="w-3.5 h-3.5 text-white" />}
                   </div>
                   <span
                     className={cn(
-                      'text-sm transition-colors',
-                      includeThumbnail ? 'text-white' : 'text-white/70 group-hover:text-white/90'
+                      'text-sm transition-colors font-medium',
+                      includeThumbnail
+                        ? 'text-slate-800'
+                        : 'text-slate-600 group-hover:text-slate-800'
                     )}
                   >
                     {t('downloadThumbnail')}
@@ -242,18 +248,18 @@ export function DownloadPage({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-4 justify-end pt-4 border-t border-white/10">
+              <div className="flex flex-wrap gap-4 justify-end pt-6 border-t border-slate-100">
                 {/* Standalone Thumbnail Download Button */}
                 <button
                   onClick={handleDownloadThumbnailOnly}
                   disabled={downloadingThumbnail}
-                  className="px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white/70 font-medium transition-colors hover:bg-white/10 hover:text-white mr-auto"
+                  className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-600 font-semibold transition-all hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 shadow-sm mr-auto"
                 >
                   <span className="flex items-center gap-2">
                     {downloadingThumbnail ? (
                       <RefreshCw className="w-4 h-4 animate-spin" />
                     ) : (
-                      <Image className="w-4 h-4" />
+                      <Image className="w-4 h-4 text-slate-500" />
                     )}
                     {t('thumbnailOnly')}
                   </span>
@@ -261,7 +267,7 @@ export function DownloadPage({
 
                 <button
                   onClick={handleDownload}
-                  className="px-6 py-3 bg-white/10 border border-white/20 rounded-lg text-white font-medium transition-colors hover:bg-white/15"
+                  className="px-6 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold transition-all hover:bg-slate-50 hover:text-slate-900 hover:border-slate-300 shadow-sm"
                 >
                   <span className="flex items-center gap-2">
                     <Download className="w-4 h-4" /> {t('downloadVideo')}
@@ -270,6 +276,7 @@ export function DownloadPage({
                 <PrimaryButton
                   onClick={handleDownloadAndContinue}
                   icon={<Play className="w-4 h-4 fill-current" />}
+                  className="rounded-xl shadow-lg shadow-brand-purple/20"
                 >
                   {t('downloadAndGenerate')}
                 </PrimaryButton>
@@ -281,19 +288,23 @@ export function DownloadPage({
 
           {/* Success Message */}
           {status === 'completed' && outputPath && (
-            <div className="text-center p-8 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl">
-              <CheckCircle className="w-12 h-12 text-emerald-400 mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-white mb-2">{t('downloadComplete')}</h3>
-              <p className="text-white/60 text-sm mb-2 break-all">{outputPath}</p>
+            <div className="text-center p-8 bg-emerald-50 border border-emerald-200 rounded-2xl shadow-lg shadow-emerald-500/5 animate-in zoom-in-95 duration-300">
+              <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <CheckCircle className="w-10 h-10 text-emerald-500" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-2">{t('downloadComplete')}</h3>
+              <p className="text-slate-600 text-sm mb-2 break-all font-mono bg-white/50 inline-block px-3 py-1 rounded-lg border border-emerald-100">
+                {outputPath}
+              </p>
               {thumbnailPath && (
-                <p className="text-white/50 text-xs mb-4 break-all">
+                <p className="text-slate-500 text-xs mb-6 break-all">
                   {t('thumbnail')}: {thumbnailPath}
                 </p>
               )}
-              <div className="flex gap-4 justify-center flex-wrap mt-4">
+              <div className="flex gap-4 justify-center flex-wrap mt-6">
                 <button
                   onClick={() => window.electronAPI.showItemInFolder(outputPath)}
-                  className="px-6 py-3 bg-white/10 border border-white/20 rounded-lg text-white transition-colors hover:bg-white/15"
+                  className="px-6 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 font-semibold transition-all hover:bg-slate-50 hover:text-slate-900 shadow-sm"
                 >
                   <span className="flex items-center gap-2">
                     <FolderOpen className="w-4 h-4" /> {t('openOutputDir')}
@@ -301,15 +312,16 @@ export function DownloadPage({
                 </button>
                 <button
                   onClick={reset}
-                  className="px-6 py-3 bg-white/10 border border-white/20 rounded-lg text-white transition-colors hover:bg-white/15"
+                  className="px-6 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 font-semibold transition-all hover:bg-slate-50 hover:text-slate-900 shadow-sm"
                 >
                   {t('downloadNewVideo')}
                 </button>
                 {onDownloadComplete && (
                   <PrimaryButton
                     onClick={() => onDownloadComplete(outputPath)}
-                    variant="success"
+                    variant="primary"
                     icon={<Play className="w-4 h-4 fill-current" />}
+                    className="rounded-xl shadow-md"
                   >
                     {t('continueGenerating')}
                   </PrimaryButton>

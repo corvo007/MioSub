@@ -1,4 +1,3 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Film } from 'lucide-react';
 import { GenrePicker } from '@/components/ui/GenrePicker';
@@ -16,9 +15,9 @@ export function GenreSelector({
 }) {
   const { t } = useTranslation('endToEnd');
   return (
-    <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
-      <label className="block text-sm font-medium text-white/80 mb-3">
-        <Film className="w-4 h-4 inline mr-2" />
+    <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-sm">
+      <label className="block text-sm font-medium text-slate-700 mb-3">
+        <Film className="w-4 h-4 inline mr-2 text-slate-500" />
         {t('config.subtitle.genre')}
       </label>
       <GenrePicker

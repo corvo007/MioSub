@@ -35,7 +35,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
       title={
         <>
           <span className="truncate">{title}</span>
-          <span className="text-[10px] sm:text-xs font-normal text-slate-500 bg-slate-900 border border-slate-800 px-1.5 sm:px-2 py-0.5 rounded whitespace-nowrap">
+          <span className="text-[10px] sm:text-xs font-medium text-brand-purple bg-brand-purple/5 border border-brand-purple/10 px-1.5 sm:px-2 py-0.5 rounded whitespace-nowrap shadow-sm">
             {modeLabel}
           </span>
         </>

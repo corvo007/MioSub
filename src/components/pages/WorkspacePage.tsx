@@ -285,7 +285,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   return (
     <div
       className={cn(
-        'h-screen-safe bg-slate-950 text-slate-200 p-4 md:p-8 flex flex-col overflow-y-auto',
+        'h-screen-safe bg-warm-mesh text-slate-800 p-4 md:p-8 flex flex-col overflow-y-auto',
         !forceVerticalLayout && 'md:overflow-hidden'
       )}
     >
@@ -318,15 +318,13 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
           <div className={cn(!forceVerticalLayout && 'md:hidden')}>
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-slate-900/80 border border-slate-800 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 bg-white/90 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
             >
               <span className="flex items-center gap-2">
                 <FolderOpen className="w-4 h-4 text-indigo-400" />
                 {t('sidebar.projectSettings')}
                 {file && (
-                  <span className="text-xs text-slate-500 truncate max-w-[150px]">
-                    - {file.name}
-                  </span>
+                  <span className="text-xs text-slate-500 truncate max-w-37.5">- {file.name}</span>
                 )}
               </span>
               {sidebarCollapsed ? (
@@ -350,14 +348,14 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
             {/* Desktop Spacer for Alignment */}
             <div
               className={cn(
-                'h-6 mb-1 shrink-0',
+                'h-6 mb-1 shrink-0', // Fixed lint
                 !forceVerticalLayout ? 'hidden md:block' : 'hidden'
               )}
             ></div>
 
-            <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-3 shadow-sm space-y-3">
+            <div className="bg-white/60 backdrop-blur-md border border-white/20 rounded-xl p-3 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="fluid-heading font-semibold text-slate-300">
+                <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                   {t('sidebar.projectFile')}
                 </h3>
                 {isLoadingFile && (
@@ -369,7 +367,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
               </div>
               <div className={cn(isLoadingFile && 'opacity-60 pointer-events-none')}>
                 {isLoadingFile && !file ? (
-                  <div className="flex items-center justify-center h-32 border-2 border-dashed border-indigo-500/50 rounded-lg bg-indigo-500/5">
+                  <div className="flex items-center justify-center h-32 border-2 border-dashed border-brand-purple/20 rounded-lg bg-brand-purple/5">
                     <div className="flex flex-col items-center">
                       <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mb-2" />
                       <span className="text-sm text-slate-400">{t('sidebar.readingFile')}</span>
@@ -417,18 +415,18 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                 )}
               </div>
               {activeTab === 'import' && (
-                <div className="pt-2 border-t border-slate-800">
+                <div className="pt-4 border-t border-slate-100/50">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="fluid-heading font-semibold text-slate-400">
+                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                       {t('sidebar.subtitleFile')}
                     </h3>
                     {subtitles.length > 0 && (
-                      <span className="text-[10px] text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">
+                      <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-medium border border-emerald-100">
                         {t('sidebar.rows', { count: subtitles.length })}
                       </span>
                     )}
                     {isLoadingSubtitle && (
-                      <span className="flex items-center text-xs text-emerald-400">
+                      <span className="flex items-center text-xs text-emerald-500">
                         <Loader2 className="w-3 h-3 animate-spin mr-1.5" />
                         {t('sidebar.parsing')}
                       </span>
@@ -436,10 +434,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                   </div>
                   <div className={cn(isLoadingSubtitle && 'opacity-60 pointer-events-none')}>
                     {isLoadingSubtitle && subtitles.length === 0 ? (
-                      <div className="flex items-center justify-center h-24 border-2 border-dashed border-emerald-500/50 rounded-lg bg-emerald-500/5">
+                      <div className="flex items-center justify-center h-24 border-2 border-dashed border-emerald-500/30 rounded-lg bg-emerald-500/5">
                         <div className="flex flex-col items-center">
-                          <Loader2 className="w-6 h-6 text-emerald-400 animate-spin mb-2" />
-                          <span className="text-sm text-slate-400">
+                          <Loader2 className="w-6 h-6 text-emerald-500 animate-spin mb-2" />
+                          <span className="text-sm text-slate-500">
                             {t('sidebar.parsingSubtitles')}
                           </span>
                         </div>
@@ -474,19 +472,19 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                       />
                     )}
                   </div>
-                  <div className="mt-1.5 fluid-small text-amber-300 bg-amber-500/10 px-2 py-1.5 rounded border border-amber-500/30">
+                  <div className="mt-1.5 fluid-small text-amber-700 bg-amber-500/10 px-2 py-1.5 rounded border border-amber-500/20">
                     <span className="font-medium">{t('sidebar.hint')}</span>
                     {t('sidebar.hintText')}
                   </div>
                 </div>
               )}
               {/* Settings Section - Collapsible */}
-              <div className="bg-slate-800/50 rounded border border-slate-700/50">
+              <div className="bg-white/50 rounded-xl border border-slate-200/60 shadow-sm">
                 <button
                   onClick={() => setSettingsExpanded(!settingsExpanded)}
-                  className="w-full flex items-center justify-between px-2.5 py-2 text-xs text-slate-400 hover:bg-slate-800/50 transition-colors"
+                  className="w-full flex items-center justify-between px-2.5 py-2 text-xs text-slate-500 hover:bg-slate-50/80 transition-colors rounded-t-xl"
                 >
-                  <span className="flex items-center fluid-heading font-medium text-slate-300">
+                  <span className="flex items-center fluid-heading font-bold text-slate-700">
                     <Clapperboard className="w-3 h-3 mr-2" /> {t('sidebar.projectSettings')}
                   </span>
                   {settingsExpanded ? (
@@ -503,10 +501,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                       </span>
                       <button
                         onClick={onShowGenreSettings}
-                        className="flex items-center space-x-1.5 px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded text-xs font-medium text-slate-300 hover:text-white transition-colors group"
+                        className="flex items-center space-x-1.5 px-2 py-1 bg-white hover:bg-slate-50 border border-slate-200 rounded text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors group shadow-sm"
                         title={t('sidebar.editGenre')}
                       >
-                        <span className="truncate max-w-[100px]">
+                        <span className="truncate max-w-25">
                           {settings.genre === 'general'
                             ? t('genres.general')
                             : settings.genre === 'anime'
@@ -519,11 +517,11 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                                     ? t('genres.tech')
                                     : settings.genre}
                         </span>
-                        <Edit2 className="w-3 h-3 text-slate-500 group-hover:text-indigo-400 transition-colors" />
+                        <Edit2 className="w-3 h-3 text-slate-400 group-hover:text-brand-purple transition-colors" />
                       </button>
                     </div>
 
-                    <div className="flex flex-col space-y-1 pt-2 border-t border-slate-700/50">
+                    <div className="flex flex-col space-y-1 pt-2 border-t border-slate-100">
                       <span className="flex items-center text-slate-500 text-xs mb-1">
                         <Book className="w-3 h-3 mr-2" /> {t('sidebar.glossary')}
                       </span>
@@ -537,7 +535,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                             label: (
                               <div className="flex items-center justify-between w-full min-w-0">
                                 <span className="truncate mr-2">{g.name}</span>
-                                <span className="text-slate-500 text-xs flex-shrink-0">
+                                <span className="text-slate-500 text-xs shrink-0">
                                   ({g.terms?.length || 0})
                                 </span>
                               </div>
@@ -549,7 +547,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                       />
                     </div>
 
-                    <div className="flex flex-col space-y-1 pt-2 border-t border-slate-700/50">
+                    <div className="flex flex-col space-y-1 pt-2 border-t border-slate-100">
                       <span className="flex items-center text-slate-500 text-xs mb-1">
                         <Languages className="w-3 h-3 mr-2" /> {t('sidebar.targetLanguage')}
                       </span>
@@ -563,7 +561,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
 
                     {/* Speaker Count Hints - Only visible when diarization enabled AND in new project mode */}
                     {activeTab === 'new' && settings.enableDiarization && (
-                      <div className="flex flex-col space-y-1.5 pt-2 border-t border-slate-700/50">
+                      <div className="flex flex-col space-y-1.5 pt-2 border-t border-slate-100">
                         <span className="text-slate-500 text-xs flex items-center gap-1.5">
                           <Users className="w-3.5 h-3.5" />
                           {t('sidebar.speakerCount')}
@@ -609,8 +607,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                 className={cn(
                   'w-full py-3 px-4 rounded-xl font-semibold text-white shadow-lg transition-all flex items-center justify-center space-x-2',
                   isProcessing || !file
-                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                    : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-indigo-500/25 hover:shadow-indigo-500/40 cursor-pointer'
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                    : 'bg-linear-to-r from-brand-purple to-brand-orange hover:from-brand-purple/90 hover:to-brand-orange/90 shadow-brand-purple/25 hover:shadow-brand-purple/40 cursor-pointer'
                 )}
               >
                 {isProcessing ? (
@@ -630,9 +628,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
             )}
 
             {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-xs text-red-400 flex items-start space-x-2 animate-fade-in">
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <span className="break-words w-full">{error}</span>
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 flex items-start space-x-2 animate-fade-in shadow-sm">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span className="wrap-break-word w-full">{error}</span>
               </div>
             )}
 
@@ -642,7 +640,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
               subtitles.length > 0 && (
                 <button
                   onClick={() => setShowExportModal(true)}
-                  className="w-full py-2 px-3 rounded-lg font-semibold text-white text-sm shadow-lg transition-all flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-500/25 hover:shadow-emerald-500/40 animate-fade-in"
+                  className="w-full py-2 px-3 rounded-lg font-semibold text-white text-sm shadow-lg transition-all flex items-center justify-center space-x-2 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 shadow-emerald-500/25 hover:shadow-emerald-500/40 animate-fade-in"
                 >
                   <Download className="w-4 h-4" />
                   <span>{t('actions.exportSubtitles')}</span>
@@ -652,7 +650,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
             {canShowCompression && (
               <button
                 onClick={onStartCompression}
-                className="w-full py-2 px-3 rounded-lg font-semibold text-white text-sm shadow-lg transition-all flex items-center justify-center space-x-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 shadow-amber-500/25 hover:shadow-amber-500/40 animate-fade-in"
+                className="w-full py-2 px-3 rounded-lg font-semibold text-white text-sm shadow-lg transition-all flex items-center justify-center space-x-2 bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 shadow-amber-500/20 hover:shadow-amber-500/30 animate-fade-in"
               >
                 <Scissors className="w-4 h-4" />
                 <span>{t('actions.compressVideo')}</span>
@@ -665,10 +663,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
             isOpen={showExportModal}
             onClose={() => setShowExportModal(false)}
             title={t('export.title')}
-            icon={<Download className="w-5 h-5 mr-2 text-emerald-400" />}
+            icon={<Download className="w-5 h-5 mr-2 text-emerald-500" />}
             maxWidth="sm"
           >
-            <p className="text-slate-400 text-sm mb-6">
+            <p className="text-slate-500 text-sm mb-6">
               {t('export.description')}{' '}
               {settings.outputMode === 'bilingual'
                 ? t('export.bilingual')
@@ -681,9 +679,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                   onDownload('srt');
                   setShowExportModal(false);
                 }}
-                className="flex flex-col items-center justify-center p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-xl transition-all group"
+                className="flex flex-col items-center justify-center p-3 bg-white hover:bg-slate-50 border border-slate-200 hover:border-emerald-500/50 rounded-xl transition-all group shadow-sm hover:shadow-md"
               >
-                <span className="text-2xl font-bold text-slate-200 group-hover:text-emerald-400 mb-1">
+                <span className="text-2xl font-bold text-slate-700 group-hover:text-emerald-500 mb-1">
                   .SRT
                 </span>
                 <span className="text-xs text-slate-500 mt-1">{t('export.srtFormat')}</span>
@@ -693,9 +691,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                   onDownload('ass');
                   setShowExportModal(false);
                 }}
-                className="flex flex-col items-center justify-center p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 rounded-xl transition-all group"
+                className="flex flex-col items-center justify-center p-3 bg-white hover:bg-slate-50 border border-slate-200 hover:border-brand-purple/50 rounded-xl transition-all group shadow-sm hover:shadow-md"
               >
-                <span className="text-2xl font-bold text-slate-200 group-hover:text-emerald-400 mb-1">
+                <span className="text-2xl font-bold text-slate-700 group-hover:text-brand-purple mb-1">
                   .ASS
                 </span>
                 <span className="text-xs text-slate-500 mt-1">{t('export.assFormat')}</span>
@@ -704,7 +702,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
 
             <button
               onClick={() => setShowExportModal(false)}
-              className="w-full mt-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 text-sm font-medium transition-colors"
+              className="w-full mt-4 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/50 hover:border-slate-200 rounded-lg text-slate-500 hover:text-slate-800 text-sm font-medium transition-all"
             >
               {t('export.cancel')}
             </button>
@@ -723,7 +721,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                 !forceVerticalLayout ? 'hidden md:block' : 'hidden'
               )}
             ></div>
-            <div className="bg-slate-900 border border-slate-800 rounded-xl sm:rounded-2xl overflow-hidden flex flex-col shadow-2xl relative flex-1 min-h-0">
+            <div className="bg-white/80 backdrop-blur-xl border border-white/20 rounded-xl sm:rounded-2xl overflow-hidden flex flex-col shadow-xl shadow-slate-200/40 relative flex-1 min-h-0">
               {showSnapshots ? (
                 <ErrorBoundary variant="compact">
                   <HistoryPanel

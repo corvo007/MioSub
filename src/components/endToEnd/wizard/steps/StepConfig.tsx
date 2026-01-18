@@ -8,13 +8,40 @@ import { ResolutionSelector } from '@/components/compression/ResolutionSelector'
 import { EncoderSelector } from '@/components/compression/EncoderSelector';
 import { useHardwareAcceleration } from '@/hooks/useHardwareAcceleration';
 import { CustomSelect } from '@/components/ui/CustomSelect';
-import { Card } from '@/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NumberInput } from '@/components/ui/NumberInput';
 import { ToggleOptionInline } from '@/components/endToEnd/wizard/shared/ToggleOption';
 import { GenreSelectorInline } from '@/components/endToEnd/wizard/shared/GenreSelector';
 import { DirectorySelector } from '@/components/ui/DirectorySelector';
 import { QualitySelector } from '@/components/download/QualitySelector';
 import { TargetLanguageSelector } from '@/components/settings/TargetLanguageSelector';
+
+const SectionCard = ({
+  title,
+  icon,
+  children,
+  className,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <Card
+    className={cn(
+      'bg-white/80 backdrop-blur-xl border-white/60 shadow-sm ring-1 ring-slate-900/5',
+      className
+    )}
+  >
+    <CardHeader className="flex flex-row items-center gap-3 space-y-0 pb-4 border-b border-slate-100 bg-slate-50/50">
+      <div className="p-2 bg-white rounded-lg border border-slate-100 shadow-sm text-brand-purple">
+        {icon}
+      </div>
+      <CardTitle className="text-base font-semibold text-slate-800">{title}</CardTitle>
+    </CardHeader>
+    <CardContent className="pt-6">{children}</CardContent>
+  </Card>
+);
 
 /** 步骤 2: 配置选项 */
 export function StepConfig({
@@ -44,20 +71,20 @@ export function StepConfig({
     <div className="max-w-3xl mx-auto">
       {/* Video Info Card */}
       {videoInfo && (
-        <Card className="mb-6">
-          <div className="flex items-center gap-4">
+        <Card className="mb-6 bg-white border-slate-200 shadow-sm ring-1 ring-slate-900/5">
+          <CardContent className="p-4 flex items-center gap-4">
             {videoInfo.thumbnail && (
               <img
                 src={videoInfo.thumbnail}
                 alt="Thumbnail"
-                className="w-20 h-14 object-cover rounded-lg"
+                className="w-20 h-14 object-cover rounded-lg border border-slate-100"
               />
             )}
             <div className="flex-1 min-w-0">
-              <h4 className="font-medium text-white truncate">{videoInfo.title}</h4>
-              <p className="text-sm text-white/50">{videoInfo.uploader}</p>
+              <h4 className="font-medium text-slate-800 truncate">{videoInfo.title}</h4>
+              <p className="text-sm text-slate-500">{videoInfo.uploader}</p>
             </div>
-          </div>
+          </CardContent>
         </Card>
       )}
 
@@ -66,10 +93,10 @@ export function StepConfig({
         {/* ================================ */}
         {/* Section 1: 下载配置 */}
         {/* ================================ */}
-        <Card title={t('config.sections.download')} icon={<Download className="w-4 h-4" />}>
+        <SectionCard title={t('config.sections.download')} icon={<Download className="w-4 h-4" />}>
           {/* Output Directory */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-white/70 mb-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
               {t('config.download.outputDir')}
             </label>
             <DirectorySelector
@@ -90,7 +117,7 @@ export function StepConfig({
             />
           ) : (
             <div className="mb-4">
-              <label className="block text-sm font-medium text-white/70 mb-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
                 {t('config.download.quality')}
               </label>
               <div className="flex flex-wrap gap-2 md:gap-3">
@@ -104,10 +131,10 @@ export function StepConfig({
                     key={quality.value}
                     onClick={() => onConfigChange({ downloadFormat: quality.value })}
                     className={cn(
-                      'px-4 py-2 rounded-lg text-sm transition-colors border',
+                      'px-4 py-2 rounded-lg text-sm transition-colors border shadow-sm',
                       (config.downloadFormat || 'best') === quality.value
-                        ? 'bg-violet-500/20 border-violet-500/50 text-violet-400'
-                        : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10'
+                        ? 'bg-brand-purple/10 border-brand-purple/20 text-brand-purple font-medium'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                     )}
                   >
                     {quality.label}
@@ -123,16 +150,16 @@ export function StepConfig({
             checked={config.downloadThumbnail !== false}
             onChange={(v) => onConfigChange({ downloadThumbnail: v })}
           />
-        </Card>
+        </SectionCard>
 
         {/* ================================ */}
         {/* Section 2: 字幕生成配置 */}
         {/* ================================ */}
-        <Card title={t('config.sections.subtitle')} icon={<FileText className="w-4 h-4" />}>
+        <SectionCard title={t('config.sections.subtitle')} icon={<FileText className="w-4 h-4" />}>
           {/* Genre Selection */}
 
           <div className="mb-4">
-            <label className="block text-sm font-medium text-white/70 mb-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
               {t('config.subtitle.genre')}
             </label>
             <GenreSelectorInline
@@ -144,10 +171,10 @@ export function StepConfig({
           {/* Target Language */}
           <div className="flex items-center justify-between py-2">
             <div>
-              <span className="text-sm text-white/90">
+              <span className="text-sm text-slate-700 font-medium">
                 {t('config.subtitle.targetLanguage.label')}
               </span>
-              <p className="text-xs text-white/50">{t('config.subtitle.targetLanguage.desc')}</p>
+              <p className="text-xs text-slate-500">{t('config.subtitle.targetLanguage.desc')}</p>
             </div>
             <div className="w-40">
               <TargetLanguageSelector
@@ -163,8 +190,10 @@ export function StepConfig({
             {/* Glossary Selection */}
             <div className="flex items-center justify-between py-2">
               <div>
-                <span className="text-sm text-white/90">{t('config.subtitle.glossary.label')}</span>
-                <p className="text-xs text-white/50">{t('config.subtitle.glossary.desc')}</p>
+                <span className="text-sm text-slate-700 font-medium">
+                  {t('config.subtitle.glossary.label')}
+                </span>
+                <p className="text-xs text-slate-500">{t('config.subtitle.glossary.desc')}</p>
               </div>
               <div className="w-40">
                 <CustomSelect
@@ -177,7 +206,7 @@ export function StepConfig({
                       label: (
                         <div className="flex items-center justify-between w-full min-w-0">
                           <span className="truncate mr-2">{g.name}</span>
-                          <span className="text-slate-500 text-xs flex-shrink-0">
+                          <span className="text-slate-500 text-xs shrink-0">
                             ({g.terms?.length || 0})
                           </span>
                         </div>
@@ -189,7 +218,7 @@ export function StepConfig({
               </div>
             </div>
             {/* Auto-confirm hint - always show */}
-            <p className="text-xs text-violet-400/70 mt-1 pl-0.5">
+            <p className="text-xs text-brand-purple/70 mt-1 pl-0.5">
               {config.selectedGlossaryId
                 ? t('config.subtitle.glossary.autoConfirmHint')
                 : t('config.subtitle.glossary.noGlossaryHint')}
@@ -197,13 +226,13 @@ export function StepConfig({
 
             {/* Speaker Count - Only visible if Global Diarization is enabled */}
             {settings?.enableDiarization && (
-              <div className="pt-3 border-t border-white/5 mt-2">
-                <span className="text-sm text-white/90 block mb-2">
+              <div className="pt-3 border-t border-slate-100 mt-2">
+                <span className="text-sm text-slate-700 font-medium block mb-2">
                   {t('config.subtitle.speakerCount.label')}
                 </span>
                 <div className="flex flex-wrap items-center gap-4 md:gap-6">
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-white/70">
+                    <span className="text-sm text-slate-500">
                       {t('config.subtitle.speakerCount.min')}
                     </span>
                     <NumberInput
@@ -212,11 +241,11 @@ export function StepConfig({
                       min={1}
                       max={99}
                       placeholder="-"
-                      className="w-12 text-center bg-white/5 border-white/10 focus:border-violet-500/50"
+                      className="w-12 text-center bg-white border-slate-200 focus:border-brand-purple/50 text-slate-700"
                     />
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm text-white/70">
+                    <span className="text-sm text-slate-500">
                       {t('config.subtitle.speakerCount.max')}
                     </span>
                     <NumberInput
@@ -225,19 +254,19 @@ export function StepConfig({
                       min={1}
                       max={99}
                       placeholder="-"
-                      className="w-12 text-center bg-white/5 border-white/10 focus:border-violet-500/50"
+                      className="w-12 text-center bg-white border-slate-200 focus:border-brand-purple/50 text-slate-700"
                     />
                   </div>
                 </div>
               </div>
             )}
           </div>
-        </Card>
+        </SectionCard>
 
         {/* ================================ */}
         {/* Section 3: 压制配置 */}
         {/* ================================ */}
-        <Card title={t('config.sections.compression')} icon={<Film className="w-4 h-4" />}>
+        <SectionCard title={t('config.sections.compression')} icon={<Film className="w-4 h-4" />}>
           <ToggleOptionInline
             label={t('config.compression.enable.label')}
             description={t('config.compression.enable.desc')}
@@ -249,7 +278,7 @@ export function StepConfig({
             <div className="mt-6 space-y-6 pl-2">
               {/* Hardware Acceleration */}
               <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <label className="w-24 text-sm font-medium text-white/70 shrink-0">
+                <label className="w-24 text-sm font-medium text-slate-700 shrink-0">
                   {t('config.compression.hwAccel')}
                 </label>
                 <div className="flex-1">
@@ -266,7 +295,7 @@ export function StepConfig({
 
               {/* Encoder */}
               <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <label className="w-24 text-sm font-medium text-white/70 shrink-0">
+                <label className="w-24 text-sm font-medium text-slate-700 shrink-0">
                   {t('config.compression.encoder')}
                 </label>
                 <div className="flex-1">
@@ -279,7 +308,7 @@ export function StepConfig({
 
               {/* Resolution Select */}
               <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <label className="w-24 text-sm font-medium text-white/70 shrink-0">
+                <label className="w-24 text-sm font-medium text-slate-700 shrink-0">
                   {t('config.compression.resolution')}
                 </label>
                 <div className="flex-1">
@@ -300,7 +329,7 @@ export function StepConfig({
 
               {/* CRF Input */}
               <div className="flex flex-col md:flex-row md:items-center gap-4">
-                <label className="w-24 text-sm font-medium text-white/70 shrink-0">
+                <label className="w-24 text-sm font-medium text-slate-700 shrink-0">
                   {t('config.compression.crf.label')}
                 </label>
                 <div className="flex-1 space-y-2">
@@ -310,14 +339,14 @@ export function StepConfig({
                     min={0}
                     max={51}
                     allowDecimals={true}
-                    className="w-full font-mono"
+                    className="w-full bg-white border-slate-200 text-slate-700"
                   />
                   <div className="text-xs text-slate-500">{t('config.compression.crf.desc')}</div>
                 </div>
               </div>
             </div>
           )}
-        </Card>
+        </SectionCard>
       </div>
     </div>
   );

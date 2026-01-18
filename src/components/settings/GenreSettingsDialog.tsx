@@ -46,7 +46,7 @@ export const GenreSettingsDialog: React.FC<GenreSettingsDialogProps> = ({
     >
       <div className="space-y-4 mb-6">
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+          <label className="block text-sm font-medium text-slate-600 mb-2">
             {t('genreSettings.selectPreset')}
           </label>
           <GenrePicker

@@ -82,37 +82,37 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
 
   if (hasFile) {
     return (
-      <div className="flex items-center p-3 bg-slate-800 rounded-lg border border-slate-700/50">
-        <div className="mr-3 flex-shrink-0">{icon}</div>
+      <div className="flex items-center p-3 bg-brand-purple/5 rounded-lg border border-brand-purple/20 shadow-sm">
+        <div className="mr-3 shrink-0">{icon}</div>
         <div className="overflow-hidden flex-1 min-w-0">
           {fileName && (
-            <p className="text-xs font-medium text-white truncate" title={fileName}>
+            <p className="text-xs font-bold text-slate-700 truncate" title={fileName}>
               {fileName}
             </p>
           )}
-          <div className="text-[10px] text-slate-500">{fileInfo}</div>
+          <div className="text-[10px] text-slate-500 font-medium">{fileInfo}</div>
         </div>
         {shouldUseNative ? (
           <button
             onClick={handleNativeClick}
             className={cn(
-              'p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors ml-1',
+              'p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-brand-purple transition-all ml-1',
               disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
             )}
             title={t('upload.changeFile')}
             disabled={disabled}
           >
-            <RefreshCcw className="w-3 h-3" />
+            <RefreshCcw className="w-3.5 h-3.5" />
           </button>
         ) : (
           <label
             className={cn(
-              'cursor-pointer p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors ml-1',
+              'cursor-pointer p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-brand-purple transition-all ml-1',
               disabled && 'opacity-50 cursor-not-allowed'
             )}
             title={t('upload.changeFile')}
           >
-            <RefreshCcw className="w-3 h-3" />
+            <RefreshCcw className="w-3.5 h-3.5" />
             <input
               type="file"
               accept={accept}
@@ -132,12 +132,12 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
         onClick={handleNativeClick}
         disabled={disabled}
         className={cn(
-          'flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg bg-slate-800/30 hover:bg-slate-800/50 cursor-pointer transition-all group',
+          'flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer transition-all group',
           heightClass,
           disabled && 'opacity-50 cursor-not-allowed',
           error
-            ? 'border-red-500/50 hover:border-red-500'
-            : 'border-slate-700 hover:border-indigo-500/50'
+            ? 'border-red-300 hover:border-red-400 bg-red-50'
+            : 'border-slate-300 hover:border-brand-purple/50'
         )}
       >
         <div className="flex flex-col items-center justify-center py-4">
@@ -148,7 +148,9 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
                 })
               : icon}
           </div>
-          <div className="text-xs font-bold text-slate-300">{uploadTitle}</div>
+          <div className="text-xs font-bold text-slate-600 group-hover:text-slate-800 transition-colors">
+            {uploadTitle}
+          </div>
           {uploadDescription && (
             <div className="text-[10px] text-slate-500 mt-1">{uploadDescription}</div>
           )}
@@ -160,12 +162,12 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   return (
     <label
       className={cn(
-        'flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg bg-slate-800/30 hover:bg-slate-800/50 cursor-pointer transition-all group',
+        'flex flex-col items-center justify-center w-full border-2 border-dashed rounded-lg bg-slate-50 hover:bg-slate-100 cursor-pointer transition-all group',
         heightClass,
         disabled && 'opacity-50 cursor-not-allowed',
         error
-          ? 'border-red-500/50 hover:border-red-500'
-          : 'border-slate-700 hover:border-indigo-500/50'
+          ? 'border-red-300 hover:border-red-400 bg-red-50'
+          : 'border-slate-300 hover:border-brand-purple/50'
       )}
     >
       <div className="flex flex-col items-center justify-center py-4">
@@ -177,7 +179,9 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
               })
             : icon}
         </div>
-        <div className="text-xs font-bold text-slate-300">{uploadTitle}</div>
+        <div className="text-xs font-bold text-slate-600 group-hover:text-slate-800 transition-colors">
+          {uploadTitle}
+        </div>
         {uploadDescription && (
           <div className="text-[10px] text-slate-500 mt-1">{uploadDescription}</div>
         )}

@@ -35,7 +35,7 @@ export function QualitySelector({
 
   return (
     <div className={className}>
-      <label className="block text-sm text-white/60 mb-3">{displayLabel}</label>
+      <label className="block text-sm font-semibold text-slate-600 mb-3">{displayLabel}</label>
       <div className="flex flex-wrap gap-2 md:gap-3">
         {formats.map((format) => (
           <button
@@ -43,16 +43,18 @@ export function QualitySelector({
             type="button"
             onClick={() => !disabled && onSelect(format.formatId)}
             className={cn(
-              'px-4 py-2 rounded-lg text-sm transition-colors border',
+              'px-4 py-2 rounded-lg text-sm transition-all border shadow-sm',
               selectedFormat === format.formatId
-                ? 'bg-violet-500/20 border-violet-500/50 text-violet-400'
-                : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/10',
+                ? 'bg-brand-purple/10 border-brand-purple text-brand-purple font-semibold shadow-brand-purple/10'
+                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300',
               disabled && 'opacity-50 cursor-not-allowed'
             )}
           >
             {format.quality}
             {format.filesize && (
-              <span className="ml-2 text-white/40 text-xs">~{formatFilesize(format.filesize)}</span>
+              <span className="ml-2 text-slate-400 text-xs font-normal">
+                ~{formatFilesize(format.filesize)}
+              </span>
             )}
           </button>
         ))}

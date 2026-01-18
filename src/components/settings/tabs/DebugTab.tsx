@@ -12,11 +12,11 @@ export const DebugTab: React.FC<TabProps> = ({ settings, updateSetting }) => {
 
   return (
     <div className="space-y-3 animate-fade-in">
-      <div className="bg-amber-900/20 border border-amber-500/30 rounded-lg p-4 mb-4">
-        <h3 className="text-sm font-semibold text-amber-300 mb-2 flex items-center">
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+        <h3 className="text-sm font-semibold text-amber-700 mb-2 flex items-center">
           <Bug className="w-4 h-4 mr-2" /> {t('debug.title')}
         </h3>
-        <p className="text-xs text-slate-400 mb-4">{t('debug.description')}</p>
+        <p className="text-xs text-slate-600 mb-4">{t('debug.description')}</p>
 
         <div className="space-y-4">
           {/* Mock Stage Dropdown */}
@@ -49,7 +49,7 @@ export const DebugTab: React.FC<TabProps> = ({ settings, updateSetting }) => {
           {/* Mock Data Path - Tied to Start From */}
           <div className="space-y-4 pt-2">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1">
                 {t('debug.mockData.title')}
               </label>
               <p className="text-xs text-slate-500 mb-2">{t('debug.mockData.hint')}</p>
@@ -69,7 +69,7 @@ export const DebugTab: React.FC<TabProps> = ({ settings, updateSetting }) => {
 
             {/* Mock Language - Often needed for alignment/start from */}
             <div className="mt-3">
-              <label className="block text-sm font-medium text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-slate-700 mb-1">
                 {t('debug.language.title')}
               </label>
               <p className="text-xs text-slate-500 mb-2">{t('debug.language.desc')}</p>
@@ -94,7 +94,7 @@ export const DebugTab: React.FC<TabProps> = ({ settings, updateSetting }) => {
           </div>
 
           {/* Exit Control - Grouped with Start From */}
-          <div className="space-y-3 pt-4 border-t border-slate-700/50 mt-4">
+          <div className="space-y-3 pt-4 border-t border-slate-200 mt-4">
             <SettingRow label={t('debug.skipAfter.title')} description={t('debug.skipAfter.desc')}>
               <CustomSelect
                 value={settings.debug?.skipAfter || ''}
@@ -132,8 +132,8 @@ export const DebugTab: React.FC<TabProps> = ({ settings, updateSetting }) => {
           </div>
 
           {/* Mock API Calls */}
-          <div className="space-y-3 pt-4 border-t border-slate-700/50 mt-4">
-            <h4 className="text-sm font-medium text-slate-300">
+          <div className="space-y-3 pt-4 border-t border-slate-200 mt-4">
+            <h4 className="text-sm font-medium text-slate-700">
               {t('debug.mockApi.title', 'Mock API Calls (Skip & Pass-through)')}
             </h4>
             <div className="grid grid-cols-2 gap-4">
@@ -233,14 +233,14 @@ export const DebugTab: React.FC<TabProps> = ({ settings, updateSetting }) => {
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-700">
-            <h4 className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wider">
+          <div className="pt-4 border-t border-slate-200">
+            <h4 className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wider">
               {t('debug.customPaths')}
             </h4>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">{t('debug.ffmpegPath')}</label>
+                <label className="block text-xs text-slate-600 mb-1">{t('debug.ffmpegPath')}</label>
                 <input
                   type="text"
                   value={settings.debug?.ffmpegPath || ''}
@@ -251,11 +251,11 @@ export const DebugTab: React.FC<TabProps> = ({ settings, updateSetting }) => {
                     })
                   }
                   placeholder={t('debug.defaultAutoDetected')}
-                  className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple shadow-sm placeholder-slate-400"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">
+                <label className="block text-xs text-slate-600 mb-1">
                   {t('debug.ffprobePath')}
                 </label>
                 <input
@@ -268,11 +268,11 @@ export const DebugTab: React.FC<TabProps> = ({ settings, updateSetting }) => {
                     })
                   }
                   placeholder={t('debug.defaultAutoDetected')}
-                  className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple shadow-sm placeholder-slate-400"
                 />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">
+                <label className="block text-xs text-slate-600 mb-1">
                   {t('debug.whisperPath')}
                 </label>
                 <input
@@ -285,7 +285,7 @@ export const DebugTab: React.FC<TabProps> = ({ settings, updateSetting }) => {
                     })
                   }
                   placeholder={t('debug.defaultAutoDetected')}
-                  className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple shadow-sm placeholder-slate-400"
                 />
               </div>
             </div>

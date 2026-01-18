@@ -31,16 +31,17 @@ export const PasswordInput: React.FC<PasswordInputProps> = ({
         onChange={onChange}
         placeholder={placeholder}
         className={cn(
-          'w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 pl-3 pr-10',
-          'text-slate-200 text-sm',
-          'focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500',
+          'w-full bg-white border border-slate-200 rounded-lg py-2.5 pl-3 pr-10',
+          'text-slate-700 text-sm placeholder-slate-400',
+          'focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple',
+          'shadow-sm transition-all',
           className
         )}
       />
       <button
         type="button"
         onClick={() => setShowPassword(!showPassword)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
         title={showPassword ? t('passwordInput.hideKey') : t('passwordInput.showKey')}
       >
         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

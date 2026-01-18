@@ -49,11 +49,11 @@ export function StepInput({
   return (
     <div className="max-w-2xl mx-auto">
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-500/20 border border-violet-500/30 mb-4">
-          <Link2 className="w-8 h-8 text-violet-400" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 mb-4 shadow-sm">
+          <Link2 className="w-8 h-8 text-brand-purple" />
         </div>
-        <h2 className="text-2xl font-bold text-white mb-2">{t('wizard.inputStep.title')}</h2>
-        <p className="text-white/60">{t('wizard.inputStep.description')}</p>
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">{t('wizard.inputStep.title')}</h2>
+        <p className="text-slate-500">{t('wizard.inputStep.description')}</p>
       </div>
 
       <div className="space-y-4">
@@ -67,24 +67,24 @@ export function StepInput({
             }
             placeholder={t('wizard.inputStep.placeholder')}
             className={cn(
-              'w-full px-4 py-4 bg-white/5 border rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 transition-all',
+              'w-full px-4 py-4 bg-white border rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all shadow-sm',
               validationResult?.valid === false &&
-                'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20',
+                'border-red-200 focus:border-red-300 focus:ring-red-100 bg-red-50/30',
               validationResult?.valid === true &&
-                'border-emerald-500/30 focus:border-emerald-500/50 focus:ring-emerald-500/20',
+                'border-emerald-200 focus:border-emerald-300 focus:ring-emerald-100 bg-emerald-50/30',
               validationResult === null &&
-                'border-white/10 focus:border-violet-500/50 focus:ring-violet-500/20'
+                'border-slate-200 focus:border-brand-purple/50 focus:ring-brand-purple/10'
             )}
             disabled={isParsing}
           />
           <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            {isParsing && <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />}
+            {isParsing && <Loader2 className="w-5 h-5 text-brand-purple animate-spin" />}
           </div>
         </div>
 
         {/* Validation error */}
         {validationResult?.error && !validationResult.valid && (
-          <div className="flex items-start gap-3 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-200 text-sm">
+          <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{validationResult.error}</span>
           </div>
@@ -92,20 +92,20 @@ export function StepInput({
 
         {/* Parse error from server */}
         {parseError && (
-          <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-200">
+          <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-xl text-red-600">
             <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
             <span>{parseError}</span>
           </div>
         )}
 
         {videoInfo && (
-          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
+          <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl shadow-sm">
             <div className="flex items-start gap-4">
               {videoInfo.thumbnail && (
                 <img
                   src={videoInfo.thumbnail}
                   alt="Thumbnail"
-                  className="w-24 h-16 object-cover rounded-lg"
+                  className="w-24 h-16 object-cover rounded-lg border border-emerald-100"
                   onError={(e) => {
                     // Hide broken thumbnail
                     (e.target as HTMLImageElement).style.display = 'none';
@@ -113,24 +113,24 @@ export function StepInput({
                 />
               )}
               <div className="flex-1 min-w-0">
-                <h4 className="font-medium text-white truncate">
+                <h4 className="font-medium text-slate-800 truncate">
                   {videoInfo.title || t('wizard.inputStep.unknownTitle')}
                 </h4>
-                <p className="text-sm text-white/60">
+                <p className="text-sm text-slate-500">
                   {videoInfo.uploader || t('wizard.inputStep.unknownAuthor')}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded">
+                  <span className="text-xs px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded border border-emerald-200">
                     {videoInfo.platform || t('wizard.inputStep.video')}
                   </span>
                   {videoInfo.duration != null && (
-                    <span className="text-xs text-white/50">
+                    <span className="text-xs text-slate-400">
                       {formatDuration(videoInfo.duration)}
                     </span>
                   )}
                 </div>
               </div>
-              <CheckCircle className="w-6 h-6 text-emerald-400 shrink-0" />
+              <CheckCircle className="w-6 h-6 text-emerald-500 shrink-0" />
             </div>
           </div>
         )}

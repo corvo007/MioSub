@@ -219,31 +219,36 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
     customTerms.length;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="bg-slate-900 border border-indigo-500/30 rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh]">
-        <div className="p-6 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+      <div className="bg-white/95 backdrop-blur-xl border border-white/60 rounded-2xl w-full max-w-4xl shadow-2xl shadow-brand-purple/20 flex flex-col max-h-[90vh] ring-1 ring-slate-900/5 relative overflow-hidden">
+        <div className="absolute inset-0 bg-warm-mesh opacity-30 pointer-events-none" />
+        <div className="p-6 border-b border-slate-200/60 flex items-center justify-between bg-white/50 relative z-10">
           <div>
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              <Book className="w-5 h-5 text-indigo-400" />
+            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2 tracking-tight">
+              <div className="p-1.5 bg-brand-purple/10 rounded-lg">
+                <Book className="w-5 h-5 text-brand-purple" />
+              </div>
               {t('glossaryConfirmation.title')}
             </h3>
-            <p className="text-slate-400 text-sm mt-1">{t('glossaryConfirmation.subtitle')}</p>
+            <p className="text-slate-500 text-sm mt-1 font-medium">
+              {t('glossaryConfirmation.subtitle')}
+            </p>
           </div>
           <div className="flex items-center gap-4">
             <button
               onClick={handleDiscard}
-              className="text-slate-400 hover:text-white transition-colors"
+              className="text-slate-400 hover:text-slate-700 transition-colors p-1 hover:bg-slate-100 rounded-lg"
             >
               <X className="w-6 h-6" />
             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8 relative z-10">
           {/* Conflicts Section */}
           {conflicts.length > 0 && (
             <div className="space-y-4">
-              <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center">
+              <h3 className="text-sm font-bold text-amber-600 uppercase tracking-wider flex items-center bg-amber-50 w-fit px-3 py-1 rounded-full border border-amber-200">
                 <AlertCircle className="w-4 h-4 mr-2" /> {t('glossaryConfirmation.conflicts')} (
                 {conflicts.length})
               </h3>
@@ -263,11 +268,11 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                   return (
                     <div
                       key={idx}
-                      className="bg-slate-800/50 border border-amber-500/20 rounded-xl p-4"
+                      className="bg-amber-50/50 border border-amber-200/60 rounded-xl p-4 shadow-sm"
                     >
                       <div className="flex items-center justify-between mb-3">
-                        <span className="font-bold text-white text-lg">{conflict.term}</span>
-                        <span className="text-xs text-amber-500 bg-amber-500/10 px-2 py-1 rounded-full border border-amber-500/20">
+                        <span className="font-bold text-slate-800 text-lg">{conflict.term}</span>
+                        <span className="text-xs text-amber-700 bg-amber-100 px-2 py-1 rounded-full border border-amber-200 font-medium">
                           {t('glossaryConfirmation.multipleVersions')}
                         </span>
                       </div>
@@ -283,23 +288,23 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                               }));
                             }}
                             className={cn(
-                              'p-3 rounded-lg border cursor-pointer transition-all',
+                              'p-3 rounded-lg border cursor-pointer transition-all shadow-sm',
                               resolvedConflicts[conflict.term] === option
-                                ? 'bg-indigo-500/20 border-indigo-500 ring-1 ring-indigo-500'
-                                : 'bg-slate-800 border-slate-700 hover:border-slate-600'
+                                ? 'bg-brand-purple/5 border-brand-purple ring-1 ring-brand-purple/20'
+                                : 'bg-white border-slate-200 hover:border-brand-purple/30 hover:shadow-md'
                             )}
                           >
                             <div className="flex items-center justify-between">
                               <div>
-                                <div className="font-medium text-white flex items-center gap-2">
+                                <div className="font-medium text-slate-800 flex items-center gap-2">
                                   {option.translation}
                                 </div>
                                 {option.notes && (
-                                  <div className="text-sm text-slate-400 mt-1">{option.notes}</div>
+                                  <div className="text-sm text-slate-500 mt-1">{option.notes}</div>
                                 )}
                               </div>
                               {resolvedConflicts[conflict.term] === option && (
-                                <CheckCircle className="w-5 h-5 text-indigo-400" />
+                                <CheckCircle className="w-5 h-5 text-brand-purple" />
                               )}
                             </div>
                           </div>
@@ -315,28 +320,28 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                               }));
                             }}
                             className={cn(
-                              'p-3 rounded-lg border cursor-pointer transition-all',
+                              'p-3 rounded-lg border cursor-pointer transition-all shadow-sm',
                               resolvedConflicts[conflict.term] === existingOption
-                                ? 'bg-indigo-500/20 border-indigo-500 ring-1 ring-indigo-500'
-                                : 'bg-slate-800 border-slate-700 hover:border-slate-600'
+                                ? 'bg-brand-purple/5 border-brand-purple ring-1 ring-brand-purple/20'
+                                : 'bg-white border-slate-200 hover:border-brand-purple/30 hover:shadow-md'
                             )}
                           >
                             <div className="flex items-center justify-between">
                               <div>
-                                <div className="font-medium text-white flex items-center gap-2">
+                                <div className="font-medium text-slate-800 flex items-center gap-2">
                                   {existingOption.translation}
-                                  <span className="text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded">
+                                  <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200 font-medium">
                                     {t('glossaryConfirmation.keepCurrent')}
                                   </span>
                                 </div>
                                 {existingOption.notes && (
-                                  <div className="text-sm text-slate-400 mt-1">
+                                  <div className="text-sm text-slate-500 mt-1">
                                     {existingOption.notes}
                                   </div>
                                 )}
                               </div>
                               {resolvedConflicts[conflict.term] === existingOption && (
-                                <CheckCircle className="w-5 h-5 text-indigo-400" />
+                                <CheckCircle className="w-5 h-5 text-brand-purple" />
                               )}
                             </div>
                           </div>
@@ -345,10 +350,10 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                         {/* +2: Custom Option */}
                         <div
                           className={cn(
-                            'p-3 rounded-lg border cursor-pointer transition-all',
+                            'p-3 rounded-lg border cursor-pointer transition-all shadow-sm',
                             isCustomSelected
-                              ? 'bg-indigo-500/20 border-indigo-500 ring-1 ring-indigo-500'
-                              : 'bg-slate-800 border-slate-700 hover:border-slate-600'
+                              ? 'bg-brand-purple/5 border-brand-purple ring-1 ring-brand-purple/20'
+                              : 'bg-white border-slate-200 hover:border-brand-purple/30 hover:shadow-md'
                           )}
                         >
                           {isCustomEditing ? (
@@ -360,7 +365,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                     prev ? { ...prev, translation: e.target.value } : null
                                   );
                                 }}
-                                className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
+                                className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-sm text-slate-800 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple/20"
                                 placeholder={t('glossaryConfirmation.customTranslation')}
                                 autoFocus
                                 onClick={(e) => e.stopPropagation()}
@@ -372,7 +377,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                     prev ? { ...prev, notes: e.target.value } : null
                                   );
                                 }}
-                                className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-slate-400"
+                                className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs text-slate-600 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple/20"
                                 placeholder={t('glossaryConfirmation.notesOptional')}
                                 onClick={(e) => e.stopPropagation()}
                               />
@@ -382,7 +387,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                     e.stopPropagation();
                                     setEditingId(null);
                                   }}
-                                  className="text-xs text-slate-400 hover:text-white"
+                                  className="text-xs text-slate-500 hover:text-slate-800"
                                 >
                                   {t('glossaryConfirmation.cancel')}
                                 </button>
@@ -391,7 +396,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                     e.stopPropagation();
                                     saveEdit(conflict.term);
                                   }}
-                                  className="text-xs text-indigo-400 hover:text-indigo-300"
+                                  className="text-xs text-brand-purple hover:text-brand-purple/80 font-medium"
                                 >
                                   {t('glossaryConfirmation.save')}
                                 </button>
@@ -415,11 +420,13 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                               className="flex items-center justify-between"
                             >
                               <div className="flex items-center gap-2">
-                                <Edit2 className="w-4 h-4 text-emerald-400" />
+                                <div className="p-1 bg-emerald-50 rounded">
+                                  <Edit2 className="w-4 h-4 text-emerald-600" />
+                                </div>
                                 <span
                                   className={
                                     customValue
-                                      ? 'text-white font-medium'
+                                      ? 'text-slate-800 font-medium'
                                       : 'text-slate-400 italic text-sm'
                                   }
                                 >
@@ -435,12 +442,12 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                       e.stopPropagation();
                                       startEditing(customValue, customId);
                                     }}
-                                    className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white"
+                                    className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-800"
                                   >
                                     <Edit2 className="w-3 h-3" />
                                   </button>
                                   {isCustomSelected && (
-                                    <CheckCircle className="w-5 h-5 text-indigo-400" />
+                                    <CheckCircle className="w-5 h-5 text-brand-purple" />
                                   )}
                                 </div>
                               )}
@@ -455,15 +462,17 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                               setResolvedConflicts((prev) => ({ ...prev, [conflict.term]: null }));
                             }}
                             className={cn(
-                              'p-3 rounded-lg border cursor-pointer transition-all',
+                              'p-3 rounded-lg border cursor-pointer transition-all shadow-sm',
                               resolvedConflicts[conflict.term] === null
-                                ? 'bg-red-500/10 border-red-500/50 text-red-400'
-                                : 'bg-slate-800 border-slate-700 hover:border-slate-600 text-slate-400'
+                                ? 'bg-red-50 border-red-200 text-red-600 ring-1 ring-red-100'
+                                : 'bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-500'
                             )}
                           >
                             <div className="flex items-center gap-2">
                               <X className="w-4 h-4" />
-                              <span>{t('glossaryConfirmation.doNotUse')}</span>
+                              <span className="font-medium">
+                                {t('glossaryConfirmation.doNotUse')}
+                              </span>
                             </div>
                           </div>
                         )}
@@ -479,7 +488,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
           {unique.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-indigo-400 uppercase tracking-wider flex items-center">
+                <h3 className="text-sm font-bold text-brand-purple uppercase tracking-wider flex items-center bg-brand-purple/10 px-3 py-1 rounded-full border border-brand-purple/20 w-fit">
                   <Sparkles className="w-4 h-4 mr-2" /> {t('glossaryConfirmation.newTerms')} (
                   {unique.length})
                 </h3>
@@ -488,7 +497,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                     if (selectedTerms.size === unique.length) setSelectedTerms(new Set());
                     else setSelectedTerms(new Set(unique.map((t) => t.term)));
                   }}
-                  className="text-xs text-indigo-400 hover:text-indigo-300"
+                  className="text-xs text-brand-purple hover:text-brand-purple/80 font-medium bg-brand-purple/5 hover:bg-brand-purple/10 px-2 py-1 rounded transition-colors"
                 >
                   {selectedTerms.size === unique.length
                     ? t('glossaryConfirmation.deselectAll')
@@ -505,10 +514,10 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                     <div
                       key={idx}
                       className={cn(
-                        'p-3 rounded-xl border transition-all',
+                        'p-3 rounded-xl border transition-all shadow-sm',
                         isSelected
-                          ? 'bg-indigo-500/10 border-indigo-500/30'
-                          : 'bg-slate-800/50 border-slate-700 opacity-60'
+                          ? 'bg-brand-purple/5 border-brand-purple/30 ring-1 ring-brand-purple/10'
+                          : 'bg-white border-slate-200 opacity-80 hover:opacity-100 hover:shadow-md'
                       )}
                     >
                       <div className="flex items-start gap-3">
@@ -518,8 +527,8 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                             className={cn(
                               'w-5 h-5 rounded border flex items-center justify-center cursor-pointer transition-colors',
                               isSelected
-                                ? 'bg-indigo-500 border-indigo-500'
-                                : 'border-slate-600 bg-slate-700/50 hover:border-slate-500'
+                                ? 'bg-brand-purple border-brand-purple shadow-sm'
+                                : 'border-slate-300 bg-white hover:border-brand-purple'
                             )}
                           >
                             {isSelected && <Check className="w-3.5 h-3.5 text-white" />}
@@ -535,7 +544,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                     prev ? { ...prev, term: e.target.value } : null
                                   );
                                 }}
-                                className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
+                                className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm text-slate-800 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple/20"
                                 placeholder={t('glossaryConfirmation.termPlaceholder')}
                               />
                               <input
@@ -545,7 +554,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                     prev ? { ...prev, translation: e.target.value } : null
                                   );
                                 }}
-                                className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
+                                className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm text-slate-800 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple/20"
                                 placeholder={t('glossaryConfirmation.translationPlaceholder')}
                               />
                               <input
@@ -555,19 +564,19 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                     prev ? { ...prev, notes: e.target.value } : null
                                   );
                                 }}
-                                className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-slate-400"
+                                className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs text-slate-600 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple/20"
                                 placeholder={t('glossaryConfirmation.notesPlaceholder')}
                               />
                               <div className="flex justify-end gap-2">
                                 <button
                                   onClick={() => setEditingId(null)}
-                                  className="text-xs text-slate-400 hover:text-white"
+                                  className="text-xs text-slate-500 hover:text-slate-800"
                                 >
                                   {t('glossaryConfirmation.cancel')}
                                 </button>
                                 <button
                                   onClick={() => saveEdit(term.term)}
-                                  className="text-xs text-indigo-400 hover:text-indigo-300"
+                                  className="text-xs text-brand-purple hover:text-brand-purple/80 font-medium"
                                 >
                                   {t('glossaryConfirmation.save')}
                                 </button>
@@ -576,17 +585,17 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                           ) : (
                             <div className="group relative">
                               <div className="flex items-center justify-between">
-                                <div className="font-medium text-white text-base truncate pr-2">
+                                <div className="font-medium text-slate-800 text-base truncate pr-2">
                                   {displayTerm.term}
                                 </div>
                                 <button
                                   onClick={() => startEditing(displayTerm, term.term)}
-                                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-all"
+                                  className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-brand-purple transition-all"
                                 >
                                   <Edit2 className="w-3 h-3" />
                                 </button>
                               </div>
-                              <div className="text-indigo-300 text-sm mt-0.5">
+                              <div className="text-brand-purple font-medium text-sm mt-0.5">
                                 {displayTerm.translation}
                               </div>
                               {displayTerm.notes && (
@@ -608,13 +617,13 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
           {/* Custom Terms Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center">
+              <h3 className="text-sm font-bold text-emerald-600 uppercase tracking-wider flex items-center bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 w-fit">
                 <Plus className="w-4 h-4 mr-2" /> {t('glossaryConfirmation.customTerms')} (
                 {customTerms.length})
               </h3>
               <button
                 onClick={addCustomTerm}
-                className="text-xs bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 px-2 py-1 rounded border border-emerald-500/20 transition-colors"
+                className="text-xs bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-2 py-1 rounded border border-emerald-200 transition-colors font-medium shadow-sm"
               >
                 {t('glossaryConfirmation.addTerm')}
               </button>
@@ -628,7 +637,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                   return (
                     <div
                       key={idx}
-                      className="bg-slate-800/50 border border-emerald-500/20 rounded-xl p-3"
+                      className="bg-white border border-emerald-200 rounded-xl p-3 shadow-sm"
                     >
                       {isEditing ? (
                         <div className="space-y-2">
@@ -639,7 +648,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                 prev ? { ...prev, term: e.target.value } : null
                               );
                             }}
-                            className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
+                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20"
                             placeholder={t('glossaryConfirmation.termPlaceholder')}
                           />
                           <input
@@ -649,7 +658,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                 prev ? { ...prev, translation: e.target.value } : null
                               );
                             }}
-                            className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-sm text-white"
+                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-sm text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20"
                             placeholder={t('glossaryConfirmation.translationPlaceholder')}
                           />
                           <input
@@ -659,7 +668,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                 prev ? { ...prev, notes: e.target.value } : null
                               );
                             }}
-                            className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-slate-400"
+                            className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs text-slate-600 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20"
                             placeholder={t('glossaryConfirmation.notesPlaceholder')}
                           />
                           <div className="flex justify-end gap-2">
@@ -668,13 +677,13 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                                 setCustomTerms((prev) => prev.filter((_, i) => i !== idx));
                                 setEditingId(null);
                               }}
-                              className="text-xs text-red-400 hover:text-red-300"
+                              className="text-xs text-red-500 hover:text-red-700 font-medium"
                             >
                               {t('glossaryConfirmation.delete')}
                             </button>
                             <button
                               onClick={() => saveEdit(term.term)}
-                              className="text-xs text-emerald-400 hover:text-emerald-300"
+                              className="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
                             >
                               {t('glossaryConfirmation.save')}
                             </button>
@@ -683,17 +692,19 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                       ) : (
                         <div className="group relative">
                           <div className="flex items-center justify-between">
-                            <div className="font-medium text-white text-base truncate pr-2">
+                            <div className="font-medium text-slate-800 text-base truncate pr-2">
                               {term.term}
                             </div>
                             <button
                               onClick={() => startEditing(term, id)}
-                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-all"
+                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-800 transition-all"
                             >
                               <Edit2 className="w-3 h-3" />
                             </button>
                           </div>
-                          <div className="text-emerald-300 text-sm mt-0.5">{term.translation}</div>
+                          <div className="text-emerald-600 font-medium text-sm mt-0.5">
+                            {term.translation}
+                          </div>
                           {term.notes && (
                             <div className="text-slate-500 text-xs mt-1 italic">{term.notes}</div>
                           )}
@@ -707,18 +718,20 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
           </div>
         </div>
 
-        <div className="p-6 border-t border-slate-800 bg-slate-900/50 flex justify-between items-center">
+        <div className="p-6 border-t border-slate-200/60 bg-slate-50/50 backdrop-blur-sm flex justify-between items-center relative z-20">
           <div className="flex items-center space-x-2">
             <button
               onClick={handleDiscard}
-              className="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              className="px-4 py-2 text-slate-500 hover:text-slate-800 hover:bg-slate-200/50 rounded-lg transition-colors font-medium"
             >
               {t('glossaryConfirmation.discardAll')}
             </button>
           </div>
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-slate-400">{t('glossaryConfirmation.addTo')}</span>
+              <span className="text-sm text-slate-500 font-medium">
+                {t('glossaryConfirmation.addTo')}
+              </span>
               <CustomSelect
                 value={targetGlossaryId || ''}
                 onChange={handleGlossaryChange}
@@ -734,7 +747,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
             <button
               onClick={handleConfirm}
               disabled={!targetGlossaryId}
-              className="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-medium shadow-lg shadow-indigo-500/25 transition-all flex items-center disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-indigo-600"
+              className="bg-linear-to-r from-brand-purple to-brand-purple/90 hover:brightness-110 text-white px-6 py-2 rounded-lg font-medium shadow-lg shadow-brand-purple/25 transition-all flex items-center disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
             >
               <CheckCircle className="w-4 h-4 mr-2" />
               {t('glossaryConfirmation.addTerms', { count: totalToAdd })}
@@ -746,18 +759,18 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
       {/* New Glossary Dialog */}
       {showNewGlossaryDialog && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-70 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
           onClick={() => {
             setShowNewGlossaryDialog(false);
             setNewGlossaryName('');
           }}
         >
           <div
-            className="bg-slate-900 border border-indigo-500/30 rounded-xl p-6 w-full max-w-md shadow-2xl"
+            className="bg-white border border-slate-200 rounded-xl p-6 w-full max-w-md shadow-2xl ring-1 ring-black/5"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Plus className="w-5 h-5 text-indigo-400" />
+            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <Plus className="w-5 h-5 text-brand-purple" />
               {t('glossaryConfirmation.newGlossaryDialog.title')}
             </h3>
             <input
@@ -766,7 +779,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
               onChange={(e) => setNewGlossaryName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleCreateNewGlossary()}
               placeholder={t('glossaryConfirmation.newGlossaryDialog.placeholder')}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-indigo-500 mb-4"
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-slate-900 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple/20 mb-4 shadow-sm"
               autoFocus
             />
             <div className="flex justify-end gap-2">
@@ -775,14 +788,14 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
                   setShowNewGlossaryDialog(false);
                   setNewGlossaryName('');
                 }}
-                className="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                className="px-4 py-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors font-medium"
               >
                 {t('glossaryConfirmation.newGlossaryDialog.cancel')}
               </button>
               <button
                 onClick={handleCreateNewGlossary}
                 disabled={!newGlossaryName.trim()}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-brand-purple hover:bg-brand-purple/90 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md shadow-brand-purple/20"
               >
                 {t('glossaryConfirmation.newGlossaryDialog.create')}
               </button>

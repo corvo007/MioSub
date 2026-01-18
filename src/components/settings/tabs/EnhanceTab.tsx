@@ -113,7 +113,7 @@ export const EnhanceTab: React.FC<EnhanceTabComponentProps> = ({
         {settings.enableAutoGlossary !== false && (
           <div className="space-y-4 animate-fade-in">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
                 {t('enhance.glossary.sampleDuration')}
               </label>
               <CustomSelect
@@ -157,7 +157,7 @@ export const EnhanceTab: React.FC<EnhanceTabComponentProps> = ({
             onClose();
             onOpenGlossaryManager();
           }}
-          className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-300 hover:text-white transition-colors flex items-center justify-center text-sm font-medium"
+          className="w-full py-2.5 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg text-slate-600 hover:text-slate-900 transition-all shadow-sm flex items-center justify-center text-sm font-medium"
         >
           <Book className="w-4 h-4 mr-2" /> {t('enhance.glossary.manageGlossary')}
         </button>

@@ -36,7 +36,7 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
             value: 'original',
             label: (
               <div>
-                <div className="font-medium text-slate-200">{t('resolutionSelector.original')}</div>
+                <div className="font-medium text-slate-900">{t('resolutionSelector.original')}</div>
                 <div className="text-xs text-slate-500">{t('resolutionSelector.keepOriginal')}</div>
               </div>
             ),
@@ -45,7 +45,7 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
             value: '1080p',
             label: (
               <div>
-                <div className="font-medium text-slate-200">1080P</div>
+                <div className="font-medium text-slate-900">1080P</div>
                 <div className="text-xs text-slate-500">
                   1920x1080 - {t('resolutionSelector.fullHd')}
                 </div>
@@ -56,7 +56,7 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
             value: '720p',
             label: (
               <div>
-                <div className="font-medium text-slate-200">720P</div>
+                <div className="font-medium text-slate-900">720P</div>
                 <div className="text-xs text-slate-500">
                   1280x720 - {t('resolutionSelector.hd')}
                 </div>
@@ -67,7 +67,7 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
             value: '480p',
             label: (
               <div>
-                <div className="font-medium text-slate-200">480P</div>
+                <div className="font-medium text-slate-900">480P</div>
                 <div className="text-xs text-slate-500">854x480 - {t('resolutionSelector.sd')}</div>
               </div>
             ),
@@ -76,7 +76,7 @@ export const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
             value: 'custom',
             label: (
               <div>
-                <div className="font-medium text-slate-200">{t('resolutionSelector.custom')}</div>
+                <div className="font-medium text-slate-900">{t('resolutionSelector.custom')}</div>
                 <div className="text-xs text-slate-500">{t('resolutionSelector.manualInput')}</div>
               </div>
             ),

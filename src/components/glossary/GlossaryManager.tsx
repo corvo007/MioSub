@@ -210,13 +210,18 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-5xl h-[85vh] flex shadow-2xl overflow-hidden relative">
+    <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+      <div className="bg-white/95 backdrop-blur-xl border border-white/60 rounded-2xl w-full max-w-5xl h-[85vh] flex shadow-2xl shadow-brand-purple/20 overflow-hidden relative ring-1 ring-slate-900/5">
+        <div className="absolute inset-0 bg-warm-mesh opacity-30 pointer-events-none" />
+
         {/* Sidebar - Glossary List */}
-        <div className="w-64 bg-slate-950 border-r border-slate-800 flex flex-col">
-          <div className="p-4 border-b border-slate-800">
-            <h2 className="text-lg font-bold text-white flex items-center">
-              <Book className="w-5 h-5 mr-2 text-indigo-400" /> {t('glossary.title')}
+        <div className="w-64 bg-slate-50/80 backdrop-blur-md border-r border-slate-200/60 flex flex-col relative z-20">
+          <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center tracking-tight">
+              <div className="p-1.5 bg-brand-purple/10 rounded-lg mr-2">
+                <Book className="w-4 h-4 text-brand-purple" />
+              </div>
+              {t('glossary.title')}
             </h2>
           </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
@@ -225,15 +230,15 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                 key={glossary.id}
                 onClick={() => setSelectedGlossaryId(glossary.id)}
                 className={cn(
-                  'group relative flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all',
+                  'group relative flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all border',
                   selectedGlossaryId === glossary.id
-                    ? 'bg-indigo-600/20 border border-indigo-500/50'
-                    : 'hover:bg-slate-800 border border-transparent'
+                    ? 'bg-white border-brand-purple/20 shadow-sm ring-1 ring-brand-purple/5'
+                    : 'hover:bg-white/60 border-transparent hover:border-slate-200/50 hover:shadow-sm'
                 )}
               >
                 {showDeleteConfirm === glossary.id ? (
-                  <div className="absolute inset-0 bg-slate-900 flex items-center justify-between px-3 rounded-lg z-10 border border-red-500/30">
-                    <span className="text-xs text-red-400 font-medium flex items-center">
+                  <div className="absolute inset-0 bg-white/95 backdrop-blur-sm flex items-center justify-between px-3 rounded-lg z-10 border border-red-200">
+                    <span className="text-xs text-red-600 font-medium flex items-center">
                       <AlertCircle className="w-3 h-3 mr-1" /> {t('glossary.deleteConfirm')}
                     </span>
                     <div className="flex items-center space-x-2">
@@ -242,7 +247,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                           e.stopPropagation();
                           handleDelete(glossary.id);
                         }}
-                        className="px-2 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 text-xs rounded border border-red-500/30 transition-colors"
+                        className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-600 text-xs rounded border border-red-200 transition-colors font-medium"
                       >
                         {t('glossary.yes')}
                       </button>
@@ -251,7 +256,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                           e.stopPropagation();
                           setShowDeleteConfirm(null);
                         }}
-                        className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs rounded border border-slate-700 transition-colors"
+                        className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs rounded border border-slate-200 transition-colors font-medium"
                       >
                         {t('glossary.no')}
                       </button>
@@ -267,27 +272,34 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                       onChange={(e) => setEditNameValue(e.target.value)}
                       onBlur={() => handleRename(glossary.id)}
                       onKeyDown={(e) => e.key === 'Enter' && handleRename(glossary.id)}
-                      className="w-full bg-slate-900 border border-indigo-500 rounded px-2 py-1 text-sm text-white focus:outline-none"
+                      className="w-full bg-white border border-brand-purple rounded px-2 py-1 text-sm text-slate-900 focus:outline-none shadow-sm"
                       onClick={(e) => e.stopPropagation()}
                     />
                   ) : (
                     <div className="flex items-center">
                       <span
                         className={cn(
-                          'text-sm font-medium truncate',
-                          selectedGlossaryId === glossary.id ? 'text-white' : 'text-slate-300'
+                          'text-sm font-medium truncate transition-colors',
+                          selectedGlossaryId === glossary.id
+                            ? 'text-brand-purple'
+                            : 'text-slate-700 group-hover:text-slate-900'
                         )}
                       >
                         {glossary.name}
                       </span>
                       {activeGlossaryId === glossary.id && (
-                        <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/20">
+                        <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm">
                           {t('glossary.currentlyUsed')}
                         </span>
                       )}
                     </div>
                   )}
-                  <div className="text-[10px] text-slate-500 mt-0.5">
+                  <div
+                    className={cn(
+                      'text-[10px] mt-0.5 transition-colors',
+                      selectedGlossaryId === glossary.id ? 'text-brand-purple/70' : 'text-slate-400'
+                    )}
+                  >
                     {t('glossary.termCount', { count: glossary.terms.length })}
                   </div>
                 </div>
@@ -306,7 +318,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                       setEditingNameId(glossary.id);
                       setEditNameValue(glossary.name);
                     }}
-                    className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white"
+                    className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-brand-purple transition-colors"
                     title={t('glossary.rename')}
                   >
                     <Edit2 className="w-3 h-3" />
@@ -316,7 +328,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                       e.stopPropagation();
                       setShowDeleteConfirm(glossary.id);
                     }}
-                    className="p-1.5 hover:bg-red-500/20 rounded text-slate-400 hover:text-red-400"
+                    className="p-1.5 hover:bg-red-50 rounded text-slate-400 hover:text-red-500 transition-colors"
                     title={t('glossary.delete')}
                   >
                     <Trash2 className="w-3 h-3" />
@@ -325,18 +337,18 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
               </div>
             ))}
           </div>
-          <div className="p-4 border-t border-slate-800 space-y-2">
+          <div className="p-4 border-t border-slate-200 space-y-2 bg-slate-50/50">
             <button
               onClick={handleAddGlossary}
-              className="w-full flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white py-2 rounded-lg transition-colors border border-slate-700"
+              className="w-full flex items-center justify-center space-x-2 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 py-2 rounded-lg transition-all border border-slate-200 shadow-sm hover:shadow hover:border-slate-300 font-medium"
             >
-              <Plus className="w-4 h-4" />
-              <span className="text-sm font-medium">{t('glossary.createNew')}</span>
+              <Plus className="w-4 h-4 text-brand-purple" />
+              <span className="text-sm">{t('glossary.createNew')}</span>
             </button>
             {glossaries.length === 0 && (
-              <label className="w-full flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white py-2 rounded-lg transition-colors border border-slate-700 cursor-pointer">
-                <Upload className="w-4 h-4" />
-                <span className="text-sm font-medium">{t('glossary.import')}</span>
+              <label className="w-full flex items-center justify-center space-x-2 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 py-2 rounded-lg transition-all border border-slate-200 cursor-pointer shadow-sm hover:shadow font-medium">
+                <Upload className="w-4 h-4 text-brand-purple" />
+                <span className="text-sm">{t('glossary.import')}</span>
                 <input type="file" accept=".json" onChange={handleImport} className="hidden" />
               </label>
             )}
@@ -344,36 +356,38 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
         </div>
 
         {/* Main Content - Terms Editor */}
-        <div className="flex-1 flex flex-col bg-slate-900 relative">
+        <div className="flex-1 flex flex-col bg-slate-50/50 backdrop-blur-sm relative z-10">
           {selectedGlossary ? (
             <>
-              <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50 pr-12">
+              <div className="p-4 border-b border-slate-200 flex items-center justify-between bg-white/50 pr-12">
                 <div>
-                  <h2 className="text-xl font-bold text-white flex items-center">
+                  <h2 className="text-xl font-bold text-slate-800 flex items-center tracking-tight">
                     {selectedGlossary.name}
                     {activeGlossaryId === selectedGlossary.id && (
-                      <span className="ml-3 px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 flex items-center">
+                      <span className="ml-3 px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center shadow-sm">
                         <CheckCircle className="w-3 h-3 mr-1" /> {t('glossary.currentlyUsed')}
                       </span>
                     )}
                   </h2>
-                  <p className="text-slate-500 text-sm mt-1">
+                  <p className="text-slate-500 text-sm mt-1 font-medium">
                     {t('glossary.lastUpdated')}:{' '}
-                    {new Date(selectedGlossary.updatedAt).toLocaleDateString()}
+                    <span className="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
+                      {new Date(selectedGlossary.updatedAt).toLocaleDateString()}
+                    </span>
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
                   {activeGlossaryId !== selectedGlossary.id && (
                     <button
                       onClick={() => onSetActiveGlossary(selectedGlossary.id)}
-                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors flex items-center"
+                      className="px-3 py-1.5 bg-brand-purple hover:bg-brand-purple/90 text-white rounded-lg text-sm font-medium transition-all shadow-sm flex items-center"
                     >
                       <CheckCircle className="w-4 h-4 mr-2" /> {t('glossary.setAsCurrent')}
                     </button>
                   )}
-                  <div className="h-6 w-px bg-slate-700 mx-2" />
+                  <div className="h-6 w-px bg-slate-200 mx-2" />
                   <label
-                    className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer"
+                    className="p-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-500 hover:text-slate-700 transition-colors cursor-pointer shadow-sm"
                     title={t('glossary.importJson')}
                   >
                     <Download className="w-5 h-5" />
@@ -381,7 +395,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                   </label>
                   <button
                     onClick={handleExport}
-                    className="p-2 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-colors"
+                    className="p-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-500 hover:text-slate-700 transition-colors shadow-sm"
                     title={t('glossary.exportJson')}
                   >
                     <Upload className="w-5 h-5" />
@@ -391,15 +405,15 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
 
               <div className="flex-1 flex flex-col min-h-0">
                 {/* Search & Add */}
-                <div className="p-4 border-b border-slate-800 flex space-x-4">
+                <div className="p-4 border-b border-slate-200 flex space-x-4 bg-white/30">
                   <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     <input
                       type="text"
                       placeholder={t('glossary.searchTerms')}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+                      className="w-full bg-white border border-slate-200 rounded-lg pl-9 pr-4 py-2 text-sm text-slate-800 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple/20 shadow-sm transition-all placeholder:text-slate-400"
                     />
                   </div>
                 </div>
@@ -408,12 +422,12 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
                   <div className="space-y-2">
                     {/* Add New Term Row */}
-                    <div className="flex items-start space-x-2 p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                    <div className="flex items-start space-x-2 p-3 bg-white border border-slate-200 rounded-xl shadow-sm">
                       <div className="flex-1 space-y-2">
                         <div className="flex space-x-2">
                           <input
                             placeholder={t('glossary.term')}
-                            className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
+                            className="flex-1 bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-sm text-slate-800 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple/20 transition-all placeholder:text-slate-400"
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
                                 const inputs =
@@ -436,12 +450,12 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                           />
                           <input
                             placeholder={t('glossary.translation')}
-                            className="flex-1 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm text-white focus:outline-none focus:border-indigo-500"
+                            className="flex-1 bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-sm text-slate-800 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple/20 transition-all placeholder:text-slate-400"
                           />
                         </div>
                         <input
                           placeholder={t('glossary.notes')}
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-400 focus:outline-none focus:border-indigo-500"
+                          className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1.5 text-xs text-slate-600 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple/20 transition-all placeholder:text-slate-400"
                         />
                       </div>
                       <button
@@ -460,9 +474,9 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                             inputs[0].focus();
                           }
                         }}
-                        className="p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-colors"
+                        className="p-2 bg-brand-purple hover:bg-brand-purple/90 text-white rounded-lg transition-colors shadow-sm"
                       >
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-5 h-5" />
                       </button>
                     </div>
 
@@ -478,10 +492,10 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                         <div
                           key={originalIndex}
                           className={cn(
-                            'flex items-start space-x-2 p-3 rounded-lg border transition-all',
+                            'flex items-start space-x-2 p-3 rounded-xl border transition-all',
                             editingTermIndex === originalIndex
-                              ? 'bg-indigo-900/20 border-indigo-500/50'
-                              : 'hover:bg-slate-800/50 border-transparent hover:border-slate-700/50 group'
+                              ? 'bg-brand-purple/5 border-brand-purple ring-1 ring-brand-purple/20'
+                              : 'bg-white border-transparent hover:border-slate-200 hover:shadow-sm group'
                           )}
                         >
                           {editingTermIndex === originalIndex && editTermData ? (
@@ -494,7 +508,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                     onChange={(e) =>
                                       setEditTermData({ ...editTermData, term: e.target.value })
                                     }
-                                    className="flex-1 bg-slate-900 border border-indigo-500 rounded px-2 py-1 text-sm text-white focus:outline-none"
+                                    className="flex-1 bg-white border border-brand-purple rounded px-2 py-1 text-sm text-slate-900 focus:outline-none shadow-sm"
                                     placeholder={t('glossary.term')}
                                     autoFocus
                                   />
@@ -506,7 +520,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                         translation: e.target.value,
                                       })
                                     }
-                                    className="flex-1 bg-slate-900 border border-indigo-500 rounded px-2 py-1 text-sm text-white focus:outline-none"
+                                    className="flex-1 bg-white border border-brand-purple rounded px-2 py-1 text-sm text-slate-900 focus:outline-none shadow-sm"
                                     placeholder={t('glossary.translation')}
                                   />
                                 </div>
@@ -515,7 +529,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                   onChange={(e) =>
                                     setEditTermData({ ...editTermData, notes: e.target.value })
                                   }
-                                  className="w-full bg-slate-900 border border-indigo-500 rounded px-2 py-1 text-xs text-slate-300 focus:outline-none"
+                                  className="w-full bg-white border border-brand-purple rounded px-2 py-1 text-xs text-slate-600 focus:outline-none shadow-sm"
                                   placeholder={t('glossary.notes')}
                                   onKeyDown={(e) => e.key === 'Enter' && handleSaveEdit()}
                                 />
@@ -523,14 +537,14 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                               <div className="flex flex-col space-y-1">
                                 <button
                                   onClick={handleSaveEdit}
-                                  className="p-1.5 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded transition-colors"
+                                  className="p-1.5 bg-emerald-100 text-emerald-600 hover:bg-emerald-200 rounded-lg transition-colors border border-emerald-200"
                                   title={t('glossary.save')}
                                 >
                                   <CheckCircle className="w-4 h-4" />
                                 </button>
                                 <button
                                   onClick={handleCancelEdit}
-                                  className="p-1.5 bg-slate-700 text-slate-400 hover:bg-slate-600 hover:text-white rounded transition-colors"
+                                  className="p-1.5 bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-800 rounded-lg transition-colors"
                                   title={t('glossary.cancel')}
                                 >
                                   <X className="w-4 h-4" />
@@ -542,12 +556,14 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                             <>
                               <div className="flex-1 space-y-1">
                                 <div className="flex flex-col space-y-0.5">
-                                  <span className="font-medium text-white">{item.term}</span>
-                                  <span className="text-indigo-400 text-sm">
+                                  <span className="font-medium text-slate-800 text-base">
+                                    {item.term}
+                                  </span>
+                                  <span className="text-brand-purple font-medium text-sm">
                                     {item.translation}
                                   </span>
                                   {item.notes && (
-                                    <span className="text-xs text-slate-500 italic">
+                                    <span className="text-xs text-slate-500 italic block mt-0.5">
                                       {item.notes}
                                     </span>
                                   )}
@@ -559,7 +575,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                     setEditingTermIndex(originalIndex);
                                     setEditTermData({ ...item });
                                   }}
-                                  className="p-1.5 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded transition-colors"
+                                  className="p-1.5 text-slate-400 hover:text-brand-purple hover:bg-brand-purple/10 rounded-lg transition-colors"
                                   title={t('glossary.edit')}
                                 >
                                   <Edit2 className="w-4 h-4" />
@@ -570,7 +586,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                                     newItems.splice(originalIndex, 1);
                                     handleUpdateTerms(newItems);
                                   }}
-                                  className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors"
+                                  className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                   title={t('glossary.delete')}
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -585,14 +601,16 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
               </div>
             </>
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-slate-500">
-              <Book className="w-16 h-16 mb-4 opacity-20" />
-              <p>{t('glossary.selectToManage')}</p>
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+              <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+                <Book className="w-12 h-12 opacity-30 text-slate-500" />
+              </div>
+              <p className="font-medium text-lg text-slate-600">{t('glossary.selectToManage')}</p>
             </div>
           )}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-slate-400 hover:text-white"
+            className="absolute top-4 right-4 text-slate-400 hover:text-slate-800 p-2 hover:bg-white/50 rounded-lg transition-all"
           >
             <X className="w-5 h-5" />
           </button>

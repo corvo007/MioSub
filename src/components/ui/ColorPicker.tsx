@@ -36,7 +36,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ color, onChange, class
       </div>
 
       <div className="space-y-2">
-        <label className="text-xs font-medium text-slate-400">{t('presetColors')}</label>
+        <label className="text-xs font-medium text-slate-500">{t('presetColors')}</label>
         <div className="grid grid-cols-8 gap-2">
           {SPEAKER_COLORS.map((presetColor) => (
             <button
@@ -45,8 +45,8 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ color, onChange, class
               className={cn(
                 'w-6 h-6 rounded-full border transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-indigo-500/50',
                 color.toLowerCase() === presetColor.toLowerCase()
-                  ? 'border-white ring-2 ring-indigo-500'
-                  : 'border-transparent hover:border-slate-400'
+                  ? 'border-white ring-2 ring-brand-purple shadow-md scale-110'
+                  : 'border-transparent hover:border-slate-300 hover:scale-110'
               )}
               style={{ backgroundColor: presetColor }}
               title={presetColor}
@@ -57,7 +57,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ color, onChange, class
 
       <div className="flex items-center gap-2">
         <div
-          className="w-10 h-10 rounded-lg border border-slate-700 shadow-sm shrink-0"
+          className="w-10 h-10 rounded-lg border border-slate-200 shadow-sm shrink-0"
           style={{ backgroundColor: validColor }}
         />
         <div className="flex-1">
@@ -69,7 +69,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ color, onChange, class
               type="text"
               value={validColor.replace('#', '')}
               onChange={handleInputChange}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 pl-7 pr-3 text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-colors uppercase font-mono"
+              className="w-full bg-white border border-slate-300 rounded-lg py-2 pl-7 pr-3 text-sm text-slate-800 placeholder-slate-400 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple/20 transition-colors uppercase"
               placeholder="FFFFFF"
               maxLength={6}
             />

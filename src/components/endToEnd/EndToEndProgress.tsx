@@ -36,7 +36,7 @@ function ElapsedTime({ startTime }: { startTime: number }) {
 
   const elapsed = Math.floor((now - startTime) / 1000);
   return (
-    <span className="text-white/40">
+    <span className="text-slate-500">
       {t('progress.elapsed', { time: formatDuration(elapsed) })}
     </span>
   );
@@ -93,8 +93,8 @@ function TranscribeChunkList({ chunks }: { chunks: ChunkStatus[] }) {
   const totalCount = prepChunks.length + contentTotal;
 
   return (
-    <div className="mt-4 pt-3 border-t border-white/10">
-      <div className="flex justify-between text-sm text-white/40 mb-2">
+    <div className="mt-4 pt-3 border-t border-slate-200">
+      <div className="flex justify-between text-sm text-slate-400 mb-2">
         <span>{t('progress.subtitleProgress')}</span>
         <span>
           {totalCompleted}/{totalCount} {t('progress.completed')}
@@ -104,7 +104,7 @@ function TranscribeChunkList({ chunks }: { chunks: ChunkStatus[] }) {
         {sortedChunks.map((chunk) => (
           <div
             key={chunk.id}
-            className="flex items-center justify-between text-sm py-1.5 px-2 bg-white/5 rounded"
+            className="flex items-center justify-between text-sm py-1.5 px-2 bg-slate-50 border border-slate-100 rounded"
           >
             <div className="flex items-center gap-2">
               <div
@@ -112,16 +112,16 @@ function TranscribeChunkList({ chunks }: { chunks: ChunkStatus[] }) {
                   'w-1.5 h-1.5 rounded-full',
                   chunk.status === 'completed' && 'bg-emerald-500',
                   chunk.status === 'error' && 'bg-red-500',
-                  chunk.status === 'processing' && 'bg-blue-500 animate-pulse',
+                  chunk.status === 'processing' && 'bg-brand-purple animate-pulse',
                   chunk.status !== 'completed' &&
                     chunk.status !== 'error' &&
                     chunk.status !== 'processing' &&
-                    'bg-white/20'
+                    'bg-slate-200'
                 )}
               />
-              <span className="text-white/60">{getChunkLabel(chunk.id)}</span>
+              <span className="text-slate-600">{getChunkLabel(chunk.id)}</span>
             </div>
-            <span className="text-white/40 text-xs">{chunk.message || chunk.status}</span>
+            <span className="text-slate-400 text-xs">{chunk.message || chunk.status}</span>
           </div>
         ))}
       </div>
@@ -181,10 +181,11 @@ function StageIndicator({
   const config = getStageConfig(t)(stage);
 
   const statusStyles = {
-    pending: 'bg-white/5 border-white/10 text-white/40',
-    active: 'bg-blue-500/20 border-blue-500/50 text-blue-400 animate-pulse',
-    completed: 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400',
-    error: 'bg-red-500/20 border-red-500/50 text-red-400',
+    pending: 'bg-white border-slate-200 text-slate-300',
+    active:
+      'bg-brand-purple/10 border-brand-purple/50 text-brand-purple animate-pulse shadow-sm shadow-brand-purple/20',
+    completed: 'bg-emerald-50 border-emerald-200 text-emerald-600',
+    error: 'bg-red-50 border-red-200 text-red-600',
   };
 
   return (
@@ -205,7 +206,12 @@ function StageIndicator({
           config.icon
         )}
       </div>
-      <span className={cn('mt-2 text-xs font-medium', isCurrent ? 'text-white' : 'text-white/50')}>
+      <span
+        className={cn(
+          'mt-2 text-xs font-medium',
+          isCurrent ? 'text-brand-purple font-bold' : 'text-slate-400'
+        )}
+      >
         {config.label}
       </span>
     </div>
@@ -219,7 +225,7 @@ function StageConnector({ completed }: { completed: boolean }) {
       <div
         className={cn(
           'h-full rounded transition-colors',
-          completed ? 'bg-emerald-500/50' : 'bg-white/10'
+          completed ? 'bg-emerald-500/50' : 'bg-slate-200'
         )}
       />
     </div>
@@ -237,25 +243,27 @@ function CancelConfirmDialog({
   const { t } = useTranslation('endToEnd');
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md mx-4 shadow-2xl">
+    <div className="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-white/95 backdrop-blur-xl border border-white/60 rounded-2xl p-6 max-w-md mx-4 shadow-2xl ring-1 ring-slate-900/5">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
-            <AlertCircle className="w-5 h-5 text-amber-400" />
+          <div className="w-10 h-10 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center">
+            <AlertCircle className="w-5 h-5 text-amber-500" />
           </div>
-          <h3 className="text-lg font-semibold text-white">{t('progress.cancelConfirm.title')}</h3>
+          <h3 className="text-lg font-semibold text-slate-800">
+            {t('progress.cancelConfirm.title')}
+          </h3>
         </div>
-        <p className="text-slate-400 mb-6">{t('progress.cancelConfirm.message')}</p>
+        <p className="text-slate-500 mb-6">{t('progress.cancelConfirm.message')}</p>
         <div className="flex gap-3">
           <button
             onClick={onCancel}
-            className="flex-1 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-white font-medium transition-colors"
+            className="flex-1 px-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-700 font-medium transition-colors"
           >
             {t('progress.cancelConfirm.continue')}
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 px-4 py-2.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 rounded-lg text-red-300 font-medium transition-colors"
+            className="flex-1 px-4 py-2.5 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg text-red-600 font-medium transition-colors"
           >
             {t('progress.cancelConfirm.confirm')}
           </button>
@@ -324,7 +332,7 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
       {/* Header */}
 
       {/* Stage Timeline */}
-      <div className="bg-white/5 border border-white/10 rounded-xl p-6 mb-6">
+      <div className="bg-white/50 border border-white/60 rounded-xl p-6 mb-6 shadow-sm">
         <div className="flex items-start justify-between">
           {processingStages.map((stage, index) => (
             <React.Fragment key={stage}>
@@ -344,22 +352,22 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
       {/* Overall Progress Bar */}
       <div className="mb-6">
         <div className="flex justify-between text-base mb-2">
-          <span className="text-white/60">{t('progress.overallProgress')}</span>
+          <span className="text-slate-500">{t('progress.overallProgress')}</span>
           <div className="flex items-center gap-4">
             {/* Elapsed Time */}
             {progress?.pipelineStartTime && <ElapsedTime startTime={progress.pipelineStartTime} />}
-            <span className="text-white font-medium">
+            <span className="text-slate-700 font-medium">
               {(progress?.overallProgress || 0).toFixed(1)}%
             </span>
           </div>
         </div>
-        <div className="h-3 bg-white/10 rounded-full overflow-hidden">
+        <div className="h-3 bg-slate-200 rounded-full overflow-hidden">
           <div
             className={cn(
               'h-full transition-all duration-500',
               isError && 'bg-red-500',
               isCompleted && 'bg-emerald-500',
-              !isError && !isCompleted && 'bg-gradient-to-r from-violet-500 to-indigo-500'
+              !isError && !isCompleted && 'bg-linear-to-r from-violet-500 to-indigo-500'
             )}
             style={{ width: `${progress?.overallProgress || 0}%` }}
           />
@@ -368,26 +376,26 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
 
       {/* Current Stage Details */}
       {!isCompleted && !isError && (
-        <div className="p-4 bg-white/5 border border-white/10 rounded-xl mb-6">
+        <div className="p-4 bg-white/50 border border-white/60 rounded-xl mb-6 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <span className="text-blue-400">{config.icon}</span>
-              <span className="text-white font-medium">{config.label}</span>
+              <span className="text-brand-purple">{config.icon}</span>
+              <span className="text-slate-700 font-medium">{config.label}</span>
             </div>
-            <span className="text-white/60 text-base">
+            <span className="text-slate-500 text-base">
               {(progress?.stageProgress || 0).toFixed(1)}%
             </span>
           </div>
 
-          <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-3">
+          <div className="h-2 bg-slate-200 rounded-full overflow-hidden mb-3">
             <div
-              className="h-full bg-blue-500 transition-all duration-300"
+              className="h-full bg-brand-purple transition-all duration-300"
               style={{ width: `${progress?.stageProgress || 0}%` }}
             />
           </div>
 
           {/* Stage-specific details */}
-          <div className="text-sm text-white/50">
+          <div className="text-sm text-slate-500">
             {/* Download details */}
             {currentStage === 'downloading' && progress?.downloadProgress && (
               <div className="flex items-center justify-between">
@@ -433,12 +441,12 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
 
       {/* Error Details */}
       {isError && progress?.message && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl mb-6">
+        <div className="p-4 bg-red-50 border border-red-100 rounded-xl mb-6">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
             <div>
-              <div className="font-medium text-red-300 mb-1">{t('progress.errorDetails')}</div>
-              <div className="text-sm text-red-200/70">{progress.message}</div>
+              <div className="font-medium text-red-700 mb-1">{t('progress.errorDetails')}</div>
+              <div className="text-sm text-red-600/80">{progress.message}</div>
             </div>
           </div>
         </div>
@@ -458,10 +466,10 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
         <button
           onClick={handleCancelClick}
           className={cn(
-            'px-6 py-3 border rounded-xl font-medium transition-colors',
+            'px-6 py-3 border rounded-xl font-medium transition-colors shadow-sm',
             isCompleted || isError
-              ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700'
-              : 'bg-red-500/20 border-red-500/30 text-red-300 hover:bg-red-500/30'
+              ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+              : 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100'
           )}
         >
           {isCompleted || isError ? t('progress.close') : t('progress.cancelProcessing')}

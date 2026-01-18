@@ -16,13 +16,13 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
 }) => (
   <h3
     className={cn(
-      'text-sm font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-2',
+      'text-sm font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2',
       className
     )}
   >
-    {withDivider && <span className="w-8 h-px bg-slate-800" />}
+    {withDivider && <span className="w-8 h-px bg-slate-200" />}
     {icon}
     {children}
-    {withDivider && <span className="flex-1 h-px bg-slate-800" />}
+    {withDivider && <span className="flex-1 h-px bg-slate-200" />}
   </h3>
 );

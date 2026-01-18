@@ -18,7 +18,7 @@ export const PerformanceTab: React.FC<TabProps> = ({ settings, updateSetting }) 
         <SectionHeader>{t('performance.batch.title')}</SectionHeader>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
               {t('performance.batch.proofreadBatchSize')}
             </label>
             <NumberInput
@@ -32,7 +32,7 @@ export const PerformanceTab: React.FC<TabProps> = ({ settings, updateSetting }) 
             </p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
               {t('performance.batch.translationBatchSize')}
             </label>
             <NumberInput
@@ -46,7 +46,7 @@ export const PerformanceTab: React.FC<TabProps> = ({ settings, updateSetting }) 
             </p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
               {t('performance.batch.chunkDuration')}
             </label>
             <NumberInput
@@ -67,7 +67,7 @@ export const PerformanceTab: React.FC<TabProps> = ({ settings, updateSetting }) 
         <SectionHeader>{t('performance.concurrency.title')}</SectionHeader>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
               {t('performance.concurrency.concurrencyFlash')}
             </label>
             <NumberInput
@@ -84,7 +84,7 @@ export const PerformanceTab: React.FC<TabProps> = ({ settings, updateSetting }) 
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
               {t('performance.concurrency.concurrencyPro')}
             </label>
             <NumberInput
@@ -101,7 +101,7 @@ export const PerformanceTab: React.FC<TabProps> = ({ settings, updateSetting }) 
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
               {t('performance.concurrency.localConcurrency')}
             </label>
             <NumberInput
@@ -118,7 +118,7 @@ export const PerformanceTab: React.FC<TabProps> = ({ settings, updateSetting }) 
             </p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
               {t('performance.concurrency.requestTimeout')}
             </label>
             <NumberInput

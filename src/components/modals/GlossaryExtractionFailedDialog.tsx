@@ -25,20 +25,20 @@ export const GlossaryExtractionFailedDialog: React.FC<GlossaryExtractionFailedDi
   return (
     <Modal isOpen={isOpen} onClose={onContinue} maxWidth="md" zIndex={60} showCloseButton={false}>
       <div className="text-center space-y-4">
-        <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto">
+        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto border border-red-100 shadow-sm">
           <AlertCircle className="w-8 h-8 text-red-500" />
         </div>
-        <h3 className="text-xl font-bold text-white">
+        <h3 className="text-xl font-bold text-slate-800">
           {t('glossaryConfirmation.extractionFailed.title')}
         </h3>
-        <p className="text-slate-400 text-sm">
+        <p className="text-slate-600 text-sm">
           {t('glossaryConfirmation.extractionFailed.description')}
         </p>
         <div className="flex flex-col space-y-2 pt-4">
           <button
             onClick={onRetry}
             disabled={isGeneratingGlossary}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center"
+            className="w-full bg-linear-to-r from-brand-purple to-brand-purple/90 hover:brightness-110 text-white font-medium py-2 rounded-lg transition-colors flex items-center justify-center shadow-lg shadow-brand-purple/20"
           >
             {isGeneratingGlossary ? (
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -52,7 +52,7 @@ export const GlossaryExtractionFailedDialog: React.FC<GlossaryExtractionFailedDi
           <button
             onClick={onContinue}
             disabled={isGeneratingGlossary}
-            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium py-2 rounded-lg transition-colors"
+            className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 hover:text-slate-900 font-medium py-2 rounded-lg transition-all"
           >
             {t('glossaryConfirmation.extractionFailed.continue')}
           </button>

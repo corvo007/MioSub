@@ -15,7 +15,9 @@ export const Header: React.FC<HeaderProps> = ({ onShowLogs, onShowGlossary, onSh
     <PageHeader
       title={
         <>
-          <span className="text-indigo-400">Gemini</span> Subtitle Pro
+          <span className="bg-linear-to-r from-brand-purple to-brand-orange bg-clip-text text-transparent">
+            MioSub
+          </span>
         </>
       }
       subtitle={t('header.subtitle')}

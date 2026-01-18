@@ -20,8 +20,8 @@ export const EncoderSelector: React.FC<EncoderSelectorProps> = ({ value, onChang
         {
           value: 'libx264',
           label: (
-            <div className="text-left whitespace-normal break-words">
-              <div className="font-medium text-slate-200">H.264 (AVC)</div>
+            <div className="text-left whitespace-normal wrap-break-word">
+              <div className="font-medium text-slate-900">H.264 (AVC)</div>
               <div className="text-xs text-slate-500">{t('encoderSelector.h264Desc')}</div>
             </div>
           ),
@@ -29,8 +29,8 @@ export const EncoderSelector: React.FC<EncoderSelectorProps> = ({ value, onChang
         {
           value: 'libx265',
           label: (
-            <div className="text-left whitespace-normal break-words">
-              <div className="font-medium text-slate-200">H.265 (HEVC)</div>
+            <div className="text-left whitespace-normal wrap-break-word">
+              <div className="font-medium text-slate-900">H.265 (HEVC)</div>
               <div className="text-xs text-slate-500">{t('encoderSelector.hevcDesc')}</div>
             </div>
           ),

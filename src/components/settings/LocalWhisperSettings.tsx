@@ -44,9 +44,9 @@ export const LocalWhisperSettings: React.FC<LocalWhisperSettingsProps> = ({
   };
 
   return (
-    <div className="space-y-4 p-4 border border-slate-700 rounded-lg bg-slate-800/50">
+    <div className="space-y-4 p-4 border border-slate-200 rounded-lg bg-white shadow-sm">
       <div className="space-y-1">
-        <h3 className="text-sm font-medium text-slate-200">
+        <h3 className="text-sm font-medium text-slate-800">
           {t('services.transcription.localWhisperSettings.modelPathTitle')}
         </h3>
         <p className="text-xs text-slate-500">
@@ -60,18 +60,18 @@ export const LocalWhisperSettings: React.FC<LocalWhisperSettingsProps> = ({
           value={whisperModelPath || ''}
           placeholder={t('services.transcription.localWhisperSettings.modelPathPlaceholder')}
           readOnly
-          className="flex-1 px-3 py-2 border border-slate-700 rounded bg-slate-900 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+          className="flex-1 px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-700 placeholder-slate-400 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple shadow-sm transition-all"
         />
         <button
           onClick={handleSelect}
-          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition-colors"
+          className="px-4 py-2 bg-brand-purple hover:bg-brand-purple/90 text-white rounded-lg transition-colors shadow-sm font-medium"
         >
           {t('services.transcription.localWhisperSettings.browseButton')}
         </button>
       </div>
 
-      <div className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded border border-slate-700/50">
-        <p className="font-medium mb-1 text-slate-300">
+      <div className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-200">
+        <p className="font-medium mb-1 text-slate-800">
           {t('services.transcription.localWhisperSettings.instructionsTitle')}
         </p>
         <ul className="list-disc list-inside space-y-1">
@@ -90,7 +90,7 @@ export const LocalWhisperSettings: React.FC<LocalWhisperSettingsProps> = ({
                   'https://huggingface.co/ggerganov/whisper.cpp'
                 );
               }}
-              className="text-blue-400 underline hover:text-blue-300 cursor-pointer"
+              className="text-blue-500 underline hover:text-blue-600 cursor-pointer ml-1"
             >
               {t('services.transcription.localWhisperSettings.instructionModelLink')}
             </a>

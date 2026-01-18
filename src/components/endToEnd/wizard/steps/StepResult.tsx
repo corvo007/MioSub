@@ -32,8 +32,8 @@ export function StepResult({
           className={cn(
             'inline-flex items-center justify-center w-16 h-16 rounded-2xl border mb-4',
             success
-              ? 'bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-emerald-500/30'
-              : 'bg-gradient-to-br from-red-500/20 to-orange-500/20 border-red-500/30'
+              ? 'bg-linear-to-br from-emerald-500/20 to-teal-500/20 border-emerald-500/30'
+              : 'bg-linear-to-br from-red-500/20 to-orange-500/20 border-red-500/30'
           )}
         >
           {success ? (
@@ -43,10 +43,10 @@ export function StepResult({
           )}
         </div>
 
-        <h2 className="text-2xl font-bold text-white mb-2">
+        <h2 className="text-2xl font-bold text-slate-800 mb-2">
           {success ? t('wizard.resultStep.success') : t('wizard.resultStep.failure')}
         </h2>
-        <p className="text-white/60">
+        <p className="text-slate-500">
           {success
             ? t('wizard.resultStep.duration', {
                 minutes: Math.round((result?.duration || 0) / 1000 / 60),
@@ -88,16 +88,19 @@ export function StepResult({
 
       {/* Error Details */}
       {!success && result?.errorDetails && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl mb-8">
-          <div className="text-red-200 text-sm">
-            <p className="font-medium mb-1">
+        <div className="p-4 bg-red-100 border border-red-300/50 rounded-xl mb-8 text-left shadow-sm">
+          <div className="text-red-900 text-sm">
+            <p className="font-bold mb-1.5 text-red-950 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-600 inline-block" />
               {t('wizard.resultStep.errorStage', {
                 stage: t(`progress.stages.${result.errorDetails.stage}.label`, {
                   defaultValue: result.errorDetails.stage,
                 }),
               })}
             </p>
-            <p className="text-red-300/70">{result.errorDetails.message}</p>
+            <p className="text-red-800 leading-relaxed font-medium pl-3.5 bg-white/40 p-2 rounded-lg border border-red-200/50">
+              {result.errorDetails.message}
+            </p>
           </div>
         </div>
       )}
@@ -106,7 +109,7 @@ export function StepResult({
       <div className="flex gap-4 justify-center">
         <button
           onClick={onReset}
-          className="px-6 py-3 bg-white/10 border border-white/20 rounded-xl text-white font-medium transition-colors hover:bg-white/15"
+          className="px-6 py-3 bg-white border border-slate-200 rounded-xl text-slate-700 font-medium transition-colors hover:bg-slate-50 shadow-sm"
         >
           <span className="flex items-center gap-2">
             <RefreshCw className="w-4 h-4" />

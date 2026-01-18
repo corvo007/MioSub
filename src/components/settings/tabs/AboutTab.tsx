@@ -48,24 +48,25 @@ export const AboutTab: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in text-left">
       {/* App Branding */}
-      <div className="flex items-center gap-5 p-6 bg-slate-800/20 rounded-2xl border border-slate-800/50">
-        <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg shadow-indigo-500/20 flex-shrink-0">
+      <div className="flex items-center gap-5 p-6 bg-white rounded-2xl border border-slate-200 shadow-sm">
+        <div className="p-3 bg-linear-to-br from-brand-purple to-brand-orange rounded-xl shadow-lg shadow-brand-purple/20 shrink-0">
           <Languages className="w-8 h-8 text-white" />
         </div>
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-            <span className="text-indigo-400">Gemini</span>
-            <span>Subtitle Pro</span>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <span className="bg-linear-to-r from-brand-purple to-brand-orange bg-clip-text text-transparent">
+              MioSub
+            </span>
           </h1>
-          <p className="text-sm text-slate-400 mt-1 font-medium">
+          <p className="text-sm text-slate-500 mt-1 font-medium">
             {t('about.tagline', 'AI-powered subtitle generation and translation')}
           </p>
           <div className="flex items-center gap-3 mt-4">
-            <span className="px-3 py-1 bg-indigo-500/10 text-indigo-400 text-sm font-bold rounded-lg border border-indigo-500/20">
+            <span className="px-3 py-1 bg-brand-purple/10 text-brand-purple text-sm font-bold rounded-lg border border-brand-purple/20">
               v{pkg.version}
             </span>
             {info?.commitHash && (
-              <span className="text-slate-600 text-sm font-mono">
+              <span className="text-slate-500 text-sm">
                 {info.commitHash} ({info.isPackaged ? 'prod' : 'dev'})
               </span>
             )}
@@ -88,12 +89,12 @@ export const AboutTab: React.FC = () => {
           ].map((item) => (
             <div
               key={item.label}
-              className="px-4 py-3 bg-slate-800/50 rounded-xl border border-slate-700/50 flex items-center gap-3"
+              className="px-4 py-3 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3"
             >
-              <span className="text-sm text-slate-400 whitespace-nowrap flex-shrink-0">
+              <span className="text-sm text-slate-500 whitespace-nowrap shrink-0">
                 {item.label}
               </span>
-              <span className="text-sm text-white font-mono text-right flex-1 truncate">
+              <span className="text-sm text-slate-900 text-right flex-1 truncate">
                 {item.value || '...'}
               </span>
             </div>
@@ -111,15 +112,15 @@ export const AboutTab: React.FC = () => {
             className={cn(
               'p-4 rounded-xl border flex items-center justify-between',
               info?.gpu.available
-                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                : 'bg-slate-800/50 border-slate-700/50 text-slate-400'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                : 'bg-slate-50 border-slate-200 text-slate-500'
             )}
           >
             <div className="flex items-center gap-3">
               <div
                 className={cn(
                   'w-2 h-2 rounded-full',
-                  info?.gpu.available ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'
+                  info?.gpu.available ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
                 )}
               />
               <span className="text-sm font-medium">
@@ -142,8 +143,8 @@ export const AboutTab: React.FC = () => {
             className={cn(
               'p-4 rounded-xl border flex items-center justify-between',
               info?.versions.whisperDetails.gpuSupport
-                ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
-                : 'bg-slate-800/50 border-slate-700/50 text-slate-400'
+                ? 'bg-brand-purple/10 border-brand-purple/20 text-brand-purple'
+                : 'bg-slate-50 border-slate-200 text-slate-500'
             )}
           >
             <div className="flex items-center gap-3">
@@ -151,8 +152,8 @@ export const AboutTab: React.FC = () => {
                 className={cn(
                   'w-2 h-2 rounded-full',
                   info?.versions.whisperDetails.gpuSupport
-                    ? 'bg-indigo-500 animate-pulse'
-                    : 'bg-slate-600'
+                    ? 'bg-brand-purple animate-pulse'
+                    : 'bg-slate-400'
                 )}
               />
               <span className="text-sm font-medium">
@@ -188,7 +189,7 @@ export const AboutTab: React.FC = () => {
           ].map((pathItem) => (
             <div
               key={pathItem.label}
-              className="group p-3 bg-slate-800/50 rounded-xl border border-slate-700/50 space-y-2"
+              className="group p-3 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2 transition-colors hover:border-brand-purple/30"
             >
               <div className="flex justify-between items-center">
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-tight">
@@ -198,14 +199,14 @@ export const AboutTab: React.FC = () => {
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleCopy(pathItem.value)}
-                      className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"
+                      className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700 transition-colors"
                       title={t('about.copyPath', 'Copy Path')}
                     >
                       <Copy className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleShowInFolder(pathItem.value)}
-                      className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-white transition-colors"
+                      className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-700 transition-colors"
                       title={t('about.showInFolder', 'Show in Folder')}
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
@@ -213,7 +214,7 @@ export const AboutTab: React.FC = () => {
                   </div>
                 )}
               </div>
-              <p className="text-sm text-slate-300 font-mono break-all line-clamp-2">
+              <p className="text-sm text-slate-700 break-all line-clamp-2">
                 {pathItem.value || '...'}
               </p>
             </div>

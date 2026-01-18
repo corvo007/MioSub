@@ -11,9 +11,9 @@ interface ProgressBarProps {
 }
 
 const variantClasses = {
-  primary: 'bg-gradient-to-r from-violet-500 to-indigo-500',
-  success: 'bg-gradient-to-r from-emerald-500 to-teal-500',
-  error: 'bg-gradient-to-r from-red-500 to-orange-500',
+  primary: 'bg-linear-to-r from-violet-500 to-indigo-500',
+  success: 'bg-linear-to-r from-emerald-500 to-teal-500',
+  error: 'bg-linear-to-r from-red-500 to-orange-500',
 };
 
 const sizeClasses = {
@@ -37,7 +37,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   return (
     <div
       className={cn(
-        'w-full bg-white/10 rounded-full overflow-hidden',
+        'w-full bg-slate-200 rounded-full overflow-hidden',
         sizeClasses[size],
         className
       )}

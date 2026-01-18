@@ -24,7 +24,7 @@ export const SettingRow: React.FC<SettingRowProps> = ({
     )}
   >
     <div>
-      <label className="block text-sm font-medium text-slate-300">{label}</label>
+      <label className="block text-sm font-medium text-slate-700">{label}</label>
       {description && <p className="text-xs text-slate-500">{description}</p>}
     </div>
     <div className={cn(disabled && 'pointer-events-auto cursor-not-allowed')}>

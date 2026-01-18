@@ -26,7 +26,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
         <div className="space-y-4">
           {/* Gemini */}
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
               {t('services.translation.geminiKey')}
             </label>
             <div className="relative">
@@ -45,7 +45,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
             <EnvKeyHint envKey={envGeminiKey} userKey={settings.geminiKey} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
               {t('services.translation.geminiEndpoint')}
             </label>
             <InputWithReset
@@ -62,7 +62,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
       </div>
 
       {/* Transcription Provider Settings */}
-      <div className="space-y-4 pt-4 border-t border-slate-800">
+      <div className="space-y-4 pt-4 border-t border-slate-200">
         <SectionHeader>{t('services.transcription.title')}</SectionHeader>
 
         {isElectron ? (
@@ -127,7 +127,7 @@ const OpenAISettings: React.FC<{
 }> = ({ settings, updateSetting, envOpenaiKey, t }) => (
   <div className="space-y-4 animate-fade-in">
     <div>
-      <label className="block text-sm font-medium text-slate-300 mb-1.5">
+      <label className="block text-sm font-medium text-slate-700 mb-1.5">
         {t('services.transcription.openaiKey')}
       </label>
       <div className="relative">
@@ -146,7 +146,7 @@ const OpenAISettings: React.FC<{
       <EnvKeyHint envKey={envOpenaiKey} userKey={settings.openaiKey} />
     </div>
     <div>
-      <label className="block text-sm font-medium text-slate-300 mb-1.5">
+      <label className="block text-sm font-medium text-slate-700 mb-1.5">
         {t('services.transcription.openaiEndpoint')}
       </label>
       <InputWithReset

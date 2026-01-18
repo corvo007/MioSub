@@ -16,7 +16,7 @@ export const GeneralTab: React.FC<TabProps> = ({ settings, updateSetting }) => {
       <div className="space-y-3">
         <SectionHeader>{t('general.display.title')}</SectionHeader>
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">
             {t('general.display.zoomLevel')}
           </label>
           <CustomSelect
@@ -38,7 +38,7 @@ export const GeneralTab: React.FC<TabProps> = ({ settings, updateSetting }) => {
           <p className="text-xs text-slate-500 mt-2">{t('general.display.zoomHint')}</p>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">
             {t('general.display.language')}
           </label>
           <LanguageSwitcher />
@@ -50,7 +50,7 @@ export const GeneralTab: React.FC<TabProps> = ({ settings, updateSetting }) => {
       <div className="space-y-3">
         <SectionHeader>{t('general.output.title')}</SectionHeader>
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">
             {t('general.output.exportMode')}
           </label>
           <div className="grid grid-cols-2 gap-3">

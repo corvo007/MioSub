@@ -17,8 +17,10 @@ interface PrimaryButtonProps {
 }
 
 const variantClasses = {
-  primary: 'bg-gradient-to-r from-violet-500 to-indigo-500 hover:shadow-violet-500/30',
-  success: 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:shadow-emerald-500/40',
+  primary:
+    'bg-linear-to-r from-brand-purple to-brand-orange hover:shadow-brand-purple/40 shadow-brand-purple/20',
+  success:
+    'bg-linear-to-r from-emerald-500 to-teal-500 hover:shadow-emerald-500/40 shadow-emerald-500/20',
 };
 
 const sizeClasses = {

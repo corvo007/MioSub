@@ -71,7 +71,7 @@ export const AlignmentSettings: React.FC<AlignmentSettingsProps> = ({
     <div className="space-y-4">
       {/* Mode Selection */}
       <div>
-        <label className="block text-sm font-medium text-slate-300 mb-1.5">
+        <label className="block text-sm font-medium text-slate-700 mb-1.5">
           {t('enhance.alignment.mode')}
         </label>
         <CustomSelect
@@ -85,9 +85,9 @@ export const AlignmentSettings: React.FC<AlignmentSettingsProps> = ({
 
       {/* CTC-specific settings */}
       {settings.alignmentMode === 'ctc' && (
-        <div className="space-y-4 p-4 border border-slate-700 rounded-lg bg-slate-800/50 animate-fade-in">
+        <div className="space-y-4 p-4 border border-slate-200 rounded-lg bg-white shadow-sm animate-fade-in">
           <div className="space-y-1">
-            <h3 className="text-sm font-medium text-slate-200">
+            <h3 className="text-sm font-medium text-slate-800">
               {t('enhance.alignment.ctcConfig')}
             </h3>
             <p className="text-xs text-slate-500">{t('enhance.alignment.ctcConfigDesc')}</p>
@@ -95,7 +95,7 @@ export const AlignmentSettings: React.FC<AlignmentSettingsProps> = ({
 
           {/* Aligner Path */}
           <div>
-            <label className="block text-xs text-slate-400 mb-1">
+            <label className="block text-xs text-slate-600 mb-1">
               {t('enhance.alignment.alignerPath')}
             </label>
             <div className="flex gap-2">
@@ -104,11 +104,11 @@ export const AlignmentSettings: React.FC<AlignmentSettingsProps> = ({
                 value={settings.alignerPath || ''}
                 placeholder={t('enhance.alignment.alignerPathPlaceholder')}
                 readOnly
-                className="flex-1 px-3 py-2 border border-slate-700 rounded bg-slate-900 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm"
+                className="flex-1 px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-700 placeholder-slate-400 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple text-sm shadow-sm transition-all"
               />
               <button
                 onClick={handleSelectAligner}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition-colors text-sm"
+                className="px-4 py-2 bg-brand-purple hover:bg-brand-purple/90 text-white rounded-lg transition-colors text-sm font-medium shadow-sm"
               >
                 {t('enhance.alignment.browseButton')}
               </button>
@@ -117,7 +117,7 @@ export const AlignmentSettings: React.FC<AlignmentSettingsProps> = ({
 
           {/* Model Path */}
           <div>
-            <label className="block text-xs text-slate-400 mb-1">
+            <label className="block text-xs text-slate-600 mb-1">
               {t('enhance.alignment.modelPath')}
             </label>
             <div className="flex gap-2">
@@ -126,11 +126,11 @@ export const AlignmentSettings: React.FC<AlignmentSettingsProps> = ({
                 value={settings.alignmentModelPath || ''}
                 placeholder={t('enhance.alignment.modelPathPlaceholder')}
                 readOnly
-                className="flex-1 px-3 py-2 border border-slate-700 rounded bg-slate-900 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm"
+                className="flex-1 px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-700 placeholder-slate-400 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple text-sm shadow-sm transition-all"
               />
               <button
                 onClick={handleSelectModelDir}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition-colors text-sm"
+                className="px-4 py-2 bg-brand-purple hover:bg-brand-purple/90 text-white rounded-lg transition-colors text-sm font-medium shadow-sm"
               >
                 {t('enhance.alignment.browseButton')}
               </button>
@@ -138,8 +138,8 @@ export const AlignmentSettings: React.FC<AlignmentSettingsProps> = ({
           </div>
 
           {/* Instructions */}
-          <div className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded border border-slate-700/50">
-            <p className="font-medium mb-1 text-slate-300">{t('enhance.alignment.instructions')}</p>
+          <div className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-200">
+            <p className="font-medium mb-1 text-slate-800">{t('enhance.alignment.instructions')}</p>
             <ul className="list-disc list-inside space-y-1">
               <li dangerouslySetInnerHTML={{ __html: t('enhance.alignment.instructionAligner') }} />
               <li dangerouslySetInnerHTML={{ __html: t('enhance.alignment.instructionModel') }} />

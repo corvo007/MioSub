@@ -14,8 +14,9 @@ interface DirectorySelectorProps {
 
 const buttonVariants = {
   default:
-    'bg-transparent border border-white/20 text-white/70 hover:bg-white/5 hover:border-white/30',
-  accent: 'bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30',
+    'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 hover:text-slate-800 shadow-sm',
+  accent:
+    'bg-brand-purple/10 border border-brand-purple/20 text-brand-purple hover:bg-brand-purple/20',
 };
 
 /**
@@ -35,13 +36,13 @@ export const DirectorySelector: React.FC<DirectorySelectorProps> = ({
 
   return (
     <div className={cn('flex items-center gap-3', className)}>
-      <span className="flex-1 px-3 py-2 bg-white/5 rounded-lg text-white/70 text-sm truncate min-w-0">
-        {value || displayPlaceholder}
-      </span>
+      <div className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 text-sm truncate min-w-0 shadow-inner">
+        {value || <span className="text-slate-400">{displayPlaceholder}</span>}
+      </div>
       <button
         onClick={onSelect}
         className={cn(
-          'px-4 py-2 rounded-lg text-sm transition-colors flex items-center gap-1.5',
+          'px-4 py-2 rounded-lg text-sm transition-all flex items-center gap-1.5 font-medium',
           buttonVariants[variant]
         )}
       >

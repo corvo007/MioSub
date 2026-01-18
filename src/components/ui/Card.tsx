@@ -1,54 +1,69 @@
-import React from 'react';
+import * as React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+
 import { cn } from '@/lib/cn';
 
-interface CardProps {
-  children: React.ReactNode;
-  title?: string;
-  icon?: React.ReactNode;
-  className?: string;
-  variant?: 'default' | 'interactive';
-  onClick?: () => void;
-  padding?: 'none' | 'sm' | 'md';
-}
+const cardVariants = cva(
+  'rounded-xl border bg-card text-card-foreground shadow transition-all duration-300',
+  {
+    variants: {
+      variant: {
+        default: 'bg-card',
+        glass:
+          'bg-white/70 backdrop-blur-md border-white/20 shadow-xl shadow-indigo-100/50 hover:shadow-indigo-100/70',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  }
+);
 
-const paddingClasses = {
-  none: '',
-  sm: 'p-3',
-  md: 'p-4 md:p-6',
-};
+const Card = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & VariantProps<typeof cardVariants>
+>(({ className, variant, ...props }, ref) => (
+  <div ref={ref} className={cn(cardVariants({ variant }), className)} {...props} />
+));
+Card.displayName = 'Card';
 
-/**
- * A card container with optional icon and title header.
- * Supports interactive variant with hover effect.
- */
-export const Card: React.FC<CardProps> = ({
-  children,
-  title,
-  icon,
-  className = '',
-  variant = 'default',
-  onClick,
-  padding = 'md',
-}) => {
-  return (
+const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn('flex flex-col space-y-1.5 p-6', className)} {...props} />
+  )
+);
+CardHeader.displayName = 'CardHeader';
+
+const CardTitle = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
     <div
-      className={cn(
-        'bg-white/5 border border-white/10 rounded-xl',
-        paddingClasses[padding],
-        variant === 'interactive' && 'cursor-pointer transition-colors hover:bg-white/8',
-        className
-      )}
-      onClick={onClick}
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-    >
-      {title && (
-        <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/10">
-          {icon && <span className="text-violet-400">{icon}</span>}
-          <h3 className="font-medium text-white">{title}</h3>
-        </div>
-      )}
-      {children}
-    </div>
-  );
-};
+      ref={ref}
+      className={cn('font-semibold leading-none tracking-tight', className)}
+      {...props}
+    />
+  )
+);
+CardTitle.displayName = 'CardTitle';
+
+const CardDescription = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn('text-sm text-muted-foreground', className)} {...props} />
+  )
+);
+CardDescription.displayName = 'CardDescription';
+
+const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn('p-6 pt-0', className)} {...props} />
+  )
+);
+CardContent.displayName = 'CardContent';
+
+const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn('flex items-center p-6 pt-0', className)} {...props} />
+  )
+);
+CardFooter.displayName = 'CardFooter';
+
+export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };

@@ -58,7 +58,7 @@ export const Toggle: React.FC<ToggleProps> = ({
         sizeConfig.track,
         'rounded-full transition-colors relative',
         disabled && 'opacity-50 cursor-not-allowed',
-        checked ? colorClasses[color] : size === 'md' ? 'bg-slate-600' : 'bg-white/20'
+        checked ? colorClasses[color] : 'bg-slate-200 hover:bg-slate-300'
       )}
     >
       <div

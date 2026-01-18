@@ -259,27 +259,27 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
     const getRowBackgroundClass = (): string => {
       // Timeline corruption takes highest priority (red)
       if (sub.hasCorruptedRangeIssue) {
-        return 'bg-red-900/30 border-l-2 border-red-500';
+        return 'bg-red-50 border-l-2 border-red-500';
       }
       // Timeline regression (pink)
       if (sub.hasRegressionIssue) {
-        return 'bg-pink-900/30 border-l-2 border-pink-500';
+        return 'bg-pink-50 border-l-2 border-pink-500';
       }
       if (issueCount >= 2) {
         // Multiple issues: purple/violet background
-        return 'bg-violet-900/30 border-l-2 border-violet-500';
+        return 'bg-violet-50 border-l-2 border-violet-500';
       } else if (validation.hasOverlapIssue) {
         // Overlap issue: orange background
-        return 'bg-orange-900/30 border-l-2 border-orange-500';
+        return 'bg-orange-50 border-l-2 border-orange-500';
       } else if (validation.hasDurationIssue) {
         // Duration issue only: yellow background
-        return 'bg-yellow-900/30 border-l-2 border-yellow-500';
+        return 'bg-yellow-50 border-l-2 border-yellow-500';
       } else if (validation.hasLengthIssue) {
         // Length issue only: rose/red background
-        return 'bg-rose-900/30 border-l-2 border-rose-500';
+        return 'bg-rose-50 border-l-2 border-rose-500';
       } else if (sub.lowConfidence) {
         // Low confidence alignment: amber/orange background
-        return 'bg-amber-900/30 border-l-2 border-amber-500';
+        return 'bg-amber-50 border-l-2 border-amber-500';
       }
       return '';
     };
@@ -389,13 +389,13 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
     return (
       <div
         className={cn(
-          'p-2 sm:p-3 md:p-4 hover:bg-slate-800/30 transition-colors flex items-start space-x-2 sm:space-x-4 group/row',
+          'p-2 sm:p-3 md:p-4 hover:bg-slate-50 transition-colors flex items-start space-x-2 sm:space-x-4 group/row rounded-lg mx-2 my-1',
           getRowBackgroundClass(),
-          isDeleteMode && isSelectedForDelete && 'bg-red-900/20',
+          isDeleteMode && isSelectedForDelete && 'bg-red-50',
           // Active state styling
           isActive &&
             !isDeleteMode &&
-            'bg-indigo-500/10 border-l-4 border-indigo-500 pl-[calc(0.75rem-4px)] sm:pl-[calc(0.75rem-4px)] md:pl-[calc(1rem-4px)]'
+            'bg-brand-purple/5 border-l-4 border-brand-purple pl-2 sm:pl-2 md:pl-3'
         )}
         onBlur={editing ? handleRowBlur : undefined}
         onClick={(e) => {
@@ -413,15 +413,15 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
       >
         {/* Delete mode checkbox */}
         {isDeleteMode && (
-          <button onClick={() => onToggleDeleteSelection?.(sub.id)} className="mt-1 flex-shrink-0">
+          <button onClick={() => onToggleDeleteSelection?.(sub.id)} className="mt-1 shrink-0">
             {isSelectedForDelete ? (
-              <CheckSquare className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
+              <CheckSquare className="w-4 h-4 sm:w-5 sm:h-5 text-red-500" />
             ) : (
-              <Square className="w-4 h-4 sm:w-5 sm:h-5 text-red-400/50 hover:text-red-400" />
+              <Square className="w-4 h-4 sm:w-5 sm:h-5 text-red-300 hover:text-red-500" />
             )}
           </button>
         )}
-        <div className="flex flex-col text-[11px] sm:text-sm font-mono text-slate-400 min-w-[75px] sm:min-w-[95px] pt-1 relative">
+        <div className="flex flex-col text-[11px] sm:text-sm font-mono text-slate-500 min-w-18.75 sm:min-w-23.75 pt-1 relative">
           {validationError && (
             <div className="absolute bottom-full left-0 mb-2 z-50 animate-fade-in-up">
               <div className="bg-red-500 text-white text-[11px] sm:text-xs py-1 px-2 rounded shadow-lg whitespace-nowrap relative font-sans font-medium">
@@ -440,7 +440,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 onChange={(e) => setTempStartTime(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="00:00:00"
-                className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-[11px] sm:text-sm text-white placeholder-slate-600 focus:outline-none leading-tight w-full"
+                className="bg-transparent border-b border-slate-400 focus:border-brand-purple px-0 py-0 text-[11px] sm:text-sm text-slate-900 placeholder-slate-500 focus:outline-none leading-tight w-full font-medium"
               />
               <input
                 type="text"
@@ -448,12 +448,12 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 onChange={(e) => setTempEndTime(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="00:00:00"
-                className="bg-transparent border-b border-slate-600 focus:border-indigo-500 px-0 py-0 text-[11px] sm:text-sm text-white/70 placeholder-slate-600 focus:outline-none leading-tight w-full"
+                className="bg-transparent border-b border-slate-400 focus:border-brand-purple px-0 py-0 text-[11px] sm:text-sm text-slate-500 placeholder-slate-400 focus:outline-none leading-tight w-full"
               />
             </>
           ) : (
             <>
-              <span className={cn('leading-tight', isActive && 'text-indigo-300 font-bold')}>
+              <span className={cn('leading-tight', isActive && 'text-brand-purple font-bold')}>
                 {(sub.startTime || '').split(',')[0]}
               </span>
               <span className="leading-tight opacity-70">{(sub.endTime || '').split(',')[0]}</span>
@@ -470,7 +470,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
               <div className="flex flex-wrap items-center gap-1 mt-1.5">
                 {sub.hasCorruptedRangeIssue && (
                   <span
-                    className="flex items-center gap-0.5 text-[10px] text-red-400"
+                    className="flex items-center gap-0.5 text-[10px] text-red-600"
                     title={t('subtitleRow.corruptedTimeline')}
                   >
                     <AlertOctagon className="w-3 h-3" />
@@ -479,7 +479,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 )}
                 {sub.hasRegressionIssue && (
                   <span
-                    className="flex items-center gap-0.5 text-[10px] text-pink-400"
+                    className="flex items-center gap-0.5 text-[10px] text-pink-600"
                     title={t('subtitleRow.timeReverse')}
                   >
                     <Rewind className="w-3 h-3" />
@@ -488,7 +488,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 )}
                 {validation.hasOverlapIssue && (
                   <span
-                    className="flex items-center gap-0.5 text-[10px] text-orange-400"
+                    className="flex items-center gap-0.5 text-[10px] text-orange-600"
                     title={t('subtitleRow.overlapWith', {
                       amount: validation.overlapAmount.toFixed(1),
                     })}
@@ -499,7 +499,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 )}
                 {validation.hasDurationIssue && (
                   <span
-                    className="flex items-center gap-0.5 text-[10px] text-yellow-400"
+                    className="flex items-center gap-0.5 text-[10px] text-yellow-600"
                     title={t('subtitleRow.durationExceeds', {
                       duration: validation.duration.toFixed(1),
                       max: MAX_DURATION_SECONDS,
@@ -511,7 +511,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 )}
                 {validation.hasLengthIssue && (
                   <span
-                    className="flex items-center gap-0.5 text-[10px] text-rose-400"
+                    className="flex items-center gap-0.5 text-[10px] text-rose-600"
                     title={t('subtitleRow.charCountExceeds', {
                       count: validation.charCount,
                       max: MAX_CHINESE_CHARACTERS,
@@ -523,7 +523,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 )}
                 {sub.lowConfidence && (
                   <span
-                    className="flex items-center gap-0.5 text-[10px] text-amber-400"
+                    className="flex items-center gap-0.5 text-[10px] text-amber-600"
                     title={t('subtitleRow.lowConfidence', {
                       score: sub.alignmentScore ? (sub.alignmentScore * 100).toFixed(0) : '?',
                     })}
@@ -561,7 +561,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                   }}
                   onKeyDown={handleKeyDown}
                   placeholder={t('subtitleRow.sourcePlaceholder')}
-                  className="w-full bg-slate-600/10 border border-slate-500/30 rounded px-2 py-1 text-xs sm:text-sm text-slate-300 placeholder-slate-500/50 focus:outline-none focus:border-slate-400/50 leading-relaxed"
+                  className="w-full bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs sm:text-sm text-slate-600 placeholder-slate-400 focus:outline-none focus:border-slate-400 leading-relaxed transition-all"
                 />
               )}
               <input
@@ -574,20 +574,20 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 onKeyDown={handleKeyDown}
                 autoFocus
                 placeholder={t('subtitleRow.translationPlaceholder')}
-                className="w-full bg-indigo-500/10 border border-indigo-500/30 rounded px-2 py-1 text-base sm:text-lg text-indigo-200 placeholder-indigo-500/50 focus:outline-none focus:border-indigo-500/50 leading-relaxed font-medium"
+                className="w-full bg-slate-50/50 border border-brand-purple/30 rounded px-2 py-1 text-base sm:text-lg text-slate-800 placeholder-brand-purple/30 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple/20 leading-relaxed font-medium shadow-sm transition-all hover:bg-white focus:bg-white"
               />
             </div>
           ) : (
             <>
               {showSourceText && (
-                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed opacity-70 mb-1">
+                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed opacity-70 mb-1">
                   {sub.original}
                 </p>
               )}
               <p
                 className={cn(
                   'text-base sm:text-lg leading-relaxed font-medium transition-colors',
-                  isActive ? 'text-white' : 'text-indigo-300'
+                  isActive ? 'text-slate-900' : 'text-slate-700'
                 )}
               >
                 {sub.translated}
@@ -596,7 +596,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
           )}
           {(editingCommentId === sub.id || sub.comment) && (
             <div className="mt-2 flex items-start animate-fade-in">
-              <MessageCircle className="w-3 h-3 text-amber-500 mt-1 mr-2 flex-shrink-0" />
+              <MessageCircle className="w-3 h-3 text-amber-500 mt-1 mr-2 shrink-0" />
               <input
                 type="text"
                 value={sub.comment || ''}
@@ -604,7 +604,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 placeholder={t('subtitleRow.commentPlaceholder')}
                 autoFocus={editingCommentId === sub.id}
                 onBlur={() => setEditingCommentId(null)}
-                className="w-full bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1 text-sm text-amber-200 placeholder-amber-500/50 focus:outline-none focus:border-amber-500/50"
+                className="w-full bg-amber-50 border border-amber-200 rounded px-2 py-1 text-sm text-amber-800 placeholder-amber-400 focus:outline-none focus:border-amber-400 transition-all"
               />
             </div>
           )}
@@ -617,10 +617,10 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                 toggleMenu();
               }}
               className={cn(
-                'p-1.5 rounded hover:bg-slate-700 transition-colors',
+                'p-1.5 rounded hover:bg-slate-100 transition-colors',
                 showAddMenu
-                  ? 'text-slate-300'
-                  : 'text-slate-600 opacity-0 group-hover/row:opacity-100'
+                  ? 'text-slate-600'
+                  : 'text-slate-400 opacity-0 group-hover/row:opacity-100'
               )}
               title={t('subtitleRow.moreActions')}
             >
@@ -632,7 +632,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                   ref={menuRef}
                   style={menuStyle}
                   className={cn(
-                    'bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 animate-fade-in',
+                    'bg-white border border-slate-200 rounded-lg shadow-xl py-1 animate-fade-in ring-1 ring-slate-900/5',
                     menuDropUp ? 'origin-bottom-right' : 'origin-top-right'
                   )}
                   onClick={(e) => e.stopPropagation()} // Prevent row click
@@ -643,7 +643,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                       handleStartEdit();
                       setShowAddMenu(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-indigo-400 transition-colors flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-purple transition-colors flex items-center gap-2"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                     {t('subtitleRow.editRow')}
@@ -655,7 +655,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                       onMouseEnter={handleSubmenuEnter}
                       onMouseLeave={() => setShowAddSubmenu(false)}
                     >
-                      <button className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors flex items-center justify-between">
+                      <button className="w-full px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-purple transition-colors flex items-center justify-between">
                         <span className="flex items-center gap-2">
                           <Plus className="w-3.5 h-3.5" />
                           {t('subtitleRow.addNewRow')}
@@ -665,7 +665,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                       {showAddSubmenu && (
                         <div
                           className={cn(
-                            'absolute top-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 py-1 min-w-[110px]',
+                            'absolute top-0 bg-white border border-slate-200 rounded-lg shadow-xl z-50 py-1 min-w-27.5 ring-1 ring-slate-900/5',
                             submenuDropLeft ? 'right-full mr-1' : 'left-full ml-1'
                           )}
                         >
@@ -674,7 +674,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                               addSubtitle(sub.id, 'before', sub.startTime);
                               setShowAddMenu(false);
                             }}
-                            className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors"
+                            className="w-full px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-purple transition-colors"
                           >
                             {t('subtitleRow.addBefore')}
                           </button>
@@ -683,7 +683,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                               addSubtitle(sub.id, 'after', sub.endTime);
                               setShowAddMenu(false);
                             }}
-                            className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-emerald-400 transition-colors"
+                            className="w-full px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-purple transition-colors"
                           >
                             {t('subtitleRow.addAfter')}
                           </button>
@@ -697,7 +697,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                       setEditingCommentId(sub.id);
                       setShowAddMenu(false);
                     }}
-                    className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 hover:text-amber-400 transition-colors flex items-center gap-2"
+                    className="w-full px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-amber-500 transition-colors flex items-center gap-2"
                   >
                     <MessageCircle className="w-3.5 h-3.5" />
                     {t('subtitleRow.addComment')}
@@ -705,13 +705,13 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                   {/* 4. Delete Row (red) */}
                   {deleteSubtitle && (
                     <>
-                      <div className="border-t border-slate-700 my-1" />
+                      <div className="border-t border-slate-200 my-1" />
                       <button
                         onClick={() => {
                           deleteSubtitle(sub.id);
                           setShowAddMenu(false);
                         }}
-                        className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-slate-700 hover:text-red-300 transition-colors flex items-center gap-2"
+                        className="w-full px-3 py-2 text-left text-sm text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors flex items-center gap-2"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         {t('subtitleRow.deleteRow')}

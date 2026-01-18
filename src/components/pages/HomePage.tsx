@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileVideo, FileText, Download, ArrowRight, Scissors, Wand2, Sparkles } from 'lucide-react';
+import { FileVideo, FileText, Download, ArrowRight, Scissors, Wand2 } from 'lucide-react';
 import { Header } from '@/components/layout/Header';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { cn } from '@/lib/cn';
@@ -33,7 +33,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   const isElectron = typeof window !== 'undefined' && !!window.electronAPI?.isElectron;
 
   return (
-    <div className="min-h-screen-safe bg-slate-950 flex flex-col p-4 md:p-8">
+    <div className="min-h-screen-safe bg-warm-mesh flex flex-col p-4 md:p-8">
       <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
         <Header
           onShowLogs={onShowLogs}
@@ -42,29 +42,31 @@ export const HomePage: React.FC<HomePageProps> = ({
         />
         <main className="flex-1 flex flex-col items-center justify-center max-w-5xl mx-auto w-full">
           {/* Workflow indicator */}
-          <div className="w-full mb-10">
-            <div className="flex items-center justify-center gap-3 text-sm text-slate-400">
-              <span className="flex items-center gap-2 px-4 py-2 bg-slate-900/50 rounded-full border border-slate-800">
-                <Download className="w-4 h-4 text-violet-400" />
+          <div className="w-full mb-10 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:pb-0 hide-scrollbar">
+            <div className="flex items-center justify-center min-w-max sm:min-w-0 gap-3 text-sm text-slate-500 font-medium">
+              <span className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-md rounded-full border border-white/50 shadow-sm text-slate-700 ring-1 ring-slate-900/5">
+                <Download className="w-4 h-4 text-brand-purple" />
                 <span>{t('workflow.download')}</span>
               </span>
-              <ArrowRight className="w-5 h-5 text-slate-700" />
-              <span className="flex items-center gap-2 px-4 py-2 bg-slate-900/50 rounded-full border border-slate-800">
-                <FileVideo className="w-4 h-4 text-indigo-400" />
+              <ArrowRight className="w-5 h-5 text-brand-purple/20" />
+              <span className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-md rounded-full border border-white/50 shadow-sm text-slate-700 ring-1 ring-slate-900/5">
+                <FileVideo className="w-4 h-4 text-brand-purple" />
                 <span>{t('workflow.generate')}</span>
               </span>
-              <ArrowRight className="w-5 h-5 text-slate-700" />
-              <span className="flex items-center gap-2 px-4 py-2 bg-slate-900/50 rounded-full border border-slate-800">
-                <FileText className="w-4 h-4 text-emerald-400" />
+              <ArrowRight className="w-5 h-5 text-brand-purple/20" />
+              <span className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-md rounded-full border border-white/50 shadow-sm text-slate-700 ring-1 ring-slate-900/5">
+                <FileText className="w-4 h-4 text-brand-orange" />
                 <span>{t('workflow.edit')}</span>
               </span>
-              <ArrowRight className="w-5 h-5 text-slate-700" />
-              <span className="flex items-center gap-2 px-4 py-2 bg-slate-900/50 rounded-full border border-slate-800">
-                <Scissors className="w-4 h-4 text-amber-400" />
+              <ArrowRight className="w-5 h-5 text-brand-purple/20" />
+              <span className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-md rounded-full border border-white/50 shadow-sm text-slate-700 ring-1 ring-slate-900/5">
+                <Scissors className="w-4 h-4 text-brand-orange" />
                 <span>{t('workflow.export')}</span>
               </span>
             </div>
-            <p className="text-center text-slate-500 text-sm mt-4">{t('description')}</p>
+            <p className="text-center text-slate-500 text-sm mt-6 font-medium tracking-wide opacity-80">
+              {t('description')}
+            </p>
           </div>
 
           {/* One-Click End-to-End Button */}
@@ -72,22 +74,30 @@ export const HomePage: React.FC<HomePageProps> = ({
             <div className="w-full mb-8">
               <button
                 onClick={onStartEndToEnd}
-                className="group w-full relative overflow-hidden bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600 hover:from-violet-500 hover:via-indigo-500 hover:to-purple-500 rounded-2xl p-6 transition-all duration-300 shadow-lg shadow-violet-500/20 hover:shadow-xl hover:shadow-violet-500/30 hover:-translate-y-0.5"
+                className="group w-full relative overflow-hidden bg-linear-to-r from-brand-purple to-brand-orange hover:brightness-105 rounded-2xl p-6 transition-all duration-300 shadow-xl shadow-brand-purple/20 hover:shadow-2xl hover:shadow-brand-purple/30 hover:-translate-y-0.5 border border-white/10 ring-1 ring-black/5"
               >
                 {/* Animated background pattern */}
-                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-50" />
+                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-20 mix-blend-overlay" />
+
+                {/* Shine effect */}
+                <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent skew-x-12 translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
+
                 <div className="relative flex items-center justify-center gap-4">
-                  <div className="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                    <Wand2 className="w-7 h-7 text-white group-hover:rotate-12 transition-transform duration-300" />
+                  <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-xl shadow-inner border border-white/20 group-hover:bg-white/25 transition-colors">
+                    <Wand2 className="w-7 h-7 text-white group-hover:rotate-12 transition-transform duration-500 ease-spring" />
                   </div>
-                  <div className="text-left">
+                  <div className="text-left flex-1 min-w-0">
                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
                       {t('endToEnd.title')}
-                      <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
+                      <div className="px-2 py-0.5 rounded-full bg-white/20 text-xs font-bold border border-white/20 backdrop-blur-md">
+                        BETA
+                      </div>
                     </h2>
-                    <p className="text-white/70 text-sm">{t('endToEnd.description')}</p>
+                    <p className="text-white/90 text-sm font-medium mt-1 text-shadow-sm">
+                      {t('endToEnd.description')}
+                    </p>
                   </div>
-                  <ArrowRight className="w-6 h-6 text-white/50 group-hover:text-white group-hover:translate-x-1 transition-all ml-auto" />
+                  <ArrowRight className="w-6 h-6 text-white group-hover:translate-x-1 transition-transform ml-auto" />
                 </div>
               </button>
             </div>
@@ -95,19 +105,19 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           {/* Subtitle Workspace Section */}
           <div className="w-full mb-6">
-            <SectionHeader withDivider className="mb-4">
+            <SectionHeader withDivider className="mb-4 text-slate-800 font-bold tracking-tight">
               {t('sections.workspace')}
             </SectionHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
               <button
                 onClick={onStartNew}
-                className="w-full group relative bg-slate-900 border border-slate-800 hover:border-indigo-500/50 hover:bg-slate-800/50 rounded-2xl p-5 transition-all duration-300 flex items-center gap-4 text-left"
+                className="w-full group relative bg-white/80 backdrop-blur-md border border-white/60 hover:border-brand-purple/30 hover:shadow-lg rounded-2xl p-5 transition-all duration-300 flex items-center gap-4 text-left shadow-sm ring-1 ring-slate-900/5 group"
               >
-                <div className="w-12 h-12 bg-slate-800 group-hover:bg-indigo-500/20 rounded-xl flex items-center justify-center shrink-0 transition-colors">
-                  <FileVideo className="w-6 h-6 text-indigo-400 group-hover:scale-110 transition-transform" />
+                <div className="w-12 h-12 bg-brand-purple/10 border border-brand-purple/10 group-hover:scale-110 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300">
+                  <FileVideo className="w-6 h-6 text-brand-purple" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-white mb-0.5">
+                  <h2 className="text-lg font-bold text-slate-800 mb-0.5 group-hover:text-brand-purple transition-colors">
                     {t('cards.newProject.title')}
                   </h2>
                   <p className="text-slate-500 text-sm truncate">
@@ -117,13 +127,13 @@ export const HomePage: React.FC<HomePageProps> = ({
               </button>
               <button
                 onClick={onStartImport}
-                className="w-full group relative bg-slate-900 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-800/50 rounded-2xl p-5 transition-all duration-300 flex items-center gap-4 text-left"
+                className="w-full group relative bg-white/80 backdrop-blur-md border border-white/60 hover:border-brand-purple/30 hover:shadow-lg rounded-2xl p-5 transition-all duration-300 flex items-center gap-4 text-left shadow-sm ring-1 ring-slate-900/5 group"
               >
-                <div className="w-12 h-12 bg-slate-800 group-hover:bg-emerald-500/20 rounded-xl flex items-center justify-center shrink-0 transition-colors">
-                  <FileText className="w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform" />
+                <div className="w-12 h-12 bg-indigo-50 border border-indigo-100 group-hover:scale-110 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300">
+                  <FileText className="w-6 h-6 text-indigo-500" />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-white mb-0.5">
+                  <h2 className="text-lg font-bold text-slate-800 mb-0.5 group-hover:text-indigo-600 transition-colors">
                     {t('cards.openSubtitle.title')}
                   </h2>
                   <p className="text-slate-500 text-sm truncate">
@@ -136,7 +146,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           {/* Toolbox Section */}
           <div className="w-full">
-            <SectionHeader withDivider className="mb-4">
+            <SectionHeader withDivider className="mb-4 text-slate-800 font-bold tracking-tight">
               {t('sections.toolbox')}
             </SectionHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
@@ -144,27 +154,22 @@ export const HomePage: React.FC<HomePageProps> = ({
                 onClick={isElectron ? onStartDownload : undefined}
                 disabled={!isElectron}
                 className={cn(
-                  'w-full group relative bg-slate-900 border border-slate-800 rounded-2xl p-5 transition-all duration-300 flex items-center gap-4 text-left',
+                  'w-full group relative bg-white/80 backdrop-blur-md border border-white/60 rounded-2xl p-5 transition-all duration-300 flex items-center gap-4 text-left shadow-sm ring-1 ring-slate-900/5',
                   isElectron
-                    ? 'hover:border-violet-500/50 hover:bg-slate-800/50 cursor-pointer'
-                    : 'opacity-50 cursor-not-allowed'
+                    ? 'hover:border-brand-purple/30 hover:shadow-lg cursor-pointer'
+                    : 'opacity-60 cursor-not-allowed'
                 )}
               >
                 <div
                   className={cn(
-                    'w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center shrink-0 transition-colors',
-                    isElectron && 'group-hover:bg-violet-500/20'
+                    'w-12 h-12 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center shrink-0 transition-colors',
+                    isElectron && 'group-hover:rotate-6 transition-transform'
                   )}
                 >
-                  <Download
-                    className={cn(
-                      'w-6 h-6 text-violet-400 transition-transform',
-                      isElectron && 'group-hover:scale-110'
-                    )}
-                  />
+                  <Download className={cn('w-6 h-6 text-blue-500')} />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-white mb-0.5">
+                  <h2 className="text-lg font-bold text-slate-800 mb-0.5 group-hover:text-blue-600 transition-colors">
                     {t('cards.download.title')}
                   </h2>
                   <p className="text-slate-500 text-sm truncate">
@@ -176,27 +181,22 @@ export const HomePage: React.FC<HomePageProps> = ({
                 onClick={isElectron ? onStartCompression : undefined}
                 disabled={!isElectron}
                 className={cn(
-                  'w-full group relative bg-slate-900 border border-slate-800 rounded-2xl p-5 transition-all duration-300 flex items-center gap-4 text-left',
+                  'w-full group relative bg-white/80 backdrop-blur-md border border-white/60 rounded-2xl p-5 transition-all duration-300 flex items-center gap-4 text-left shadow-sm ring-1 ring-slate-900/5',
                   isElectron
-                    ? 'hover:border-amber-500/50 hover:bg-slate-800/50 cursor-pointer'
-                    : 'opacity-50 cursor-not-allowed'
+                    ? 'hover:border-brand-purple/30 hover:shadow-lg cursor-pointer'
+                    : 'opacity-60 cursor-not-allowed'
                 )}
               >
                 <div
                   className={cn(
-                    'w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center shrink-0 transition-colors',
-                    isElectron && 'group-hover:bg-amber-500/20'
+                    'w-12 h-12 bg-orange-50 border border-orange-100 rounded-xl flex items-center justify-center shrink-0 transition-colors',
+                    isElectron && 'group-hover:rotate-6 transition-transform'
                   )}
                 >
-                  <Scissors
-                    className={cn(
-                      'w-6 h-6 text-amber-400 transition-transform',
-                      isElectron && 'group-hover:scale-110'
-                    )}
-                  />
+                  <Scissors className={cn('w-6 h-6 text-brand-orange')} />
                 </div>
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-white mb-0.5">
+                  <h2 className="text-lg font-bold text-slate-800 mb-0.5 group-hover:text-brand-orange transition-colors">
                     {t('cards.compression.title')}
                   </h2>
                   <p className="text-slate-500 text-sm truncate">
@@ -206,12 +206,14 @@ export const HomePage: React.FC<HomePageProps> = ({
               </button>
             </div>
             {!isElectron && (
-              <p className="text-center text-amber-500/80 text-sm mt-4">{t('webWarning')}</p>
+              <p className="text-center text-amber-600/80 text-sm mt-4 font-medium">
+                {t('webWarning')}
+              </p>
             )}
           </div>
         </main>
-        <footer className="mt-12 text-center text-slate-600 text-sm">
-          Gemini Subtitle Pro v{__APP_VERSION__}
+        <footer className="mt-12 text-center text-slate-400 text-sm font-medium">
+          MioSub v{__APP_VERSION__}
         </footer>
       </div>
     </div>

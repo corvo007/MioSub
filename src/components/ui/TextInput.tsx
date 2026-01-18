@@ -8,9 +8,10 @@ interface TextInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 }
 
 const variantClasses = {
-  default: 'bg-slate-800 border-slate-700 text-slate-200 focus:border-indigo-500',
+  default:
+    'bg-white border-slate-200 text-slate-700 focus:border-brand-purple focus:ring-1 focus:ring-brand-purple placeholder-slate-400 shadow-sm',
   transparent:
-    'bg-white/5 border-white/10 text-white focus:border-violet-500/50 placeholder-white/40',
+    'bg-white border-slate-200 text-slate-700 focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/20 placeholder-slate-400',
 };
 
 export const TextInput: React.FC<TextInputProps> = ({
@@ -22,11 +23,11 @@ export const TextInput: React.FC<TextInputProps> = ({
 }) => (
   <div className="relative">
     {icon && (
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">{icon}</span>
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icon}</span>
     )}
     <input
       className={cn(
-        'w-full border rounded-lg py-2 px-3 text-sm focus:outline-none',
+        'w-full border rounded-lg py-2 px-3 text-sm focus:outline-none transition-all',
         variantClasses[variant],
         icon && 'pl-10',
         error && 'border-red-500',
@@ -34,6 +35,6 @@ export const TextInput: React.FC<TextInputProps> = ({
       )}
       {...props}
     />
-    {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
+    {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
   </div>
 );

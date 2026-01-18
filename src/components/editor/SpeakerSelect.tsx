@@ -55,8 +55,9 @@ export const SpeakerSelect: React.FC<SpeakerSelectProps> = ({
         className="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium cursor-pointer hover:opacity-90 transition-opacity"
         style={{
           backgroundColor: speakerColor + '20',
-          color: speakerColor,
-          border: `1px solid ${speakerColor}`,
+          color: '#334155', // slate-700 for readability
+          borderColor: speakerColor,
+          borderWidth: '1px',
         }}
       >
         <span>{currentSpeaker || t('speakerManager.selectSpeaker')}</span>
@@ -66,7 +67,7 @@ export const SpeakerSelect: React.FC<SpeakerSelectProps> = ({
       {isOpen && (
         <div
           className={cn(
-            'absolute left-0 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-50 min-w-[150px] py-1 animate-fade-in',
+            'absolute left-0 bg-white/95 backdrop-blur-xl border border-slate-200/60 rounded-xl shadow-xl shadow-brand-purple/10 z-50 min-w-37.5 py-1.5 animate-fade-in ring-1 ring-slate-900/5',
             dropUp ? 'bottom-full mb-1 origin-bottom' : 'top-full mt-1 origin-top'
           )}
         >
@@ -81,30 +82,32 @@ export const SpeakerSelect: React.FC<SpeakerSelectProps> = ({
                   setIsOpen(false);
                 }}
                 className={cn(
-                  'w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-slate-800 transition-colors',
-                  currentSpeaker === profile.name && 'bg-slate-800'
+                  'w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-slate-50 transition-colors',
+                  currentSpeaker === profile.name
+                    ? 'bg-brand-purple/5 text-brand-purple font-medium'
+                    : 'text-slate-600 hover:text-slate-900'
                 )}
               >
                 <span
-                  className="w-2 h-2 rounded-full"
+                  className="w-2 h-2 rounded-full ring-1 ring-slate-900/5"
                   style={{
                     backgroundColor: getSpeakerColorWithCustom(profile.name, profile.color),
                   }}
                 />
-                <span className="text-slate-200">{profile.name}</span>
+                <span className="">{profile.name}</span>
               </button>
             ))
           )}
 
           {onManageSpeakers && (
             <>
-              <div className="border-t border-slate-700 my-1" />
+              <div className="border-t border-slate-100 my-1" />
               <button
                 onClick={() => {
                   onManageSpeakers();
                   setIsOpen(false);
                 }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-500 hover:text-brand-purple hover:bg-slate-50 transition-colors"
               >
                 <Users className="w-3 h-3" />
                 {t('speakerManager.manageSpeakers')}

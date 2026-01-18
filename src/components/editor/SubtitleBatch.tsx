@@ -89,16 +89,18 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
     return (
       <div
         className={cn(
-          'border rounded-xl overflow-hidden transition-all',
+          'border rounded-xl overflow-hidden transition-all shadow-sm hover:shadow-md',
           isSelected
-            ? 'border-indigo-500/50 bg-indigo-500/5'
-            : 'border-slate-700/50 bg-slate-900/40'
+            ? 'border-brand-purple/30 bg-brand-purple/5 shadow-brand-purple/5'
+            : 'border-slate-300 bg-white/50'
         )}
       >
         <div
           className={cn(
-            'px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3',
-            isSelected ? 'bg-indigo-900/20' : 'bg-slate-800/50'
+            'px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-t-xl',
+            isSelected
+              ? 'bg-brand-purple/10'
+              : 'bg-slate-50/80 backdrop-blur-sm border-b border-slate-200'
           )}
         >
           <div className="flex items-center space-x-3">
@@ -107,12 +109,12 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
               !isDeleteMode && (
                 <button
                   onClick={() => toggleBatch(chunkIdx)}
-                  className="text-slate-400 hover:text-indigo-400 focus:outline-none"
+                  className="text-slate-400 hover:text-brand-purple focus:outline-none transition-colors"
                 >
                   {isSelected ? (
-                    <CheckSquare className="w-5 h-5 text-indigo-400" />
+                    <CheckSquare className="w-5 h-5 text-brand-purple" />
                   ) : (
-                    <Square className="w-5 h-5" />
+                    <Square className="w-5 h-5 text-slate-300 hover:text-slate-500" />
                   )}
                 </button>
               )}
@@ -120,7 +122,7 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
               <h3
                 className={cn(
                   'text-sm font-semibold',
-                  isSelected ? 'text-indigo-300' : 'text-slate-300'
+                  isSelected ? 'text-brand-purple-dark' : 'text-slate-700'
                 )}
               >
                 {t('batch.segment', { id: chunkIdx + 1 })}
@@ -136,7 +138,7 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
               value={batchComment}
               onChange={(e) => updateBatchComment(chunkIdx, e.target.value)}
               placeholder={t('batch.commentPlaceholder')}
-              className="w-full bg-slate-900/50 border border-slate-700/50 rounded px-2 py-1 text-xs text-amber-200 placeholder-slate-600 focus:border-amber-500/50 focus:outline-none"
+              className="w-full bg-white border border-slate-200/80 rounded-lg px-3 py-1.5 text-xs text-slate-700 placeholder-slate-400 focus:border-brand-purple/50 focus:ring-1 focus:ring-brand-purple/20 focus:outline-none transition-all shadow-sm"
             />
           </div>
           {/* Hide proofread button in delete mode */}
@@ -146,14 +148,14 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
                 <button
                   onClick={() => handleBatchAction('proofread', chunkIdx)}
                   title={t('batch.proofread')}
-                  className="p-2 text-slate-500 hover:text-indigo-400 hover:bg-slate-700 rounded-lg transition-colors"
+                  className="p-2 text-slate-500 hover:text-brand-purple hover:bg-brand-purple/10 rounded-lg transition-colors"
                 >
                   <Wand2 className="w-4 h-4" />
                 </button>
               </div>
             )}
         </div>
-        <div className="divide-y divide-slate-800/50">
+        <div className="divide-y divide-slate-200">
           {chunk.map((sub, indexInChunk) => {
             // Calculate global index and find previous subtitle's end time
             const globalIndex = chunkStartIndex + indexInChunk;

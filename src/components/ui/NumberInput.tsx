@@ -112,7 +112,7 @@ export const NumberInput: React.FC<NumberInputProps> = ({
       onBlur={handleBlur}
       placeholder={placeholder}
       className={cn(
-        'bg-slate-800 border border-slate-700 rounded-lg py-2 px-3 text-slate-200 focus:outline-none focus:border-indigo-500 text-sm',
+        'bg-white border border-slate-200 rounded-lg py-2 px-3 text-slate-700 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple text-sm shadow-sm transition-all placeholder-slate-400',
         className
       )}
     />

@@ -37,10 +37,10 @@ export function UrlInput({ onParse, disabled, loading }: UrlInputProps) {
             onChange={(e) => setUrl(e.target.value)}
             placeholder={t('urlPlaceholder')}
             disabled={disabled}
-            className="flex-1 px-4 py-3.5 bg-white/5 border border-white/10 rounded-lg text-white text-base
-                          placeholder:text-white/40 transition-all
-                          focus:outline-none focus:border-violet-500/50 focus:ring-3 focus:ring-violet-500/15
-                          disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-4 py-3.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-base
+                          placeholder:text-slate-400 transition-all shadow-sm
+                          focus:outline-none focus:border-brand-purple focus:ring-3 focus:ring-brand-purple/20
+                          disabled:opacity-50 disabled:cursor-not-allowed hover:bg-white focus:bg-white"
           />
           <PrimaryButton
             type="submit"

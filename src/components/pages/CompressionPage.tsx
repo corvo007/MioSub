@@ -175,7 +175,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
   };
 
   return (
-    <div className="h-screen overflow-hidden bg-slate-950 flex flex-col p-4 md:p-8">
+    <div className="h-screen overflow-hidden bg-warm-mesh flex flex-col p-4 md:p-8">
       <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col min-h-0">
         {/* Header */}
         <PageHeader
@@ -205,7 +205,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
           }
         />
 
-        <div className="flex-1 overflow-y-auto mt-8 pr-2">
+        <div className="flex-1 overflow-y-auto mt-8 pr-2 custom-scrollbar">
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6 md:gap-8 pb-4">
             {/* Left Column: Input & Settings */}
             <div className="space-y-6">
@@ -213,10 +213,10 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
               <div className="space-y-4">
                 <div
                   className={cn(
-                    'relative group p-8 rounded-xl border-2 border-dashed transition-all cursor-pointer text-center',
+                    'relative group p-8 rounded-2xl border-2 border-dashed transition-all cursor-pointer text-center',
                     file
-                      ? 'border-indigo-500/50 bg-indigo-500/5'
-                      : 'border-slate-700 hover:border-indigo-500/50 hover:bg-slate-800/50'
+                      ? 'border-brand-purple/50 bg-brand-purple/5'
+                      : 'border-slate-300 hover:border-brand-purple/50 hover:bg-white/50 bg-white/30'
                   )}
                   onClick={() => {
                     const input = document.createElement('input');
@@ -232,40 +232,39 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                   <div className="flex flex-col items-center justify-center gap-4">
                     <div
                       className={cn(
-                        'p-4 rounded-full transition-colors',
-                        file ? 'bg-indigo-500/20' : 'bg-slate-800 group-hover:bg-slate-700'
+                        'p-4 rounded-full transition-colors shadow-sm',
+                        file
+                          ? 'bg-brand-purple/20'
+                          : 'bg-white shadow-md group-hover:scale-110 duration-200'
                       )}
                     >
                       <FolderOpen
-                        className={cn('w-8 h-8', file ? 'text-indigo-400' : 'text-slate-400')}
+                        className={cn('w-8 h-8', file ? 'text-brand-purple' : 'text-slate-400')}
                       />
                     </div>
                     {file ? (
                       <div className="space-y-1 overflow-hidden w-full">
-                        <p
-                          className="text-lg font-medium text-indigo-300 truncate"
-                          title={file.name}
-                        >
+                        <p className="text-lg font-bold text-slate-800 truncate" title={file.name}>
                           {file.name}
                         </p>
                         <p
-                          className="text-xs text-slate-500 truncate font-mono"
+                          className="text-xs text-slate-500 truncate bg-white/50 py-1 px-2 rounded inline-block max-w-full"
                           title={window.electronAPI?.getFilePath(file) || (file as any).path}
                         >
                           {window.electronAPI?.getFilePath(file) || (file as any).path}
                         </p>
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-500 font-medium">
                           {(file.size / 1024 / 1024).toFixed(2)} MB
                         </p>
                         {workspaceVideoFile && file === workspaceVideoFile && (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-900/50 text-indigo-300 border border-indigo-700/50 mt-2">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-purple/10 text-brand-purple border border-brand-purple/20 mt-2">
                             {t('fromWorkspace')}
                           </span>
                         )}
                       </div>
                     ) : (
                       <div className="space-y-1">
-                        <p className="text-lg font-medium text-slate-300">{t('selectVideo')}</p>
+                        <p className="text-lg font-bold text-slate-700">{t('selectVideo')}</p>
                         <p className="text-sm text-slate-500">{t('supportedFormats')}</p>
                       </div>
                     )}
@@ -274,28 +273,28 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
 
                 {/* Auto-load Prompt */}
                 {showAutoLoadPrompt && workspaceVideoFile && (
-                  <div className="bg-indigo-900/20 border border-indigo-500/30 rounded-lg p-4 flex items-center justify-between animate-fade-in">
+                  <div className="bg-white border border-brand-purple/20 rounded-xl p-4 flex items-center justify-between animate-fade-in shadow-lg shadow-brand-purple/5">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-indigo-500/20 rounded-full">
-                        <AlertCircle className="w-5 h-5 text-indigo-400" />
+                      <div className="p-2 bg-brand-purple/10 rounded-full">
+                        <AlertCircle className="w-5 h-5 text-brand-purple" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-indigo-200">
+                        <p className="text-sm font-bold text-slate-800">
                           {t('workspaceFileDetected')}
                         </p>
-                        <p className="text-xs text-indigo-300/70">{t('autoLoadPrompt')}</p>
+                        <p className="text-xs text-slate-500">{t('autoLoadPrompt')}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setShowAutoLoadPrompt(false)}
-                        className="p-2 hover:bg-indigo-900/40 rounded-lg text-indigo-300/70 hover:text-indigo-200 transition-colors"
+                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
                       >
                         <X className="w-4 h-4" />
                       </button>
                       <button
                         onClick={handleAutoLoad}
-                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium rounded-lg transition-colors shadow-lg shadow-indigo-500/20"
+                        className="px-3 py-1.5 bg-brand-purple hover:bg-brand-purple/90 text-white text-xs font-semibold rounded-lg transition-colors shadow-md shadow-brand-purple/20"
                       >
                         {t('load')}
                       </button>
@@ -305,16 +304,16 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
 
                 {/* Downloaded Video Prompt */}
                 {showDownloadedVideoPrompt && downloadedVideoPath && (
-                  <div className="bg-violet-900/20 border border-violet-500/30 rounded-lg p-4 flex items-center justify-between animate-fade-in">
+                  <div className="bg-white border border-brand-orange/20 rounded-xl p-4 flex items-center justify-between animate-fade-in shadow-lg shadow-brand-orange/5">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-violet-500/20 rounded-full">
-                        <FileVideo className="w-5 h-5 text-violet-400" />
+                      <div className="p-2 bg-brand-orange/10 rounded-full">
+                        <FileVideo className="w-5 h-5 text-brand-orange" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-violet-200">
+                        <p className="text-sm font-bold text-slate-800">
                           {t('downloadedVideoDetected')}
                         </p>
-                        <p className="text-xs text-violet-300/70 truncate max-w-xs">
+                        <p className="text-xs text-slate-500 truncate max-w-xs">
                           {downloadedVideoPath.split(/[\\/]/).pop()}
                         </p>
                       </div>
@@ -322,13 +321,13 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setShowDownloadedVideoPrompt(false)}
-                        className="p-2 hover:bg-violet-900/40 rounded-lg text-violet-300/70 hover:text-violet-200 transition-colors"
+                        className="p-2 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors"
                       >
                         <X className="w-4 h-4" />
                       </button>
                       <button
                         onClick={handleLoadDownloadedVideo}
-                        className="px-3 py-1.5 bg-violet-600 hover:bg-violet-500 text-white text-xs font-medium rounded-lg transition-colors shadow-lg shadow-violet-500/20"
+                        className="px-3 py-1.5 bg-brand-orange hover:bg-brand-orange/90 text-white text-xs font-semibold rounded-lg transition-colors shadow-md shadow-brand-orange/20"
                       >
                         {t('load')}
                       </button>
@@ -338,14 +337,14 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
               </div>
 
               {/* Settings Panel */}
-              <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-800 space-y-6">
-                <h2 className="text-lg font-semibold text-white flex items-center gap-2 border-b border-slate-800 pb-4">
-                  <Settings className="w-5 h-5 text-indigo-400" /> {t('parameters')}
+              <div className="bg-white/80 backdrop-blur-xl p-6 rounded-2xl border border-white/20 shadow-xl shadow-slate-200/40 space-y-6">
+                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-4">
+                  <Settings className="w-5 h-5 text-brand-purple" /> {t('parameters')}
                 </h2>
 
                 {/* Encoder */}
                 <div className="flex flex-col md:flex-row md:items-center gap-4">
-                  <label className="w-32 text-sm font-medium text-slate-400 shrink-0">
+                  <label className="w-32 text-sm font-semibold text-slate-600 shrink-0">
                     {t('encoder')}
                   </label>
                   <div className="flex-1">
@@ -358,7 +357,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
 
                 {/* Hardware Acceleration */}
                 <div className="flex flex-col md:flex-row md:items-center gap-4">
-                  <label className="w-32 text-sm font-medium text-slate-400 shrink-0">
+                  <label className="w-32 text-sm font-semibold text-slate-600 shrink-0">
                     {t('hardwareAccel')}
                   </label>
                   <div className="flex-1">
@@ -373,7 +372,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
 
                 {/* CRF */}
                 <div className="flex flex-col md:flex-row md:items-center gap-4">
-                  <label className="w-32 text-sm font-medium text-slate-400 shrink-0">
+                  <label className="w-32 text-sm font-semibold text-slate-600 shrink-0">
                     {t('quality')}
                   </label>
                   <div className="flex-1 space-y-2">
@@ -383,7 +382,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                       min={0}
                       max={51}
                       allowDecimals={true}
-                      className="w-full font-mono"
+                      className="w-full bg-slate-50 border-slate-200 text-slate-900 focus:border-brand-purple focus:ring-brand-purple/20"
                     />
                     <div className="text-xs text-slate-500">{t('qualityHint')}</div>
                   </div>
@@ -391,7 +390,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
 
                 {/* Resolution */}
                 <div className="flex flex-col md:flex-row md:items-center gap-4">
-                  <label className="w-32 text-sm font-medium text-slate-400 shrink-0">
+                  <label className="w-32 text-sm font-semibold text-slate-600 shrink-0">
                     {t('resolution')}
                   </label>
                   <div className="flex-1">
@@ -409,7 +408,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
 
                 {/* Subtitles */}
                 <div className="flex flex-col md:flex-row md:items-center gap-4">
-                  <label className="w-32 text-sm font-medium text-slate-400 shrink-0">
+                  <label className="w-32 text-sm font-semibold text-slate-600 shrink-0">
                     {t('subtitleEmbed')}
                   </label>
                   <div className="flex-1 space-y-3">
@@ -421,7 +420,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                           value: 'none',
                           label: (
                             <div>
-                              <div className="font-medium text-slate-200">{t('subtitleNone')}</div>
+                              <div className="font-medium text-slate-900">{t('subtitleNone')}</div>
                               <div className="text-xs text-slate-500">{t('subtitleNoneDesc')}</div>
                             </div>
                           ),
@@ -430,7 +429,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                           value: 'file',
                           label: (
                             <div>
-                              <div className="font-medium text-slate-200">{t('subtitleLocal')}</div>
+                              <div className="font-medium text-slate-900">{t('subtitleLocal')}</div>
                               <div className="text-xs text-slate-500">{t('subtitleLocalDesc')}</div>
                             </div>
                           ),
@@ -440,7 +439,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                           disabled: !workspaceSubtitles || workspaceSubtitles.length === 0,
                           label: (
                             <div>
-                              <div className="font-medium text-slate-200">
+                              <div className="font-medium text-slate-900">
                                 {t('subtitleWorkspace')}
                               </div>
                               <div className="text-xs text-slate-500">
@@ -463,7 +462,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                           value={subtitlePath}
                           readOnly
                           placeholder={t('selectSubtitleFile')}
-                          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-4 text-slate-400 text-sm focus:outline-none"
+                          className="flex-1 bg-slate-50 border border-slate-200 rounded-lg py-2.5 px-4 text-slate-700 text-sm focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple/20 transition-all placeholder:text-slate-400"
                         />
                         <button
                           onClick={async () => {
@@ -480,16 +479,16 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                             };
                             input.click();
                           }}
-                          className="bg-slate-700 hover:bg-slate-600 px-4 rounded-lg border border-slate-600 transition-colors"
+                          className="bg-white hover:bg-slate-50 px-4 rounded-lg border border-slate-200 hover:border-brand-purple/30 text-slate-600 hover:text-brand-purple transition-colors shadow-sm"
                         >
-                          <FolderOpen className="w-5 h-5 text-slate-300" />
+                          <FolderOpen className="w-5 h-5" />
                         </button>
                       </div>
                     )}
                     {subtitleMode === 'workspace' && (
-                      <div className="flex items-center gap-2 p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg">
-                        <FileText className="w-4 h-4 text-indigo-400" />
-                        <span className="text-sm text-indigo-300">{t('autoGenerateAss')}</span>
+                      <div className="flex items-center gap-2 p-3 bg-brand-purple/5 border border-brand-purple/10 rounded-lg">
+                        <FileText className="w-4 h-4 text-brand-purple" />
+                        <span className="text-sm text-brand-purple/80">{t('autoGenerateAss')}</span>
                       </div>
                     )}
                   </div>
@@ -500,12 +499,12 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
             {/* Right Column: Output & Progress */}
             <div className="space-y-6">
               {/* Output Path */}
-              <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-800">
-                <h2 className="text-lg font-semibold text-white flex items-center gap-2 border-b border-slate-800 pb-4 mb-4">
-                  <FolderOpen className="w-5 h-5 text-indigo-400" /> {t('outputSettings')}
+              <div className="bg-white/80 backdrop-blur-xl p-6 rounded-2xl border border-white/20 shadow-xl shadow-slate-200/40">
+                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-4 mb-4">
+                  <FolderOpen className="w-5 h-5 text-brand-purple" /> {t('outputSettings')}
                 </h2>
                 <div className="flex flex-col md:flex-row md:items-center gap-4">
-                  <label className="w-20 text-sm font-medium text-slate-400 shrink-0">
+                  <label className="w-20 text-sm font-semibold text-slate-600 shrink-0">
                     {t('outputDir')}
                   </label>
                   <div className="flex-1 min-w-0">
@@ -513,7 +512,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                       value={outputPath}
                       placeholder={t('notSelected')}
                       onSelect={handleSelectOutputDir}
-                      variant="accent"
+                      variant="default" // Changed from accent to default for light mode compatibility if needed, or keep accent if it handles light mode
                     />
                   </div>
                 </div>
@@ -589,10 +588,10 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                 }}
                 disabled={!file || isCompressing}
                 className={cn(
-                  'w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-lg',
+                  'w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-lg transform active:scale-[0.98]',
                   !file || isCompressing
-                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
-                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20 hover:shadow-indigo-500/30 border border-indigo-500'
+                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                    : 'bg-linear-to-r from-brand-purple to-brand-orange hover:from-brand-purple/90 hover:to-brand-orange/90 text-white shadow-brand-purple/25 hover:shadow-brand-purple/40 ring-2 ring-transparent hover:ring-brand-purple/20'
                 )}
               >
                 {isCompressing ? (
@@ -609,15 +608,16 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
 
               {/* Progress Card */}
               {progress && (
-                <div className="bg-slate-900/50 p-6 rounded-xl border border-slate-800 space-y-4">
+                <div className="bg-white/90 backdrop-blur-xl p-6 rounded-2xl border border-white/20 shadow-xl shadow-brand-purple/5 space-y-4 animate-in slide-in-from-bottom-5 fade-in duration-300">
                   <div className="flex justify-between items-end">
-                    <span className="text-3xl font-bold text-white">
+                    <span className="text-4xl font-bold text-slate-800 tracking-tight">
                       {progress.percent.toFixed(1)}
-                      <span className="text-lg text-slate-500 font-normal">%</span>
+                      <span className="text-lg text-slate-500 font-normal ml-1">%</span>
                     </span>
                     <div className="text-right">
-                      <div className="text-indigo-400 font-mono">
-                        {progress.currentFps} <span className="text-xs text-slate-500">FPS</span>
+                      <div className="text-brand-purple font-semibold">
+                        {progress.currentFps}{' '}
+                        <span className="text-xs text-slate-500 font-normal">FPS</span>
                       </div>
                       <div className="text-xs text-slate-500">{progress.currentKbps} kbps</div>
                     </div>
@@ -625,7 +625,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
 
                   <ProgressBar percent={progress.percent} size="md" showShimmer />
 
-                  <div className="flex justify-between items-center text-xs text-slate-500 font-mono pt-2 border-t border-slate-800/50">
+                  <div className="flex justify-between items-center text-xs text-slate-500 pt-3 border-t border-slate-100">
                     <span>
                       {t('elapsed')}: {elapsedTime} | {t('progress')}: {progress.timemark}
                     </span>
@@ -643,7 +643,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                         logger.error('Failed to cancel compression', e);
                       }
                     }}
-                    className="w-full py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 hover:text-red-300 text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                    className="w-full py-2.5 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 hover:text-red-700 text-sm font-semibold transition-colors flex items-center justify-center gap-2 mt-2"
                   >
                     <X className="w-4 h-4" /> {t('cancelCompress')}
                   </button>
