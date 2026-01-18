@@ -74,7 +74,7 @@ export const HomePage: React.FC<HomePageProps> = ({
             <div className="w-full mb-8">
               <button
                 onClick={onStartEndToEnd}
-                className="group w-full relative overflow-hidden bg-linear-to-r from-brand-purple to-brand-orange hover:brightness-105 rounded-2xl p-6 transition-all duration-300 shadow-xl shadow-brand-purple/20 hover:shadow-2xl hover:shadow-brand-purple/30 hover:-translate-y-0.5 border border-white/10 ring-1 ring-black/5"
+                className="group w-full relative overflow-hidden bg-linear-to-r from-brand-purple to-brand-orange hover:brightness-105 rounded-2xl p-6 transition-all duration-300 shadow-xl shadow-brand-purple/20 hover:shadow-2xl hover:shadow-brand-purple/30 hover:-translate-y-0.5 isolation-isolate transform-gpu"
               >
                 {/* Animated background pattern */}
                 <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-20 mix-blend-overlay" />

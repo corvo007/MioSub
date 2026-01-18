@@ -20,9 +20,9 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
       className
     )}
   >
-    {withDivider && <span className="w-8 h-px bg-slate-200" />}
+    {withDivider && <span className="w-8 h-px bg-slate-300" />}
     {icon}
     {children}
-    {withDivider && <span className="flex-1 h-px bg-slate-200" />}
+    {withDivider && <span className="flex-1 h-px bg-slate-300" />}
   </h3>
 );
