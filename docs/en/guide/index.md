@@ -6,7 +6,7 @@ We provide pre-built installers, ready to use without any development setup.
 
 1. Visit the [Releases](https://github.com/corvo007/Gemini-Subtitle-Pro/releases) page
 2. Download: `Gemini-Subtitle-Pro-x.x.x-win-x64.zip`
-3. Extract anywhere and run `Gemini Subtitle Pro.exe`
+3. Extract anywhere and run `MioSub.exe`
 
 ## 2️⃣ Configure API Key
 

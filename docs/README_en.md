@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="../resources/icon.png" alt="Gemini Subtitle Pro" width="120" height="120">
-  <h1>Gemini Subtitle Pro</h1>
+  <img src="../resources/icon.png" alt="MioSub" width="120" height="120">
+  <h1>MioSub</h1>
   <p><strong>✨ Studio-Quality Subtitles, Zero Manual Work</strong></p>
   <p>Glossary Extraction · Speaker Detection · Frame-Perfect · Hands-Free</p>
 
@@ -57,7 +57,7 @@
 **Interface Preview:**
 
 <div align="center">
-  <img src="../resources/editor_en.png" alt="Gemini Subtitle Pro Interface" width="800">
+  <img src="../resources/editor_en.png" alt="MioSub Interface" width="800">
 </div>
 
 ---
@@ -68,7 +68,7 @@ We provide auto-built installation packages so you can use it directly without c
 
 1.  Visit the project's [Releases](https://github.com/corvo007/gemini-subtitle-pro/releases) page.
 2.  Download the latest version: `Gemini-Subtitle-Pro-x.x.x-win-x64.zip`
-3.  Unzip to any location and double-click `Gemini Subtitle Pro.exe` to launch the program.
+3.  Unzip to any location and double-click `MioSub.exe` to launch the program.
 4.  Open settings, verify your Gemini and OpenAI API KEYs, and configure other options.
 
     **⚠️ Notes:**

@@ -2,12 +2,12 @@
 layout: home
 
 hero:
-  name: Gemini Subtitle Pro
+  name: MioSub
   text: 专业级字幕，零人工校对
   tagline: 术语自动提取 · 说话人识别 · 毫秒对齐 · 一键完成
   image:
     src: /icon.png
-    alt: Gemini Subtitle Pro
+    alt: MioSub
   actions:
     - theme: brand
       text: 快速开始
@@ -222,11 +222,11 @@ features:
         <span class="browser-dot yellow"></span>
         <span class="browser-dot green"></span>
       </div>
-      <span class="browser-title">Gemini Subtitle Pro</span>
+      <span class="browser-title">MioSub</span>
       <div style="width: 48px;"></div>
     </div>
     <div class="browser-content">
-      <img src="/editor.png" alt="Gemini Subtitle Pro 界面截图" />
+      <img src="/editor.png" alt="MioSub 界面截图" />
     </div>
   </div>
 </div>

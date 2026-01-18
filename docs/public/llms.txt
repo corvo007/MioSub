@@ -1,10 +1,10 @@
-# Gemini Subtitle Pro
+# MioSub
 
 > AI-powered professional subtitle generation tool with auto glossary extraction, speaker recognition, and millisecond alignment.
 
 ## About
 
-Gemini Subtitle Pro is an open-source subtitle generation application powered by Google Gemini AI. It transforms 30-minute videos into professionally subtitled content in just 8 minutes, with zero manual proofreading required.
+MioSub is an open-source subtitle generation application powered by Google Gemini AI. It transforms 30-minute videos into professionally subtitled content in just 8 minutes, with zero manual proofreading required.
 
 ## Key Features
 

@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="./resources/icon.png" alt="Gemini Subtitle Pro" width="120" height="120">
-  <h1>Gemini Subtitle Pro</h1>
+  <img src="./resources/icon.png" alt="MioSub" width="120" height="120">
+  <h1>MioSub</h1>
   <p><strong>✨ 专业级字幕，零人工校对</strong></p>
   <p>术语自动提取 · 说话人识别 · 毫秒对齐 · 一键完成</p>
 
@@ -173,7 +173,7 @@
 **界面预览（支持实时字幕预览、自动滚动、说话人显示）：**
 
 <div align="center">
-  <img src="./resources/editor.png" alt="Gemini Subtitle Pro 界面截图" width="800">
+  <img src="./resources/editor.png" alt="MioSub 界面截图" width="800">
 </div>
 
 ---
@@ -186,7 +186,7 @@
 
 1. 访问 [Releases](https://github.com/corvo007/Gemini-Subtitle-Pro/releases) 页面
 2. 下载程序: `Gemini-Subtitle-Pro-x.x.x-win-x64.zip`
-3. 解压到任意位置，双击 `Gemini Subtitle Pro.exe` 启动
+3. 解压到任意位置，双击 `MioSub.exe` 启动
 
 ### 2️⃣ 配置 API Key
 

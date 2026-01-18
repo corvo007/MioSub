@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Gemini Subtitle Pro is an AI-powered subtitle creation, translation, and polishing tool. It uses Google Gemini models for translation/refinement and OpenAI Whisper for speech transcription.
+MioSub is an AI-powered subtitle creation, translation, and polishing tool. It uses Google Gemini models for translation/refinement and OpenAI Whisper for speech transcription.
 
 ## Tech Stack
 

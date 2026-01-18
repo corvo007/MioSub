@@ -2,7 +2,7 @@
 
 ## 📖 Overview
 
-**Gemini Subtitle Pro** is an AI-powered video subtitle generation, translation, and proofreading tool. Built with React + Vite + Electron, supporting both Web and Desktop deployment.
+**MioSub** is an AI-powered video subtitle generation, translation, and proofreading tool. Built with React + Vite + Electron, supporting both Web and Desktop deployment.
 
 - **Tech Stack**: React 19, Vite 6, Electron 39, TypeScript
 - **AI Engine**: Google Gemini (Translation/Proofreading), OpenAI Whisper (Speech Recognition)

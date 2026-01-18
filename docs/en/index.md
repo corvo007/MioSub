@@ -2,12 +2,12 @@
 layout: home
 
 hero:
-  name: Gemini Subtitle Pro
+  name: MioSub
   text: Pro-Level Subtitles, Zero Human Proofreading
   tagline: Auto Glossary · Speaker Recognition · Millisecond Alignment · One-Click Done
   image:
     src: /icon.png
-    alt: Gemini Subtitle Pro
+    alt: MioSub
   actions:
     - theme: brand
       text: Get Started
@@ -222,11 +222,11 @@ features:
         <span class="browser-dot yellow"></span>
         <span class="browser-dot green"></span>
       </div>
-      <span class="browser-title">Gemini Subtitle Pro</span>
+      <span class="browser-title">MioSub</span>
       <div style="width: 48px;"></div>
     </div>
     <div class="browser-content">
-      <img src="/editor-en.png" alt="Gemini Subtitle Pro Interface" />
+      <img src="/editor-en.png" alt="MioSub Interface" />
     </div>
   </div>
 </div>

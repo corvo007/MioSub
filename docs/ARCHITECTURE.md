@@ -1,10 +1,10 @@
-# Gemini Subtitle Pro - Project Architecture Document
+# MioSub - Project Architecture Document
 
 [中文文档 (Chinese Documentation)](./ARCHITECTURE_zh.md)
 
 ## 📖 Project Overview
 
-**Gemini Subtitle Pro** is an AI-powered subtitle creation, translation, and polishing tool. Built with React + Vite + Electron tech stack, supporting both Web and Desktop client deployment.
+**MioSub** is an AI-powered subtitle creation, translation, and polishing tool. Built with React + Vite + Electron tech stack, supporting both Web and Desktop client deployment.
 
 - **Tech Stack**: React 19, Vite 6, Electron 39, TypeScript
 - **AI Engines**: Google Gemini (Translation/Polishing), OpenAI Whisper (Speech Recognition)

@@ -5,7 +5,7 @@ const SITE_URL = 'https://aisub.netlify.app';
 
 export default withMermaid(
   defineConfig({
-    title: 'Gemini Subtitle Pro',
+    title: 'MioSub',
     description: '专业级字幕，零人工校对',
     srcExclude: ['plans/**'],
     cleanUrls: true,
@@ -29,7 +29,7 @@ export default withMermaid(
       ],
       // Open Graph
       ['meta', { property: 'og:type', content: 'website' }],
-      ['meta', { property: 'og:site_name', content: 'Gemini Subtitle Pro' }],
+      ['meta', { property: 'og:site_name', content: 'MioSub' }],
       ['meta', { property: 'og:image', content: `${SITE_URL}/icon.png` }],
       // Twitter Card
       ['meta', { name: 'twitter:card', content: 'summary' }],
@@ -43,8 +43,8 @@ export default withMermaid(
         .replace(/\.md$/, '');
 
       const isEnglish = pageData.relativePath.startsWith('en/');
-      const pageTitle = pageData.title || 'Gemini Subtitle Pro';
-      const siteTitle = 'Gemini Subtitle Pro';
+      const pageTitle = pageData.title || 'MioSub';
+      const siteTitle = 'MioSub';
       const fullTitle =
         pageData.frontmatter.layout === 'home' ? siteTitle : `${pageTitle} | ${siteTitle}`;
 

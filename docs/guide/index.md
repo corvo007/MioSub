@@ -6,7 +6,7 @@
 
 1. 访问 [Releases](https://github.com/corvo007/Gemini-Subtitle-Pro/releases) 页面
 2. 下载程序: `Gemini-Subtitle-Pro-x.x.x-win-x64.zip`
-3. 解压到任意位置，双击 `Gemini Subtitle Pro.exe` 启动
+3. 解压到任意位置，双击 `MioSub.exe` 启动
 
 ## 2️⃣ 配置 API Key
 

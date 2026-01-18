@@ -26,7 +26,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Gemini Subtitle Pro** is an AI-powered subtitle creation, translation, and polishing tool. It uses Google Gemini models for translation/refinement and OpenAI Whisper for speech transcription.
+**MioSub** is an AI-powered subtitle creation, translation, and polishing tool. It uses Google Gemini models for translation/refinement and OpenAI Whisper for speech transcription.
 
 - **Tech Stack**: React 19, Vite 6, Electron 39, TypeScript 5.8, TailwindCSS 4
 - **Dual Platform**: Single codebase supports both Web and Desktop (Electron)

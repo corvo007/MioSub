@@ -1,4 +1,4 @@
-# Gemini Subtitle Pro Copilot Instructions
+# MioSub Copilot Instructions
 
 ## Architecture Overview
 
