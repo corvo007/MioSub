@@ -1,0 +1,116 @@
+---
+title: 快速开始
+description: 5 分钟从安装到出片，开启你的 AI 字幕之旅
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+
+欢迎使用 MioSub！本指南将带你在 **5 分钟内**完成从安装到生成第一个专业字幕的全流程。
+
+<Callout type="info" title="系统要求">
+  - Windows 10/11 (64-bit)
+  - 4GB+ 可用内存
+  - 网络连接（用于 API 调用）
+</Callout>
+
+---
+
+## 第一步：下载安装
+
+<Steps>
+  <Step title="获取安装包">
+    访问 [GitHub Releases](https://github.com/corvo007/Gemini-Subtitle-Pro/releases) 页面，下载最新版 `MioSub-x.x.x-win-x64.zip`
+  </Step>
+  <Step title="解压运行">
+    解压到任意位置（推荐：`D:\Apps\MioSub`），双击 `MioSub.exe` 启动
+  </Step>
+  <Step title="首次启动">
+    首次启动会自动创建配置文件，等待界面加载完成
+  </Step>
+</Steps>
+
+---
+
+## 第二步：配置 API Key
+
+MioSub 使用 Gemini API 进行智能翻译，你需要配置 API Key 才能开始使用。
+
+<Steps>
+  <Step title="打开设置">
+    点击右上角 **⚙️ 设置** 按钮
+  </Step>
+  <Step title="填写 API Key">
+    在「API 配置」区域填入你的 **Gemini API Key**
+    
+    > 💡 **推荐**：使用中转 API 服务（如 [云雾 API](https://yunwu.ai/register?aff=wmHr)），稳定性更好
+  </Step>
+  <Step title="测试连接">
+    点击「测试连接」确认配置正确
+  </Step>
+</Steps>
+
+<Callout type="warning" title="模型要求">
+  请确保你的 API Key 有权限访问以下模型：
+  - Gemini 2.5 Flash（主力翻译）
+  - Gemini 2.5 Pro（术语提取）
+</Callout>
+
+---
+
+## 第三步：生成你的第一个字幕
+
+现在，让我们来生成第一个专业字幕！
+
+<Steps>
+  <Step title="选择视频">
+    **方式一**：点击「打开文件」选择本地视频
+    
+    **方式二**：粘贴 YouTube/Bilibili 链接，自动下载
+  </Step>
+  <Step title="选择语言">
+    - **源语言**：视频原声语言（支持自动检测）
+    - **目标语言**：翻译目标语言（如：简体中文）
+  </Step>
+  <Step title="开始处理">
+    点击「开始」按钮，MioSub 将自动执行：
+    
+    1. 🎵 音频提取与降噪
+    2. 🎙️ AI 语音转写
+    3. 📚 术语表智能提取
+    4. 🧠 上下文感知翻译
+    5. ⚡ 时间轴精准对齐
+  </Step>
+  <Step title="预览与编辑">
+    处理完成后，你可以在编辑器中：
+    
+    - 实时预览字幕效果
+    - 修改译文内容
+    - 调整时间轴
+    - 批量替换术语
+  </Step>
+  <Step title="导出成品">
+    满意后，点击「导出」：
+    
+    - **SRT/ASS**：纯字幕文件
+    - **视频压制**：直接烧录硬字幕到视频
+  </Step>
+</Steps>
+
+---
+
+## 🎉 恭喜！
+
+你已经成功生成了第一个专业级 AI 字幕！
+
+### 接下来探索
+
+- **[本地 Whisper 配置](/docs/guide/whisper)** - 离线转写，更快更私密
+- **[强制对齐配置](/docs/guide/alignment)** - 毫秒级精准时间戳
+- **[视频下载配置](/docs/guide/video-download)** - 自定义下载参数
+
+### 遇到问题？
+
+- 📖 查阅完整文档
+- 🐛 [提交 Issue](https://github.com/corvo007/Gemini-Subtitle-Pro/issues)
+- 💬 加入用户社群交流

@@ -1,0 +1,58 @@
+---
+title: '本地 Whisper 配置'
+---
+
+本项目支持集成 [whisper.cpp](https://github.com/ggerganov/whisper.cpp) 实现完全离线的语音转写。
+
+- **默认支持**: 安装包已内置 CPU 版 Whisper 核心组件 (`whisper-cli.exe`)
+- **需手动下载**: 需自行下载模型文件 (`.bin`)
+- **GPU 加速**: 可手动替换为 GPU 版组件获得更快速度
+
+---
+
+## ⚡ 快速开始
+
+1. **下载模型**: 访问 [Hugging Face](https://huggingface.co/ggerganov/whisper.cpp/tree/main) 下载 GGML 格式模型
+2. **启用功能**: 设置 > 服务 > 语音识别 选择「本地 Whisper」
+3. **加载模型**: 点击「浏览」选择下载的 `.bin` 模型文件
+4. **开始使用**: 模型路径设置完成后即可使用
+
+---
+
+## 📦 模型下载指南
+
+### 推荐下载
+
+请下载 **标准版** 模型，文件名格式为 `ggml-[model].bin`：
+
+| 模型         | 文件名              | 大小   | 内存    | 速度 | 适用场景     |
+| :----------- | :------------------ | :----- | :------ | :--- | :----------- |
+| **Tiny**     | `ggml-tiny.bin`     | 75 MB  | ~390 MB | 极快 | 快速测试     |
+| **Base**     | `ggml-base.bin`     | 142 MB | ~500 MB | 快   | 日常对话 ⭐  |
+| **Small**    | `ggml-small.bin`    | 466 MB | ~1 GB   | 中等 | 播客/视频 ⭐ |
+| **Medium**   | `ggml-medium.bin`   | 1.5 GB | ~2.6 GB | 慢   | 复杂音频     |
+| **Large-v3** | `ggml-large-v3.bin` | 2.9 GB | ~4.7 GB | 最慢 | 专业需求     |
+
+### 文件名后缀说明
+
+- **`.en`**: 仅英语模型，不支持中文等其他语言
+- **`q5_0`, `q8_0`**: 量化版，体积更小、速度更快，精度略有下降
+
+---
+
+## 🛠️ GPU 加速 (NVIDIA 显卡)
+
+**前提条件**: 已安装最新版 NVIDIA 显卡驱动
+
+1. 访问 [whisper.cpp Releases](https://github.com/ggerganov/whisper.cpp/releases) 下载 `whisper-cublas-bin-x64.zip`
+2. 解压获取 `whisper-cli.exe` 和 `.dll` 文件
+3. 将所有文件放入 `.exe` 同级目录的 `resources` 文件夹（如果没有这个文件夹，可以手动创建一个）
+4. 重启应用，尝试转写验证加速效果
+
+---
+
+## ❓ 常见问题
+
+- **找不到选项？** 请确认使用的是**桌面版**，网页版不支持此功能
+- **状态错误？** 检查是否已正确选择 `.bin` 模型文件
+- **速度慢？** CPU 模式下速度取决于处理器性能，建议使用 `Base` 或 `Small` 模型
