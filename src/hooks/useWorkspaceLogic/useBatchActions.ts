@@ -17,6 +17,7 @@ import { runProofreadOperation } from '@/services/generation/batch/proofread';
 import { runRegenerateOperation } from '@/services/generation/batch/regenerate';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
 import { retryGlossaryExtraction } from '@/services/generation/extractors/glossary';
+import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 import { ENV } from '@/config';
 import {
   type GlossaryFlowProps,
@@ -137,6 +138,20 @@ export function useBatchActions({
       setChunkProgress({});
       setStartTime(Date.now());
       logger.info(`Starting batch action: ${mode}`, { indices, mode });
+
+      // Analytics: Batch Action Started
+      if (window.electronAPI?.analytics) {
+        void window.electronAPI.analytics.track(
+          'batch_action_started',
+          {
+            action: mode === 'regenerate' ? 'regenerate' : 'refine_translation',
+            count: indices.length,
+            file_name: fileName,
+          },
+          'interaction'
+        );
+      }
+
       try {
         let refined: SubtitleItem[];
 
@@ -242,6 +257,19 @@ export function useBatchActions({
             );
       const filename = file ? file.name.replace(/\.[^/.]+$/, '') : 'subtitles';
       logger.info(`Downloading subtitles: ${filename}.${format}`);
+
+      // Analytics: Subtitle Exported
+      if (window.electronAPI?.analytics) {
+        void window.electronAPI.analytics.track(
+          'editor_exported',
+          {
+            format: format,
+            count: subtitles.length,
+          },
+          'interaction'
+        );
+      }
+
       void downloadFile(`${filename}.${format}`, content, format);
     },
     [
@@ -296,8 +324,11 @@ export function useBatchActions({
     }
   }, [glossaryFlow, settings, audioCacheRef, setError]);
 
+  // 防抖版本 - 防止快速重复点击润色/重新生成按钮
+  const debouncedHandleBatchAction = useDebouncedCallback(handleBatchAction);
+
   return {
-    handleBatchAction,
+    handleBatchAction: debouncedHandleBatchAction,
     handleDownload,
     handleRetryGlossary,
   };

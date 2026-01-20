@@ -752,7 +752,20 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                         onToggleSourceText={() => setShowSourceText(!showSourceText)}
                         isCollapsed={videoPreviewCollapsed}
                         onTimeUpdate={updateTime}
-                        onToggleCollapse={() => setVideoPreviewCollapsed(!videoPreviewCollapsed)}
+                        onToggleCollapse={() => {
+                          const newState = !videoPreviewCollapsed;
+                          setVideoPreviewCollapsed(newState);
+                          // Analytics: Video Preview Toggle
+                          if (window.electronAPI?.analytics) {
+                            void window.electronAPI.analytics.track(
+                              'video_preview_toggle',
+                              {
+                                state: newState ? 'collapsed' : 'expanded',
+                              },
+                              'interaction'
+                            );
+                          }
+                        }}
                         isGenerating={isProcessing}
                       />
                     </ErrorBoundary>

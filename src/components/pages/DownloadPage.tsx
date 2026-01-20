@@ -17,6 +17,7 @@ import {
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { DirectorySelector } from '@/components/ui/DirectorySelector';
 import { useDownload } from '@/hooks/useDownload';
+import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 import { UrlInput } from '@/components/download/UrlInput';
 import { VideoPreview } from '@/components/download/VideoPreview';
 import { QualitySelector } from '@/components/download/QualitySelector';
@@ -67,7 +68,8 @@ export function DownloadPage({
     }
   }, [videoInfo, selectedFormat]);
 
-  const handleDownload = async () => {
+  // 防抖下载处理函数 - 防止快速重复点击
+  const handleDownload = useDebouncedCallback(async () => {
     if (selectedFormat) {
       const path = await download(selectedFormat);
       // Download thumbnail if option is enabled
@@ -75,9 +77,9 @@ export function DownloadPage({
         await downloadThumbnail();
       }
     }
-  };
+  });
 
-  const handleDownloadAndContinue = async () => {
+  const handleDownloadAndContinue = useDebouncedCallback(async () => {
     if (selectedFormat) {
       const path = await download(selectedFormat);
       // Download thumbnail if option is enabled
@@ -88,9 +90,9 @@ export function DownloadPage({
         onDownloadComplete(path);
       }
     }
-  };
+  });
 
-  const handleDownloadThumbnailOnly = async () => {
+  const handleDownloadThumbnailOnly = useDebouncedCallback(async () => {
     if (!videoInfo) return;
     setDownloadingThumbnail(true);
     try {
@@ -98,7 +100,7 @@ export function DownloadPage({
     } finally {
       setDownloadingThumbnail(false);
     }
-  };
+  });
 
   const getErrorIcon = () => {
     const iconMap: Record<string, string> = {

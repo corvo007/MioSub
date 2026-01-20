@@ -12,6 +12,7 @@ import { HardwareAccelerationSelector } from '@/components/compression/HardwareA
 import { ResolutionSelector } from '@/components/compression/ResolutionSelector';
 import { EncoderSelector } from '@/components/compression/EncoderSelector';
 import { useHardwareAcceleration } from '@/hooks/useHardwareAcceleration';
+import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 import { NumberInput } from '@/components/ui/NumberInput';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { DirectorySelector } from '@/components/ui/DirectorySelector';
@@ -155,14 +156,16 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
     }
   }, [resolutionPreset]);
 
-  const handleFileSelect = (f: File) => {
+  // 防抖文件选择处理函数 - 防止快速重复点击
+  const handleFileSelect = useDebouncedCallback((f: File) => {
     setFile(f);
     const path = window.electronAPI?.getFilePath(f) || (f as any).path || '';
     setOutputPath(generateOutputPath(path, f.name));
     setShowAutoLoadPrompt(false); // Hide prompt if user manually selects a file
-  };
+  });
 
-  const handleSelectOutputDir = async () => {
+  // 防抖输出目录选择处理函数 - 防止快速重复点击
+  const handleSelectOutputDir = useDebouncedCallback(async () => {
     try {
       const result = await window.electronAPI.download.selectDir();
       if (result.success && result.path && file) {
@@ -172,7 +175,83 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
     } catch (err) {
       logger.error('Failed to select directory', err);
     }
-  };
+  });
+
+  // 防抖开始压制处理函数 - 防止快速重复点击
+  const handleStartCompression = useDebouncedCallback(async () => {
+    if (!file || !outputPath) return;
+
+    // Get file path - try getFilePath API first, fallback to path property
+    const inputPath = window.electronAPI?.getFilePath?.(file) || (file as any).path;
+    if (!inputPath) {
+      setErrorMessage(t('errors.noVideoPath'));
+      return;
+    }
+
+    setIsCompressing(true);
+    setCompressionStartTime(Date.now());
+    try {
+      let finalSubtitlePath = undefined;
+
+      // Handle Subtitles
+      if (subtitleMode === 'file') {
+        if (subtitlePath) {
+          finalSubtitlePath = subtitlePath;
+        }
+      } else if (
+        subtitleMode === 'workspace' &&
+        workspaceSubtitles &&
+        workspaceSubtitles.length > 0
+      ) {
+        try {
+          const assContent = generateAssContent(
+            workspaceSubtitles,
+            'Gemini Subtitle',
+            true,
+            false,
+            true,
+            workspaceSpeakerProfiles
+          );
+          const res = await window.electronAPI.writeTempFile(assContent, 'ass');
+          if (res.success && res.path) {
+            finalSubtitlePath = res.path;
+          } else {
+            throw new Error(t('errors.tempSubtitleFailed') + ': ' + res.error);
+          }
+        } catch (err: any) {
+          throw new Error(t('errors.subtitleGenFailed') + ': ' + err.message);
+        }
+      }
+
+      // Determine Video Source
+      const videoSource =
+        workspaceVideoFile && file === workspaceVideoFile ? 'workspace' : 'external';
+
+      // Determine Subtitle Source
+      const subtitleSource =
+        subtitleMode === 'none' ? 'none' : subtitleMode === 'workspace' ? 'workspace' : 'external';
+
+      const cleanup = window.electronAPI.compression.onProgress((p) => setProgress(p));
+      await window.electronAPI.compression.compress(inputPath, outputPath, {
+        ...options,
+        subtitlePath: finalSubtitlePath,
+        hwAccel: hwAccelEnabled ? 'auto' : 'off',
+        videoSource,
+        subtitleSource,
+      });
+      cleanup();
+      setShowSuccessModal(true);
+    } catch (e: any) {
+      // Don't show error for user-initiated cancellation
+      if (!e.message?.includes('CANCELLED')) {
+        setErrorMessage(t('errors.compressFailed') + ': ' + e.message);
+      }
+    } finally {
+      setIsCompressing(false);
+      setCompressionStartTime(null);
+      setProgress(null);
+    }
+  });
 
   return (
     <div className="h-screen overflow-hidden bg-warm-mesh flex flex-col p-4 md:p-8">
@@ -520,72 +599,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
 
               {/* Action Button */}
               <button
-                onClick={async () => {
-                  if (!file || !outputPath) return;
-
-                  // Get file path - try getFilePath API first, fallback to path property
-                  const inputPath = window.electronAPI?.getFilePath?.(file) || (file as any).path;
-                  if (!inputPath) {
-                    setErrorMessage(t('errors.noVideoPath'));
-                    return;
-                  }
-
-                  setIsCompressing(true);
-                  setCompressionStartTime(Date.now());
-                  try {
-                    let finalSubtitlePath = undefined;
-
-                    // Handle Subtitles
-                    if (subtitleMode === 'file') {
-                      if (subtitlePath) {
-                        finalSubtitlePath = subtitlePath;
-                      }
-                    } else if (
-                      subtitleMode === 'workspace' &&
-                      workspaceSubtitles &&
-                      workspaceSubtitles.length > 0
-                    ) {
-                      try {
-                        const assContent = generateAssContent(
-                          workspaceSubtitles,
-                          'Gemini Subtitle',
-                          true,
-                          false,
-                          true,
-                          workspaceSpeakerProfiles
-                        );
-                        const res = await window.electronAPI.writeTempFile(assContent, 'ass');
-                        if (res.success && res.path) {
-                          finalSubtitlePath = res.path;
-                        } else {
-                          throw new Error(t('errors.tempSubtitleFailed') + ': ' + res.error);
-                        }
-                      } catch (err: any) {
-                        throw new Error(t('errors.subtitleGenFailed') + ': ' + err.message);
-                      }
-                    }
-
-                    const cleanup = window.electronAPI.compression.onProgress((p) =>
-                      setProgress(p)
-                    );
-                    await window.electronAPI.compression.compress(inputPath, outputPath, {
-                      ...options,
-                      subtitlePath: finalSubtitlePath,
-                      hwAccel: hwAccelEnabled ? 'auto' : 'off',
-                    });
-                    cleanup();
-                    setShowSuccessModal(true);
-                  } catch (e: any) {
-                    // Don't show error for user-initiated cancellation
-                    if (!e.message?.includes('CANCELLED')) {
-                      setErrorMessage(t('errors.compressFailed') + ': ' + e.message);
-                    }
-                  } finally {
-                    setIsCompressing(false);
-                    setCompressionStartTime(null);
-                    setProgress(null);
-                  }
-                }}
+                onClick={handleStartCompression}
                 disabled={!file || isCompressing}
                 className={cn(
                   'w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all shadow-lg transform active:scale-[0.98]',

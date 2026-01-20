@@ -6,6 +6,7 @@ import { type SubtitleItem } from '@/types/subtitle';
 import { GenerationStatus } from '@/types/api';
 import { type SpeakerUIProfile } from '@/types/speaker';
 import { logger } from '@/services/utils/logger';
+import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 import { type SnapshotsValuesProps } from '@/types/workspace';
 import { parseAssStyles } from '@/services/subtitle/parser';
 import { sanitizeSpeakerForStyle } from '@/services/subtitle/utils';
@@ -156,6 +157,19 @@ export function useFileOperations({
         audioCacheRef.current = null;
         setError(null);
         setDuration(d);
+
+        // Analytics: Video Loaded
+        if (window.electronAPI?.analytics) {
+          void window.electronAPI.analytics.track(
+            'editor_video_loaded',
+            {
+              type: selectedFile.type,
+              size: selectedFile.size,
+              duration_sec: d,
+            },
+            'interaction'
+          );
+        }
       } finally {
         if (currentOpId === operationIdRef.current) {
           setIsLoadingFile(false);
@@ -323,6 +337,18 @@ export function useFileOperations({
           setSpeakerProfiles(profiles);
 
           setStatus(GenerationStatus.COMPLETED);
+
+          // Analytics: Subtitle Loaded
+          if (window.electronAPI?.analytics) {
+            void window.electronAPI.analytics.track(
+              'editor_subtitle_loaded',
+              {
+                format: fileType,
+                count: parsed.length,
+              },
+              'interaction'
+            );
+          }
           setBatchComments({});
           const fileId = window.electronAPI?.getFilePath?.(subFile) || subFile.name;
           snapshotsValues.createSnapshot(
@@ -398,6 +424,18 @@ export function useFileOperations({
       setSpeakerProfiles(profiles);
 
       setStatus(GenerationStatus.COMPLETED);
+
+      // Analytics: Subtitle Loaded (Native)
+      if (window.electronAPI?.analytics) {
+        void window.electronAPI.analytics.track(
+          'editor_subtitle_loaded',
+          {
+            format: fileType,
+            count: parsed.length,
+          },
+          'interaction'
+        );
+      }
       setBatchComments({});
       const fileId = result.filePath || result.fileName;
       snapshotsValues.createSnapshot(
@@ -431,11 +469,15 @@ export function useFileOperations({
     t,
   ]);
 
+  // 防抖版本 - 防止快速重复点击文件选择按钮
+  const debouncedHandleFileSelectNative = useDebouncedCallback(handleFileSelectNative);
+  const debouncedHandleSubtitleImportNative = useDebouncedCallback(handleSubtitleImportNative);
+
   return {
     handleFileChange,
-    handleFileSelectNative,
+    handleFileSelectNative: debouncedHandleFileSelectNative,
     handleSubtitleImport,
-    handleSubtitleImportNative,
+    handleSubtitleImportNative: debouncedHandleSubtitleImportNative,
     isLoadingFile,
     setIsLoadingFile,
     isLoadingSubtitle,

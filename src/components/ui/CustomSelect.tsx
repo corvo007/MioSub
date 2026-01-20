@@ -120,7 +120,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         <Portal>
           <div
             className={cn(
-              'custom-select-dropdown fixed z-50 bg-white border border-slate-200 rounded-lg shadow-xl shadow-slate-200/50 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100'
+              'custom-select-dropdown fixed z-[100] bg-white border border-slate-200 rounded-lg shadow-xl shadow-slate-200/50 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100'
             )}
             style={{
               left: coords.left,

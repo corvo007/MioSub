@@ -12,9 +12,15 @@ import {
 } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dotenv from 'dotenv'; // Load dotenv
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Load environment variables in development
+if (!app.isPackaged) {
+  dotenv.config({ path: path.join(__dirname, '../.env') });
+}
 
 import squirrelStartup from 'electron-squirrel-startup';
 import fs from 'fs';
@@ -122,8 +128,20 @@ import type { EndToEndConfig } from '@/types/endToEnd.ts';
 import { t, changeLanguage } from './i18n.ts';
 import { ctcAlignerService } from './services/ctcAligner.ts';
 import { writeTempFile } from './services/fileUtils.ts';
+import { analyticsService } from './services/analyticsService.ts';
 
 const videoCompressorService = new VideoCompressorService();
+
+// IPC Handler: Analytics Track
+// IPC Handler: Analytics Track
+ipcMain.handle(
+  'analytics:track',
+  (_event, signal: string, payload: any, eventType?: 'page_view' | 'interaction' | 'system') => {
+    // Fire and forget - don't block Renderer waiting for network
+    void analyticsService.track(signal, payload, eventType);
+    return { success: true };
+  }
+);
 
 // IPC Handler: Transcribe Local
 ipcMain.handle(
@@ -148,6 +166,24 @@ ipcMain.handle(
       console.log(
         `[DEBUG] [Main] Received local transcription request. Model: ${modelPath}, Lang: ${language}, Threads: ${threads}, CustomPath: ${customBinaryPath}`
       );
+
+      // Analytics: Transcription Started
+      const startAt = Date.now();
+      const whisperDetails = await localWhisperService.getWhisperDetails(customBinaryPath);
+      void analyticsService.track(
+        'transcription_started',
+        {
+          language,
+          model_file: path.basename(modelPath),
+          threads,
+          use_custom_binary: !!customBinaryPath,
+          whisper_version: whisperDetails.version,
+          whisper_source: whisperDetails.source,
+          use_gpu: whisperDetails.gpuSupport,
+        },
+        'interaction'
+      );
+
       const result = await localWhisperService.transcribe(
         audioData,
         modelPath,
@@ -156,9 +192,32 @@ ipcMain.handle(
         (msg) => console.log(msg),
         customBinaryPath
       );
+
+      // Analytics: Transcription Completed
+      void analyticsService.track(
+        'transcription_completed',
+        {
+          segment_count: result.length,
+          duration_ms: Date.now() - startAt,
+        },
+        'interaction'
+      );
+
       return { success: true, segments: result };
     } catch (error: any) {
       console.error('[Main] Local transcription failed:', error);
+
+      // Analytics: Transcription Failed (skip if cancelled)
+      if (!error.message?.includes('cancelled') && !error.message?.includes('aborted')) {
+        void analyticsService.track(
+          'transcription_failed',
+          {
+            error: error.message,
+          },
+          'interaction'
+        );
+      }
+
       return { success: false, error: error.message };
     }
   }
@@ -193,6 +252,7 @@ ipcMain.handle('alignment:ctc-abort', async () => {
 ipcMain.handle('i18n:change-language', async (_event, lang: string) => {
   try {
     await changeLanguage(lang);
+    analyticsService.setAppLanguage(lang);
     console.log(`[Main] Language changed to: ${lang}`);
     return { success: true };
   } catch (error: any) {
@@ -637,6 +697,9 @@ ipcMain.handle('storage-get', async () => {
 
 ipcMain.handle('storage-set', async (_event, data: any) => {
   try {
+    if (data?.language) {
+      analyticsService.setAppLanguage(data.language);
+    }
     return await storageService.saveSettings(data);
   } catch (error: any) {
     console.error('[Main] Failed to save settings:', error);
@@ -806,7 +869,21 @@ ipcMain.handle(
   'video:compress',
   async (event, inputPath: string, outputPath: string, options: CompressionOptions) => {
     try {
-      return await videoCompressorService.compress(
+      // Analytics: Start
+      const resolution =
+        options.width && options.height ? `${options.width}x${options.height}` : 'original';
+
+      void analyticsService.track('compression_started', {
+        encoder: options.encoder,
+        crf: options.crf,
+        hw_accel: options.hwAccel === 'off' ? 'disabled' : 'enabled',
+        resolution: resolution,
+        subtitle_burned: !!options.subtitlePath,
+        video_source: options.videoSource || 'unknown',
+        subtitle_source: options.subtitleSource || 'unknown',
+      });
+
+      const result = await videoCompressorService.compress(
         inputPath,
         outputPath,
         options,
@@ -817,8 +894,17 @@ ipcMain.handle(
           console.log(logMessage);
         }
       );
+
+      // Analytics: Success
+      void analyticsService.track('compression_completed', { success: true });
+
+      return result;
     } catch (error: any) {
       console.error('[Main] Compression failed:', error);
+
+      // Analytics: Fail
+      void analyticsService.track('compression_failed', { error: error.message });
+
       throw error;
     }
   }
@@ -952,9 +1038,32 @@ ipcMain.handle('download:parse', async (_event, url: string) => {
   try {
     console.log(`[DEBUG] [Main] Parsing video URL: ${url}`);
     const videoInfo = await ytDlpService.parseUrl(url);
+
+    // Analytics: Parse Success
+    try {
+      void analyticsService.track('download_parsed', {
+        url_domain: new URL(url).hostname,
+        success: true,
+      });
+    } catch {
+      /* ignore */
+    }
+
     return { success: true, videoInfo };
   } catch (error: any) {
     console.error('[Main] Failed to parse URL:', error);
+
+    // Analytics: Parse Fail
+    try {
+      void analyticsService.track('download_parsed', {
+        url_domain: new URL(url).hostname,
+        success: false,
+        error: error.message,
+      });
+    } catch {
+      /* ignore */
+    }
+
     const classifiedError = classifyError(error.message || error.toString());
     return { success: false, error: classifiedError.message, errorInfo: classifiedError };
   }
@@ -969,12 +1078,31 @@ ipcMain.handle(
   ) => {
     try {
       console.log(`[DEBUG] [Main] Starting download: ${url}, format: ${formatId}`);
+
+      // Analytics: Start
+      try {
+        void analyticsService.track('download_started', {
+          url_domain: new URL(url).hostname,
+          format: formatId,
+        });
+      } catch (e) {
+        /* ignore URL parse err */
+      }
+
       const outputPath = await ytDlpService.download(url, formatId, outputDir, (progress) => {
         event.sender.send('download:progress', progress);
       });
+
+      // Analytics: Success
+      void analyticsService.track('download_completed', { success: true });
+
       return { success: true, outputPath };
     } catch (error: any) {
       console.error('[Main] Download failed:', error);
+
+      // Analytics: Fail
+      void analyticsService.track('download_failed', { error: error.message });
+
       const classifiedError = classifyError(error.message || error.toString());
       return { success: false, error: classifiedError.message, errorInfo: classifiedError };
     }
@@ -1090,6 +1218,13 @@ ipcMain.handle('end-to-end:start', async (event, config: EndToEndConfig) => {
   try {
     console.log(`[DEBUG] [Main] Starting end-to-end pipeline: ${config.url}`);
 
+    // Track Pipeline Start
+    void analyticsService.track('pipeline_started', {
+      url_domain: new URL(config.url).hostname,
+      model: config.useLocalWhisper ? config.whisperModel : 'api',
+      target_language: config.targetLanguage,
+    });
+
     // Get the main window from the event sender
     mainWindowRef = BrowserWindow.fromWebContents(event.sender);
     if (mainWindowRef) {
@@ -1101,9 +1236,20 @@ ipcMain.handle('end-to-end:start', async (event, config: EndToEndConfig) => {
       event.sender.send('end-to-end:progress', progress);
     });
 
+    // Track Success
+    void analyticsService.track('pipeline_completed', {
+      success: result.success,
+      duration: result.duration,
+    });
+
     return result;
   } catch (error: any) {
     console.error('[Main] End-to-end pipeline failed:', error);
+
+    // Track Failure
+    void analyticsService.track('pipeline_failed', {
+      error: error.message,
+    });
     return {
       success: false,
       error: error.message,
@@ -1268,6 +1414,19 @@ const createMenu = () => {
 app.on('ready', async () => {
   // Initialize logger file system (requires app to be ready for getPath)
   mainLogger.init();
+
+  // Initialize Analytics with version info
+  // Initialize Analytics with version info (non-blocking)
+  void (async () => {
+    try {
+      const config = await getSystemConfigHash();
+      const versionStr = `${config.pkg.version} (${config.commitHash})`;
+      await analyticsService.initialize(versionStr);
+    } catch (error) {
+      console.error('[Main] Failed to get system config for analytics:', error);
+      void analyticsService.initialize();
+    }
+  })();
 
   // Print startup system info and cache it
   void (async () => {
@@ -1694,5 +1853,27 @@ app.on('activate', () => {
 });
 
 app.on('before-quit', () => {
+  // Abort local whisper processes immediately
   localWhisperService.abort();
+});
+
+// will-quit fires after windows close but before process exits
+// This allows analytics to upload while window is already gone
+app.on('will-quit', (event) => {
+  // Only delay once
+  if ((app as any)._analyticsShutdownStarted) return;
+  (app as any)._analyticsShutdownStarted = true;
+
+  event.preventDefault();
+
+  // Start analytics shutdown (non-blocking)
+  void analyticsService.shutdown().finally(() => {
+    // Exit after analytics completes or after timeout (whichever comes first)
+    app.exit(0);
+  });
+
+  // Safety timeout: force exit after 5 seconds max
+  setTimeout(() => {
+    app.exit(0);
+  }, 5000);
 });

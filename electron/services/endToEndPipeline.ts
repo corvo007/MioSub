@@ -14,6 +14,7 @@ import fs from 'fs';
 import { ytDlpService, classifyError } from './ytdlp.ts';
 import { extractAudioFromVideo } from './ffmpegAudioExtractor.ts';
 import { VideoCompressorService } from './videoCompressor.ts';
+import { analyticsService } from './analyticsService.ts';
 import { t } from '../i18n.ts';
 import type {
   EndToEndConfig,
@@ -144,6 +145,17 @@ export class EndToEndPipeline {
         videoInfo = await ytDlpService.parseUrl(config.url);
       }
       console.log(`[DEBUG] [Pipeline] Video info: ${videoInfo.title}`);
+
+      // Analytics: Download Parsed
+      void analyticsService.track(
+        'download_parsed',
+        {
+          platform: videoInfo.platform,
+          title: videoInfo.title,
+          duration_sec: videoInfo.duration,
+        },
+        'interaction'
+      );
 
       // Notify progress with video info
       onProgress({

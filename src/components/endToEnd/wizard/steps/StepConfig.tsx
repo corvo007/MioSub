@@ -7,8 +7,9 @@ import { HardwareAccelerationSelector } from '@/components/compression/HardwareA
 import { ResolutionSelector } from '@/components/compression/ResolutionSelector';
 import { EncoderSelector } from '@/components/compression/EncoderSelector';
 import { useHardwareAcceleration } from '@/hooks/useHardwareAcceleration';
+import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 import { CustomSelect } from '@/components/ui/CustomSelect';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { NumberInput } from '@/components/ui/NumberInput';
 import { ToggleOptionInline } from '@/components/endToEnd/wizard/shared/ToggleOption';
 import { GenreSelectorInline } from '@/components/endToEnd/wizard/shared/GenreSelector';
@@ -58,14 +59,15 @@ export function StepConfig({
   const { t } = useTranslation('endToEnd');
   const { hwAccelInfo } = useHardwareAcceleration();
 
-  const handleSelectDir = async () => {
+  // 防抖选择目录处理函数 - 防止快速重复点击
+  const handleSelectDir = useDebouncedCallback(async () => {
     if (window.electronAPI?.download?.selectDir) {
       const result = await window.electronAPI.download.selectDir();
       if (result.success && result.path) {
         onConfigChange({ outputDir: result.path });
       }
     }
-  };
+  });
 
   return (
     <div className="max-w-3xl mx-auto">

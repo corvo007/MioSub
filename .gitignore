@@ -66,3 +66,14 @@ docs/.vitepress/dist
 docs/.vitepress/cache
 
 design/
+
+# Next.js
+.next/
+out/
+build/
+**/.next/
+docs/out/
+docs/build/
+
+# Fumadocs
+.source/

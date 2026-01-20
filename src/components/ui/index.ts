@@ -9,7 +9,7 @@ export { TextInput } from './TextInput';
 export { OptionButton } from './OptionButton';
 export { SectionHeader } from './SectionHeader';
 export { NumberInput } from './NumberInput';
-export { Card } from './card';
+export { Card } from './Card';
 export { PrimaryButton } from './PrimaryButton';
 export { ProgressBar } from './ProgressBar';
 export { GenrePicker } from './GenrePicker';

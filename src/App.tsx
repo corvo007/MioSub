@@ -67,6 +67,13 @@ export default function App() {
     }
   }, [isSettingsLoaded, settings.language]);
 
+  // Analytics: Track Page Views
+  useEffect(() => {
+    if (window.electronAPI?.analytics) {
+      void window.electronAPI.analytics.track('page_view', { name: view }, 'page_view');
+    }
+  }, [view]);
+
   // Confirmation Modal State
   const [confirmation, setConfirmation] = useState<{
     isOpen: boolean;

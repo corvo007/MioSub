@@ -11,6 +11,7 @@ import { autoConfirmGlossaryTerms } from '@/services/glossary/autoConfirm';
 import { generateSubtitles } from '@/services/generation/pipeline';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
 import { decodeAudioWithRetry } from '@/services/audio/decoder';
+import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 import { ENV } from '@/config';
 import {
   type GlossaryFlowProps,
@@ -116,6 +117,31 @@ export function useGeneration({
       duration,
       settings: { ...settings, geminiKey: '***', openaiKey: '***' },
     });
+
+    // Analytics: Start
+    const startAt = Date.now();
+    if (window.electronAPI?.analytics) {
+      void window.electronAPI.analytics.track(
+        'workspace_generation_started',
+        {
+          file_ext: file.name.split('.').pop(),
+          duration_sec: duration,
+          target_language: settings.targetLanguage,
+          model: settings.useLocalWhisper ? 'local' : 'api',
+          enable_auto_glossary: settings.enableAutoGlossary,
+          glossary_auto_confirm: settings.glossaryAutoConfirm,
+          enable_diarization: settings.enableDiarization,
+          enable_speaker_pre_analysis: settings.enableSpeakerPreAnalysis,
+          min_speakers: settings.minSpeakers,
+          max_speakers: settings.maxSpeakers,
+          use_speaker_colors: settings.useSpeakerColors,
+          use_speaker_styled_translation: settings.useSpeakerStyledTranslation,
+          output_mode: settings.outputMode,
+        },
+        'interaction'
+      );
+    }
+
     // Create new AbortController
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
@@ -259,6 +285,19 @@ export function useGeneration({
       );
 
       logger.info('Subtitle generation completed', { count: result.length });
+
+      // Analytics: Success
+      if (window.electronAPI?.analytics) {
+        void window.electronAPI.analytics.track(
+          'workspace_generation_completed',
+          {
+            count: result.length,
+            duration_ms: Date.now() - startAt,
+          },
+          'interaction'
+        );
+      }
+
       addToast(t('workspace:hooks.generation.status.success'), 'success');
     } catch (err: unknown) {
       const error = err as Error;
@@ -292,6 +331,17 @@ export function useGeneration({
         setError(error.message);
         logger.error('Subtitle generation failed', err);
         addToast(t('workspace:hooks.generation.status.failed', { error: error.message }), 'error');
+
+        // Analytics: Error
+        if (window.electronAPI?.analytics) {
+          void window.electronAPI.analytics.track(
+            'workspace_generation_failed',
+            {
+              error: error.message,
+            },
+            'interaction'
+          );
+        }
       }
     } finally {
       abortControllerRef.current = null;
@@ -320,7 +370,10 @@ export function useGeneration({
     t,
   ]);
 
+  // 防抖版本的 handleGenerate - 防止快速重复点击
+  const debouncedHandleGenerate = useDebouncedCallback(handleGenerate);
+
   return {
-    handleGenerate,
+    handleGenerate: debouncedHandleGenerate,
   };
 }

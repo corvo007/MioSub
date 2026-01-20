@@ -1,5 +1,4 @@
-/* eslint-env node */
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
@@ -17,44 +16,56 @@ try {
   console.warn('Failed to get commit hash:', e);
 }
 
-export default defineConfig({
-  plugins: [
-    viteStaticCopy({
-      targets: [
-        {
-          src: 'electron/locales/*',
-          dest: 'locales',
+export default defineConfig(({ mode }) => {
+  // Load env file based on `mode` in the current working directory.
+  // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
+  // eslint-disable-next-line no-undef
+  const env = loadEnv(mode, process.cwd(), '');
+
+  return {
+    plugins: [
+      viteStaticCopy({
+        targets: [
+          {
+            src: 'electron/locales/*',
+            dest: 'locales',
+          },
+        ],
+      }),
+    ],
+    build: {
+      ssr: true,
+      sourcemap: 'inline',
+      outDir: 'dist-electron',
+      emptyOutDir: true,
+      lib: {
+        entry: {
+          main: path.resolve(__dirname, 'electron/main.ts'),
+          preload: path.resolve(__dirname, 'electron/preload.ts'),
         },
-      ],
-    }),
-  ],
-  build: {
-    ssr: true,
-    sourcemap: 'inline',
-    outDir: 'dist-electron',
-    emptyOutDir: true,
-    lib: {
-      entry: {
-        main: path.resolve(__dirname, 'electron/main.ts'),
-        preload: path.resolve(__dirname, 'electron/preload.ts'),
+        formats: ['cjs'],
       },
-      formats: ['cjs'],
-    },
-    rollupOptions: {
-      external: ['electron', 'path', 'fs', 'os', 'child_process'],
-      output: {
-        entryFileNames: '[name].cjs',
+      rollupOptions: {
+        external: ['electron', 'path', 'fs', 'os', 'child_process'],
+        output: {
+          entryFileNames: '[name].cjs',
+        },
       },
     },
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
     },
-  },
-  define: {
-    // eslint-disable-next-line no-undef
-    'process.env.DEBUG_BUILD': JSON.stringify(process.env.DEBUG_BUILD || 'false'),
-    'process.env.COMMIT_HASH': JSON.stringify(commitHash),
-  },
+    define: {
+      // Build-time environment variables
+      // Note: DEBUG_BUILD comes from CLI (cross-env), others from .env file
+      // eslint-disable-next-line no-undef
+      'process.env.DEBUG_BUILD': JSON.stringify(process.env.DEBUG_BUILD || 'false'),
+      'process.env.COMMIT_HASH': JSON.stringify(commitHash),
+      // Analytics API Keys (from .env)
+      'process.env.VITE_AMPLITUDE_API_KEY': JSON.stringify(env.VITE_AMPLITUDE_API_KEY || ''),
+      'process.env.VITE_MIXPANEL_TOKEN': JSON.stringify(env.VITE_MIXPANEL_TOKEN || ''),
+    },
+  };
 });

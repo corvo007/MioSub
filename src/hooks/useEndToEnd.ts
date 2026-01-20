@@ -14,6 +14,7 @@ import type {
 } from '@/types/endToEnd';
 import type { VideoInfo } from '@electron/services/ytdlp';
 import type { AppSettings } from '@/types/settings';
+import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 
 // Re-export types for convenience
 export type { EndToEndConfig, PipelineProgress, PipelineResult, WizardStep };
@@ -319,6 +320,10 @@ export function useEndToEnd(): UseEndToEndReturn {
   // Check if current state allows retry
   const canRetry = state.result && !state.result.success && state.result.errorDetails?.retryable;
 
+  // 防抖版本 - 防止快速重复点击
+  const debouncedParseUrl = useDebouncedCallback(parseUrl);
+  const debouncedStartPipeline = useDebouncedCallback(startPipeline);
+
   return {
     state,
     setStep,
@@ -326,9 +331,9 @@ export function useEndToEnd(): UseEndToEndReturn {
     goBack,
     updateConfig,
     resetConfig,
-    parseUrl,
+    parseUrl: debouncedParseUrl,
     videoInfo: state.videoInfo || null,
-    startPipeline,
+    startPipeline: debouncedStartPipeline,
     abortPipeline,
     resetToConfig,
     retryPipeline,

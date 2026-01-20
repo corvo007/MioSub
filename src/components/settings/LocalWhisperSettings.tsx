@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { logger } from '@/services/utils/logger';
+import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 
 interface LocalWhisperSettingsProps {
   useLocalWhisper: boolean;
@@ -16,8 +17,8 @@ export const LocalWhisperSettings: React.FC<LocalWhisperSettingsProps> = ({
   addToast,
 }) => {
   const { t } = useTranslation('settings');
-  // Select model
-  const handleSelect = async () => {
+  // Select model - 防抖防止快速重复点击
+  const handleSelect = useDebouncedCallback(async () => {
     if (!window.electronAPI) {
       logger.error('[LocalWhisperSettings] electronAPI not available for selection');
       return;
@@ -41,7 +42,7 @@ export const LocalWhisperSettings: React.FC<LocalWhisperSettingsProps> = ({
       logger.error('[LocalWhisperSettings] Model selection failed', error);
       addToast(t('services.transcription.localWhisperSettings.selectErrorGeneric'), 'error');
     }
-  };
+  });
 
   return (
     <div className="space-y-4 p-4 border border-slate-200 rounded-lg bg-white shadow-sm">

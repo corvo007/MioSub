@@ -96,6 +96,7 @@ export function useEndToEndSubtitleGeneration({
       }
 
       isProcessingRef.current = true;
+      const startTime = Date.now();
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
 
@@ -167,6 +168,33 @@ export function useEndToEndSubtitleGeneration({
             error: t('errors.decodeError', { error: decodeError.message }),
             errorCode: 'DECODE_ERROR',
           };
+        }
+
+        // Analytics: End-to-End Generation Started
+        // We do this after decoding to get accurate duration
+        if (window.electronAPI?.analytics) {
+          void window.electronAPI.analytics.track(
+            'end_to_end_generation_started',
+            {
+              file_ext: audioPath.split('.').pop() || 'unknown',
+              video_duration: audioBuffer.duration,
+              target_language: currentSettings.targetLanguage,
+              model: currentSettings.useLocalWhisper ? 'local' : 'api',
+              enable_auto_glossary: config.enableGlossary ?? currentSettings.enableAutoGlossary,
+              glossary_auto_confirm: true, // End-to-end always auto-confirms
+              enable_diarization: config.enableDiarization ?? currentSettings.enableDiarization,
+              enable_speaker_pre_analysis:
+                config.enableSpeakerPreAnalysis ?? currentSettings.enableSpeakerPreAnalysis,
+              min_speakers: config.minSpeakers ?? currentSettings.minSpeakers,
+              max_speakers: config.maxSpeakers ?? currentSettings.maxSpeakers,
+              use_speaker_colors: config.useSpeakerColors ?? currentSettings.useSpeakerColors,
+              use_speaker_styled_translation:
+                config.useSpeakerStyledTranslation ?? currentSettings.useSpeakerStyledTranslation,
+              enable_compression: config.enableCompression ?? false,
+              output_mode: config.outputMode || 'bilingual',
+            },
+            'interaction'
+          );
         }
 
         // Guard: Very short audio (less than 1 second)
@@ -293,6 +321,18 @@ export function useEndToEndSubtitleGeneration({
           );
         }
 
+        // Analytics: End-to-End Generation Completed
+        if (window.electronAPI?.analytics) {
+          void window.electronAPI.analytics.track(
+            'end_to_end_generation_completed',
+            {
+              count: subtitles.length,
+              duration_ms: Date.now() - startTime,
+            },
+            'interaction'
+          );
+        }
+
         // Return subtitles and content to main process
         return {
           success: true,
@@ -309,6 +349,25 @@ export function useEndToEndSubtitleGeneration({
         }
 
         logger.error('[EndToEnd] Subtitle generation failed', error);
+
+        // Analytics: End-to-End Generation Failed
+        if (window.electronAPI?.analytics) {
+          const errorCode = error.message?.includes('API key')
+            ? 'API_KEY_ERROR'
+            : error.message?.includes('timeout')
+              ? 'TIMEOUT'
+              : 'UNKNOWN';
+
+          void window.electronAPI.analytics.track(
+            'end_to_end_generation_failed',
+            {
+              error: error.message || 'Unknown error',
+              stage: 'generation', // We are in the generation phase here
+              error_code: errorCode,
+            },
+            'interaction'
+          );
+        }
 
         if (error.message?.includes('API key') || error.message?.includes('密钥')) {
           return { success: false, error: t('errors.invalidApiKey'), errorCode: 'API_KEY_ERROR' };

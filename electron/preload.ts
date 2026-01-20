@@ -173,6 +173,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   sendLog: (entry: { level: string; message: string; data?: any }) =>
     ipcRenderer.send('log:from-renderer', entry),
 
+  // Analytics
+  analytics: {
+    track: (signal: string, payload?: any, eventType?: 'page_view' | 'interaction' | 'system') =>
+      ipcRenderer.invoke('analytics:track', signal, payload, eventType),
+  },
+
   // End-to-End Pipeline APIs
   endToEnd: {
     start: (config: any) => ipcRenderer.invoke('end-to-end:start', config),

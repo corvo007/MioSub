@@ -4,6 +4,8 @@ export interface CompressionOptions {
   width?: number;
   height?: number;
   hwAccel?: 'auto' | 'off'; // GPU hardware acceleration mode
+  videoSource?: 'workspace' | 'external';
+  subtitleSource?: 'workspace' | 'external' | 'none';
 }
 
 export interface HardwareAccelInfo {

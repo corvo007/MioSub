@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Trash2 } from 'lucide-react';
 import { SectionHeader } from '@/components/ui/SectionHeader';
+import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 
 // Format bytes to human readable string
 function formatBytes(bytes: number): string {
@@ -28,7 +29,8 @@ export const CacheManagement: React.FC = () => {
     void loadCacheInfo();
   }, [loadCacheInfo]);
 
-  const handleClearCache = async () => {
+  // 防抖清除缓存处理函数 - 防止快速重复点击
+  const handleClearCache = useDebouncedCallback(async () => {
     if (!window.electronAPI?.cache?.clear) return;
     setClearing(true);
     try {
@@ -37,7 +39,7 @@ export const CacheManagement: React.FC = () => {
     } finally {
       setClearing(false);
     }
-  };
+  });
 
   return (
     <div className="space-y-3">

@@ -320,6 +320,14 @@ export interface ElectronAPI {
 
   getMainLogs: () => Promise<any[]>;
   sendLog: (entry: { level: string; message: string; data?: any }) => void;
+  // Analytics
+  analytics: {
+    track: (
+      signal: string,
+      payload?: any,
+      eventType?: 'page_view' | 'interaction' | 'system'
+    ) => Promise<{ success: boolean }>;
+  };
 
   // End-to-End Pipeline APIs
   endToEnd: {
