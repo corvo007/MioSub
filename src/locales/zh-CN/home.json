@@ -21,7 +21,7 @@
     },
     "openSubtitle": {
       "title": "打开字幕",
-      "description": "导入 SRT/ASS 字幕，进行编辑和翻译"
+      "description": "导入 SRT/ASS 字幕，进行编辑和润色"
     },
     "download": {
       "title": "下载视频",

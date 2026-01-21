@@ -21,7 +21,7 @@
     },
     "openSubtitle": {
       "title": "字幕を開く",
-      "description": "SRT/ASS 字幕をインポートして編集・翻訳します"
+      "description": "SRT/ASS 字幕をインポートして編集・校正します"
     },
     "download": {
       "title": "動画ダウンロード",
