@@ -31,6 +31,8 @@ jobs:
         run: yarn electron:build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_AMPLITUDE_API_KEY: ${{ secrets.VITE_AMPLITUDE_API_KEY }}
+          VITE_MIXPANEL_TOKEN: ${{ secrets.VITE_MIXPANEL_TOKEN }}
 
       - name: Clean up release assets
         shell: bash
