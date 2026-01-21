@@ -20,7 +20,11 @@ export default defineConfig(({ mode }) => {
       host: '0.0.0.0',
     },
     plugins: [
-      react(),
+      react({
+        babel: {
+          plugins: [['babel-plugin-react-compiler', { target: '19' }]],
+        },
+      }),
       viteStaticCopy({
         targets: [
           {
