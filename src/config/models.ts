@@ -11,7 +11,7 @@
  * - buildStepConfig: Gemini-specific API parameter builder
  */
 
-import { SAFETY_SETTINGS } from '@/services/api/gemini/core/schemas';
+import { SAFETY_SETTINGS } from '@/services/llm/schemas';
 
 // =============================================================================
 // Model Definitions

@@ -6,7 +6,7 @@ import { BaseStep } from '@/services/generation/pipeline/core/BaseStep';
 import { type StepContext, type StepName } from '@/services/generation/pipeline/core/types';
 import { type SubtitleItem } from '@/types/subtitle';
 import { sliceAudioBuffer } from '@/services/audio/processor';
-import { transcribeAudio } from '@/services/api/openai/transcribe';
+import { transcribeAudio } from '@/services/transcribe/openai/transcribe';
 import { cleanNonSpeechAnnotations } from '@/services/subtitle/parser';
 import { ArtifactSaver } from '@/services/generation/debug/artifactSaver';
 import { MockFactory } from '@/services/generation/debug/mockFactory';

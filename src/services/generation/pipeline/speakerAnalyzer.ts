@@ -3,7 +3,7 @@ import { type PipelineContext } from '@/types/pipeline';
 import { MockFactory } from '@/services/generation/debug/mockFactory';
 import { intelligentAudioSampling } from '@/services/audio/sampler';
 import { extractSpeakerProfiles } from '@/services/generation/extractors/speakerProfile';
-import { getActionableErrorMessage } from '@/services/api/gemini/core/client';
+import { getActionableErrorMessage } from '@/services/llm/providers/gemini';
 import { logger } from '@/services/utils/logger';
 import i18n from '@/i18n';
 

@@ -9,7 +9,7 @@ import { BaseAdapter } from './BaseAdapter';
 import {
   generateContentWithLongOutput,
   getActionableErrorMessage,
-} from '@/services/api/gemini/core/client';
+} from '@/services/llm/providers/gemini';
 import { buildStepConfig, type StepName as ConfigStepName } from '@/config/models';
 import { safeParseJsonObject } from '@/services/utils/jsonParser';
 import { logger } from '@/services/utils/logger';

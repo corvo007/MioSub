@@ -9,15 +9,9 @@ import { type StepContext, type StepName } from '@/services/generation/pipeline/
 import { type SubtitleItem } from '@/types/subtitle';
 import { sliceAudioBuffer } from '@/services/audio/processor';
 import { blobToBase64 } from '@/services/audio/converter';
-import {
-  getSystemInstructionWithDiarization,
-  getRefinementPrompt,
-} from '@/services/api/gemini/core/prompts';
-import {
-  REFINEMENT_SCHEMA,
-  REFINEMENT_WITH_DIARIZATION_SCHEMA,
-} from '@/services/api/gemini/core/schemas';
-import { generateContentWithRetry, formatGeminiError } from '@/services/api/gemini/core/client';
+import { getSystemInstructionWithDiarization, getRefinementPrompt } from '@/services/llm/prompts';
+import { REFINEMENT_SCHEMA, REFINEMENT_WITH_DIARIZATION_SCHEMA } from '@/services/llm/schemas';
+import { generateContentWithRetry, formatGeminiError } from '@/services/llm/providers/gemini';
 import { STEP_MODELS, buildStepConfig } from '@/config';
 import { parseGeminiResponse } from '@/services/subtitle/parser';
 import { withPostCheck } from '@/services/subtitle/postCheck';

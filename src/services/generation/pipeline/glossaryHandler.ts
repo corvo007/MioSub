@@ -5,7 +5,7 @@ import {
 } from '@/types/glossary';
 import { type PipelineContext } from '@/types/pipeline';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
-import { getActionableErrorMessage } from '@/services/api/gemini/core/client';
+import { getActionableErrorMessage } from '@/services/llm/providers/gemini';
 import { ArtifactSaver } from '@/services/generation/debug/artifactSaver';
 import { logger } from '@/services/utils/logger';
 import i18n from '@/i18n';

@@ -1,9 +1,9 @@
 import { type SubtitleItem } from '@/types/subtitle';
 import { logger } from '@/services/utils/logger';
 import i18n from '@/i18n';
-import { transcribeWithWhisper } from '@/services/api/openai/whisper';
-import { transcribeWithOpenAIChat } from '@/services/api/openai/chat';
-import { transcribeWithLocalWhisper } from '@/services/api/whisper-local/transcribe';
+import { transcribeWithWhisper } from '@/services/transcribe/openai/whisper';
+import { transcribeWithOpenAIChat } from '@/services/transcribe/openai/chat';
+import { transcribeWithLocalWhisper } from '@/services/transcribe/whisper-local/transcribe';
 
 export const transcribeAudio = async (
   audioBlob: Blob,

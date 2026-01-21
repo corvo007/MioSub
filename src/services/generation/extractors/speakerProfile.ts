@@ -2,9 +2,9 @@ import { type GoogleGenAI } from '@google/genai';
 import { blobToBase64 } from '@/services/audio/converter';
 import { logger } from '@/services/utils/logger';
 import { type TokenUsage } from '@/types/api';
-import { SPEAKER_PROFILE_SCHEMA } from '@/services/api/gemini/core/schemas';
-import { getSpeakerProfileExtractionPrompt } from '@/services/api/gemini/core/prompts';
-import { generateContentWithRetry, formatGeminiError } from '@/services/api/gemini/core/client';
+import { SPEAKER_PROFILE_SCHEMA } from '@/services/llm/schemas';
+import { getSpeakerProfileExtractionPrompt } from '@/services/llm/prompts';
+import { generateContentWithRetry, formatGeminiError } from '@/services/llm/providers/gemini';
 import { STEP_MODELS, buildStepConfig } from '@/config';
 
 export interface SpeakerProfile {

@@ -17,12 +17,9 @@ import {
 } from '@/services/subtitle/timelineValidator';
 import { validateContentIntegrity } from '@/services/subtitle/contentValidator';
 import { type PostProcessOutput, type PostCheckResult } from '@/services/subtitle/postCheck';
-import { getTranslationBatchPrompt } from '@/services/api/gemini/core/prompts';
-import { generateContentWithRetry, formatGeminiError } from '@/services/api/gemini/core/client';
-import {
-  TRANSLATION_SCHEMA,
-  TRANSLATION_WITH_DIARIZATION_SCHEMA,
-} from '@/services/api/gemini/core/schemas';
+import { getTranslationBatchPrompt } from '@/services/llm/prompts';
+import { generateContentWithRetry, formatGeminiError } from '@/services/llm/providers/gemini';
+import { TRANSLATION_SCHEMA, TRANSLATION_WITH_DIARIZATION_SCHEMA } from '@/services/llm/schemas';
 import {
   STEP_MODELS,
   buildStepConfig,

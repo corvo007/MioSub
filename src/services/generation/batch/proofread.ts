@@ -12,10 +12,10 @@ import { type ChunkStatus } from '@/types/api';
 import { decodeAudio } from '@/services/audio/decoder';
 import { mapInParallel } from '@/services/utils/concurrency';
 import { logger } from '@/services/utils/logger';
-import { getSystemInstructionWithDiarization } from '@/services/api/gemini/core/prompts';
+import { getSystemInstructionWithDiarization } from '@/services/llm/prompts';
 import { type SpeakerProfile } from '@/services/generation/extractors/speakerProfile';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
-import { PROOFREAD_BATCH_SIZE } from '@/services/api/gemini/core/schemas';
+import { PROOFREAD_BATCH_SIZE } from '@/services/llm/schemas';
 import { initializePipelineContext } from '@/services/generation/pipeline/pipelineCore';
 import {
   ProofreadStep,

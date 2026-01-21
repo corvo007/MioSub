@@ -1,6 +1,6 @@
 import { type GoogleGenAI, type Part, type Content } from '@google/genai';
 import { logger } from '@/services/utils/logger';
-import { SAFETY_SETTINGS } from '@/services/api/gemini/core/schemas';
+import { SAFETY_SETTINGS } from '@/services/llm/schemas';
 import { safeParseJsonArray, safeParseJsonObject, isValidJson } from '@/services/utils/jsonParser';
 import { type TokenUsage } from '@/types/api';
 import i18n from '@/i18n';

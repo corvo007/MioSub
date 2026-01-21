@@ -5,8 +5,8 @@
 import { BaseStep } from '@/services/generation/pipeline/core/BaseStep';
 import { type StepContext, type StepName } from '@/services/generation/pipeline/core/types';
 import { type SubtitleItem } from '@/types/subtitle';
-import { getSystemInstruction } from '@/services/api/gemini/core/prompts';
-import { formatGeminiError } from '@/services/api/gemini/core/client';
+import { getSystemInstruction } from '@/services/llm/prompts';
+import { formatGeminiError } from '@/services/llm/providers/gemini';
 import { translateBatch } from '@/services/generation/pipeline/translation';
 import { cleanNonSpeechAnnotations } from '@/services/subtitle/parser';
 import { ArtifactSaver } from '@/services/generation/debug/artifactSaver';

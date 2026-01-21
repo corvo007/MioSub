@@ -1,5 +1,5 @@
 import { type TokenUsage } from '@/types/api';
-import { calculateDetailedCost } from '@/services/api/gemini/utils/pricing';
+import { calculateDetailedCost } from '@/services/llm/pricing';
 import { logger } from '@/services/utils/logger';
 
 interface ModelUsage {

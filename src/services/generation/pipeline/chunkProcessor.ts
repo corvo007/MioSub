@@ -17,7 +17,7 @@ import { type StepContext, type ChunkDependencies } from './core/types';
 import { MockFactory } from '@/services/generation/debug/mockFactory';
 import { logger } from '@/services/utils/logger';
 import { formatTime, timeToSeconds } from '@/services/subtitle/time';
-import { getActionableErrorMessage } from '@/services/api/gemini/core/client';
+import { getActionableErrorMessage } from '@/services/llm/providers/gemini';
 import {
   TranscriptionStep,
   WaitForDepsStep,

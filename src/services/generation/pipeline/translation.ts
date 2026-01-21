@@ -10,16 +10,13 @@ import { type GoogleGenAI } from '@google/genai';
 import { type TokenUsage } from '@/types/api';
 import { logger } from '@/services/utils/logger';
 import { mapInParallel } from '@/services/utils/concurrency';
-import { getTranslationBatchPrompt } from '@/services/api/gemini/core/prompts';
+import { getTranslationBatchPrompt } from '@/services/llm/prompts';
 import {
   generateContentWithRetry,
   formatGeminiError,
   getActionableErrorMessage,
-} from '@/services/api/gemini/core/client';
-import {
-  TRANSLATION_SCHEMA,
-  TRANSLATION_WITH_DIARIZATION_SCHEMA,
-} from '@/services/api/gemini/core/schemas';
+} from '@/services/llm/providers/gemini';
+import { TRANSLATION_SCHEMA, TRANSLATION_WITH_DIARIZATION_SCHEMA } from '@/services/llm/schemas';
 import { STEP_MODELS, buildStepConfig } from '@/config';
 import { withPostCheck } from '@/services/subtitle/postCheck';
 import {

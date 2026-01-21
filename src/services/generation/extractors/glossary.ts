@@ -9,13 +9,13 @@ import { blobToBase64 } from '@/services/audio/converter';
 import { sliceAudioBuffer } from '@/services/audio/processor';
 import { mapInParallel } from '@/services/utils/concurrency';
 import { logger } from '@/services/utils/logger';
-import { GLOSSARY_SCHEMA } from '@/services/api/gemini/core/schemas';
+import { GLOSSARY_SCHEMA } from '@/services/llm/schemas';
 import {
   generateContentWithRetry,
   isRetryableError,
   getActionableErrorMessage,
-} from '@/services/api/gemini/core/client';
-import { GLOSSARY_EXTRACTION_PROMPT } from '@/services/api/gemini/core/prompts';
+} from '@/services/llm/providers/gemini';
+import { GLOSSARY_EXTRACTION_PROMPT } from '@/services/llm/prompts';
 import { STEP_MODELS, buildStepConfig } from '@/config';
 
 export const extractGlossaryFromAudio = async (
