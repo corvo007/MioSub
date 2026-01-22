@@ -11,6 +11,7 @@ import http from 'http';
 import https from 'https';
 import { t } from '../i18n.ts';
 import { getBinaryPath } from '../utils/paths.ts';
+import { ExpectedError } from '../utils/expectedError.ts';
 
 export interface VideoInfo {
   id: string;
@@ -697,7 +698,21 @@ class YtDlpService {
         stdout += data.toString();
       });
       proc.stderr.on('data', (data) => {
-        stderr += data.toString();
+        const chunk = data.toString();
+        stderr += chunk;
+
+        // Log errors/warnings in real-time
+        const lowerChunk = chunk.toLowerCase();
+        if (
+          lowerChunk.includes('error') ||
+          lowerChunk.includes('exception') ||
+          lowerChunk.includes('failed') ||
+          lowerChunk.includes('warning') ||
+          lowerChunk.includes('fatal') ||
+          lowerChunk.includes('panic')
+        ) {
+          console.warn(`[DEBUG] [yt-dlp] ${chunk.trim()}`);
+        }
       });
 
       proc.on('close', (code) => {
@@ -723,7 +738,7 @@ class YtDlpService {
     const validation = validateUrl(url);
     if (!validation.valid) {
       console.warn(`[Download] URL验证失败: ${validation.error?.message}`);
-      throw new Error(validation.error?.message || t('error.invalidVideoUrl'));
+      throw new ExpectedError(validation.error?.message || t('error.invalidVideoUrl'));
     }
 
     const platform = validation.platform!;
@@ -774,7 +789,7 @@ class YtDlpService {
       // If it's an array, take first element
       data = Array.isArray(parsed) ? parsed[0] : parsed;
     } catch {
-      throw new Error(t('error.parseVideoFailed'));
+      throw new ExpectedError(t('error.parseVideoFailed'));
     }
 
     // Extract formats with proper filtering

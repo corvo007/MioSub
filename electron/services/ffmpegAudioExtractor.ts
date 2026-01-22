@@ -131,7 +131,17 @@ export async function extractAudioFromVideo(
         onLog(`[DEBUG] FFmpeg Start: ${commandLine}`);
       });
       command.on('stderr', (stderrLine) => {
-        onLog(`[DEBUG] FFmpeg: ${stderrLine}`);
+        const lowerLine = stderrLine.toLowerCase();
+        if (
+          lowerLine.includes('error') ||
+          lowerLine.includes('exception') ||
+          lowerLine.includes('failed') ||
+          lowerLine.includes('warning') ||
+          lowerLine.includes('fatal') ||
+          lowerLine.includes('panic')
+        ) {
+          onLog(`[WARN] [FFmpeg] ${stderrLine}`);
+        }
       });
     }
 

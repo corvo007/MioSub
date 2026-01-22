@@ -473,9 +473,19 @@ export class VideoCompressorService {
           if (/^\[.*@\s*[0-9a-f]+\]/.test(trimmedLine) && !/error|fail|invalid/i.test(trimmedLine))
             return;
 
-          // Log everything else (errors, warnings, etc.)
-          console.log('[DEBUG] [FFmpeg stderr]', stderrLine);
-          logMsg(`[FFmpeg] ${stderrLine}`);
+          // Log only errors and warnings from what remains
+          const lowerLine = trimmedLine.toLowerCase();
+          if (
+            lowerLine.includes('error') ||
+            lowerLine.includes('exception') ||
+            lowerLine.includes('failed') ||
+            lowerLine.includes('warning') ||
+            lowerLine.includes('fatal') ||
+            lowerLine.includes('panic')
+          ) {
+            console.warn('[VideoCompressor] [FFmpeg stderr]', stderrLine);
+            logMsg(`[WARN] [FFmpeg] ${stderrLine}`);
+          }
         })
         .on('end', () => {
           this.activeCommand = null;

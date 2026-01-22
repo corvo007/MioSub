@@ -245,7 +245,18 @@ export class LocalWhisperService {
           lines.forEach((line) => {
             if (line.trim()) {
               // Intermediate output from stderr (progress) -> DEBUG
-              // if (onLog) onLog(`[DEBUG] [Whisper CLI Info] ${line}`);
+              // Only log errors/warnings to avoid spam
+              const lowerLine = line.toLowerCase();
+              if (
+                lowerLine.includes('error') ||
+                lowerLine.includes('exception') ||
+                lowerLine.includes('failed') ||
+                lowerLine.includes('panic') ||
+                lowerLine.includes('fatal')
+              ) {
+                if (onLog) onLog(`[ERROR] [Whisper CLI] ${line}`);
+                console.error(`[LocalWhisper] ${line}`);
+              }
             }
           });
         });

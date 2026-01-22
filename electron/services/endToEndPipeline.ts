@@ -8,10 +8,12 @@
  * - 通过 IPC 事件协调两个进程
  */
 
+import * as Sentry from '@sentry/electron/main';
 import { type BrowserWindow, ipcMain } from 'electron';
 import path from 'path';
 import fs from 'fs';
 import { ytDlpService, classifyError } from './ytdlp.ts';
+import { ExpectedError } from '../utils/expectedError.ts';
 import { extractAudioFromVideo } from './ffmpegAudioExtractor.ts';
 import { VideoCompressorService } from './videoCompressor.ts';
 import { analyticsService } from './analyticsService.ts';
@@ -403,7 +405,8 @@ export class EndToEndPipeline {
               compressProgress: progress,
               pipelineStartTime: this.startTime,
             });
-          }
+          },
+          (msg) => console.log(msg)
         );
 
         this.outputs.outputVideoPath = outputVideoPath;
@@ -424,6 +427,18 @@ export class EndToEndPipeline {
     } catch (error: any) {
       console.error('[Pipeline] Error:', error);
 
+      // Check if this is an expected error or cancellation
+      let isExpected = false;
+      if (error instanceof ExpectedError || (error as any).isExpected) {
+        isExpected = true;
+      } else if (
+        error.message === t('endToEnd.userCancelled') ||
+        error.message?.includes('cancelled') ||
+        error.message?.includes('canceled')
+      ) {
+        isExpected = true;
+      }
+
       const errorStage = this.currentStage;
       const errorMessage = error.message || t('error.unknownError');
 
@@ -431,6 +446,16 @@ export class EndToEndPipeline {
       let classifiedError;
       if (errorStage === 'downloading') {
         classifiedError = classifyError(errorMessage);
+        if (classifiedError && !classifiedError.retryable) {
+          // If it's a known non-retryable download error (like private video, paid content),
+          // treat it as expected to avoid Sentry noise
+          isExpected = true;
+        }
+      }
+
+      // Only report to Sentry if it's NOT an expected error
+      if (!isExpected) {
+        Sentry.captureException(error, { tags: { action: 'end-to-end-pipeline' } });
       }
 
       return {

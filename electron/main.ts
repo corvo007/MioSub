@@ -29,6 +29,17 @@ if (SENTRY_DSN) {
     dsn: SENTRY_DSN,
     release: app.getVersion(),
     environment: app.isPackaged ? 'production' : 'development',
+    beforeSend(event, hint) {
+      const originalException = hint.originalException;
+      if (
+        originalException &&
+        (originalException instanceof Error || typeof originalException === 'object') &&
+        (originalException as any).isExpected === true
+      ) {
+        return null;
+      }
+      return event;
+    },
   });
 }
 
@@ -221,6 +232,7 @@ ipcMain.handle(
 
       // Analytics: Transcription Failed (skip if cancelled)
       if (!error.message?.includes('cancelled') && !error.message?.includes('aborted')) {
+        Sentry.captureException(error, { tags: { action: 'transcribe-local' } });
         void analyticsService.track(
           'transcription_failed',
           {
@@ -249,6 +261,9 @@ ipcMain.handle('alignment:ctc', async (_event, data: any) => {
     return await ctcAlignerService.align(data);
   } catch (error: any) {
     console.error('[Main] CTC alignment failed:', error);
+    if (!error.message?.includes('cancelled')) {
+      Sentry.captureException(error, { tags: { action: 'alignment-ctc' } });
+    }
     return { success: false, error: error.message };
   }
 });
@@ -558,6 +573,7 @@ ipcMain.handle(
       return { success: false, canceled: true };
     } catch (error: any) {
       console.error('[Main] Save subtitle failed:', error);
+      Sentry.captureException(error, { tags: { action: 'save-subtitle-dialog' } });
       return { success: false, error: error.message };
     }
   }
@@ -648,6 +664,13 @@ ipcMain.handle(
       return { success: true, audioPath };
     } catch (error: any) {
       console.error('[Main] FFmpeg audio extraction failed:', error);
+      if (
+        !error.message?.includes('cancelled') &&
+        !error.message?.includes('SIGKILL') &&
+        !error.message?.includes('killed')
+      ) {
+        Sentry.captureException(error, { tags: { action: 'extract-audio-ffmpeg' } });
+      }
       return { success: false, error: error.message };
     }
   }
@@ -660,6 +683,7 @@ ipcMain.handle('read-extracted-audio', async (_event, audioPath: string) => {
     return buffer.buffer;
   } catch (error: any) {
     console.error('[Main] Failed to read extracted audio:', error);
+    Sentry.captureException(error, { tags: { action: 'read-extracted-audio' } });
     return { success: false, error: error.message };
   }
 });
@@ -671,6 +695,7 @@ ipcMain.handle('read-audio-file', async (_event, filePath: string) => {
     return buffer.buffer;
   } catch (error: any) {
     console.error('[Main] Failed to read audio file:', error);
+    Sentry.captureException(error, { tags: { action: 'read-audio-file' } });
     return { success: false, error: error.message };
   }
 });
@@ -682,6 +707,7 @@ ipcMain.handle('cleanup-temp-audio', async (_event, audioPath: string) => {
     return { success: true };
   } catch (error: any) {
     console.error('[Main] Failed to cleanup temp audio:', error);
+    Sentry.captureException(error, { tags: { action: 'cleanup-temp-audio' } });
     return { success: false, error: error.message };
   }
 });
@@ -693,6 +719,7 @@ ipcMain.handle('get-audio-info', async (_event, videoPath: string) => {
     return { success: true, info };
   } catch (error: any) {
     console.error('[Main] Failed to get audio info:', error);
+    Sentry.captureException(error, { tags: { action: 'get-audio-info' } });
     return { success: false, error: error.message };
   }
 });
@@ -715,6 +742,7 @@ ipcMain.handle('storage-set', async (_event, data: any) => {
     return await storageService.saveSettings(data);
   } catch (error: any) {
     console.error('[Main] Failed to save settings:', error);
+    Sentry.captureException(error, { tags: { action: 'storage-set' } });
     throw error; // Let renderer handle this critical failure
   }
 });
@@ -871,6 +899,7 @@ ipcMain.handle(
       return { success: true, path: filePath };
     } catch (error: any) {
       console.error('[Main] Failed to write temp audio file:', error);
+      Sentry.captureException(error);
       return { success: false, error: error.message };
     }
   }
@@ -913,6 +942,7 @@ ipcMain.handle(
       return result;
     } catch (error: any) {
       console.error('[Main] Compression failed:', error);
+      Sentry.captureException(error);
 
       // Analytics: Fail
       void analyticsService.track('compression_failed', { error: error.message });
@@ -1022,6 +1052,7 @@ ipcMain.handle('video-preview:transcode', async (event, options: { filePath: str
     return { success: true, ...result };
   } catch (error: any) {
     console.error('[Main] Preview transcode failed:', error);
+    Sentry.captureException(error);
     return { success: false, error: error.message };
   }
 });
@@ -1083,6 +1114,7 @@ ipcMain.handle('download:parse', async (_event, url: string) => {
     }
 
     const classifiedError = classifyError(error.message || error.toString());
+    Sentry.captureException(error);
     return { success: false, error: classifiedError.message, errorInfo: classifiedError };
   }
 });
@@ -1128,6 +1160,7 @@ ipcMain.handle(
       void analyticsService.track('download_failed', { error: error.message });
 
       const classifiedError = classifyError(error.message || error.toString());
+      Sentry.captureException(error);
       return { success: false, error: classifiedError.message, errorInfo: classifiedError };
     }
   }
@@ -1190,6 +1223,7 @@ ipcMain.handle(
       return { success: true, thumbnailPath };
     } catch (error: any) {
       console.error('[Main] Thumbnail download failed:', error);
+      Sentry.captureException(error);
       return { success: false, error: error.message };
     }
   }
