@@ -5,6 +5,7 @@ declare const vad: any;
 declare const ort: any;
 
 let myVad: any = null;
+let shouldStop = false;
 
 self.onmessage = async (e: MessageEvent) => {
   const msg = e.data;
@@ -47,17 +48,31 @@ self.onmessage = async (e: MessageEvent) => {
 
       console.debug('[VAD Worker] [Debug] VAD initialized successfully');
       self.postMessage({ type: 'ready' });
+    } else if (msg.command === 'stop') {
+      // Stop command - set flag to interrupt processing loop
+      shouldStop = true;
+      console.log('[VAD Worker] Stop command received');
     } else if (msg.command === 'process') {
       if (!myVad) {
         throw new Error('VAD not initialized');
       }
 
+      // Reset stop flag for new processing
+      shouldStop = false;
+
       const { audioData, sampleRate } = msg;
       const segments: { start: number; end: number }[] = [];
       let segmentCount = 0;
 
-      // Run VAD
+      // Run VAD with stop check
       for await (const { start, end } of myVad.run(audioData, sampleRate)) {
+        // Check if stop was requested
+        if (shouldStop) {
+          console.log('[VAD Worker] Processing stopped by request');
+          self.postMessage({ type: 'stopped', segments });
+          return;
+        }
+
         const startSec = start / 1000;
         const endSec = end / 1000;
         segments.push({ start: startSec, end: endSec });

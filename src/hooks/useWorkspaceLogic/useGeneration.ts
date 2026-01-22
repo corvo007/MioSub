@@ -215,35 +215,35 @@ export function useGeneration({
               return;
             }
 
-            const onAbort = () => {
-              logger.info('Glossary confirmation aborted by signal');
-              // Cleanup UI
+            // Track cleanup state to prevent double cleanup
+            let cleaned = false;
+            const cleanup = () => {
+              if (cleaned) return;
+              cleaned = true;
+              signal?.removeEventListener('abort', onAbort);
               glossaryFlow.setShowGlossaryConfirmation(false);
               glossaryFlow.setShowGlossaryFailure(false);
               glossaryFlow.setPendingGlossaryResults([]);
               glossaryFlow.setGlossaryMetadata(null);
               glossaryFlow.setGlossaryConfirmCallback(null);
+            };
+
+            const onAbort = () => {
+              logger.info('Glossary confirmation aborted by signal');
+              cleanup();
               reject(new Error('Operation cancelled'));
             };
 
-            signal?.addEventListener('abort', onAbort);
+            signal?.addEventListener('abort', onAbort, { once: true });
 
             logger.info('Setting up UI for manual glossary confirmation...');
             glossaryFlow.setGlossaryMetadata(metadata);
 
             // Store the resolve function
             glossaryFlow.setGlossaryConfirmCallback(() => (confirmedItems: GlossaryItem[]) => {
-              signal?.removeEventListener('abort', onAbort);
+              cleanup();
               logger.info('User confirmed glossary terms:', confirmedItems.length);
               // Settings are already updated by GlossaryConfirmationModal
-
-              // Cleanup UI
-              glossaryFlow.setShowGlossaryConfirmation(false);
-              glossaryFlow.setShowGlossaryFailure(false);
-              glossaryFlow.setPendingGlossaryResults([]);
-              glossaryFlow.setGlossaryMetadata(null);
-              glossaryFlow.setGlossaryConfirmCallback(null);
-
               resolve(confirmedItems);
             });
 
@@ -254,7 +254,7 @@ export function useGeneration({
               glossaryFlow.setShowGlossaryFailure(true);
             } else {
               // Should not happen if gemini.ts logic is correct, but safe fallback
-              signal?.removeEventListener('abort', onAbort);
+              cleanup();
               if (settings.activeGlossaryId && settings.glossaries) {
                 const activeG = settings.glossaries.find((g) => g.id === settings.activeGlossaryId);
                 resolve(activeG?.terms || []);

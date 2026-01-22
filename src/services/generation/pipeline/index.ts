@@ -21,6 +21,7 @@ import { type SpeakerProfile } from '@/services/generation/extractors/speakerPro
 import { mapInParallel } from '@/services/utils/concurrency';
 import { logger } from '@/services/utils/logger';
 import { ChunkProcessor } from './chunkProcessor';
+import { timeToSeconds } from '@/services/subtitle/time';
 import i18n from '@/i18n';
 
 export const generateSubtitles = async (
@@ -234,6 +235,10 @@ export const generateSubtitles = async (
   // Ensure independent array references for each slot
   const chunkResults: SubtitleItem[][] = Array.from({ length: totalChunks }, () => []);
 
+  // Incremental accumulation for intermediate results (avoids O(N²) .flat() calls)
+  // This array grows incrementally as chunks complete, avoiding repeated full-array allocations
+  const intermediateResults: SubtitleItem[] = [];
+
   // Use a high concurrency limit for the main loop (buffer)
   // The actual resource usage is controlled by semaphores inside
   // We use a reasonable upper bound to prevent excessive Promise creation for long videos
@@ -265,9 +270,14 @@ export const generateSubtitles = async (
       // This ensures that if translation fails, we at least fallback to the corrected original text.
       chunkResults[i] = result.final;
 
-      // Update total intermediate result
-      const currentAll = chunkResults.flat();
-      onIntermediateResult?.(currentAll);
+      // Incremental update - push new results instead of O(N²) .flat() on every chunk
+      if (result.final.length > 0) {
+        intermediateResults.push(...result.final);
+        // Sort by start time (Timsort is efficient on nearly-sorted data)
+        intermediateResults.sort((a, b) => timeToSeconds(a.startTime) - timeToSeconds(b.startTime));
+        // Pass a copy to prevent external mutation of our accumulator
+        onIntermediateResult?.([...intermediateResults]);
+      }
     } catch (e: any) {
       // Check for cancellation
       if (

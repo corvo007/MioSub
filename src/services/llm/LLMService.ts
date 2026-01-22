@@ -9,6 +9,7 @@ import { STEP_MODELS } from '@/config/models';
 import { GeminiAdapter } from './adapters/GeminiAdapter';
 import { OpenAIAdapter } from './adapters/OpenAIAdapter';
 import { ClaudeAdapter } from './adapters/ClaudeAdapter';
+import i18n from '@/i18n';
 
 /**
  * LLM Service singleton
@@ -80,9 +81,12 @@ class LLMServiceClass {
 
   /**
    * Generate unique key for adapter caching
+   * Includes apiKey fingerprint to ensure new adapter is created when key changes
    */
   private getAdapterKey(config: ProviderConfig): string {
-    return `${config.type}:${config.baseUrl || 'default'}:${config.model}`;
+    // Use first 8 chars of apiKey as fingerprint (enough to detect changes, safe for logs)
+    const keyFingerprint = config.apiKey ? config.apiKey.substring(0, 8) : 'no-key';
+    return `${config.type}:${config.baseUrl || 'default'}:${config.model}:${keyFingerprint}`;
   }
 
   /**
@@ -100,7 +104,7 @@ class LLMServiceClass {
         return new ClaudeAdapter(config);
 
       default:
-        throw new Error(`Unknown provider type: ${config.type}`);
+        throw new Error(i18n.t('services:api.errors.unknownProvider', { type: config.type }));
     }
   }
 

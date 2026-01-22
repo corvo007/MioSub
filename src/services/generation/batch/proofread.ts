@@ -126,23 +126,41 @@ export const runProofreadOperation = async (
   const batchConcurrency =
     mode === 'proofread' ? settings.concurrencyPro || 2 : concurrency.pipeline;
 
+  // ===== Pre-calculate index ranges for each group =====
+  // This avoids race conditions when parallel batches modify the array
+  interface GroupRange {
+    group: number[];
+    startIndex: number; // Original array start index
+    endIndex: number; // Original array end index (inclusive)
+  }
+
+  const groupRanges: GroupRange[] = groups.map((group) => {
+    const firstBatchIdx = group[0];
+    const lastBatchIdx = group[group.length - 1];
+    const startIndex = firstBatchIdx * batchSize;
+    const endIndex = Math.min((lastBatchIdx + 1) * batchSize - 1, allSubtitles.length - 1);
+    return { group, startIndex, endIndex };
+  });
+
+  // Store results by group index to merge later
+  const resultsByGroup: Map<number, SubtitleItem[]> = new Map();
+
   // ===== Process Batches in Parallel =====
   await mapInParallel(
-    groups,
+    groupRanges,
     batchConcurrency,
-    async (group, i) => {
+    async (groupRange, i) => {
+      const { group, startIndex, endIndex } = groupRange;
       const firstBatchIdx = group[0];
 
-      // Merge batches in the group
-      let mergedBatch: SubtitleItem[] = [];
+      // Merge batches in the group using slice from original array
+      const mergedBatch = allSubtitles.slice(startIndex, endIndex + 1);
       let mergedComment = '';
 
       group.forEach((idx) => {
-        if (idx < chunks.length) {
+        if (idx < chunks.length && batchComments[idx]) {
           const batch = chunks[idx];
-          mergedBatch = [...mergedBatch, ...batch];
-
-          if (batchComments[idx] && batch.length > 0) {
+          if (batch.length > 0) {
             const rangeLabel = `[IDs ${batch[0].id}-${batch[batch.length - 1].id}]`;
             mergedComment += (mergedComment ? ' | ' : '') + `${rangeLabel}: ${batchComments[idx]}`;
           }
@@ -186,30 +204,28 @@ export const runProofreadOperation = async (
         throw error;
       }
 
-      // ===== Merge Results Back =====
-      const firstOriginalId = mergedBatch[0]?.id;
-      const lastOriginalId = mergedBatch[mergedBatch.length - 1]?.id;
+      // Store result for later merging
+      resultsByGroup.set(i, output);
 
-      if (firstOriginalId && lastOriginalId) {
-        const startIdx = currentSubtitles.findIndex((s) => s.id === firstOriginalId);
-        const endIdx = currentSubtitles.findIndex((s) => s.id === lastOriginalId);
-
-        if (startIdx !== -1 && endIdx !== -1 && startIdx <= endIdx) {
-          const itemsToRemove = endIdx - startIdx + 1;
-          currentSubtitles.splice(startIdx, itemsToRemove, ...output);
-
-          logger.debug(
-            `[Batch ${groupLabel}] Replaced ${itemsToRemove} items with ${output.length} processed items`
-          );
-        } else {
-          logger.warn(
-            `[Batch ${groupLabel}] Could not find region to update. startIdx=${startIdx}, endIdx=${endIdx}`
-          );
-        }
-      }
+      logger.debug(
+        `[Batch ${groupLabel}] Processed ${mergedBatch.length} items -> ${output.length} output items`
+      );
     },
     signal
   );
+
+  // ===== Merge Results Back (Sequential) =====
+  // Process groups in reverse order to maintain index validity when splicing
+  const sortedGroupIndices = Array.from(resultsByGroup.keys()).sort((a, b) => b - a);
+
+  for (const groupIdx of sortedGroupIndices) {
+    const output = resultsByGroup.get(groupIdx);
+    if (!output) continue;
+
+    const { startIndex, endIndex } = groupRanges[groupIdx];
+    const itemsToRemove = endIndex - startIndex + 1;
+    currentSubtitles.splice(startIndex, itemsToRemove, ...output);
+  }
 
   // ===== Log Token Usage Report =====
   usageReporter.logReport();

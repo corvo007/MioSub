@@ -171,26 +171,44 @@ export function useEndToEnd(): UseEndToEndReturn {
       const PARSE_TIMEOUT_MS = 60000; // 60 seconds
 
       try {
+        // Track whether we've already handled the result to prevent double-handling
+        let handled = false;
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
         const parsePromise = window.electronAPI.download.parse(url);
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error(t('errors.parseTimeout'))), PARSE_TIMEOUT_MS)
-        );
 
-        const result = await Promise.race([parsePromise, timeoutPromise]);
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            if (!handled) {
+              reject(new Error(t('errors.parseTimeout')));
+            }
+          }, PARSE_TIMEOUT_MS);
+        });
 
-        if (result.success && result.videoInfo) {
-          setState((prev) => ({
-            ...prev,
-            isParsing: false,
-            videoInfo: result.videoInfo,
-            currentStep: 'config', // 解析成功后自动跳转到配置步骤
-          }));
-        } else {
-          setState((prev) => ({
-            ...prev,
-            isParsing: false,
-            parseError: result.error || t('errors.parseError'),
-          }));
+        try {
+          const result = await Promise.race([parsePromise, timeoutPromise]);
+          handled = true;
+          if (timeoutId) clearTimeout(timeoutId);
+
+          if (result.success && result.videoInfo) {
+            setState((prev) => ({
+              ...prev,
+              isParsing: false,
+              videoInfo: result.videoInfo,
+              currentStep: 'config', // 解析成功后自动跳转到配置步骤
+            }));
+          } else {
+            setState((prev) => ({
+              ...prev,
+              isParsing: false,
+              parseError: result.error || t('errors.parseError'),
+            }));
+          }
+        } catch (raceError: any) {
+          // Timeout or parse error
+          handled = true;
+          if (timeoutId) clearTimeout(timeoutId);
+          throw raceError;
         }
       } catch (error: any) {
         setState((prev) => ({

@@ -96,7 +96,12 @@ export class ClaudeAdapter extends BaseAdapter {
    */
   async generateObject<T>(options: GenerateOptions): Promise<T> {
     if (!options.schema) {
-      throw new Error('Schema is required for generateObject');
+      throw new Error(i18n.t('services:api.errors.schemaRequired'));
+    }
+
+    // Check audio capability if audio input is provided
+    if (options.audio && !this.capabilities.audio) {
+      throw new Error(i18n.t('services:api.errors.audioNotSupported', { model: this.model }));
     }
 
     logger.debug(`Claude generateObject started`, {
@@ -295,7 +300,7 @@ export class ClaudeAdapter extends BaseAdapter {
     }
 
     if (!fullText) {
-      throw new Error('Empty response from Claude');
+      throw new Error(i18n.t('services:api.errors.emptyResponse'));
     }
 
     return fullText;

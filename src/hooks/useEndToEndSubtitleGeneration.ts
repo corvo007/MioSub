@@ -161,6 +161,10 @@ export function useEndToEndSubtitleGeneration({
         try {
           audioBuffer = await decodeAudioWithRetry(audioFile);
           logger.info('[EndToEnd] Audio decoded', { duration: audioBuffer.duration });
+
+          // Release reference to the original file buffer to allow GC to reclaim memory
+          // The audioFile (~500MB+ for large files) is no longer needed after decoding
+          (audioFile as any) = null;
         } catch (decodeError: any) {
           logger.error('[EndToEnd] Failed to decode audio', decodeError);
           return {

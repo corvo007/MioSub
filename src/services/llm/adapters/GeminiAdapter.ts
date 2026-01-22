@@ -13,6 +13,7 @@ import {
 import { buildStepConfig, type StepName as ConfigStepName } from '@/config/models';
 import { safeParseJsonObject } from '@/services/utils/jsonParser';
 import { logger } from '@/services/utils/logger';
+import i18n from '@/i18n';
 import { findModel, parseCapabilities, type ModelCapabilities } from '../ModelCapabilities';
 
 /**
@@ -97,7 +98,12 @@ export class GeminiAdapter extends BaseAdapter {
    */
   async generateObject<T>(options: GenerateOptions): Promise<T> {
     if (!options.schema) {
-      throw new Error('Schema is required for generateObject');
+      throw new Error(i18n.t('services:api.errors.schemaRequired'));
+    }
+
+    // Check audio capability if audio input is provided
+    if (options.audio && !this.capabilities.audio) {
+      throw new Error(i18n.t('services:api.errors.audioNotSupported', { model: this.model }));
     }
 
     const parts = this.buildParts(options);

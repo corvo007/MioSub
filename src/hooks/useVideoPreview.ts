@@ -60,6 +60,7 @@ export function useVideoPreview(): UseVideoPreviewReturn {
    */
   const prepareVideo = useCallback(
     async (fileOrPath: File | string) => {
+      // Clean up any existing listeners and URLs first
       cleanupUrl();
       setCurrentTime(0);
       setTranscodedDuration(undefined);
@@ -95,6 +96,9 @@ export function useVideoPreview(): UseVideoPreviewReturn {
         setIsTranscoding(true);
         setTranscodeProgress(0);
 
+        // Track listeners registered in this call for cleanup
+        const cleanupFns: Array<() => void> = [];
+
         try {
           if (!window.electronAPI?.transcodeForPreview) {
             logger.error('[VideoPreview] Electron API not available for transcoding');
@@ -112,12 +116,7 @@ export function useVideoPreview(): UseVideoPreviewReturn {
                 }
               }
             );
-            // Chain cleanups if needed, or use an array of cleanups
-            const prevCleanup = progressListenerCleanupRef.current;
-            progressListenerCleanupRef.current = () => {
-              if (prevCleanup) prevCleanup();
-              cleanup();
-            };
+            cleanupFns.push(cleanup);
           }
 
           // Set up start listener for progressive playback
@@ -134,13 +133,13 @@ export function useVideoPreview(): UseVideoPreviewReturn {
                 }
               }
             );
-            // Append to cleanup
-            const prevCleanup = progressListenerCleanupRef.current;
-            progressListenerCleanupRef.current = () => {
-              if (prevCleanup) prevCleanup();
-              cleanupStart();
-            };
+            cleanupFns.push(cleanupStart);
           }
+
+          // Store cleanup functions for later use
+          progressListenerCleanupRef.current = () => {
+            cleanupFns.forEach((fn) => fn());
+          };
 
           // Start transcoding
           const result = await window.electronAPI.transcodeForPreview({
@@ -162,6 +161,12 @@ export function useVideoPreview(): UseVideoPreviewReturn {
             setFullVideoDuration(result.duration);
           }
           setTranscodedDuration(undefined);
+        } catch (error) {
+          // Clean up listeners on error
+          cleanupFns.forEach((fn) => fn());
+          progressListenerCleanupRef.current = null;
+          logger.error('[VideoPreview] Transcoding failed', error);
+          throw error;
         } finally {
           setIsTranscoding(false);
         }

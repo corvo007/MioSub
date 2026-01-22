@@ -244,8 +244,10 @@ export const parseAssStyles = (content: string): Record<string, string> => {
       const color = parts[colorIdx];
 
       // Only extract Speaker_ styles
+      // Note: Style name is sanitized during export, so we store it as-is
+      // The consumer (useFileOperations) should sanitize speaker names when looking up
       if (styleName?.startsWith('Speaker_') && color) {
-        const speakerName = styleName.substring(8); // Remove "Speaker_" prefix
+        const speakerName = styleName.substring(8); // Remove "Speaker_" prefix (already sanitized)
         const hexColor = assBgrToHex(color);
         if (hexColor) {
           speakerColors[speakerName] = hexColor;
@@ -271,6 +273,13 @@ export const parseAss = (content: string): SubtitleItem[] => {
       inEvents = true;
       return;
     }
+
+    // Exit Events section when encountering a new section
+    if (inEvents && trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      inEvents = false;
+      return;
+    }
+
     if (!inEvents) return;
 
     if (trimmed.startsWith('Format:')) {

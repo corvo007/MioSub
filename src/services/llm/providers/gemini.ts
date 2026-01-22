@@ -527,7 +527,7 @@ export async function generateContentWithLongOutput(
             // If parse succeeds, we are done!
             return fullText;
           }
-          throw new Error('JSON validation failed');
+          throw new Error(i18n.t('services:api.errors.jsonValidationFailed'));
         } catch (e) {
           // Parse failed, likely truncated
           logger.warn(
@@ -564,7 +564,9 @@ export async function generateContentWithLongOutput(
             responseSchema: schema,
             systemInstruction: systemInstruction,
             safetySettings: SAFETY_SETTINGS,
-            maxOutputTokens: 65536,
+            maxOutputTokens: stepConfig?.maxOutputTokens ?? 65536,
+            tools: stepConfig?.tools, // Include tools for consistent Search Grounding
+            ...(stepConfig?.thinkingConfig && { thinkingConfig: stepConfig.thinkingConfig }),
           },
         },
         3,
@@ -584,7 +586,7 @@ export async function generateContentWithLongOutput(
         logger.debug('Final JSON validation passed');
         return fullText;
       }
-      throw new Error('JSON validation failed');
+      throw new Error(i18n.t('services:api.errors.jsonValidationFailed'));
     } catch (e) {
       logger.error('Final JSON validation failed after 3 continuation attempts', {
         fullTextLength: fullText.length,

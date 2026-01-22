@@ -33,6 +33,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
     bottom: number;
   } | null>(null);
   const { ref: containerRef, getDirection } = useDropdownDirection<HTMLDivElement>();
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
 
   // Toggle open with smart direction detection
   const toggleOpen = () => {
@@ -60,19 +61,13 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Check if click is on the trigger button (containerRef) - if so, toggleOpen handles it
-      // If click is on the portal content (we need a ref for that? no, Portal content is distinct)
-      // Actually, since Portal is outside, containerRef.contains(target) will be false for dropdown items.
-      // But dropdown items have their own onClick that closes.
-      // We only need to check if click is OUTSIDE both trigger AND dropdown.
-      // Since dropdown is in Portal, we can't easily check "contains" via React ref hierarchy if it's not forwarded.
-      // Workaround: Stop propagation on dropdown click?
-      // Or relies on the fact that clicking trigger runs toggleOpen.
-      // If I click outside, I want close.
+      const target = event.target as Node;
+
+      // Check if click is on the trigger or inside the dropdown portal
       if (
         containerRef.current &&
-        !containerRef.current.contains(event.target as Node) &&
-        !(event.target as HTMLElement).closest('.custom-select-dropdown') // Marker class
+        !containerRef.current.contains(target) &&
+        (!dropdownRef.current || !dropdownRef.current.contains(target))
       ) {
         setIsOpen(false);
       }
@@ -123,6 +118,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       {isOpen && coords && (
         <Portal>
           <div
+            ref={dropdownRef}
             className={cn(
               'custom-select-dropdown fixed z-[100] bg-white border border-slate-200 rounded-lg shadow-xl shadow-slate-200/50 max-h-60 overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-100'
             )}

@@ -61,6 +61,9 @@ export const decodeAudio = async (
     throw new Error(
       i18n.t('services:audio.errors.decodeFailed', { error: e.message || 'Unknown' })
     );
+  } finally {
+    // Always close AudioContext to prevent resource leaks
+    await ctx.close();
   }
 };
 

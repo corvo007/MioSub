@@ -17,7 +17,12 @@
       "network": "网络错误",
       "connectionFailed": "连接失败",
       "retryFailed": "重试失败",
-      "parseFailed": "响应解析失败"
+      "parseFailed": "响应解析失败",
+      "audioNotSupported": "模型 {{model}} 不支持音频输入，请选择支持音频的模型",
+      "schemaRequired": "生成结构化数据需要提供 Schema",
+      "emptyResponse": "API 返回空响应",
+      "unknownProvider": "未知的服务商类型: {{type}}",
+      "jsonValidationFailed": "JSON 格式验证失败"
     },
     "network": {
       "rateLimited": "请求频率受限 / 配额用尽",

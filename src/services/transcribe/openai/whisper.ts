@@ -124,9 +124,10 @@ export const transcribeWithWhisper = async (
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeout || 600000); // Default 10 minutes
 
-      // Handle external signal
+      // Handle external signal - use { once: true } to auto-remove after trigger
+      const abortHandler = () => controller.abort();
       if (signal) {
-        signal.addEventListener('abort', () => controller.abort());
+        signal.addEventListener('abort', abortHandler, { once: true });
       }
 
       const response = await fetch(`${baseUrl}/audio/transcriptions`, {
@@ -136,7 +137,13 @@ export const transcribeWithWhisper = async (
         },
         body: formData,
         signal: controller.signal,
-      }).finally(() => clearTimeout(timeoutId));
+      }).finally(() => {
+        clearTimeout(timeoutId);
+        // Clean up abort listener to prevent memory leaks
+        if (signal) {
+          signal.removeEventListener('abort', abortHandler);
+        }
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));

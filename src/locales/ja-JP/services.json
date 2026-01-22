@@ -17,7 +17,12 @@
       "network": "ネットワークエラーが発生しました",
       "connectionFailed": "接続に失敗しました",
       "retryFailed": "再試行に失敗しました",
-      "parseFailed": "レスポンスの解析に失敗しました"
+      "parseFailed": "レスポンスの解析に失敗しました",
+      "audioNotSupported": "モデル {{model}} は音声入力をサポートしていません。音声対応モデルを選択してください",
+      "schemaRequired": "構造化データの生成にはスキーマが必要です",
+      "emptyResponse": "API から空のレスポンスが返されました",
+      "unknownProvider": "不明なプロバイダータイプ: {{type}}",
+      "jsonValidationFailed": "JSON 検証に失敗しました"
     },
     "network": {
       "rateLimited": "リクエスト頻度制限 / クォータ超過",

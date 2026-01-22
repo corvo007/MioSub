@@ -17,7 +17,12 @@
       "network": "Network error",
       "connectionFailed": "Connection failed",
       "retryFailed": "Retry failed",
-      "parseFailed": "Response parsing failed"
+      "parseFailed": "Response parsing failed",
+      "audioNotSupported": "Model {{model}} does not support audio input, please select a model with audio support",
+      "schemaRequired": "Schema is required for generating structured data",
+      "emptyResponse": "API returned empty response",
+      "unknownProvider": "Unknown provider type: {{type}}",
+      "jsonValidationFailed": "JSON validation failed"
     },
     "network": {
       "rateLimited": "Rate limit exceeded / Quota exhausted",

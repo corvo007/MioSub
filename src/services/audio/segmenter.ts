@@ -323,6 +323,10 @@ export class SmartSegmenter {
         };
 
         const onAbort = () => {
+          // Send stop command to worker to interrupt processing
+          if (this.worker) {
+            this.worker.postMessage({ command: 'stop' });
+          }
           cleanup();
           reject(new Error(i18n.t('services:pipeline.errors.cancelled')));
         };

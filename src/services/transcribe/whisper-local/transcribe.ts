@@ -54,9 +54,12 @@ export const transcribeWithLocalWhisper = async (
       customBinaryPath,
     });
 
+    // Track abort handler for cleanup
+    let abortHandler: (() => void) | null = null;
+
     const cancelPromise = new Promise<never>((_, reject) => {
       if (signal) {
-        signal.addEventListener('abort', () => {
+        abortHandler = () => {
           logger.info('[LocalWhisper] Transcription cancelled by user');
 
           // Notify main process to abort the running whisper process
@@ -68,30 +71,39 @@ export const transcribeWithLocalWhisper = async (
           }
 
           reject(new Error(i18n.t('services:pipeline.errors.cancelled')));
-        });
+        };
+        // Use { once: true } to auto-remove after first trigger
+        signal.addEventListener('abort', abortHandler, { once: true });
       }
     });
 
-    const result = await Promise.race([transcriptionPromise, cancelPromise]);
+    try {
+      const result = await Promise.race([transcriptionPromise, cancelPromise]);
 
-    if (!result.success) {
-      throw new WhisperLocalError(
-        'TRANSCRIPTION_FAILED',
-        result.error || i18n.t('services:api.whisperLocal.errors.transcriptionFailed')
-      );
+      if (!result.success) {
+        throw new WhisperLocalError(
+          'TRANSCRIPTION_FAILED',
+          result.error || i18n.t('services:api.whisperLocal.errors.transcriptionFailed')
+        );
+      }
+
+      logger.info(`[Success] Received ${result.segments?.length || 0} segments`);
+
+      if (!result.segments) return [];
+
+      return result.segments.map((seg: any) => ({
+        id: generateSubtitleId(),
+        startTime: seg.start,
+        endTime: seg.end,
+        original: seg.text.trim(),
+        translated: '',
+      }));
+    } finally {
+      // Clean up abort listener to prevent memory leaks
+      if (signal && abortHandler) {
+        signal.removeEventListener('abort', abortHandler);
+      }
     }
-
-    logger.info(`[Success] Received ${result.segments?.length || 0} segments`);
-
-    if (!result.segments) return [];
-
-    return result.segments.map((seg: any) => ({
-      id: generateSubtitleId(),
-      startTime: seg.start,
-      endTime: seg.end,
-      original: seg.text.trim(),
-      translated: '',
-    }));
   } catch (error: any) {
     if (signal?.aborted || error.message === i18n.t('services:pipeline.errors.cancelled')) {
       logger.info('[LocalWhisper] Transcription process cancelled');

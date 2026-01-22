@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { type SubtitleItem } from '@/types/subtitle';
 import { generateSubtitleId } from '@/services/utils/id';
+import { timeToSeconds, formatTime } from '@/services/subtitle/time';
 
 interface UseSubtitleCRUDProps {
   setSubtitles: React.Dispatch<React.SetStateAction<SubtitleItem[]>>;
@@ -64,11 +65,15 @@ export function useSubtitleCRUD({ setSubtitles }: UseSubtitleCRUDProps) {
         const refIndex = prev.findIndex((s) => s.id === referenceId);
         if (refIndex === -1) return prev;
 
-        // Create new subtitle with default times
+        // Calculate endTime with 2 second offset to ensure valid duration
+        const startSeconds = timeToSeconds(defaultTime);
+        const endTime = formatTime(startSeconds + 2); // Default 2 second duration
+
+        // Create new subtitle with properly offset times
         const newSubtitle: SubtitleItem = {
           id: generateSubtitleId(),
           startTime: defaultTime,
-          endTime: defaultTime,
+          endTime: endTime,
           original: '',
           translated: '',
         };
