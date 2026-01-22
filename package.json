@@ -61,6 +61,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@sentry/vite-plugin": "^4.7.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/electron-squirrel-startup": "^1.0.2",
     "@types/fluent-ffmpeg": "^2.1.28",

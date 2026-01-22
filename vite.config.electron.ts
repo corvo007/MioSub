@@ -1,11 +1,15 @@
 import { defineConfig, loadEnv } from 'vite';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { execSync } from 'child_process';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const packageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
 
 // Get commit hash for production builds
 let commitHash = 'N/A';
@@ -36,10 +40,24 @@ export default defineConfig(({ mode }) => {
           },
         ],
       }),
-    ],
+      // Sentry source maps upload (only in CI with env vars)
+      env.SENTRY_AUTH_TOKEN
+        ? sentryVitePlugin({
+            org: env.SENTRY_ORG,
+            project: env.SENTRY_PROJECT,
+            authToken: env.SENTRY_AUTH_TOKEN,
+            release: {
+              name: packageJson.version,
+            },
+            sourcemaps: {
+              filesToDeleteAfterUpload: ['./dist-electron/**/*.map'],
+            },
+          })
+        : null,
+    ].filter(Boolean),
     build: {
       ssr: true,
-      sourcemap: 'inline',
+      sourcemap: true,
       outDir: 'dist-electron',
       emptyOutDir: true,
       lib: {
