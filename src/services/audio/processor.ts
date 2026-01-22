@@ -75,6 +75,18 @@ export function audioBufferToWav(buffer: AudioBuffer): Blob {
   return new Blob([arrayBuffer], { type: 'audio/wav' });
 }
 
+// Singleton context for creating buffers to avoid running out of AudioContexts
+let sharedAudioContext: AudioContext | OfflineAudioContext | null = null;
+
+function getAudioContext(sampleRate: number): AudioContext | OfflineAudioContext {
+  if (!sharedAudioContext) {
+    // Use OfflineAudioContext for better performance and no hardware limit issues
+    // Arbitrary length/channels as we only use it for createBuffer
+    sharedAudioContext = new OfflineAudioContext(1, 1, sampleRate);
+  }
+  return sharedAudioContext;
+}
+
 /**
  * Extracts a slice of an AudioBuffer as a new AudioBuffer (synchronous).
  */
@@ -84,15 +96,13 @@ export function extractBufferSlice(buffer: AudioBuffer, start: number, end: numb
   const endOffset = Math.floor(end * sampleRate);
   const frameCount = endOffset - startOffset;
 
+  const ctx = getAudioContext(sampleRate);
+
   if (frameCount <= 0) {
-    return new AudioContext().createBuffer(buffer.numberOfChannels, 1, sampleRate);
+    return ctx.createBuffer(buffer.numberOfChannels, 1, sampleRate);
   }
 
-  const newBuffer = new AudioContext().createBuffer(
-    buffer.numberOfChannels,
-    frameCount,
-    sampleRate
-  );
+  const newBuffer = ctx.createBuffer(buffer.numberOfChannels, frameCount, sampleRate);
 
   for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
     const channelData = buffer.getChannelData(channel);
@@ -114,14 +124,21 @@ export function extractBufferSlice(buffer: AudioBuffer, start: number, end: numb
  * Resamples if necessary to match the target sample rate.
  */
 export function mergeAudioBuffers(buffers: AudioBuffer[], sampleRate: number): AudioBuffer {
+  const ctx = getAudioContext(sampleRate);
+
   if (buffers.length === 0) {
-    return new AudioContext().createBuffer(1, 0, sampleRate);
+    return ctx.createBuffer(1, 1, sampleRate); // Minimum valid buffer
   }
 
   const numberOfChannels = buffers[0].numberOfChannels;
   const totalLength = buffers.reduce((acc, buf) => acc + buf.length, 0);
 
-  const result = new AudioContext().createBuffer(numberOfChannels, totalLength, sampleRate);
+  // If totalLength is 0, create a minimum buffer
+  if (totalLength === 0) {
+    return ctx.createBuffer(numberOfChannels, 1, sampleRate);
+  }
+
+  const result = ctx.createBuffer(numberOfChannels, totalLength, sampleRate);
 
   let offset = 0;
   for (const buffer of buffers) {

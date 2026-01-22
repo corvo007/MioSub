@@ -21,6 +21,7 @@ export async function extractAudioWithFFmpeg(
   }
 
   let extractedAudioPath: string | undefined;
+  let cleanupListener: (() => void) | undefined;
 
   try {
     // 1. Get Audio Info
@@ -33,12 +34,14 @@ export async function extractAudioWithFFmpeg(
 
     // 2. 注册进度监听
     if (onProgress) {
-      window.electronAPI.onAudioExtractionProgress((progress: AudioExtractionProgress) => {
-        onProgress({
-          stage: 'extracting',
-          percent: progress.percent,
-        });
-      });
+      cleanupListener = window.electronAPI.onAudioExtractionProgress(
+        (progress: AudioExtractionProgress) => {
+          onProgress({
+            stage: 'extracting',
+            percent: progress.percent,
+          });
+        }
+      );
     }
 
     // 3. 提取音频
@@ -87,11 +90,20 @@ export async function extractAudioWithFFmpeg(
       throw new Error(i18n.t('services:audio.errors.webAudioNotSupported'));
     }
     const ctx = new AudioContext();
-    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-
-    logger.info('Audio decoded successfully');
-    return audioBuffer;
+    try {
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+      logger.info('Audio decoded successfully');
+      return audioBuffer;
+    } finally {
+      // Vital: Close AudioContext to release hardware resources
+      await ctx.close();
+    }
   } finally {
+    // Clean up listener
+    if (cleanupListener) {
+      cleanupListener();
+    }
+
     // 清理临时文件
     if (extractedAudioPath) {
       try {
