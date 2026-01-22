@@ -32,7 +32,6 @@ export interface ModelCapabilities {
   id: string;
   jsonOutputLevel: JsonOutputLevel;
   reasoning: boolean;
-  webSearch: boolean;
   audioInput: boolean;
   contextLength: number;
   maxOutputTokens: number | null;
@@ -49,12 +48,6 @@ export interface ModelMatchResult {
 // =============================================================================
 // Constants
 // =============================================================================
-
-/** Cutoff date for web search support (2024-10-01) */
-const WEB_SEARCH_CUTOFF = new Date('2024-10-01').getTime() / 1000;
-
-/** Cutoff date for new max_completion_tokens API (2024-10-01) */
-const TOKEN_API_CUTOFF = new Date('2024-10-01').getTime() / 1000;
 
 /** Provider prefix mapping for normalization */
 const PROVIDER_PREFIXES: Record<string, string> = {
@@ -78,7 +71,7 @@ const modelMap = new Map<string, ModelEntry>(models.map((m) => [m.id, m]));
  */
 function normalizeModelName(input: string): string {
   // Remove common prefixes like "(特价)" or marketing text
-  let cleaned = input.replace(/^\([^)]+\)\s*/, '').trim();
+  let cleaned = input.replace(/^(\([^)]+\)|\[[^\]]+\])\s*/, '').trim();
 
   // Check if already has provider prefix
   if (cleaned.includes('/')) {
@@ -254,55 +247,6 @@ export function hasReasoningCapability(params: string[]): boolean {
 }
 
 /**
- * Check if model supports web search based on release date
- */
-export function supportsWebSearch(created: number): boolean {
-  return created >= WEB_SEARCH_CUTOFF;
-}
-
-/**
- * Check if model supports audio input
- */
-export function supportsAudioInput(modalities: string[]): boolean {
-  return modalities.includes('audio');
-}
-
-/**
- * Get the correct parameter name for max tokens
- */
-export function getMaxTokensParamName(created: number): 'max_completion_tokens' | 'max_tokens' {
-  return created >= TOKEN_API_CUTOFF ? 'max_completion_tokens' : 'max_tokens';
-}
-
-/**
- * Get thinking parameter style for Gemini models
- */
-export function getGeminiThinkingStyle(modelId: string): 'budget' | 'level' {
-  return modelId.includes('gemini-3') || modelId.includes('gemini-4') ? 'level' : 'budget';
-}
-
-/**
- * Check if Gemini model supports thinking (lite models don't)
- */
-export function supportsGeminiThinking(modelId: string): boolean {
-  return !modelId.includes('lite');
-}
-
-/**
- * Check if Claude model supports extended thinking (4+ only)
- */
-export function supportsClaudeThinking(modelId: string): boolean {
-  return /claude-[4-9]/.test(modelId) || modelId.includes('claude-4');
-}
-
-/**
- * Check if Claude model supports structured outputs beta
- */
-export function supportsClaudeStructuredOutputs(params: string[]): boolean {
-  return params.includes('structured_outputs');
-}
-
-/**
  * Parse all capabilities from a model entry
  */
 export function parseCapabilities(model: ModelEntry): ModelCapabilities {
@@ -311,7 +255,6 @@ export function parseCapabilities(model: ModelEntry): ModelCapabilities {
     id: model.id,
     jsonOutputLevel: getJsonOutputLevel(params),
     reasoning: hasReasoningCapability(params),
-    webSearch: supportsWebSearch(model.created),
     audioInput: model.architecture?.input_modalities?.includes('audio') ?? false,
     contextLength: model.context_length,
     maxOutputTokens: model.top_provider?.max_completion_tokens ?? null,

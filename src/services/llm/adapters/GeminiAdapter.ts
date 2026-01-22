@@ -44,8 +44,30 @@ export class GeminiAdapter extends BaseAdapter {
     return {
       jsonMode: 'full_schema',
       audio: this.modelCaps?.audioInput ?? true,
-      search: this.modelCaps?.webSearch ?? true,
+      search: true, // Gemini supports SearchGrounding
     };
+  }
+
+  /**
+   * Check if model supports thinking - uses metadata
+   * Fallback: lite models don't support thinking
+   */
+  supportsThinking(): boolean {
+    // Use metadata if available
+    if (this.modelCaps) {
+      return this.modelCaps.reasoning;
+    }
+    // Fallback: exclude lite models
+    return !this.model.includes('lite');
+  }
+
+  /**
+   * Get thinking parameter style for Gemini models
+   * - Gemini 2.5 Flash: uses thinkingBudget (budget style)
+   * - Gemini 3.0+: uses thinkingLevel (level style: 'none', 'low', 'medium', 'high')
+   */
+  getThinkingStyle(): 'budget' | 'level' {
+    return this.model.includes('gemini-3') || this.model.includes('gemini-4') ? 'level' : 'budget';
   }
 
   constructor(config: ProviderConfig) {
@@ -189,12 +211,12 @@ export class GeminiAdapter extends BaseAdapter {
     if (!originalConfig?.thinkingLevel) return undefined;
     if (originalConfig.thinkingLevel === 'none') return undefined;
 
-    // Skip for lite models
-    if (this.model.includes('lite')) return undefined;
+    // Check model capability using metadata
+    if (!this.supportsThinking()) return undefined;
 
     const level = originalConfig.thinkingLevel as 'low' | 'medium' | 'high';
 
-    if (this.model.includes('2.5')) {
+    if (this.getThinkingStyle() === 'budget') {
       // Gemini 2.5: convert to thinkingBudget
       const budgetMap = { low: 4096, medium: 8192, high: 16384 };
       return { thinkingBudget: budgetMap[level] || 8192 };

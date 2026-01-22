@@ -43,8 +43,29 @@ export class ClaudeAdapter extends BaseAdapter {
     return {
       jsonMode: jsonLevel === 'strict' ? 'full_schema' : 'json_only',
       audio: this.modelCaps?.audioInput ?? true,
-      search: this.modelCaps?.webSearch ?? true,
+      search: false, // Claude doesn't support web search
     };
+  }
+
+  /**
+   * Check if model supports extended thinking - uses metadata
+   * Fallback: Claude 4+ only (requires anthropic-beta header)
+   */
+  supportsThinking(): boolean {
+    // Use metadata if available
+    if (this.modelCaps) {
+      return this.modelCaps.reasoning;
+    }
+    // Fallback: Claude 4+ supports thinking
+    return /claude-[4-9]/.test(this.model) || this.model.includes('claude-4');
+  }
+
+  /**
+   * Check if model supports native structured outputs (beta)
+   * Claude 4+ supports output_format parameter for strict JSON schema
+   */
+  supportsStructuredOutputs(): boolean {
+    return this.modelCaps?.jsonOutputLevel === 'strict';
   }
 
   constructor(config: ProviderConfig) {
@@ -316,8 +337,8 @@ export class ClaudeAdapter extends BaseAdapter {
   private getExtendedThinking(
     options: GenerateOptions
   ): { type: 'enabled'; budget_tokens: number } | undefined {
-    // Check model compatibility - only Claude 4+ supports extended thinking
-    if (!this.model.includes('-4')) {
+    // Check model compatibility using metadata-based supportsThinking()
+    if (!this.supportsThinking()) {
       return undefined;
     }
 

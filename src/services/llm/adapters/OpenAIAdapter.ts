@@ -20,24 +20,55 @@ import i18n from '@/i18n';
 import {
   findModel,
   parseCapabilities,
-  getMaxTokensParamName,
   type ModelEntry,
   type ModelCapabilities,
 } from '../ModelCapabilities';
 
+/** Cutoff date for new max_completion_tokens API (2024-10-01) - OpenAI specific */
+const TOKEN_API_CUTOFF = new Date('2024-10-01').getTime() / 1000;
+
+/** Cutoff date for web search support (2024-10-01) - OpenAI specific */
+const WEB_SEARCH_CUTOFF = new Date('2024-10-01').getTime() / 1000;
+
+/**
+ * Official OpenAI model patterns (generic for future models)
+ * Used to determine parameter conversion logic (official vs third-party)
+ */
+const OFFICIAL_MODEL_PATTERNS = [
+  /^gpt-/, // All gpt-* models (gpt-4, gpt-5, etc.)
+  /^o\d/, // All o-series (o1, o2, o3, o4, ...)
+  /^chatgpt-/, // chatgpt-* models
+  /^davinci/, // davinci models
+  /^text-/, // text-* models
+];
+
+/**
+ * Check if model name matches official OpenAI model patterns
+ */
+function isOfficialModel(model: string): boolean {
+  return OFFICIAL_MODEL_PATTERNS.some((pattern) => pattern.test(model));
+}
+
 /**
  * Build token limit parameter with correct key name
- * Uses ModelCapabilities to determine parameter name and value
+ * - Official models: use created date to determine max_tokens vs max_completion_tokens
+ * - Third-party models: use safe max_tokens default
  */
 function buildTokensParam(
+  model: string,
   modelEntry: ModelEntry | null,
   modelCaps: ModelCapabilities | null
 ): Record<string, number> {
-  if (!modelEntry || !modelCaps?.maxOutputTokens) {
-    return { max_tokens: 16384 }; // Safe default
+  const maxTokens = modelCaps?.maxOutputTokens ?? 16384;
+
+  if (isOfficialModel(model) && modelEntry) {
+    // Official model: use created date to determine parameter name
+    const key = modelEntry.created >= TOKEN_API_CUTOFF ? 'max_completion_tokens' : 'max_tokens';
+    return { [key]: maxTokens };
   }
-  const key = getMaxTokensParamName(modelEntry.created);
-  return { [key]: modelCaps.maxOutputTokens };
+
+  // Third-party model: use safe max_tokens (widely supported)
+  return { max_tokens: maxTokens };
 }
 
 /**
@@ -94,8 +125,16 @@ export class OpenAIAdapter extends BaseAdapter {
     return {
       jsonMode,
       audio: this.modelCaps?.audioInput ?? true,
-      search: this.modelCaps?.webSearch ?? true,
+      search: this.modelEntry ? this.modelEntry.created >= WEB_SEARCH_CUTOFF : true,
     };
+  }
+
+  /**
+   * Check if model supports reasoning/thinking (o1/o3/o4 models)
+   * Uses reasoning_effort parameter with values: 'low', 'medium', 'high'
+   */
+  supportsReasoning(): boolean {
+    return this.modelCaps?.reasoning ?? false;
   }
 
   /**
@@ -193,7 +232,7 @@ export class OpenAIAdapter extends BaseAdapter {
     const requestParams: any = {
       model: this.model,
       // Token limit with correct parameter name for model type
-      ...buildTokensParam(this.modelEntry, this.modelCaps),
+      ...buildTokensParam(this.model, this.modelEntry, this.modelCaps),
       response_format: zodResponseFormat(zodSchema, 'response'),
     };
 
@@ -231,7 +270,7 @@ export class OpenAIAdapter extends BaseAdapter {
     const requestParams: any = {
       model: this.model,
       // Token limit with correct parameter name for model type
-      ...buildTokensParam(this.modelEntry, this.modelCaps),
+      ...buildTokensParam(this.model, this.modelEntry, this.modelCaps),
       response_format: { type: 'json_object' },
     };
 
@@ -271,7 +310,7 @@ export class OpenAIAdapter extends BaseAdapter {
     const requestParams: any = {
       model: this.model,
       // Token limit with correct parameter name for model type
-      ...buildTokensParam(this.modelEntry, this.modelCaps),
+      ...buildTokensParam(this.model, this.modelEntry, this.modelCaps),
     };
 
     // Add web search if enabled
@@ -558,8 +597,8 @@ export class OpenAIAdapter extends BaseAdapter {
    * Only applies if model supports web search
    */
   private shouldUseWebSearch(options: GenerateOptions): boolean {
-    // Check if model supports web search
-    if (!this.modelCaps?.webSearch) {
+    // Check if model supports web search (based on creation date)
+    if (this.modelEntry && this.modelEntry.created < WEB_SEARCH_CUTOFF) {
       return false;
     }
 
@@ -592,8 +631,8 @@ export class OpenAIAdapter extends BaseAdapter {
    * Only works with models that support reasoning
    */
   private getReasoningEffort(options: GenerateOptions): 'low' | 'medium' | 'high' | undefined {
-    // Check if model supports reasoning from capabilities
-    if (!this.modelCaps?.reasoning) {
+    // Check if model supports reasoning using capability method
+    if (!this.supportsReasoning()) {
       return undefined;
     }
 
