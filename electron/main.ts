@@ -27,7 +27,7 @@ const SENTRY_DSN = process.env.VITE_SENTRY_DSN;
 if (SENTRY_DSN) {
   Sentry.init({
     dsn: SENTRY_DSN,
-    release: app.getVersion(),
+    release: process.env.APP_VERSION || app.getVersion(),
     environment: app.isPackaged ? 'production' : 'development',
     beforeSend(event, hint) {
       const originalException = hint.originalException;
@@ -41,6 +41,9 @@ if (SENTRY_DSN) {
       return event;
     },
   });
+  console.log(
+    `[Main] Sentry initialized in ${app.isPackaged ? 'production' : 'development'} mode, release: ${process.env.APP_VERSION || app.getVersion()}`
+  );
 }
 
 import { mainLogger } from './logger.ts'; // Must be first after Sentry!

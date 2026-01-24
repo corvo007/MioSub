@@ -90,6 +90,7 @@ export default defineConfig(({ mode }) => {
       'process.env.VITE_MIXPANEL_TOKEN': JSON.stringify(env.VITE_MIXPANEL_TOKEN || ''),
       // Sentry DSN (from .env)
       'process.env.VITE_SENTRY_DSN': JSON.stringify(env.VITE_SENTRY_DSN || ''),
+      'process.env.APP_VERSION': JSON.stringify(packageJson.version),
     },
   };
 });

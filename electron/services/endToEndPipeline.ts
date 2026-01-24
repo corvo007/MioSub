@@ -148,19 +148,21 @@ export class EndToEndPipeline {
       if (!videoInfo) {
         updateProgress('downloading', 0, t('endToEnd.parsingUrl'));
         videoInfo = await ytDlpService.parseUrl(config.url);
+
+        // Analytics: Download Parsed
+        // Only track if we actually parsed it here. If videoInfo was passed (e.g. from UI),
+        // it means the UI already tracked the parse event.
+        void analyticsService.track(
+          'download_parsed',
+          {
+            platform: videoInfo.platform,
+            title: videoInfo.title,
+            duration_sec: videoInfo.duration,
+          },
+          'interaction'
+        );
       }
       console.log(`[DEBUG] [Pipeline] Video info: ${videoInfo.title}`);
-
-      // Analytics: Download Parsed
-      void analyticsService.track(
-        'download_parsed',
-        {
-          platform: videoInfo.platform,
-          title: videoInfo.title,
-          duration_sec: videoInfo.duration,
-        },
-        'interaction'
-      );
 
       // Notify progress with video info
       onProgress({

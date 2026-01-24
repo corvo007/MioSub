@@ -261,8 +261,16 @@ export class LocalWhisperService {
           });
         });
 
-        process.on('close', async (code) => {
+        process.on('close', async (code, signal) => {
           this.activeProcesses.delete(jobId); // Remove from active map
+
+          if (code === null) {
+            // Process was killed by signal (likely cancelled)
+            const errorMsg = `Process killed with signal ${signal}`;
+            console.log(`[LocalWhisper] ${errorMsg}`);
+            reject(new Error(`Process cancelled (signal: ${signal})`));
+            return;
+          }
 
           if (code !== 0) {
             const errorMsg = `Process exited with code ${code}`;
