@@ -9,6 +9,7 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 // Initialize Sentry for error tracking in Renderer process
 // Initialize Sentry for error tracking in Renderer process
 Sentry.init({
+  release: __APP_VERSION__,
   beforeSend(event, hint) {
     const originalException = hint.originalException;
     if (
@@ -21,6 +22,7 @@ Sentry.init({
     return event;
   },
 });
+console.log(`[Renderer] Sentry initialized with release: ${__APP_VERSION__}`);
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
