@@ -14,8 +14,9 @@ export interface SubtitleItem {
   endTime: string; // Format: HH:MM:SS,ms
   original: string;
   translated: string;
+  speakerId?: string; // Foreign Key: Link to SpeakerProfile
+  speaker?: string; // Cache: Display name
   comment?: string; // User comment for specific correction
-  speaker?: string; // Speaker identifier (e.g., "Speaker 1", "Speaker 2")
   // Timeline validation markers (from refinement step)
   hasRegressionIssue?: boolean; // startTime went backwards significantly
   hasCorruptedRangeIssue?: boolean; // Part of a corrupted timeline range

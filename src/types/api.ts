@@ -19,7 +19,8 @@ export interface ChunkStatus {
     | 'refining'
     | 'aligning'
     | 'translating'
-    | 'proofing';
+    | 'proofing'
+    | 'waiting_refinement';
   message?: string;
   toast?: {
     message: string;
@@ -53,6 +54,8 @@ export interface ChunkAnalytics {
   translate_status?: StepResultStatus;
   /** Overall chunk status */
   status: 'success' | 'failed' | 'cancelled' | 'empty' | 'skipped';
+  /** Duration of the audio chunk in ms */
+  duration_ms?: number;
 }
 
 export interface TokenUsage {
