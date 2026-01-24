@@ -1,36 +1,17 @@
-import { type RefObject } from 'react';
 import type React from 'react';
-import { useState, useCallback, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type SubtitleItem } from '@/types/subtitle';
 import { GenerationStatus } from '@/types/api';
-import { type SpeakerUIProfile } from '@/types/speaker';
+
 import { logger } from '@/services/utils/logger';
 import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 import { type SnapshotsValuesProps } from '@/types/workspace';
-import { parseAssStyles } from '@/services/subtitle/parser';
-import { sanitizeSpeakerForStyle } from '@/services/subtitle/utils';
+import { useWorkspaceStore } from '@/store/useWorkspaceStore';
+import { processSubtitleImport } from '@/hooks/useWorkspaceLogic/processSubtitleImport';
 
 interface UseFileOperationsProps {
-  // State reading
-  file: File | null;
-  subtitles: SubtitleItem[];
-  status: GenerationStatus;
-
-  // State setters
-  setFile: (file: File | null) => void;
-  setSubtitles: (subtitles: SubtitleItem[]) => void;
-  setStatus: (status: GenerationStatus) => void;
-  setError: (error: string | null) => void;
-  setDuration: (duration: number) => void;
-  setSpeakerProfiles: (profiles: SpeakerUIProfile[]) => void;
-  setBatchComments: React.Dispatch<React.SetStateAction<Record<number, string>>>;
-  setSelectedBatches: (batches: Set<number>) => void;
-
-  // Refs
-  audioCacheRef: RefObject<{ file: File; buffer: AudioBuffer } | null>;
-
-  // External dependencies
+  // External dependencies still passed as props/context
   showConfirm: (
     title: string,
     message: string,
@@ -39,6 +20,7 @@ interface UseFileOperationsProps {
   ) => void;
   snapshotsValues: Pick<SnapshotsValuesProps, 'setSnapshots' | 'createSnapshot'>;
   parseSubtitle: (content: string, type: 'srt' | 'ass') => Promise<SubtitleItem[]>;
+  audioCacheRef: React.RefObject<{ file: File; buffer: AudioBuffer } | null>;
 }
 
 interface UseFileOperationsReturn {
@@ -52,13 +34,6 @@ interface UseFileOperationsReturn {
   ) => Promise<void>;
   handleSubtitleImport: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   handleSubtitleImportNative: () => Promise<void>;
-
-  // State
-  isLoadingFile: boolean;
-  setIsLoadingFile: (loading: boolean) => void;
-  isLoadingSubtitle: boolean;
-  subtitleFileName: string | null;
-  setSubtitleFileName: (name: string | null) => void;
 }
 
 /**
@@ -103,36 +78,36 @@ async function getFileDuration(f: File): Promise<number> {
 
 /**
  * Hook for handling file and subtitle import operations.
+ * Now reads/writes directly to useWorkspaceStore.
  */
 export function useFileOperations({
-  file,
-  subtitles,
-  status,
-  setFile,
-  setSubtitles,
-  setStatus,
-  setError,
-  setDuration,
-  setSpeakerProfiles,
-  setBatchComments,
-  setSelectedBatches: _setSelectedBatches,
   audioCacheRef,
   showConfirm,
   snapshotsValues,
   parseSubtitle,
 }: UseFileOperationsProps): UseFileOperationsReturn {
   const { t } = useTranslation(['workspace', 'services']);
-  const [isLoadingFile, setIsLoadingFile] = useState(false);
-  const [isLoadingSubtitle, setIsLoadingSubtitle] = useState(false);
-  const [subtitleFileName, setSubtitleFileName] = useState<string | null>(null);
 
   // Ref to track the latest operation ID to prevent race conditions
   const operationIdRef = useRef(0);
 
   // Common file processing logic - confirmation is handled by callers
+  // forceReset: when true (user confirmed replacement), clears all workspace state including subtitles
   const processFileInternal = useCallback(
-    async (selectedFile: File) => {
+    async (selectedFile: File, forceReset = false) => {
       const currentOpId = ++operationIdRef.current;
+
+      const {
+        setIsLoadingFile,
+        setFile,
+        setError,
+        setDuration,
+        setStatus,
+        setSubtitles,
+        setBatchComments,
+        setSelectedBatches,
+      } = useWorkspaceStore.getState();
+
       setIsLoadingFile(true);
       try {
         logger.info(
@@ -158,6 +133,17 @@ export function useFileOperations({
         setError(null);
         setDuration(d);
 
+        // Reset workspace state related to new file
+        // forceReset: user confirmed replacement - clear everything
+        // !forceReset: preserve existing subtitles (user loaded video after importing subtitles)
+        const currentState = useWorkspaceStore.getState();
+        if (forceReset || currentState.subtitles.length === 0) {
+          setSubtitles([]);
+          setStatus(GenerationStatus.IDLE);
+          setBatchComments({});
+          setSelectedBatches(new Set());
+        }
+
         // Analytics: Video Loaded
         if (window.electronAPI?.analytics) {
           void window.electronAPI.analytics.track(
@@ -176,7 +162,7 @@ export function useFileOperations({
         }
       }
     },
-    [setFile, setError, setDuration, audioCacheRef]
+    [audioCacheRef]
   );
 
   // Handlers - Web file input (non-native)
@@ -184,17 +170,20 @@ export function useFileOperations({
     async (e: React.ChangeEvent<HTMLInputElement>, _activeTab: 'new' | 'import') => {
       if (e.target.files && e.target.files[0]) {
         const selectedFile = e.target.files[0];
+        const state = useWorkspaceStore.getState();
 
         // Check if confirmation is needed BEFORE processing
-        if (file && subtitles.length > 0 && status === GenerationStatus.COMPLETED) {
+        if (
+          state.file &&
+          state.subtitles.length > 0 &&
+          state.status === GenerationStatus.COMPLETED
+        ) {
           showConfirm(
             t('workspace:hooks.fileOperations.confirm.replaceFile.title'),
             t('workspace:hooks.fileOperations.confirm.replaceFile.message'),
             async () => {
-              setSubtitles([]);
-              setStatus(GenerationStatus.IDLE);
-              setBatchComments({});
-              await processFileInternal(selectedFile);
+              // User confirmed replacement - force reset all workspace state
+              await processFileInternal(selectedFile, true);
             },
             'warning'
           );
@@ -203,32 +192,23 @@ export function useFileOperations({
         }
       }
     },
-    [
-      file,
-      subtitles.length,
-      status,
-      showConfirm,
-      processFileInternal,
-      setSubtitles,
-      setStatus,
-      setBatchComments,
-      t,
-    ]
+    [showConfirm, processFileInternal, t]
   );
 
   const handleFileSelectNative = useCallback(
     async (fileStub: File & { path?: string; _needsRead?: boolean }) => {
       // Helper to read the full file and process it
-      const readAndProcessFile = async () => {
+      // forceReset: when true (user confirmed), clears subtitles
+      const readAndProcessFile = async (forceReset = false) => {
         const filePath = fileStub.path || window.electronAPI?.getFilePath?.(fileStub);
         if (!filePath) {
           // Already a full File object, process directly
-          await processFileInternal(fileStub);
+          await processFileInternal(fileStub, forceReset);
           return;
         }
 
         const currentOpId = ++operationIdRef.current;
-        setIsLoadingFile(true);
+        useWorkspaceStore.getState().setIsLoadingFile(true);
         // Give React time to render the loading indicator
         await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -260,26 +240,27 @@ export function useFileOperations({
           if (currentOpId !== operationIdRef.current) return;
 
           // processFileInternal will check opId again, but we can call it directly
-          await processFileInternal(fileObj);
+          await processFileInternal(fileObj, forceReset);
         } catch (err) {
           if (currentOpId !== operationIdRef.current) return;
 
           logger.error('Failed to process file', err);
+          const { setError, setIsLoadingFile } = useWorkspaceStore.getState();
           setError(t('workspace:hooks.fileOperations.errors.processFailed'));
           setIsLoadingFile(false);
         }
       };
 
+      const state = useWorkspaceStore.getState();
+
       // Check if confirmation is needed BEFORE reading file
-      if (file && subtitles.length > 0 && status === GenerationStatus.COMPLETED) {
+      if (state.file && state.subtitles.length > 0 && state.status === GenerationStatus.COMPLETED) {
         showConfirm(
           t('workspace:hooks.fileOperations.confirm.replaceFile.title'),
           t('workspace:hooks.fileOperations.confirm.replaceFile.message'),
           async () => {
-            setSubtitles([]);
-            setStatus(GenerationStatus.IDLE);
-            setBatchComments({});
-            await readAndProcessFile();
+            // User confirmed replacement - force reset all workspace state
+            await readAndProcessFile(true);
           },
           'warning'
         );
@@ -287,18 +268,7 @@ export function useFileOperations({
         await readAndProcessFile();
       }
     },
-    [
-      file,
-      subtitles.length,
-      status,
-      showConfirm,
-      processFileInternal,
-      setSubtitles,
-      setStatus,
-      setBatchComments,
-      setError,
-      t,
-    ]
+    [showConfirm, processFileInternal, t]
   );
 
   const handleSubtitleImport = useCallback(
@@ -308,6 +278,16 @@ export function useFileOperations({
         logger.info('Subtitle file imported', { name: subFile.name });
 
         const currentOpId = ++operationIdRef.current;
+        const {
+          setIsLoadingSubtitle,
+          setSubtitles,
+          setSubtitleFileName,
+          setSpeakerProfiles,
+          setStatus,
+          setError,
+          setBatchComments,
+        } = useWorkspaceStore.getState();
+
         setIsLoadingSubtitle(true);
         try {
           // Allow UI to update before heavy parsing
@@ -320,45 +300,10 @@ export function useFileOperations({
 
           const parsed = await parseSubtitle(content, fileType);
 
-          setSubtitles(parsed);
-          setSubtitleFileName(subFile.name);
+          // For web import, use file name as a simple ID
+          const fileId = subFile.name;
 
-          // Extract and set speaker profiles with colors from ASS styles
-          const uniqueSpeakers = Array.from(
-            new Set(parsed.map((s) => s.speaker).filter(Boolean))
-          ) as string[];
-          const speakerColors = fileType === 'ass' ? parseAssStyles(content) : {};
-          const profiles: SpeakerUIProfile[] = uniqueSpeakers.map((name) => ({
-            id: name,
-            name: name,
-            color: speakerColors[sanitizeSpeakerForStyle(name)], // Lookup with sanitized name
-          }));
-          // Actually, import replaces subtitles, so we should replace profiles too.
-          setSpeakerProfiles(profiles);
-
-          setStatus(GenerationStatus.COMPLETED);
-
-          // Analytics: Subtitle Loaded
-          if (window.electronAPI?.analytics) {
-            void window.electronAPI.analytics.track(
-              'editor_subtitle_loaded',
-              {
-                format: fileType,
-                count: parsed.length,
-              },
-              'interaction'
-            );
-          }
-          setBatchComments({});
-          const fileId = window.electronAPI?.getFilePath?.(subFile) || subFile.name;
-          snapshotsValues.createSnapshot(
-            t('services:snapshots.initialImport'),
-            parsed,
-            {},
-            fileId,
-            subFile.name,
-            profiles
-          );
+          processSubtitleImport(parsed, subFile.name, fileType, fileId, content, snapshotsValues);
         } catch (error: unknown) {
           if (currentOpId !== operationIdRef.current) return;
 
@@ -373,16 +318,7 @@ export function useFileOperations({
         }
       }
     },
-    [
-      snapshotsValues,
-      parseSubtitle,
-      setSubtitles,
-      setStatus,
-      setError,
-      setSpeakerProfiles,
-      setBatchComments,
-      t,
-    ]
+    [snapshotsValues, parseSubtitle, t]
   );
 
   // Native dialog handler for subtitle import (Electron only)
@@ -391,6 +327,15 @@ export function useFileOperations({
 
     // Declare opId outside try/catch so it's available in catch block
     const currentOpId = ++operationIdRef.current;
+    const {
+      setIsLoadingSubtitle,
+      setSubtitles,
+      setSubtitleFileName,
+      setSpeakerProfiles,
+      setStatus,
+      setError,
+      setBatchComments,
+    } = useWorkspaceStore.getState();
 
     try {
       const result = await window.electronAPI.selectSubtitleFile();
@@ -408,43 +353,16 @@ export function useFileOperations({
       const parsed = await parseSubtitle(result.content, fileType);
       if (currentOpId !== operationIdRef.current) return;
 
-      setSubtitles(parsed);
-      setSubtitleFileName(result.fileName);
-
-      // Extract and set speaker profiles with colors from ASS styles
-      const uniqueSpeakers = Array.from(
-        new Set(parsed.map((s) => s.speaker).filter(Boolean))
-      ) as string[];
-      const speakerColors = fileType === 'ass' ? parseAssStyles(result.content) : {};
-      const profiles: SpeakerUIProfile[] = uniqueSpeakers.map((name) => ({
-        id: name,
-        name: name,
-        color: speakerColors[sanitizeSpeakerForStyle(name)], // Lookup with sanitized name
-      }));
-      setSpeakerProfiles(profiles);
-
-      setStatus(GenerationStatus.COMPLETED);
-
-      // Analytics: Subtitle Loaded (Native)
-      if (window.electronAPI?.analytics) {
-        void window.electronAPI.analytics.track(
-          'editor_subtitle_loaded',
-          {
-            format: fileType,
-            count: parsed.length,
-          },
-          'interaction'
-        );
-      }
-      setBatchComments({});
+      // Use full path as ID for native imports
       const fileId = result.filePath || result.fileName;
-      snapshotsValues.createSnapshot(
-        t('services:snapshots.initialImport'),
+
+      processSubtitleImport(
         parsed,
-        {},
-        fileId,
         result.fileName,
-        profiles
+        fileType,
+        fileId,
+        result.content,
+        snapshotsValues
       );
     } catch (error: unknown) {
       if (currentOpId !== operationIdRef.current) return;
@@ -458,16 +376,7 @@ export function useFileOperations({
         setIsLoadingSubtitle(false);
       }
     }
-  }, [
-    snapshotsValues,
-    parseSubtitle,
-    setSubtitles,
-    setStatus,
-    setError,
-    setSpeakerProfiles,
-    setBatchComments,
-    t,
-  ]);
+  }, [snapshotsValues, parseSubtitle, t]);
 
   // 防抖版本 - 防止快速重复点击文件选择按钮
   const debouncedHandleFileSelectNative = useDebouncedCallback(handleFileSelectNative);
@@ -478,10 +387,5 @@ export function useFileOperations({
     handleFileSelectNative: debouncedHandleFileSelectNative,
     handleSubtitleImport,
     handleSubtitleImportNative: debouncedHandleSubtitleImportNative,
-    isLoadingFile,
-    setIsLoadingFile,
-    isLoadingSubtitle,
-    subtitleFileName,
-    setSubtitleFileName,
   };
 }

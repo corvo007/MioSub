@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import React, { useRef, useCallback } from 'react';
 import FileParserWorker from '@/workers/fileParser.worker?worker';
 import { type SubtitleItem } from '@/types/subtitle';
 
@@ -61,5 +61,5 @@ export const useFileParserWorker = () => {
     workerRef.current = null;
   }, []);
 
-  return { parseSubtitle, cleanup };
+  return React.useMemo(() => ({ parseSubtitle, cleanup }), [parseSubtitle, cleanup]);
 };

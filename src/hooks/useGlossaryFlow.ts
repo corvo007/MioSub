@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   type GlossaryItem,
   type GlossaryExtractionResult,
@@ -56,20 +56,33 @@ export const useGlossaryFlow = () => {
     setGlossaryMetadata(metadata);
   }, []);
 
-  return {
-    showGlossaryConfirmation,
-    setShowGlossaryConfirmation,
-    showGlossaryFailure,
-    setShowGlossaryFailure,
-    pendingGlossaryResults,
-    setPendingGlossaryResults,
-    glossaryMetadata,
-    setGlossaryMetadata: updateMetadata,
-    glossaryConfirmCallback,
-    setGlossaryConfirmCallback,
-    isGeneratingGlossary,
-    setIsGeneratingGlossary,
-    setupGlossaryConfirmation,
-    confirmGlossary,
-  };
+  return React.useMemo(
+    () => ({
+      showGlossaryConfirmation,
+      setShowGlossaryConfirmation,
+      showGlossaryFailure,
+      setShowGlossaryFailure,
+      pendingGlossaryResults,
+      setPendingGlossaryResults,
+      glossaryMetadata,
+      setGlossaryMetadata: updateMetadata,
+      glossaryConfirmCallback,
+      setGlossaryConfirmCallback,
+      isGeneratingGlossary,
+      setIsGeneratingGlossary,
+      setupGlossaryConfirmation,
+      confirmGlossary,
+    }),
+    [
+      showGlossaryConfirmation,
+      showGlossaryFailure,
+      pendingGlossaryResults,
+      glossaryMetadata,
+      glossaryConfirmCallback,
+      isGeneratingGlossary,
+      setupGlossaryConfirmation,
+      confirmGlossary,
+      updateMetadata,
+    ]
+  );
 };

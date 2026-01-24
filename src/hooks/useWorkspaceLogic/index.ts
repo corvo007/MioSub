@@ -1,13 +1,12 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type SubtitleItem, type SubtitleSnapshot } from '@/types/subtitle';
-import { type AppSettings } from '@/types/settings';
 import {
   type GlossaryItem,
   type GlossaryExtractionResult,
   type GlossaryExtractionMetadata,
 } from '@/types/glossary';
-import { GenerationStatus, type ChunkStatus } from '@/types/api';
+import { GenerationStatus } from '@/types/api';
 import { logger } from '@/services/utils/logger';
 import { getFilename } from '@/services/utils/path';
 
@@ -24,8 +23,7 @@ import { useBatchActions } from './useBatchActions';
 import { useFileParserWorker } from '@/hooks/useFileParserWorker';
 
 interface UseWorkspaceLogicProps {
-  settings: AppSettings;
-  updateSetting: (key: keyof AppSettings, value: unknown) => void;
+  // settings and updateSetting removed - unused and available via store if needed
   addToast: (
     message: string,
     type: 'success' | 'error' | 'info' | 'warning',
@@ -54,7 +52,8 @@ interface UseWorkspaceLogicProps {
       subtitles: SubtitleItem[],
       batchComments?: Record<number, string>,
       fileId?: string,
-      fileName?: string
+      fileName?: string,
+      speakerProfiles?: any
     ) => void;
     createAutoSaveSnapshot: (
       subtitles: SubtitleItem[],
@@ -67,9 +66,9 @@ interface UseWorkspaceLogicProps {
   setShowSettings: (show: boolean) => void;
 }
 
+import { useWorkspaceStore } from '@/store/useWorkspaceStore';
+
 export const useWorkspaceLogic = ({
-  settings,
-  updateSetting,
   addToast,
   showConfirm,
   glossaryFlow,
@@ -77,22 +76,45 @@ export const useWorkspaceLogic = ({
   setShowSettings,
 }: UseWorkspaceLogicProps) => {
   const { t } = useTranslation('workspace');
+
   // ============================================
-  // Core State
+  // Core State (Read from Store)
   // ============================================
+  const file = useWorkspaceStore((state) => state.file);
+  const duration = useWorkspaceStore((state) => state.duration);
+  const status = useWorkspaceStore((state) => state.status);
+  const progressMsg = useWorkspaceStore((state) => state.progressMsg);
+  const chunkProgress = useWorkspaceStore((state) => state.chunkProgress);
+  const subtitles = useWorkspaceStore((state) => state.subtitles);
+  const error = useWorkspaceStore((state) => state.error);
+  const startTime = useWorkspaceStore((state) => state.startTime);
+  const selectedBatches = useWorkspaceStore((state) => state.selectedBatches);
+  const batchComments = useWorkspaceStore((state) => state.batchComments);
+  const showSourceText = useWorkspaceStore((state) => state.showSourceText);
+  const editingCommentId = useWorkspaceStore((state) => state.editingCommentId);
+  const isLoadingFile = useWorkspaceStore((state) => state.isLoadingFile);
+  const isLoadingSubtitle = useWorkspaceStore((state) => state.isLoadingSubtitle);
+  const subtitleFileName = useWorkspaceStore((state) => state.subtitleFileName);
+  const speakerProfiles = useWorkspaceStore((state) => state.speakerProfiles);
+
+  // Actions from store (for direct calling if needed)
+  const {
+    setFile,
+    setDuration,
+    setStatus: setStatusAction,
+    setSubtitles,
+    setBatchComments,
+    setSelectedBatches,
+    setError,
+    setChunkProgress,
+    setSpeakerProfiles,
+    setIsLoadingFile,
+    setSubtitleFileName,
+  } = useWorkspaceStore.getState(); // We use getState() for stable references, or hooks if we need reactivity?
+  // Actually, setters don't need to be reactive.
+
+  // Worker
   const { parseSubtitle, cleanup } = useFileParserWorker();
-  const [file, setFile] = useState<File | null>(null);
-  const [duration, setDuration] = useState<number>(0);
-  const [status, setStatus] = useState<GenerationStatus>(GenerationStatus.IDLE);
-  const [progressMsg, setProgressMsg] = useState('');
-  const [chunkProgress, setChunkProgress] = useState<Record<string, ChunkStatus>>({});
-  const [subtitles, setSubtitles] = useState<SubtitleItem[]>([]);
-  const subtitlesRef = useRef(subtitles);
-  useEffect(() => {
-    subtitlesRef.current = subtitles;
-  }, [subtitles]);
-  const [error, setError] = useState<string | null>(null);
-  const [startTime, setStartTime] = useState<number | null>(null);
 
   // ============================================
   // Refs
@@ -101,22 +123,18 @@ export const useWorkspaceLogic = ({
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // ============================================
-  // Existing Extracted Hooks
+  // Hooks
   // ============================================
+
   const {
-    selectedBatches,
-    setSelectedBatches,
-    batchComments,
-    setBatchComments,
-    showSourceText,
-    setShowSourceText,
-    editingCommentId,
-    setEditingCommentId,
     toggleBatch,
     toggleAllBatches,
     selectBatchesWithComments,
     updateBatchComment,
-    resetBatchState: _resetBatchState,
+    resetBatchState,
+    // Expose local setters as wrappers if needed by return signature
+    setEditingCommentId: setEditingCommentIdAction,
+    setShowSourceText: setShowSourceTextAction,
   } = useBatchSelection();
 
   const {
@@ -128,25 +146,19 @@ export const useWorkspaceLogic = ({
     deleteSubtitle,
     deleteMultipleSubtitles,
     addSubtitle,
-  } = useSubtitleCRUD({ setSubtitles });
+  } = useSubtitleCRUD();
 
-  const {
-    speakerProfiles,
-    setSpeakerProfiles,
-    addSpeaker,
-    renameSpeaker,
-    deleteSpeaker,
-    mergeSpeakers,
-    updateSpeakerColor,
-  } = useSpeakerProfiles({ subtitles, setSubtitles });
+  const { addSpeaker, renameSpeaker, deleteSpeaker, mergeSpeakers, updateSpeakerColor } =
+    useSpeakerProfiles();
 
-  // ============================================
-  // Progress Handler (shared by generation and batch actions)
-  // ============================================
+  // Progress Handler
   const handleProgress = useCallback(
-    (update: ChunkStatus) => {
-      setChunkProgress((prev) => ({ ...prev, [update.id]: update }));
-      if (update.message) setProgressMsg(update.message);
+    (update: any) => {
+      // Type strictness reduced for brevity in refactor, ideally ChunkStatus
+      useWorkspaceStore.setState((state) => ({
+        chunkProgress: { ...state.chunkProgress, [update.id]: update },
+      }));
+      if (update.message) useWorkspaceStore.setState({ progressMsg: update.message });
       if (update.toast) {
         addToast(update.toast.message, update.toast.type);
       }
@@ -154,11 +166,7 @@ export const useWorkspaceLogic = ({
     [addToast]
   );
 
-  // ============================================
-  // New Extracted Hooks
-  // ============================================
-
-  // Auto-save (pure side effect)
+  // Auto-save
   useAutoSave({
     subtitles,
     batchComments,
@@ -174,23 +182,7 @@ export const useWorkspaceLogic = ({
     handleFileSelectNative,
     handleSubtitleImport,
     handleSubtitleImportNative,
-    isLoadingFile,
-    setIsLoadingFile,
-    isLoadingSubtitle,
-    subtitleFileName,
-    setSubtitleFileName,
   } = useFileOperations({
-    file,
-    subtitles,
-    status,
-    setFile,
-    setSubtitles,
-    setStatus,
-    setError,
-    setDuration,
-    setSpeakerProfiles,
-    setBatchComments,
-    setSelectedBatches,
     audioCacheRef,
     showConfirm,
     snapshotsValues,
@@ -199,60 +191,30 @@ export const useWorkspaceLogic = ({
 
   // Generation
   const { handleGenerate } = useGeneration({
-    file,
-    duration,
-    settings,
-    batchComments,
-    setStatus,
-    setError,
-    setSubtitles,
-    setChunkProgress,
-    setStartTime,
-    setSelectedBatches,
-    setBatchComments,
     abortControllerRef,
     audioCacheRef,
-    subtitlesRef,
     handleProgress,
     glossaryFlow,
     snapshotsValues,
-    addToast,
     setShowSettings,
-    updateSetting,
   });
 
   // Batch actions
   const { handleBatchAction, handleDownload, handleRetryGlossary } = useBatchActions({
-    file,
-    subtitles,
-    selectedBatches,
-    batchComments,
-    settings,
-    speakerProfiles,
-    setSubtitles,
-    setSelectedBatches,
-    setBatchComments,
-    setStatus,
-    setError,
-    setChunkProgress,
-    setStartTime,
     abortControllerRef,
     audioCacheRef,
     handleProgress,
     glossaryFlow,
     snapshotsValues,
-    addToast,
   });
 
   // ============================================
-  // Simple Handlers (kept in coordinator)
+  // Simple Handlers
   // ============================================
   const cancelOperation = useCallback(() => {
     if (abortControllerRef.current) {
       logger.info('User cancelled operation');
       abortControllerRef.current.abort();
-
-      // Call local whisper abort if applicable
       if (window.electronAPI?.abortLocalWhisper) {
         void window.electronAPI.abortLocalWhisper();
       }
@@ -260,32 +222,28 @@ export const useWorkspaceLogic = ({
   }, []);
 
   const resetWorkspace = useCallback(() => {
-    setSubtitles([]);
-    setFile(null);
-    setDuration(0);
-    setStatus(GenerationStatus.IDLE);
-    setBatchComments({});
-    setSelectedBatches(new Set());
-    setError(null);
-  }, [setBatchComments, setSelectedBatches]);
+    useWorkspaceStore.setState({
+      subtitles: [],
+      file: null,
+      duration: 0,
+      status: GenerationStatus.IDLE,
+      batchComments: {},
+      selectedBatches: new Set(),
+      error: null,
+    });
+  }, []);
 
   const loadFileFromPath = useCallback(
     async (path: string) => {
       try {
-        // Use IPC to read file buffer (bypassing CSP/Sandbox)
         const buffer = await window.electronAPI.readLocalFile(path);
-
-        // Create a File object
         const filename = getFilename(path) || 'video.mp4';
-        // Use generic binary type - file type detection relies on extension, not MIME
         const type = 'application/octet-stream';
-
         const fileObj = new File([buffer], filename, { type });
-        // Manually attach path for Electron/FFmpeg usage
         Object.defineProperty(fileObj, 'path', {
           value: path,
           writable: false,
-          enumerable: false, // standard File.path is not enumerable
+          enumerable: false,
           configurable: false,
         });
 
@@ -295,7 +253,6 @@ export const useWorkspaceLogic = ({
         audioCacheRef.current = null;
         setError(null);
 
-        // Get duration using Electron API
         if (window.electronAPI && window.electronAPI.getAudioInfo) {
           try {
             const result = await window.electronAPI.getAudioInfo(path);
@@ -311,9 +268,9 @@ export const useWorkspaceLogic = ({
           setDuration(0);
         }
 
-        // Reset workspace state
+        // Reset workspace
         setSubtitles([]);
-        setStatus(GenerationStatus.IDLE);
+        setStatusAction(GenerationStatus.IDLE);
         setBatchComments({});
         setSelectedBatches(new Set());
       } catch (e: unknown) {
@@ -322,24 +279,138 @@ export const useWorkspaceLogic = ({
         setError(t('unableToLoadFile', { error: error.message }));
       }
     },
-    [setBatchComments, setSelectedBatches, t]
+    [
+      t,
+      setFile,
+      setError,
+      setDuration,
+      setSubtitles,
+      setStatusAction,
+      setBatchComments,
+      setSelectedBatches,
+    ]
   );
 
   // ============================================
   // Cleanup
   // ============================================
   useEffect(() => {
+    const controller = abortControllerRef.current;
     return () => {
       cleanup();
       audioCacheRef.current = null;
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      abortControllerRef.current?.abort();
+      controller?.abort();
     };
   }, [cleanup]);
 
   // ============================================
-  // Return Memoized Object
+  // Register Actions to Store (Stable Reference Pattern)
   // ============================================
+  // Use a ref to always hold the latest handlers, avoiding dependency on their stability.
+  // This ensures the actions object registered to the store NEVER changes reference.
+  const handlersRef = useRef({
+    handleFileChange,
+    handleFileSelectNative,
+    handleSubtitleImport,
+    handleSubtitleImportNative,
+    handleGenerate,
+    handleDownload,
+    cancelOperation,
+    toggleAllBatches,
+    selectBatchesWithComments,
+    handleBatchAction,
+    toggleBatch,
+    updateBatchComment,
+    updateLineComment,
+    updateSubtitleText,
+    updateSubtitleOriginal,
+    updateSpeaker,
+    updateSubtitleTime,
+    deleteSubtitle,
+    deleteMultipleSubtitles,
+    addSubtitle,
+  });
+
+  // Keep the ref always up-to-date with latest handler implementations
+  useLayoutEffect(() => {
+    handlersRef.current = {
+      handleFileChange,
+      handleFileSelectNative,
+      handleSubtitleImport,
+      handleSubtitleImportNative,
+      handleGenerate,
+      handleDownload,
+      cancelOperation,
+      toggleAllBatches,
+      selectBatchesWithComments,
+      handleBatchAction,
+      toggleBatch,
+      updateBatchComment,
+      updateLineComment,
+      updateSubtitleText,
+      updateSubtitleOriginal,
+      updateSpeaker,
+      updateSubtitleTime,
+      deleteSubtitle,
+      deleteMultipleSubtitles,
+      addSubtitle,
+    };
+  });
+
+  // Create STABLE action wrappers that delegate to the ref (registered ONCE)
+  const stableActions = React.useMemo(
+    () => ({
+      handleFileChange: (...args: Parameters<typeof handleFileChange>) =>
+        handlersRef.current.handleFileChange(...args),
+      handleFileSelectNative: (...args: Parameters<typeof handleFileSelectNative>) =>
+        handlersRef.current.handleFileSelectNative(...args),
+      handleSubtitleImport: (...args: Parameters<typeof handleSubtitleImport>) =>
+        handlersRef.current.handleSubtitleImport(...args),
+      handleSubtitleImportNative: (...args: Parameters<typeof handleSubtitleImportNative>) =>
+        handlersRef.current.handleSubtitleImportNative(...args),
+      handleGenerate: (...args: Parameters<typeof handleGenerate>) =>
+        handlersRef.current.handleGenerate(...args),
+      handleDownload: (...args: Parameters<typeof handleDownload>) =>
+        handlersRef.current.handleDownload(...args),
+      cancelOperation: () => handlersRef.current.cancelOperation(),
+      toggleAllBatches: (...args: Parameters<typeof toggleAllBatches>) =>
+        handlersRef.current.toggleAllBatches(...args),
+      selectBatchesWithComments: (...args: Parameters<typeof selectBatchesWithComments>) =>
+        handlersRef.current.selectBatchesWithComments(...args),
+      handleBatchAction: (...args: Parameters<typeof handleBatchAction>) =>
+        handlersRef.current.handleBatchAction(...args),
+      toggleBatch: (...args: Parameters<typeof toggleBatch>) =>
+        handlersRef.current.toggleBatch(...args),
+      updateBatchComment: (...args: Parameters<typeof updateBatchComment>) =>
+        handlersRef.current.updateBatchComment(...args),
+      setEditingCommentId: (id: string | null) =>
+        useWorkspaceStore.setState({ editingCommentId: id }),
+      setShowSourceText: (show: boolean) => useWorkspaceStore.setState({ showSourceText: show }),
+      updateLineComment: (...args: Parameters<typeof updateLineComment>) =>
+        handlersRef.current.updateLineComment(...args),
+      updateSubtitleText: (...args: Parameters<typeof updateSubtitleText>) =>
+        handlersRef.current.updateSubtitleText(...args),
+      updateSubtitleOriginal: (...args: Parameters<typeof updateSubtitleOriginal>) =>
+        handlersRef.current.updateSubtitleOriginal(...args),
+      updateSpeaker: (...args: Parameters<typeof updateSpeaker>) =>
+        handlersRef.current.updateSpeaker(...args),
+      updateSubtitleTime: (...args: Parameters<typeof updateSubtitleTime>) =>
+        handlersRef.current.updateSubtitleTime(...args),
+      deleteSubtitle: (...args: Parameters<typeof deleteSubtitle>) =>
+        handlersRef.current.deleteSubtitle(...args),
+      deleteMultipleSubtitles: (...args: Parameters<typeof deleteMultipleSubtitles>) =>
+        handlersRef.current.deleteMultipleSubtitles(...args),
+      addSubtitle: (...args: Parameters<typeof addSubtitle>) =>
+        handlersRef.current.addSubtitle(...args),
+    }),
+    []
+  ); // Empty deps = stable forever
+
+  // Register actions to store ONCE on mount
+  useEffect(() => {
+    useWorkspaceStore.getState().setActions(stableActions);
+  }, [stableActions]);
+
   return React.useMemo(
     () => ({
       // State
@@ -349,22 +420,27 @@ export const useWorkspaceLogic = ({
       progressMsg,
       chunkProgress,
       subtitles,
-      setSubtitles,
+      // Pass setState generic for compatibility if needed, but components should trigger actions
+      setSubtitles: (subs: any) =>
+        useWorkspaceStore.setState({
+          subtitles: typeof subs === 'function' ? subs(subtitles) : subs,
+        }),
       error,
       startTime,
       selectedBatches,
-      setSelectedBatches,
+      setSelectedBatches: (val: any) => useWorkspaceStore.setState({ selectedBatches: val }),
       batchComments,
-      setBatchComments,
+      setBatchComments: (val: any) => useWorkspaceStore.setState({ batchComments: val }),
       showSourceText,
-      setShowSourceText,
+      setShowSourceText: setShowSourceTextAction,
       editingCommentId,
-      setEditingCommentId,
+      setEditingCommentId: setEditingCommentIdAction,
       isLoadingFile,
       isLoadingSubtitle,
       subtitleFileName,
-      setSubtitleFileName,
-      setIsLoadingFile,
+      setSubtitleFileName: (name: string) => useWorkspaceStore.setState({ subtitleFileName: name }),
+      setIsLoadingFile: (loading: boolean) =>
+        useWorkspaceStore.setState({ isLoadingFile: loading }),
 
       // Handlers
       handleFileChange,
@@ -393,7 +469,7 @@ export const useWorkspaceLogic = ({
 
       // Speaker Profiles
       speakerProfiles,
-      setSpeakerProfiles,
+      setSpeakerProfiles: (val: any) => useWorkspaceStore.setState({ speakerProfiles: val }),
       addSpeaker,
       renameSpeaker,
       deleteSpeaker,
@@ -416,6 +492,8 @@ export const useWorkspaceLogic = ({
       isLoadingFile,
       isLoadingSubtitle,
       subtitleFileName,
+      speakerProfiles,
+      // Actions
       handleFileChange,
       handleFileSelectNative,
       handleSubtitleImport,
@@ -439,19 +517,13 @@ export const useWorkspaceLogic = ({
       resetWorkspace,
       cancelOperation,
       loadFileFromPath,
-      speakerProfiles,
       addSpeaker,
       renameSpeaker,
       deleteSpeaker,
       mergeSpeakers,
       updateSpeakerColor,
-      setSelectedBatches,
-      setBatchComments,
-      setIsLoadingFile,
-      setSubtitleFileName,
-      setSpeakerProfiles,
-      setEditingCommentId,
-      setShowSourceText,
+      setEditingCommentIdAction,
+      setShowSourceTextAction,
     ]
   );
 };

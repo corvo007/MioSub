@@ -1,64 +1,84 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
+import type React from 'react';
 import { type SubtitleItem } from '@/types/subtitle';
+import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 
 export function useBatchSelection() {
-  const [selectedBatches, setSelectedBatches] = useState<Set<number>>(new Set());
-  const [batchComments, setBatchComments] = useState<Record<string, string>>({});
-  const [showSourceText, setShowSourceText] = useState(true);
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-
   const toggleBatch = useCallback((index: number) => {
-    setSelectedBatches((prev) => {
-      const newSet = new Set(prev);
+    useWorkspaceStore.setState((state) => {
+      const newSet = new Set(state.selectedBatches);
       if (newSet.has(index)) newSet.delete(index);
       else newSet.add(index);
-      return newSet;
+      return { selectedBatches: newSet };
     });
   }, []);
 
   const toggleAllBatches = useCallback((totalBatches: number) => {
-    setSelectedBatches((prev) => {
-      if (prev.size === totalBatches) return new Set();
-      return new Set(Array.from({ length: totalBatches }, (_, i) => i));
+    useWorkspaceStore.setState((state) => {
+      if (state.selectedBatches.size === totalBatches) return { selectedBatches: new Set() };
+      return { selectedBatches: new Set(Array.from({ length: totalBatches }, (_, i) => i)) };
     });
   }, []);
 
-  const selectBatchesWithComments = useCallback(
-    (chunks: SubtitleItem[][]) => {
-      const newSet = new Set<number>();
-      chunks.forEach((chunk, idx) => {
-        const hasBatchComment =
-          batchComments[String(idx)] && batchComments[String(idx)].trim().length > 0;
-        const hasLineComments = chunk.some((s) => s.comment && s.comment.trim().length > 0);
-        if (hasBatchComment || hasLineComments) newSet.add(idx);
-      });
-      setSelectedBatches(newSet);
-    },
-    [batchComments]
-  );
+  const selectBatchesWithComments = useCallback((chunks: SubtitleItem[][]) => {
+    const state = useWorkspaceStore.getState();
+    const newSet = new Set<number>();
+    chunks.forEach((chunk, idx) => {
+      const hasBatchComment =
+        state.batchComments[String(idx)] && state.batchComments[String(idx)].trim().length > 0;
+      const hasLineComments = chunk.some((s) => s.comment && s.comment.trim().length > 0);
+      if (hasBatchComment || hasLineComments) newSet.add(idx);
+    });
+    useWorkspaceStore.setState({ selectedBatches: newSet });
+  }, []);
 
   const updateBatchComment = useCallback((index: number, comment: string) => {
-    setBatchComments((prev) => ({ ...prev, [String(index)]: comment }));
+    useWorkspaceStore.setState((state) => ({
+      batchComments: { ...state.batchComments, [numberToString(index)]: comment },
+    }));
   }, []);
 
   const resetBatchState = useCallback(() => {
-    setBatchComments({});
-    setSelectedBatches(new Set());
+    useWorkspaceStore.setState({
+      batchComments: {},
+      selectedBatches: new Set(),
+    });
+  }, []);
+
+  const setEditingCommentId = useCallback((id: string | null) => {
+    useWorkspaceStore.setState({ editingCommentId: id });
+  }, []);
+
+  const setShowSourceText = useCallback((show: boolean) => {
+    useWorkspaceStore.setState({ showSourceText: show });
+  }, []);
+
+  const setSelectedBatches = useCallback((batches: Set<number>) => {
+    useWorkspaceStore.setState({ selectedBatches: batches });
+  }, []);
+
+  const setBatchComments = useCallback((comments: React.SetStateAction<Record<number, string>>) => {
+    useWorkspaceStore.setState((state) => {
+      const newComments =
+        typeof comments === 'function' ? (comments as any)(state.batchComments) : comments;
+      return { batchComments: newComments };
+    });
   }, []);
 
   return {
-    selectedBatches,
-    setSelectedBatches,
-    batchComments,
-    setBatchComments,
-    showSourceText,
-    setShowSourceText,
-    editingCommentId,
-    setEditingCommentId,
     toggleBatch,
     toggleAllBatches,
     selectBatchesWithComments,
     updateBatchComment,
     resetBatchState,
+    setEditingCommentId,
+    setShowSourceText,
+    setSelectedBatches,
+    setBatchComments,
   };
+}
+
+// Helper to handle key conversion if needed, though Record<number, string> keys are strings in JS.
+function numberToString(n: number): string {
+  return String(n);
 }

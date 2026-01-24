@@ -1,15 +1,11 @@
-import { type RefObject } from 'react';
-import type React from 'react';
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   type SubtitleItem,
   type BatchOperationMode,
   type RegeneratePrompts,
 } from '@/types/subtitle';
-import { type SpeakerUIProfile } from '@/types/speaker';
-import { type AppSettings } from '@/types/settings';
-import { GenerationStatus, type ChunkStatus } from '@/types/api';
+import { GenerationStatus } from '@/types/api';
 import { generateSrtContent, generateAssContent } from '@/services/subtitle/generator';
 import { downloadFile } from '@/services/subtitle/downloader';
 import { logger } from '@/services/utils/logger';
@@ -24,25 +20,10 @@ import {
   type SnapshotsValuesProps,
   type ProgressHandler,
 } from '@/types/workspace';
+import { useAppStore } from '@/store/useAppStore';
+import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 
 interface UseBatchActionsProps {
-  // State reading
-  file: File | null;
-  subtitles: SubtitleItem[];
-  selectedBatches: Set<number>;
-  batchComments: Record<number, string>;
-  settings: AppSettings;
-  speakerProfiles?: SpeakerUIProfile[];
-
-  // State setters
-  setSubtitles: (subtitles: SubtitleItem[]) => void;
-  setSelectedBatches: (batches: Set<number>) => void;
-  setBatchComments: React.Dispatch<React.SetStateAction<Record<number, string>>>;
-  setStatus: (status: GenerationStatus) => void;
-  setError: (error: string | null) => void;
-  setChunkProgress: React.Dispatch<React.SetStateAction<Record<string, ChunkStatus>>>;
-  setStartTime: (time: number | null) => void;
-
   // Refs
   abortControllerRef: RefObject<AbortController | null>;
   audioCacheRef: RefObject<{ file: File; buffer: AudioBuffer } | null>;
@@ -51,11 +32,6 @@ interface UseBatchActionsProps {
   handleProgress: ProgressHandler;
   glossaryFlow: GlossaryFlowProps;
   snapshotsValues: Pick<SnapshotsValuesProps, 'createSnapshot'>;
-  addToast: (
-    message: string,
-    type: 'success' | 'error' | 'info' | 'warning',
-    duration?: number
-  ) => void;
 }
 
 interface UseBatchActionsReturn {
@@ -70,27 +46,14 @@ interface UseBatchActionsReturn {
 
 /**
  * Hook for batch operations, download, and glossary retry.
+ * Now reads/writes directly to stores.
  */
 export function useBatchActions({
-  file,
-  subtitles,
-  selectedBatches,
-  batchComments,
-  settings,
-  speakerProfiles,
-  setSubtitles,
-  setSelectedBatches,
-  setBatchComments,
-  setStatus,
-  setError,
-  setChunkProgress,
-  setStartTime,
   abortControllerRef,
   audioCacheRef,
   handleProgress,
   glossaryFlow,
   snapshotsValues,
-  addToast,
 }: UseBatchActionsProps): UseBatchActionsReturn {
   const { t } = useTranslation(['workspace', 'services']);
   // Use ref instead of state to avoid closure issues in async catch block
@@ -102,6 +65,24 @@ export function useBatchActions({
 
   const handleBatchAction = useCallback(
     async (mode: BatchOperationMode, singleIndex?: number, prompts?: RegeneratePrompts) => {
+      // Read fresh state
+      const settings = useAppStore.getState().settings;
+      const { addToast } = useAppStore.getState();
+      const {
+        file,
+        subtitles,
+        selectedBatches,
+        batchComments,
+        speakerProfiles,
+        setSelectedBatches,
+        setSubtitles,
+        setBatchComments,
+        setStatus,
+        setError,
+        setChunkProgress,
+        setStartTime,
+      } = useWorkspaceStore.getState();
+
       const indices: number[] =
         singleIndex !== undefined ? [singleIndex] : (Array.from(selectedBatches) as number[]);
       if (indices.length === 0) return;
@@ -191,11 +172,11 @@ export function useBatchActions({
         }
         setSubtitles(refined);
         setStatus(GenerationStatus.COMPLETED);
-        setBatchComments((prev) => {
-          const next = { ...prev };
-          indices.forEach((idx) => delete next[idx]);
-          return next;
-        });
+        // Update batch comments directly using store state
+        const currentBatchComments = useWorkspaceStore.getState().batchComments;
+        const nextBatchComments = { ...currentBatchComments };
+        indices.forEach((idx) => delete nextBatchComments[idx]);
+        setBatchComments(nextBatchComments);
         if (singleIndex === undefined) setSelectedBatches(new Set());
         logger.info(`Batch action ${mode} completed`);
         addToast(t('workspace:hooks.batch.status.completed', { action: actionName }), 'success');
@@ -226,74 +207,50 @@ export function useBatchActions({
         snapshotBeforeOperationRef.current = null;
       }
     },
-    [
-      file,
-      subtitles,
-      selectedBatches,
-      settings,
-      batchComments,
-      speakerProfiles,
-      snapshotsValues,
-      addToast,
-
-      abortControllerRef,
-      handleProgress,
-      t,
-      setSubtitles,
-      setSelectedBatches,
-      setBatchComments,
-      setStatus,
-      setError,
-      setChunkProgress,
-      setStartTime,
-    ]
+    [abortControllerRef, snapshotsValues, handleProgress, t]
   );
 
-  const handleDownload = useCallback(
-    (format: 'srt' | 'ass') => {
-      if (subtitles.length === 0) return;
-      const isBilingual = settings.outputMode === 'bilingual';
-      const includeSpeaker = settings.includeSpeakerInExport || false;
-      const content =
-        format === 'srt'
-          ? generateSrtContent(subtitles, isBilingual, includeSpeaker)
-          : generateAssContent(
-              subtitles,
-              file ? file.name : 'video',
-              isBilingual,
-              includeSpeaker,
-              settings.useSpeakerColors,
-              speakerProfiles
-            );
-      const filename = file ? file.name.replace(/\.[^/.]+$/, '') : 'subtitles';
-      logger.info(`Downloading subtitles: ${filename}.${format}`);
+  const handleDownload = useCallback((format: 'srt' | 'ass') => {
+    // Read state directly
+    const { settings } = useAppStore.getState();
+    const { subtitles, file, speakerProfiles } = useWorkspaceStore.getState();
 
-      // Analytics: Subtitle Exported
-      if (window.electronAPI?.analytics) {
-        void window.electronAPI.analytics.track(
-          'editor_exported',
-          {
-            format: format,
-            count: subtitles.length,
-          },
-          'interaction'
-        );
-      }
+    if (subtitles.length === 0) return;
+    const isBilingual = settings.outputMode === 'bilingual';
+    const includeSpeaker = settings.includeSpeakerInExport || false;
+    const content =
+      format === 'srt'
+        ? generateSrtContent(subtitles, isBilingual, includeSpeaker)
+        : generateAssContent(
+            subtitles,
+            file ? file.name : 'video',
+            isBilingual,
+            includeSpeaker,
+            settings.useSpeakerColors,
+            speakerProfiles
+          );
+    const filename = file ? file.name.replace(/\.[^/.]+$/, '') : 'subtitles';
+    logger.info(`Downloading subtitles: ${filename}.${format}`);
 
-      void downloadFile(`${filename}.${format}`, content, format);
-    },
-    [
-      subtitles,
-      settings.outputMode,
-      settings.includeSpeakerInExport,
-      settings.useSpeakerColors,
-      file,
-      speakerProfiles,
-    ]
-  );
+    // Analytics: Subtitle Exported
+    if (window.electronAPI?.analytics) {
+      void window.electronAPI.analytics.track(
+        'editor_exported',
+        {
+          format: format,
+          count: subtitles.length,
+        },
+        'interaction'
+      );
+    }
+
+    void downloadFile(`${filename}.${format}`, content, format);
+  }, []);
 
   const handleRetryGlossary = useCallback(async () => {
     if (!glossaryFlow.glossaryMetadata?.glossaryChunks || !audioCacheRef.current) return;
+    const settings = useAppStore.getState().settings;
+    const { setError } = useWorkspaceStore.getState();
 
     glossaryFlow.setIsGeneratingGlossary(true);
     try {
@@ -332,7 +289,7 @@ export function useBatchActions({
     } finally {
       glossaryFlow.setIsGeneratingGlossary(false);
     }
-  }, [glossaryFlow, settings, audioCacheRef, setError]);
+  }, [glossaryFlow, audioCacheRef]);
 
   // 防抖版本 - 防止快速重复点击润色/重新生成按钮
   const debouncedHandleBatchAction = useDebouncedCallback(handleBatchAction);

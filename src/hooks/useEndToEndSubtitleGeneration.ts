@@ -104,8 +104,8 @@ export function useEndToEndSubtitleGeneration({
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
 
-      // Timeout protection (30 minutes max)
-      const timeoutMs = 30 * 60 * 1000;
+      // Timeout protection (24 hours max)
+      const timeoutMs = 24 * 60 * 60 * 1000;
       const timeoutId = setTimeout(() => {
         logger.warn('[EndToEnd] Generation timeout, aborting');
         abortControllerRef.current?.abort();
@@ -165,6 +165,7 @@ export function useEndToEndSubtitleGeneration({
 
         // Decode audio with error handling
         let audioBuffer: AudioBuffer;
+        const audioFileName = audioFile.name; // Capture name before clearing file
         try {
           audioBuffer = await decodeAudioWithRetry(audioFile);
           logger.info('[EndToEnd] Audio decoded', { duration: audioBuffer.duration });
@@ -354,7 +355,7 @@ export function useEndToEndSubtitleGeneration({
           },
           signal,
           // Video info for artifact metadata
-          { filename: audioFile.name, duration: audioBuffer.duration }
+          { filename: audioFileName, duration: audioBuffer.duration }
         );
 
         // Capture chunk analytics from result (should be same as accumulated but sorted)

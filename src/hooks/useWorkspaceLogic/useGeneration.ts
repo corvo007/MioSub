@@ -1,15 +1,12 @@
 import { type RefObject } from 'react';
-import type React from 'react';
+
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type SubtitleItem } from '@/types/subtitle';
-import { type AppSettings } from '@/types/settings';
 import { type GlossaryItem, type GlossaryExtractionMetadata } from '@/types/glossary';
-import { GenerationStatus, type ChunkStatus } from '@/types/api';
+import { GenerationStatus, type ChunkStatus, type ChunkAnalytics } from '@/types/api';
 import { logger } from '@/services/utils/logger';
 import { autoConfirmGlossaryTerms } from '@/services/glossary/autoConfirm';
 import { generateSubtitles } from '@/services/generation/pipeline';
-import { type ChunkAnalytics } from '@/types/api';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
 import { decodeAudioWithRetry } from '@/services/audio/decoder';
 import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
@@ -21,39 +18,19 @@ import {
   type SnapshotsValuesProps,
   type ProgressHandler,
 } from '@/types/workspace';
+import { useAppStore } from '@/store/useAppStore';
+import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 
 interface UseGenerationProps {
-  // State reading
-  file: File | null;
-  duration: number;
-  settings: AppSettings;
-  batchComments: Record<number, string>;
-
-  // State setters
-  setStatus: (status: GenerationStatus) => void;
-  setError: (error: string | null) => void;
-  setSubtitles: (subtitles: SubtitleItem[]) => void;
-  setChunkProgress: React.Dispatch<React.SetStateAction<Record<string, ChunkStatus>>>;
-  setStartTime: (time: number | null) => void;
-  setSelectedBatches: (batches: Set<number>) => void;
-  setBatchComments: React.Dispatch<React.SetStateAction<Record<number, string>>>;
-
   // Refs
   abortControllerRef: RefObject<AbortController | null>;
   audioCacheRef: RefObject<{ file: File; buffer: AudioBuffer } | null>;
-  subtitlesRef: RefObject<SubtitleItem[]>;
 
-  // External dependencies
+  // External dependency
   handleProgress: ProgressHandler;
   glossaryFlow: GlossaryFlowProps;
   snapshotsValues: Pick<SnapshotsValuesProps, 'setSnapshots' | 'createSnapshot'>;
-  addToast: (
-    message: string,
-    type: 'success' | 'error' | 'info' | 'warning',
-    duration?: number
-  ) => void;
   setShowSettings: (show: boolean) => void;
-  updateSetting: (key: keyof AppSettings, value: unknown) => void;
 }
 
 interface UseGenerationReturn {
@@ -62,32 +39,37 @@ interface UseGenerationReturn {
 
 /**
  * Hook for the core subtitle generation logic.
+ * Now reads/writes directly to stores.
  */
 export function useGeneration({
-  file,
-  duration,
-  settings,
-  batchComments,
-  setStatus,
-  setError,
-  setSubtitles,
-  setChunkProgress,
-  setStartTime,
-  setSelectedBatches,
-  setBatchComments,
   abortControllerRef,
   audioCacheRef,
-  subtitlesRef,
   handleProgress,
   glossaryFlow,
   snapshotsValues,
-  addToast,
   setShowSettings,
-  updateSetting,
 }: UseGenerationProps): UseGenerationReturn {
   const { t } = useTranslation(['workspace', 'services']);
 
   const handleGenerate = useCallback(async () => {
+    // Read fresh state/settings
+    const settings = useAppStore.getState().settings;
+    const { updateSetting, addToast } = useAppStore.getState();
+    const {
+      file,
+      duration,
+      batchComments,
+      setError,
+      setStatus,
+      setSubtitles,
+      setBatchComments,
+      setSelectedBatches,
+      setChunkProgress,
+      setStartTime,
+      speakerProfiles,
+      setSpeakerProfiles,
+    } = useWorkspaceStore.getState();
+
     if (!file) {
       setError(t('workspace:hooks.generation.errors.fileRequired'));
       return;
@@ -109,8 +91,24 @@ export function useGeneration({
     }
     setStatus(GenerationStatus.UPLOADING);
     setError(null);
+
+    // Create a safety snapshot if there are existing subtitles
+    const currentSubtitles = useWorkspaceStore.getState().subtitles;
+    if (currentSubtitles.length > 0) {
+      snapshotsValues.createSnapshot(
+        t('services:snapshots.autoBackup', { defaultValue: 'Auto Backup (Before Generation)' }),
+        currentSubtitles,
+        batchComments,
+        `backup-${Date.now()}`,
+        file?.name || 'unknown',
+        speakerProfiles
+      );
+    }
+
     setSubtitles([]);
-    snapshotsValues.setSnapshots([]);
+    // Do NOT clear snapshots - preserve history
+    // snapshotsValues.setSnapshots([]);
+
     setBatchComments({});
     setSelectedBatches(new Set());
     setChunkProgress({});
@@ -170,13 +168,8 @@ export function useGeneration({
           use_speaker_colors: settings.useSpeakerColors,
           use_speaker_styled_translation: settings.useSpeakerStyledTranslation,
 
-          // Third-party API detection (check if custom endpoint is set)
-          // is_third_party_openai: !!(settings.openaiEndpoint && settings.openaiEndpoint !== ''),
+          // Third-party API detection
           is_third_party_gemini: !!(settings.geminiEndpoint && settings.geminiEndpoint !== ''),
-
-          // Step providers (which provider for each step)
-          // provider_refinement: settings.stepProviders?.refinement?.type || 'gemini',
-          // provider_translation: settings.stepProviders?.translation?.type || 'gemini',
 
           // Has custom prompts
           has_custom_translation_prompt: !!settings.customTranslationPrompt?.trim(),
@@ -203,7 +196,6 @@ export function useGeneration({
       };
 
       // Prepare audio source: Use cached/decoded buffer for normal mode, or pass raw file for Mock/Debug mode
-      // (This allows pipeline/index.ts to decide if decoding is even necessary, e.g. satisfying "Start From: Refinement" optimization)
       let audioSource: AudioBuffer | File;
       const isMockMode = !!settings.debug?.mockStage;
 
@@ -243,7 +235,11 @@ export function useGeneration({
         }
       };
 
-      const { subtitles: result, chunkAnalytics: resultAnalytics } = await generateSubtitles(
+      const {
+        subtitles: result,
+        chunkAnalytics: resultAnalytics,
+        speakerProfiles: updatedProfiles,
+      } = await generateSubtitles(
         audioSource,
         duration,
         runtimeSettings,
@@ -257,7 +253,7 @@ export function useGeneration({
             const result = autoConfirmGlossaryTerms({
               metadata,
               settings,
-              updateSetting,
+              updateSetting, // Update setting directly via store action
               logPrefix: '[Workspace]',
             });
             return result.terms;
@@ -322,7 +318,8 @@ export function useGeneration({
         },
         signal,
         // Video info for artifact metadata
-        { filename: file.name, duration }
+        { filename: file.name, duration },
+        speakerProfiles
       );
 
       // Capture analytics for reporting
@@ -332,8 +329,12 @@ export function useGeneration({
       if (result.length === 0) throw new Error(t('workspace:hooks.generation.errors.noSubtitles'));
 
       setSubtitles(result);
+      setSpeakerProfiles(updatedProfiles);
       setStatus(GenerationStatus.COMPLETED);
-      const fileId = file ? window.electronAPI?.getFilePath?.(file) || file.name : '';
+      // Prioritize manually attached path (from native load) -> Electron webUtils -> filename
+      const fileId = file
+        ? (file as any).path || window.electronAPI?.getFilePath?.(file) || file.name
+        : '';
       const fileName = file?.name || '';
       snapshotsValues.createSnapshot(
         t('services:snapshots.initialGeneration'),
@@ -374,12 +375,14 @@ export function useGeneration({
         chunkAnalytics.sort((a, b) => a.index - b.index);
 
         // Keep partial results (subtitles state already updated via onIntermediateResult)
-        if (subtitlesRef.current.length > 0) {
+        // Access latest subtitles from store
+        const currentSubtitles = useWorkspaceStore.getState().subtitles;
+        if (currentSubtitles.length > 0) {
           const fileId = file ? window.electronAPI?.getFilePath?.(file) || file.name : '';
           const fileName = file?.name || '';
           snapshotsValues.createSnapshot(
             t('services:snapshots.partialGeneration'),
-            subtitlesRef.current,
+            currentSubtitles,
             batchComments,
             fileId,
             fileName
@@ -395,7 +398,7 @@ export function useGeneration({
           void window.electronAPI.analytics.track(
             'workspace_generation_cancelled',
             {
-              partial_count: subtitlesRef.current.length,
+              partial_count: currentSubtitles.length,
               duration_ms: Date.now() - startAt,
               chunk_durations: chunkAnalytics,
             },
@@ -439,26 +442,12 @@ export function useGeneration({
       abortControllerRef.current = null;
     }
   }, [
-    file,
-    settings,
-    duration,
     glossaryFlow,
     snapshotsValues,
-    updateSetting,
-    addToast,
     setShowSettings,
-    batchComments,
     abortControllerRef,
     audioCacheRef,
-    subtitlesRef,
     handleProgress,
-    setStatus,
-    setError,
-    setSubtitles,
-    setChunkProgress,
-    setStartTime,
-    setSelectedBatches,
-    setBatchComments,
     t,
   ]);
 

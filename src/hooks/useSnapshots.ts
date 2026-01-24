@@ -1,7 +1,10 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { type SubtitleSnapshot, type SubtitleItem } from '@/types/subtitle';
 import { type SpeakerUIProfile } from '@/types/speaker';
 import { snapshotStorage } from '@/services/utils/snapshotStorage';
+
+import { serializeSubtitleItem } from '@/services/subtitle/serializer';
+import { serializeSpeakerProfile } from '@/services/speaker/speakerUtils';
 
 /**
  * Simple hash function for comparing subtitle and batch content
@@ -11,18 +14,12 @@ const computeContentHash = (
   batchComments: Record<string, string>,
   speakerProfiles?: SpeakerUIProfile[]
 ): string => {
-  const subtitleContent = subtitles
-    .map(
-      (s) =>
-        `${s.id}|${s.startTime}|${s.endTime}|${s.original}|${s.translated}|${s.comment || ''}|${s.speaker || ''}`
-    )
-    .join('\n');
+  const subtitleContent = subtitles.map(serializeSubtitleItem).join('\n');
   const batchContent = Object.entries(batchComments)
     .sort(([a], [b]) => Number(a) - Number(b))
     .map(([k, v]) => `${k}:${v}`)
     .join('|');
-  const speakerContent =
-    speakerProfiles?.map((p) => `${p.id}|${p.name}|${p.color || ''}`).join('|') || '';
+  const speakerContent = speakerProfiles?.map(serializeSpeakerProfile).join('|') || '';
   const content = subtitleContent + '||BATCH||' + batchContent + '||SPEAKERS||' + speakerContent;
   let hash = 0;
   for (let i = 0; i < content.length; i++) {
@@ -138,12 +135,15 @@ export const useSnapshots = () => {
     void loadSnapshots();
   }, []);
 
-  return {
-    snapshots,
-    createSnapshot,
-    createAutoSaveSnapshot,
-    deleteSnapshot,
-    clearSnapshots,
-    setSnapshots,
-  };
+  return React.useMemo(
+    () => ({
+      snapshots,
+      createSnapshot,
+      createAutoSaveSnapshot,
+      deleteSnapshot,
+      clearSnapshots,
+      setSnapshots,
+    }),
+    [snapshots, createSnapshot, createAutoSaveSnapshot, deleteSnapshot, clearSnapshots]
+  );
 };
