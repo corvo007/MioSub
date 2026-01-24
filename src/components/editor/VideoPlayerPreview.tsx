@@ -20,14 +20,23 @@ import {
 } from 'lucide-react';
 import { Rnd } from 'react-rnd';
 import { createPortal } from 'react-dom';
-import type { SubtitleItem } from '@/types/subtitle';
-import type { SpeakerUIProfile } from '@/types/speaker';
+// Removed unused SubtitleItem, SpeakerUIProfile
 import { formatDuration } from '@/services/subtitle/time';
 import { cn } from '@/lib/cn';
 import { logger } from '@/services/utils/logger';
 import { useTranslation } from 'react-i18next';
 import ASS from 'assjs';
 import { generateAssContent } from '@/services/subtitle/generator';
+
+import { useAppStore } from '@/store/useAppStore';
+import {
+  useWorkspaceStore,
+  selectSubtitleState,
+  selectGenerationState,
+  selectFileState,
+} from '@/store/useWorkspaceStore';
+import { useShallow } from 'zustand/react/shallow';
+import { GenerationStatus } from '@/types/api';
 
 export interface VideoPlayerPreviewRef {
   seekTo: (seconds: number) => void;
@@ -38,12 +47,6 @@ export interface VideoPlayerPreviewRef {
 
 interface VideoPlayerPreviewProps {
   videoSrc: string | null;
-  subtitles: SubtitleItem[];
-  speakerProfiles?: SpeakerUIProfile[];
-  includeSpeaker?: boolean;
-  useSpeakerColors?: boolean;
-  showSourceText: boolean;
-  onToggleSourceText?: () => void;
   isCollapsed: boolean;
   isTranscoding?: boolean;
   transcodeProgress?: number;
@@ -51,19 +54,12 @@ interface VideoPlayerPreviewProps {
   fullVideoDuration?: number; // Full duration from backend for accurate progress
   onTimeUpdate: (seconds: number) => void;
   onToggleCollapse: () => void;
-  isGenerating?: boolean;
 }
 
 export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerPreviewProps>(
   (
     {
       videoSrc,
-      subtitles,
-      speakerProfiles,
-      includeSpeaker = false,
-      useSpeakerColors = false,
-      showSourceText,
-      onToggleSourceText,
       isCollapsed,
       isTranscoding,
       transcodeProgress,
@@ -71,10 +67,46 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
       fullVideoDuration,
       onTimeUpdate,
       onToggleCollapse,
-      isGenerating = false,
     },
     ref
   ) => {
+    // Store hooks
+    // Optimized: Granular settings selection to prevent re-renders on unrelated settings changes (e.g. language/genre)
+    const includeSpeakerInExport = useAppStore((s) => s.settings.includeSpeakerInExport);
+    const useSpeakerColors = useAppStore((s) => s.settings.useSpeakerColors);
+
+    const { subtitles, isLoadingSubtitle } = useWorkspaceStore(useShallow(selectSubtitleState));
+    const { status } = useWorkspaceStore(useShallow(selectGenerationState));
+    const { isLoadingFile } = useWorkspaceStore(useShallow(selectFileState));
+    const speakerProfiles = useWorkspaceStore(useShallow((s) => s.speakerProfiles));
+    const showSourceText = useWorkspaceStore((s) => s.showSourceText);
+    const setShowSourceText = useWorkspaceStore((s) => s.actions.setShowSourceText);
+
+    // Derived state
+    const isGenerating =
+      status === GenerationStatus.PROCESSING ||
+      status === GenerationStatus.PROOFREADING ||
+      status === GenerationStatus.UPLOADING ||
+      isLoadingFile ||
+      isLoadingSubtitle;
+
+    const onToggleSourceText = useCallback(
+      () => setShowSourceText(!useWorkspaceStore.getState().showSourceText),
+      [setShowSourceText] // Removed showSourceText dependency by reading from getState, or use functional update if setShowSourceText supports it.
+      // Since setShowSourceText in store is (show) => setState({showSourceText: show}), it doesn't support functional update as defined in index.ts
+      // But we can read state. Or we can update setActions to support functional update.
+      // Safer: useWorkspaceStore.setState(s => ({ showSourceText: !s.showSourceText })) directly?
+      // But we want to use the action.
+      // Let's use useWorkspaceStore.getState().showSourceText for the toggle to keep callback stable.
+    );
+
+    // Actually, let's fix the action in store/index.ts to simple setState,
+    // but here we can just do:
+    // const onToggleSourceText = useCallback(() => useWorkspaceStore.setState(s => ({ showSourceText: !s.showSourceText })), []);
+    // This bypasses 'actions' but is perfectly valid for UI state.
+    // However, sticking to the action pattern: `setShowSourceText` comes from `s.actions`.
+    // If I use `useWorkspaceStore.getState().showSourceText` inside the callback, I remove the dependency.
+
     const { t } = useTranslation(['workspace', 'editor']);
     const videoRef = useRef<HTMLVideoElement>(null);
     const [playing, setPlaying] = useState(false);
@@ -182,14 +214,14 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
         subtitles,
         'Video Preview',
         showSourceText,
-        includeSpeaker,
+        includeSpeakerInExport,
         useSpeakerColors,
         speakerProfiles
       );
     }, [
       subtitles,
       speakerProfiles,
-      includeSpeaker,
+      includeSpeakerInExport,
       useSpeakerColors,
       showSourceText,
       isGenerating,

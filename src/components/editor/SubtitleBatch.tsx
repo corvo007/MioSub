@@ -2,7 +2,7 @@ import React from 'react';
 import { CheckSquare, Square, Wand2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { type SubtitleItem, type RegeneratePrompts } from '@/types';
-import { type SpeakerUIProfile } from '@/types/speaker';
+
 import { SubtitleRow } from '@/components/editor/SubtitleRow';
 import { GenerationStatus } from '@/types/api';
 import { cn } from '@/lib/cn';
@@ -22,25 +22,13 @@ interface SubtitleBatchProps {
     index?: number,
     prompts?: RegeneratePrompts
   ) => void;
-  showSourceText: boolean;
-  editingCommentId: string | null;
-  setEditingCommentId: (id: string | null) => void;
-  updateLineComment: (id: string, comment: string) => void;
-  updateSubtitleText: (id: string, translated: string) => void;
-  updateSubtitleOriginal: (id: string, original: string) => void;
-  updateSpeaker?: (id: string, speaker: string, applyToAll?: boolean) => void;
-  updateSubtitleTime?: (id: string, startTime: string, endTime: string) => void;
   deleteSubtitle?: (id: string) => void;
   subtitles?: SubtitleItem[];
   batchSize?: number;
-  speakerProfiles?: SpeakerUIProfile[];
-  onManageSpeakers?: () => void;
   // Delete mode
   isDeleteMode?: boolean;
   selectedForDelete?: Set<string>;
   onToggleDeleteSelection?: (id: string) => void;
-  // Add subtitle
-  addSubtitle?: (referenceId: string, position: 'before' | 'after', defaultTime: string) => void;
   // Video sync
   currentPlayTime?: number;
   onRowClick?: (startTime: string) => void;
@@ -56,25 +44,13 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
     toggleBatch,
     updateBatchComment,
     handleBatchAction,
-    showSourceText,
-    editingCommentId,
-    setEditingCommentId,
-    updateLineComment,
-    updateSubtitleText,
-    updateSubtitleOriginal,
-    updateSpeaker,
-    updateSubtitleTime,
     deleteSubtitle,
     subtitles,
     batchSize = 20,
-    speakerProfiles,
-    onManageSpeakers,
     // Delete mode
     isDeleteMode,
     selectedForDelete,
     onToggleDeleteSelection,
-    // Add subtitle
-    addSubtitle,
     // Video sync
     currentPlayTime,
     onRowClick,
@@ -166,22 +142,11 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
               <SubtitleRow
                 key={sub.id}
                 sub={sub}
-                showSourceText={showSourceText}
-                editingCommentId={editingCommentId}
-                setEditingCommentId={setEditingCommentId}
-                updateLineComment={updateLineComment}
-                updateSubtitleText={updateSubtitleText}
-                updateSubtitleOriginal={updateSubtitleOriginal}
-                updateSpeaker={updateSpeaker}
-                updateSubtitleTime={updateSubtitleTime}
                 deleteSubtitle={deleteSubtitle}
                 prevEndTime={prevEndTime}
-                speakerProfiles={speakerProfiles}
-                onManageSpeakers={onManageSpeakers}
                 isDeleteMode={isDeleteMode}
                 isSelectedForDelete={selectedForDelete?.has(sub.id)}
                 onToggleDeleteSelection={onToggleDeleteSelection}
-                addSubtitle={addSubtitle}
                 currentPlayTime={currentPlayTime}
                 onRowClick={onRowClick}
               />
@@ -198,12 +163,8 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
       prev.isSelected === next.isSelected &&
       prev.status === next.status &&
       prev.batchComment === next.batchComment &&
-      prev.showSourceText === next.showSourceText &&
-      prev.editingCommentId === next.editingCommentId &&
       prev.subtitles === next.subtitles &&
-      prev.speakerProfiles === next.speakerProfiles &&
       prev.deleteSubtitle === next.deleteSubtitle &&
-      prev.addSubtitle === next.addSubtitle &&
       prev.isDeleteMode === next.isDeleteMode &&
       prev.selectedForDelete === next.selectedForDelete;
 

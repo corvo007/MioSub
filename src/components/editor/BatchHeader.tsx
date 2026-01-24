@@ -21,10 +21,12 @@ import {
   Timer,
 } from 'lucide-react';
 import { type SubtitleItem, type SubtitleIssueType } from '@/types';
-import { type SpeakerUIProfile } from '@/types/speaker';
 import { getSpeakerColorWithCustom } from '@/services/utils/colors';
 import { cn } from '@/lib/cn';
-import { useDropdownDirection } from '@/hooks/useDropdownDirection';
+import { useDropdown } from '@/hooks/useDropdown';
+import { useWorkspaceStore, selectUIState, selectFileState } from '@/store/useWorkspaceStore';
+import { useShallow } from 'zustand/react/shallow';
+import { useAppStore } from '@/store/useAppStore';
 
 // Multi-select filter type
 export interface SubtitleFilters {
@@ -42,9 +44,6 @@ interface BatchHeaderProps {
   selectedBatches: Set<number>;
   toggleAllBatches: (total: number) => void;
   selectBatchesWithComments: (chunks: SubtitleItem[][]) => void;
-  showSourceText: boolean;
-  setShowSourceText: (show: boolean) => void;
-  file: File | null;
   handleBatchAction: (action: 'proofread' | 'regenerate', index?: number) => void;
   onRegenerateRequest?: () => void; // Opens regenerate modal
   searchQuery: string;
@@ -52,9 +51,7 @@ interface BatchHeaderProps {
   filters: SubtitleFilters;
   setFilters: (filters: SubtitleFilters) => void;
   issueCounts?: Record<SubtitleIssueType, number>;
-  speakerProfiles?: SpeakerUIProfile[];
   speakerCounts?: Record<string, number>; // 每个说话人的字幕条数
-  onManageSpeakers?: () => void;
   // Delete mode
   isDeleteMode?: boolean;
   onToggleDeleteMode?: () => void;
@@ -73,9 +70,6 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
   selectedBatches,
   toggleAllBatches,
   selectBatchesWithComments,
-  showSourceText,
-  setShowSourceText,
-  file,
   handleBatchAction,
   onRegenerateRequest,
   searchQuery,
@@ -83,9 +77,7 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
   filters,
   setFilters,
   issueCounts,
-  speakerProfiles,
   speakerCounts,
-  onManageSpeakers,
   // Delete mode
   isDeleteMode,
   onToggleDeleteMode,
@@ -98,53 +90,48 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
   onToggleAutoScroll,
 }) => {
   const { t } = useTranslation('editor');
-  const [isIssueFilterOpen, setIsIssueFilterOpen] = React.useState(false);
-  const [isSpeakerFilterOpen, setIsSpeakerFilterOpen] = React.useState(false);
-  const [issueDropUp, setIssueDropUp] = React.useState(false);
-  const [speakerDropUp, setSpeakerDropUp] = React.useState(false);
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
-  const { ref: issueFilterRef, getDirection: getIssueDirection } =
-    useDropdownDirection<HTMLDivElement>();
-  const { ref: speakerFilterRef, getDirection: getSpeakerDirection } =
-    useDropdownDirection<HTMLDivElement>();
 
-  // Toggle issue filter with smart direction detection
+  // Store
+  const { showSourceText } = useWorkspaceStore(useShallow(selectUIState));
+  const { file } = useWorkspaceStore(useShallow(selectFileState));
+  const speakerProfiles = useWorkspaceStore(useShallow((s) => s.speakerProfiles));
+  const { setShowSourceText } = useWorkspaceStore((s) => s.actions);
+  const setShowSpeakerManager = useAppStore((s) => s.setShowSpeakerManager);
+  const onManageSpeakers = () => setShowSpeakerManager(true);
+
+  const {
+    isOpen: isIssueFilterOpen,
+    setIsOpen: setIsIssueFilterOpen,
+    toggle: toggleIssueFilterBase,
+    triggerRef: issueFilterRef,
+    direction: { dropUp: issueDropUp },
+  } = useDropdown<HTMLDivElement>();
+
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+
+  const {
+    isOpen: isSpeakerFilterOpen,
+    setIsOpen: setIsSpeakerFilterOpen,
+    toggle: toggleSpeakerFilterBase,
+    triggerRef: speakerFilterRef,
+    direction: { dropUp: speakerDropUp },
+  } = useDropdown<HTMLDivElement>();
+
+  // Toggle issue filter (and close speaker)
   const toggleIssueFilter = () => {
-    if (!isIssueFilterOpen) {
-      const { dropUp } = getIssueDirection();
-      setIssueDropUp(dropUp);
-    }
-    setIsIssueFilterOpen(!isIssueFilterOpen);
+    toggleIssueFilterBase();
     setIsSpeakerFilterOpen(false);
   };
 
-  // Toggle speaker filter with smart direction detection
+  // Toggle speaker filter (and close issue)
   const toggleSpeakerFilter = () => {
-    if (!isSpeakerFilterOpen) {
-      const { dropUp } = getSpeakerDirection();
-      setSpeakerDropUp(dropUp);
-    }
-    setIsSpeakerFilterOpen(!isSpeakerFilterOpen);
+    toggleSpeakerFilterBase();
     setIsIssueFilterOpen(false);
   };
 
   // Count active filters
   const activeIssueFilterCount = filters.issues.size;
   const activeSpeakerFilterCount = filters.speakers.size;
-
-  // Close filter dropdowns when clicking outside
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (issueFilterRef.current && !issueFilterRef.current.contains(event.target as Node)) {
-        setIsIssueFilterOpen(false);
-      }
-      if (speakerFilterRef.current && !speakerFilterRef.current.contains(event.target as Node)) {
-        setIsSpeakerFilterOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [issueFilterRef, speakerFilterRef]);
 
   // Clear search
   const handleClearSearch = () => {

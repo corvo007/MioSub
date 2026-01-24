@@ -1,49 +1,29 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Languages, Search } from 'lucide-react';
-import { type SubtitleItem, type SubtitleIssueType, type RegeneratePrompts } from '@/types';
-import { type SpeakerUIProfile } from '@/types/speaker';
+import { Languages } from 'lucide-react';
+import { type SubtitleItem, type SubtitleIssueType } from '@/types';
 import { GenerationStatus } from '@/types/api';
-import { SubtitleBatch } from '@/components/editor/SubtitleBatch';
-import { SubtitleRow, validateSubtitle } from '@/components/editor/SubtitleRow';
+import { SubtitleBatchList } from '@/components/editor/SubtitleBatchList';
+import { SubtitleFilteredList } from '@/components/editor/SubtitleFilteredList';
+import { validateSubtitle } from '@/services/subtitle/validation';
 import { BatchHeader, type SubtitleFilters, defaultFilters } from '@/components/editor/BatchHeader';
 import { RegenerateModal } from '@/components/editor/RegenerateModal';
 import { SimpleConfirmationModal } from '@/components/modals/SimpleConfirmationModal';
 import { isVideoFile } from '@/services/utils/file';
-import { Virtuoso } from 'react-virtuoso';
+import { timeToSeconds } from '@/services/subtitle/time';
+
+import { useAppStore } from '@/store/useAppStore';
+import {
+  useWorkspaceStore,
+  selectSubtitleState,
+  selectGenerationState,
+  selectUIState,
+  selectFileState,
+} from '@/store/useWorkspaceStore';
+import { useShallow } from 'zustand/react/shallow';
 
 interface SubtitleEditorProps {
-  subtitles: SubtitleItem[];
-  settings: any; // Ideally typed as AppSettings
-  status: GenerationStatus;
   activeTab: string;
-  selectedBatches: Set<number>;
-  toggleAllBatches: (total: number) => void;
-  selectBatchesWithComments: (chunks: SubtitleItem[][]) => void;
-  showSourceText: boolean;
-  setShowSourceText: (show: boolean) => void;
-  file: File | null;
-  handleBatchAction: (
-    action: 'proofread' | 'regenerate',
-    index?: number,
-    prompts?: RegeneratePrompts
-  ) => void;
-  batchComments: Record<string, string>;
-  toggleBatch: (index: number) => void;
-  updateBatchComment: (index: number, comment: string) => void;
-  editingCommentId: string | null;
-  setEditingCommentId: (id: string | null) => void;
-  updateLineComment: (id: string, comment: string) => void;
-  updateSubtitleText: (id: string, translated: string) => void;
-  updateSubtitleOriginal: (id: string, original: string) => void;
-  updateSpeaker: (id: string, speaker: string, applyToAll?: boolean) => void;
-  updateSubtitleTime?: (id: string, startTime: string, endTime: string) => void;
-  deleteSubtitle?: (id: string) => void;
-  deleteMultipleSubtitles?: (ids: string[]) => void;
-  // Add subtitle
-  addSubtitle?: (referenceId: string, position: 'before' | 'after', defaultTime: string) => void;
-  speakerProfiles?: SpeakerUIProfile[];
-  onManageSpeakers?: () => void;
   scrollContainerRef?: React.RefObject<HTMLDivElement>;
 
   // Video sync
@@ -53,39 +33,51 @@ interface SubtitleEditorProps {
 
 export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
   ({
-    subtitles,
-    settings,
-    status,
     activeTab,
-    selectedBatches,
-    toggleAllBatches,
-    selectBatchesWithComments,
-    showSourceText,
-    setShowSourceText,
-    file,
-    handleBatchAction,
-    batchComments,
-    toggleBatch,
-    updateBatchComment,
-    editingCommentId,
-    setEditingCommentId,
-    updateLineComment,
-    updateSubtitleText,
-    updateSubtitleOriginal,
-    updateSpeaker,
-    updateSubtitleTime,
-    deleteSubtitle,
-    deleteMultipleSubtitles,
-    addSubtitle,
-    speakerProfiles,
-
-    onManageSpeakers,
     scrollContainerRef: _scrollContainerRef, // Unused but kept for interface consistency
-
-    // Video sync
     currentPlayTime,
     onRowClick,
   }) => {
+    // Global App Store
+    // Optimized: Only select the specific settings needed
+    const proofreadBatchSize = useAppStore((s) => s.settings.proofreadBatchSize);
+    const setShowSpeakerManager = useAppStore((s) => s.setShowSpeakerManager);
+
+    // Workspace Store
+    const { subtitles } = useWorkspaceStore(useShallow(selectSubtitleState));
+    const { file } = useWorkspaceStore(useShallow(selectFileState));
+    const { status } = useWorkspaceStore(useShallow(selectGenerationState));
+    const { selectedBatches, batchComments, showSourceText, editingCommentId } = useWorkspaceStore(
+      useShallow(selectUIState)
+    );
+    const speakerProfiles = useWorkspaceStore(useShallow((s) => s.speakerProfiles));
+    const actions = useWorkspaceStore((s) => s.actions);
+
+    // Destructure actions
+    const {
+      toggleAllBatches,
+      selectBatchesWithComments,
+      handleBatchAction,
+      deleteSubtitle,
+      deleteMultipleSubtitles,
+    } = actions;
+
+    // Adapt actions to match legacy signatures or expected props
+    // SubtitleRow expects updateSpeaker to optionally accept applyToAll, but our logic ignores it.
+    // We wrap it to satisfy the type signature of children.
+    // Note: actions is now stable (P0 fix), so empty deps is safe
+    const updateSpeaker = React.useCallback(
+      (id: string, speaker: string, _applyToAll?: boolean) => {
+        actions.updateSpeaker(id, speaker);
+      },
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      []
+    );
+
+    const onManageSpeakers = React.useCallback(
+      () => setShowSpeakerManager(true),
+      [setShowSpeakerManager]
+    );
     const { t } = useTranslation(['workspace', 'editor']);
     const [searchQuery, setSearchQuery] = React.useState('');
     const [filters, setFilters] = React.useState<SubtitleFilters>(defaultFilters);
@@ -167,6 +159,16 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
       return counts;
     }, [subtitles]);
 
+    // Pre-calculate validation results for filtering optimization
+    const validationMap = React.useMemo(() => {
+      const map = new Map();
+      subtitles.forEach((sub, index) => {
+        const prevEndTime = index > 0 ? subtitles[index - 1].endTime : undefined;
+        map.set(sub.id, validateSubtitle(sub, prevEndTime));
+      });
+      return map;
+    }, [subtitles]);
+
     // Check if any filter is active
     const hasActiveFilter = filters.issues.size > 0 || filters.speakers.size > 0;
 
@@ -176,8 +178,9 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
         if (!hasActiveFilter) return subs;
 
         return subs.filter((sub, index) => {
-          const prevEndTime = index > 0 ? subs[index - 1].endTime : undefined;
-          const validation = validateSubtitle(sub, prevEndTime);
+          // Use pre-calculated validation if available (for full list filtering)
+          // Fallback to on-the-fly for subset or edge cases if needed, but map covers all IDs
+          const validation = validationMap.get(sub.id) || validateSubtitle(sub, undefined);
 
           // Issue filters (OR logic): show if any selected issue filter matches
           const issueFiltersActive = filters.issues.size > 0;
@@ -208,7 +211,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
           return false;
         });
       },
-      [filters, hasActiveFilter]
+      [filters, hasActiveFilter, validationMap]
     );
 
     const filteredSubtitles = React.useMemo(() => {
@@ -257,18 +260,12 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
     // Memoize chunks to prevent unnecessary re-renders of SubtitleBatch
     const chunks = React.useMemo(() => {
       const c: SubtitleItem[][] = [];
-      const size = settings.proofreadBatchSize || 20;
+      const size = proofreadBatchSize || 20;
       for (let i = 0; i < subtitles.length; i += size) {
         c.push(subtitles.slice(i, i + size));
       }
       return c;
-    }, [subtitles, settings.proofreadBatchSize]);
-
-    // Pre-compute ID-to-index map for O(1) lookups in filter mode (Issue 4 fix)
-    const idToIndexMap = React.useMemo(
-      () => new Map(subtitles.map((s, i) => [s.id, i])),
-      [subtitles]
-    );
+    }, [subtitles, proofreadBatchSize]);
 
     // Reset auto-scroll memory if data changes drastically
     React.useEffect(() => {
@@ -303,8 +300,8 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
             while (lo <= hi) {
               const mid = Math.floor((lo + hi) / 2);
               const chunk = chunks[mid];
-              const start = parseTime(chunk[0].startTime);
-              const end = parseTime(chunk[chunk.length - 1].endTime);
+              const start = timeToSeconds(chunk[0].startTime);
+              const end = timeToSeconds(chunk[chunk.length - 1].endTime);
 
               // Use half-open interval [start, end) for consistency
               if (currentPlayTime >= start && currentPlayTime < end) {
@@ -331,21 +328,10 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
     }, [filteredSubtitles, chunks, currentPlayTime]);
 
     // We need batchSize later for rendering
-    const batchSize = settings.proofreadBatchSize || 20;
+    const batchSize = proofreadBatchSize || 20;
 
     // Use a helper function for parsing time to avoid cyclical dependencies if imported from utils
-    const parseTime = (timeStr: string) => {
-      if (!timeStr) return 0;
-      // Simple parser for HH:MM:SS,mmm or HH:MM:SS.mmm
-      const [hms, ms] = timeStr.replace(',', '.').split('.');
-      const parts = hms.split(':').map(Number);
-      let seconds = 0;
-      if (parts.length === 3) seconds = parts[0] * 3600 + parts[1] * 60 + parts[2];
-      else if (parts.length === 2) seconds = parts[0] * 60 + parts[1];
-
-      if (ms) seconds += Number('0.' + ms);
-      return seconds;
-    };
+    // const parseTime = timeToSeconds;
 
     // Binary search helper: find the active subtitle index using half-open [start, end)
     // (Issue 5 fix: O(log N) instead of O(N))
@@ -358,8 +344,8 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
 
         while (lo <= hi) {
           const mid = Math.floor((lo + hi) / 2);
-          const start = parseTime(items[mid].startTime);
-          const end = parseTime(items[mid].endTime);
+          const start = timeToSeconds(items[mid].startTime);
+          const end = timeToSeconds(items[mid].endTime);
 
           if (time >= start && time < end) {
             return mid; // Found
@@ -430,8 +416,8 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
         while (lo <= hi) {
           const mid = Math.floor((lo + hi) / 2);
           const chunk = chunks[mid];
-          const start = parseTime(chunk[0].startTime);
-          const end = parseTime(chunk[chunk.length - 1].endTime);
+          const start = timeToSeconds(chunk[0].startTime);
+          const end = timeToSeconds(chunk[chunk.length - 1].endTime);
 
           if (currentPlayTime >= start && currentPlayTime < end) {
             activeBatchIndex = mid;
@@ -514,18 +500,13 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
             selectedBatches={selectedBatches}
             toggleAllBatches={toggleAllBatches}
             selectBatchesWithComments={selectBatchesWithComments}
-            showSourceText={showSourceText}
-            setShowSourceText={setShowSourceText}
-            file={file}
             handleBatchAction={handleBatchAction}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             filters={filters}
             setFilters={setFilters}
             issueCounts={issueCounts}
-            speakerProfiles={speakerProfiles}
             speakerCounts={speakerCounts}
-            onManageSpeakers={onManageSpeakers}
             isDeleteMode={isDeleteMode}
             onToggleDeleteMode={toggleDeleteMode}
             selectedForDeleteCount={selectedForDelete.size}
@@ -546,111 +527,32 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
         )}
 
         {isFiltering ? (
-          // Filtered Results View
-          <>
-            <div className="flex items-center justify-between text-xs text-slate-500 px-1">
-              <span>
-                {t('editor.foundResults', { count: filteredSubtitles.length })}
-                {hasActiveFilter && (
-                  <span className="ml-2 text-brand-purple font-medium">
-                    ({t('editor.filtering')}: {getFilterLabels().join(', ')})
-                  </span>
-                )}
-              </span>
-            </div>
-
-            {filteredSubtitles.length > 0 ? (
-              <div className="border border-slate-300 bg-white/50 backdrop-blur-sm rounded-xl overflow-hidden flex-1 min-h-0 shadow-sm transition-all">
-                <Virtuoso
-                  ref={virtuosoRef}
-                  style={{ height: '100%' }}
-                  data={filteredSubtitles}
-                  context={{ speakerProfiles }}
-                  itemContent={(index, sub) => {
-                    // O(1) lookup using pre-computed map (Issue 4 fix)
-                    const originalIndex = idToIndexMap.get(sub.id) ?? -1;
-                    const prevEndTime =
-                      originalIndex > 0 ? subtitles[originalIndex - 1].endTime : undefined;
-                    return (
-                      <div className="border-b border-slate-200 last:border-b-0">
-                        <SubtitleRow
-                          key={sub.id}
-                          sub={sub}
-                          showSourceText={showSourceText}
-                          editingCommentId={editingCommentId}
-                          setEditingCommentId={setEditingCommentId}
-                          updateLineComment={updateLineComment}
-                          updateSubtitleText={updateSubtitleText}
-                          updateSubtitleOriginal={updateSubtitleOriginal}
-                          updateSpeaker={updateSpeaker}
-                          updateSubtitleTime={updateSubtitleTime}
-                          deleteSubtitle={checkDelete}
-                          prevEndTime={prevEndTime}
-                          speakerProfiles={speakerProfiles}
-                          onManageSpeakers={onManageSpeakers}
-                          isDeleteMode={isDeleteMode}
-                          isSelectedForDelete={selectedForDelete.has(sub.id)}
-                          onToggleDeleteSelection={toggleDeleteSelection}
-                          addSubtitle={addSubtitle}
-                          currentPlayTime={currentPlayTime}
-                          onRowClick={onRowClick}
-                        />
-                      </div>
-                    );
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-slate-500 bg-slate-50/50 rounded-xl border border-slate-200/60 border-dashed shadow-sm">
-                <Search className="w-8 h-8 opacity-20 text-slate-400 mb-3" />
-                <p>{t('editor.noMatchingSubtitles')}</p>
-              </div>
-            )}
-          </>
+          <SubtitleFilteredList
+            filteredSubtitles={filteredSubtitles}
+            hasActiveFilter={hasActiveFilter}
+            getFilterLabels={getFilterLabels}
+            virtuosoRef={virtuosoRef}
+            checkDelete={checkDelete}
+            onManageSpeakers={onManageSpeakers}
+            isDeleteMode={isDeleteMode}
+            selectedForDelete={selectedForDelete}
+            toggleDeleteSelection={toggleDeleteSelection}
+            currentPlayTime={currentPlayTime}
+            onRowClick={onRowClick}
+          />
         ) : (
-          // Normal Batch View
-          <div className="flex-1 min-h-0">
-            <Virtuoso
-              ref={virtuosoRef}
-              style={{ height: '100%' }}
-              data={chunks}
-              context={{ speakerProfiles }}
-              itemContent={(chunkIdx, chunk) => (
-                <div className="mb-6">
-                  <SubtitleBatch
-                    key={chunkIdx}
-                    chunk={chunk}
-                    chunkIdx={chunkIdx}
-                    isSelected={selectedBatches.has(chunkIdx)}
-                    status={status}
-                    batchComment={batchComments[String(chunkIdx)] || ''}
-                    toggleBatch={toggleBatch}
-                    updateBatchComment={updateBatchComment}
-                    handleBatchAction={handleBatchAction}
-                    showSourceText={showSourceText}
-                    editingCommentId={editingCommentId}
-                    setEditingCommentId={setEditingCommentId}
-                    updateLineComment={updateLineComment}
-                    updateSubtitleText={updateSubtitleText}
-                    updateSubtitleOriginal={updateSubtitleOriginal}
-                    updateSpeaker={updateSpeaker}
-                    updateSubtitleTime={updateSubtitleTime}
-                    deleteSubtitle={checkDelete}
-                    subtitles={subtitles}
-                    batchSize={batchSize}
-                    speakerProfiles={speakerProfiles}
-                    onManageSpeakers={onManageSpeakers}
-                    isDeleteMode={isDeleteMode}
-                    selectedForDelete={selectedForDelete}
-                    onToggleDeleteSelection={toggleDeleteSelection}
-                    addSubtitle={addSubtitle}
-                    currentPlayTime={currentPlayTime}
-                    onRowClick={onRowClick}
-                  />
-                </div>
-              )}
-            />
-          </div>
+          <SubtitleBatchList
+            chunks={chunks}
+            status={status}
+            virtuosoRef={virtuosoRef}
+            checkDelete={checkDelete}
+            onManageSpeakers={onManageSpeakers}
+            isDeleteMode={isDeleteMode}
+            selectedForDelete={selectedForDelete}
+            toggleDeleteSelection={toggleDeleteSelection}
+            currentPlayTime={currentPlayTime}
+            onRowClick={onRowClick}
+          />
         )}
 
         <SimpleConfirmationModal
@@ -686,18 +588,6 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
     );
   },
   (prev, next) => {
-    return (
-      prev.subtitles === next.subtitles &&
-      prev.settings === next.settings &&
-      prev.status === next.status &&
-      prev.activeTab === next.activeTab &&
-      prev.selectedBatches === next.selectedBatches &&
-      prev.showSourceText === next.showSourceText &&
-      prev.file === next.file &&
-      prev.batchComments === next.batchComments &&
-      prev.editingCommentId === next.editingCommentId &&
-      prev.speakerProfiles === next.speakerProfiles &&
-      prev.currentPlayTime === next.currentPlayTime // Check play time for sync
-    );
+    return prev.activeTab === next.activeTab && prev.currentPlayTime === next.currentPlayTime;
   }
 );

@@ -17,16 +17,20 @@ import {
 } from 'lucide-react';
 import { Portal } from '@/components/ui/Portal';
 import { type SubtitleItem } from '@/types';
-import { type SpeakerUIProfile } from '@/types/speaker';
+
 import { SpeakerSelect } from '@/components/editor/SpeakerSelect';
 import { cn } from '@/lib/cn';
-import { countCJKCharacters } from '@/lib/text';
 import { useDropdownDirection } from '@/hooks/useDropdownDirection';
-import { timeToSeconds, formatTime, calculateDuration } from '@/services/subtitle/time';
+import { formatTime, timeToSeconds } from '@/services/subtitle/time';
+import { useWorkspaceStore, selectUIState } from '@/store/useWorkspaceStore';
+import { useShallow } from 'zustand/react/shallow';
+import { useAppStore } from '@/store/useAppStore';
 
-// Validation thresholds (from prompts.ts rules)
-const MAX_DURATION_SECONDS = 10;
-const MAX_CHINESE_CHARACTERS = 25;
+import {
+  validateSubtitle,
+  MAX_DURATION_SECONDS,
+  MAX_CHINESE_CHARACTERS,
+} from '@/services/subtitle/validation';
 
 /**
  * Validate and normalize time input to HH:MM:SS,mmm format.
@@ -50,71 +54,14 @@ const validateAndNormalizeTime = (input: string): string | null => {
   return null;
 };
 
-// Overlap threshold in seconds (only show warning if overlap > this value)
-const OVERLAP_THRESHOLD_SECONDS = 2;
-
-// Validation result type
-export interface ValidationResult {
-  hasDurationIssue: boolean;
-  hasLengthIssue: boolean;
-  hasOverlapIssue: boolean;
-  hasConfidenceIssue: boolean;
-  hasRegressionIssue: boolean;
-  hasCorruptedRangeIssue: boolean;
-  duration: number;
-  charCount: number;
-  overlapAmount: number; // How many seconds of overlap (negative means gap)
-}
-
-// Validate a subtitle item
-export const validateSubtitle = (sub: SubtitleItem, prevEndTime?: string): ValidationResult => {
-  const duration = calculateDuration(sub.startTime, sub.endTime);
-  const charCount = countCJKCharacters(sub.translated);
-
-  // Check overlap: current start time < previous end time
-  let overlapAmount = 0;
-  if (prevEndTime) {
-    const prevEnd = timeToSeconds(prevEndTime);
-    const currentStart = timeToSeconds(sub.startTime);
-    overlapAmount = prevEnd - currentStart; // Positive means overlap
-  }
-
-  // Only flag as issue if overlap exceeds threshold
-  const hasOverlapIssue = overlapAmount > OVERLAP_THRESHOLD_SECONDS;
-
-  return {
-    hasDurationIssue: duration > MAX_DURATION_SECONDS,
-    hasLengthIssue: charCount > MAX_CHINESE_CHARACTERS,
-    hasOverlapIssue,
-    hasConfidenceIssue: !!sub.lowConfidence,
-    hasRegressionIssue: !!sub.hasRegressionIssue,
-    hasCorruptedRangeIssue: !!sub.hasCorruptedRangeIssue,
-    duration,
-    charCount,
-    overlapAmount,
-  };
-};
-
 interface SubtitleRowProps {
   sub: SubtitleItem;
-  showSourceText: boolean;
-  editingCommentId: string | null;
-  setEditingCommentId: (id: string | null) => void;
-  updateLineComment: (id: string, comment: string) => void;
-  updateSubtitleText: (id: string, translated: string) => void;
-  updateSubtitleOriginal: (id: string, original: string) => void;
-  updateSpeaker?: (id: string, speaker: string, applyToAll?: boolean) => void;
-  updateSubtitleTime?: (id: string, startTime: string, endTime: string) => void;
   prevEndTime?: string; // For overlap detection
-  speakerProfiles?: SpeakerUIProfile[];
-  onManageSpeakers?: () => void;
   deleteSubtitle?: (id: string) => void;
   // Delete mode
   isDeleteMode?: boolean;
   isSelectedForDelete?: boolean;
   onToggleDeleteSelection?: (id: string) => void;
-  // Add subtitle
-  addSubtitle?: (referenceId: string, position: 'before' | 'after', defaultTime: string) => void;
   // Video sync
   currentPlayTime?: number;
   onRowClick?: (startTime: string) => void;
@@ -123,29 +70,34 @@ interface SubtitleRowProps {
 export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
   ({
     sub,
-    showSourceText,
-    editingCommentId,
-    setEditingCommentId,
-    updateLineComment,
-    updateSubtitleText,
-    updateSubtitleOriginal,
-    updateSpeaker,
-    updateSubtitleTime,
+
     prevEndTime,
-    speakerProfiles,
-    onManageSpeakers,
     deleteSubtitle,
     // Delete mode
     isDeleteMode,
     isSelectedForDelete,
     onToggleDeleteSelection,
-    // Add subtitle
-    addSubtitle,
     // Playback
     currentPlayTime,
     onRowClick,
   }) => {
     const { t } = useTranslation('editor');
+
+    // Store State & Actions
+    const { showSourceText, editingCommentId } = useWorkspaceStore(useShallow(selectUIState));
+    const speakerProfiles = useWorkspaceStore(useShallow((s) => s.speakerProfiles));
+    const actions = useWorkspaceStore((s) => s.actions);
+    const setShowSpeakerManager = useAppStore((s) => s.setShowSpeakerManager);
+
+    const {
+      setEditingCommentId,
+      updateLineComment,
+      updateSubtitleText,
+      updateSubtitleOriginal,
+      updateSubtitleTime,
+      updateSpeaker,
+      addSubtitle,
+    } = actions;
     const [editing, setEditing] = React.useState(false);
     const [tempText, setTempText] = React.useState('');
     const [tempOriginal, setTempOriginal] = React.useState('');
@@ -540,13 +492,11 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
         </div>
         <div className="flex-1 space-y-1">
           {/* Speaker Select */}
-          {sub.speaker && updateSpeaker && speakerProfiles && (
+          {updateSpeaker && speakerProfiles && (
             <div className="mb-2">
               <SpeakerSelect
-                currentSpeaker={sub.speaker}
-                speakerProfiles={speakerProfiles}
-                onSelect={(speaker) => updateSpeaker(sub.id, speaker)}
-                onManageSpeakers={onManageSpeakers}
+                currentSpeakerId={sub.speakerId}
+                onSelect={(speakerId) => updateSpeaker(sub.id, speakerId)}
               />
             </div>
           )}
@@ -730,11 +680,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
   (prev, next) => {
     return (
       prev.sub === next.sub &&
-      prev.showSourceText === next.showSourceText &&
-      prev.editingCommentId === next.editingCommentId &&
-      prev.speakerProfiles === next.speakerProfiles &&
       prev.deleteSubtitle === next.deleteSubtitle &&
-      prev.addSubtitle === next.addSubtitle &&
       prev.isDeleteMode === next.isDeleteMode &&
       prev.isSelectedForDelete === next.isSelectedForDelete &&
       // Check if current play time affects this row's active state.
@@ -742,8 +688,7 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
       (prev.sub.startTime === next.sub.startTime && prev.sub.endTime === next.sub.endTime
         ? (prev.currentPlayTime == null || !isTimeInRange(prev.currentPlayTime, prev.sub)) ===
           (next.currentPlayTime == null || !isTimeInRange(next.currentPlayTime, next.sub))
-        : true) &&
-      (prev.editingCommentId === prev.sub.id) === (next.editingCommentId === next.sub.id)
+        : true)
     );
   }
 );

@@ -1,56 +1,41 @@
 import React from 'react';
 import { ChevronDown, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { type SpeakerUIProfile } from '@/types/speaker';
+import { useWorkspaceStore } from '@/store/useWorkspaceStore';
+import { useShallow } from 'zustand/react/shallow';
+import { useAppStore } from '@/store/useAppStore';
 import { getSpeakerColorWithCustom } from '@/services/utils/colors';
 import { cn } from '@/lib/cn';
-import { useDropdownDirection } from '@/hooks/useDropdownDirection';
+import { useDropdown } from '@/hooks/useDropdown';
 
 interface SpeakerSelectProps {
-  currentSpeaker?: string;
-  speakerProfiles: SpeakerUIProfile[];
-  onSelect: (speaker: string) => void;
-  onManageSpeakers?: () => void;
+  currentSpeakerId?: string;
+  onSelect: (speakerId: string) => void;
 }
 
-export const SpeakerSelect: React.FC<SpeakerSelectProps> = ({
-  currentSpeaker,
-  speakerProfiles,
-  onSelect,
-  onManageSpeakers,
-}) => {
+export const SpeakerSelect: React.FC<SpeakerSelectProps> = ({ currentSpeakerId, onSelect }) => {
   const { t } = useTranslation('modals');
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [dropUp, setDropUp] = React.useState(false);
-  const { ref: dropdownRef, getDirection } = useDropdownDirection<HTMLDivElement>({
-    minSpaceBelow: 250, // 保持原有阈值
+  const speakerProfiles = useWorkspaceStore(useShallow((s) => s.speakerProfiles));
+  const setShowSpeakerManager = useAppStore((s) => s.setShowSpeakerManager);
+  const onManageSpeakers = () => setShowSpeakerManager(true);
+
+  const {
+    isOpen,
+    setIsOpen,
+    toggle: toggleOpen,
+    triggerRef: dropdownRef,
+    direction: { dropUp },
+  } = useDropdown<HTMLDivElement>({
+    minSpaceBelow: 250,
   });
 
-  const toggleOpen = () => {
-    if (!isOpen) {
-      const { dropUp: shouldDropUp } = getDirection();
-      setDropUp(shouldDropUp);
-    }
-    setIsOpen(!isOpen);
-  };
-
-  // Close on outside click
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [dropdownRef]);
-
+  // Memoize currentProfile to avoid .find() on every render (Audit fix)
   // Memoize currentProfile to avoid .find() on every render (Audit fix)
   const currentProfile = React.useMemo(
-    () => speakerProfiles.find((p) => p.name === currentSpeaker),
-    [speakerProfiles, currentSpeaker]
+    () => speakerProfiles.find((p) => p.id === currentSpeakerId),
+    [speakerProfiles, currentSpeakerId]
   );
-  const speakerColor = getSpeakerColorWithCustom(currentSpeaker || '', currentProfile?.color);
+  const speakerColor = getSpeakerColorWithCustom(currentProfile?.name || '', currentProfile?.color);
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -64,7 +49,7 @@ export const SpeakerSelect: React.FC<SpeakerSelectProps> = ({
           borderWidth: '1px',
         }}
       >
-        <span>{currentSpeaker || t('speakerManager.selectSpeaker')}</span>
+        <span>{currentProfile?.name || t('speakerManager.selectSpeaker')}</span>
         <ChevronDown className={cn('w-3 h-3 transition-transform', isOpen && 'rotate-180')} />
       </button>
 
@@ -82,12 +67,12 @@ export const SpeakerSelect: React.FC<SpeakerSelectProps> = ({
               <button
                 key={profile.id}
                 onClick={() => {
-                  onSelect(profile.name);
+                  onSelect(profile.id);
                   setIsOpen(false);
                 }}
                 className={cn(
                   'w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-slate-50 transition-colors',
-                  currentSpeaker === profile.name
+                  currentSpeakerId === profile.id
                     ? 'bg-brand-purple/5 text-brand-purple font-medium'
                     : 'text-slate-600 hover:text-slate-900'
                 )}
