@@ -2,6 +2,7 @@ import React from 'react';
 import { GitCommit, FileText, Book, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { PageHeader, HeaderButton } from './PageHeader';
+import { useAppStore } from '@/store/useAppStore';
 
 interface WorkspaceHeaderProps {
   title: string;
@@ -11,9 +12,6 @@ interface WorkspaceHeaderProps {
   showSnapshots: boolean;
   onToggleSnapshots: () => void;
   hasSnapshots: boolean;
-  onShowLogs: () => void;
-  onShowGlossary: () => void;
-  onShowSettings: () => void;
 }
 
 export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
@@ -24,11 +22,13 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   showSnapshots,
   onToggleSnapshots,
   hasSnapshots,
-  onShowLogs,
-  onShowGlossary,
-  onShowSettings,
 }) => {
   const { t } = useTranslation('ui');
+
+  // Store actions
+  const setShowLogs = useAppStore((s) => s.setShowLogs);
+  const setShowGlossaryManager = useAppStore((s) => s.setShowGlossaryManager);
+  const setShowSettings = useAppStore((s) => s.setShowSettings);
 
   return (
     <PageHeader
@@ -52,21 +52,21 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             highlighted={hasSnapshots}
           />
           <HeaderButton
-            onClick={onShowLogs}
+            onClick={() => setShowLogs(true)}
             icon={<FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
             label={t('header.logs')}
             title={t('header.viewLogs')}
             hoverColor="blue"
           />
           <HeaderButton
-            onClick={onShowGlossary}
+            onClick={() => setShowGlossaryManager(true)}
             icon={<Book className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
             label={t('header.glossary')}
             title={t('header.manageGlossary')}
             hoverColor="indigo"
           />
           <HeaderButton
-            onClick={onShowSettings}
+            onClick={() => setShowSettings(true)}
             icon={<Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
             label={t('header.settings')}
             hoverColor="emerald"
