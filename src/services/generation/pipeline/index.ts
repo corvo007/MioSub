@@ -23,6 +23,8 @@ import { logger } from '@/services/utils/logger';
 import { ChunkProcessor } from './chunkProcessor';
 import { type ChunkAnalytics } from '@/types/api';
 import { timeToSeconds } from '@/services/subtitle/time';
+import { type SpeakerUIProfile } from '@/types/speaker';
+import { normalizeSubtitles } from '@/services/speaker/normalizer';
 import i18n from '@/i18n';
 
 export const generateSubtitles = async (
@@ -33,9 +35,11 @@ export const generateSubtitles = async (
   onIntermediateResult?: (subs: SubtitleItem[]) => void,
   onGlossaryReady?: (metadata: GlossaryExtractionMetadata) => Promise<GlossaryItem[]>,
   signal?: AbortSignal,
-  videoInfo?: VideoInfo
+  videoInfo?: VideoInfo,
+  existingProfiles: SpeakerUIProfile[] = []
 ): Promise<{
   subtitles: SubtitleItem[];
+  speakerProfiles: SpeakerUIProfile[];
   glossaryResults?: GlossaryExtractionResult[];
   chunkAnalytics: ChunkAnalytics[];
 }> => {
@@ -324,8 +328,17 @@ export const generateSubtitles = async (
   // Ensure deterministic order for analytics
   chunkAnalytics.sort((a, b) => a.index - b.index);
 
+  // Normalize final subtitles (Hydrate IDs)
+  // This ensures that even if we had speaker names, we now have proper IDs
+  const { subtitles: normalizedSubtitles, profiles: updatedProfiles } = normalizeSubtitles(
+    finalSubtitles,
+    existingProfiles,
+    { generateNewProfiles: true }
+  );
+
   return {
-    subtitles: finalSubtitles,
+    subtitles: normalizedSubtitles,
+    speakerProfiles: updatedProfiles,
     glossaryResults: (await glossaryTask).raw,
     chunkAnalytics,
   };

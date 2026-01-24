@@ -94,6 +94,16 @@ export class WaitForDepsStep extends BaseStep<WaitForDepsInput, WaitForDepsOutpu
     // Store speaker profiles in context
     ctx.speakerProfiles = speakerProfiles;
 
+    // Update status to indicate dependencies are ready, preventing stale "Waiting for speaker..." message
+    // while waiting for the next step's semaphore (usually Refinement)
+    onProgress?.({
+      id: ctx.chunk.index,
+      total: ctx.totalChunks,
+      status: 'processing',
+      stage: 'waiting_refinement',
+      message: i18n.t('services:pipeline.status.waitingRefinement'),
+    });
+
     return {
       segments: input.segments,
       glossary,

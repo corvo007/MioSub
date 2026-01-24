@@ -1,6 +1,7 @@
 import type { SubtitleItem, GeminiSubtitleSchema } from '@/types/subtitle';
 import { timeToSeconds, normalizeTimestamp, formatTime } from '@/services/subtitle/time';
 import { generateSubtitleId } from '@/services/utils/id';
+import { extractSpeakerFromText } from '@/services/speaker/speakerUtils';
 import { logger } from '@/services/utils/logger';
 
 /**
@@ -144,21 +145,8 @@ export const parseSrt = (content: string): SubtitleItem[] => {
 
     let speaker: string | undefined = undefined;
 
-    const extractSpeaker = (text: string): { speaker?: string; content: string } => {
-      // Match "Speaker: Content" or "Speaker：Content" (Chinese colon)
-      // Support optional space after colon
-      const match = text.match(/^(.+?)[:：]\s*(.*)$/s);
-      // Actually text might be multiline.
-      // The export format puts "Speaker: " at the beginning of the block if it's there.
-      // Let's check the very start of the string.
-      if (match) {
-        return { speaker: match[1], content: match[2] };
-      }
-      return { content: text };
-    };
-
-    const origRes = extractSpeaker(original);
-    const transRes = extractSpeaker(translated);
+    const origRes = extractSpeakerFromText(original);
+    const transRes = extractSpeakerFromText(translated);
 
     if (origRes.speaker) {
       speaker = origRes.speaker;
@@ -379,16 +367,9 @@ export const parseAss = (content: string): SubtitleItem[] => {
       // 3. Always try to extract/clean speaker from text content
       // This ensures that if the file was exported with "Include Speaker", we strip it back out
       // to avoid duplication (e.g., "Bob: Hello" -> Speaker="Bob", Text="Hello")
-      const extractSpeakerLegacy = (text: string): { speaker?: string; content: string } => {
-        const match = text.match(/^(.+?)[:：]\s*(.*)$/s);
-        if (match) {
-          return { speaker: match[1], content: match[2] };
-        }
-        return { content: text };
-      };
 
-      const origRes = extractSpeakerLegacy(original);
-      const transRes = extractSpeakerLegacy(translated);
+      const origRes = extractSpeakerFromText(original);
+      const transRes = extractSpeakerFromText(translated);
 
       // Update text content with stripped versions
       original = origRes.content;

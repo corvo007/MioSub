@@ -128,30 +128,33 @@ export function toLocaleCode(code: string): string {
 // Language Detection
 // ============================================================================
 
-// Initialized flag
-let eldInitialized = false;
+// Initialized flag/promise
+let eldInitializationPromise: Promise<void> | null = null;
 
 /**
  * Ensure ELD database is loaded.
  * Handles both static and dynamic versions of ELD.
+ * Singleton pattern prevents multiple concurrent loads.
  */
 async function ensureEldInitialized() {
-  if (eldInitialized) return;
+  if (eldInitializationPromise !== null) return eldInitializationPromise;
 
-  try {
-    // Check if eld has a load method (dynamic version)
-    // @ts-ignore - eld might be Eld or EldWithLoader
-    if (typeof eld.load === 'function') {
-      // @ts-ignore
-      await eld.load('medium'); // Load medium database
-      logger.info('ELD (Efficient Language Detector) database loaded');
+  eldInitializationPromise = (async () => {
+    try {
+      // Check if eld has a load method (dynamic version)
+      // @ts-ignore - eld might be Eld or EldWithLoader
+      if (typeof eld.load === 'function') {
+        // @ts-ignore
+        await eld.load('medium'); // Load medium database
+        logger.info('ELD (Efficient Language Detector) database loaded');
+      }
+    } catch (e) {
+      logger.error('Failed to initialize ELD:', e);
+      // We don't re-throw, just let it be (it might still work or default to en)
     }
-    eldInitialized = true;
-  } catch (e) {
-    logger.error('Failed to initialize ELD:', e);
-    // Continue anyway, maybe it works or will default to en
-    eldInitialized = true;
-  }
+  })();
+
+  return eldInitializationPromise;
 }
 
 /**

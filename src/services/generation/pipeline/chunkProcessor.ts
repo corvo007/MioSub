@@ -60,7 +60,11 @@ export class ChunkProcessor {
     const { chunkDuration, totalChunks, refinementSemaphore } = deps;
 
     // Initialize analytics incrementally - collect timing as we go
-    const analytics: ChunkAnalytics = { index, status: 'success' };
+    const analytics: ChunkAnalytics = {
+      index,
+      status: 'success',
+      duration_ms: Math.round((chunk.end - chunk.start) * 1000),
+    };
 
     try {
       // Mock Stage Logic Setup
