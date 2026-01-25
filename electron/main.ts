@@ -155,6 +155,7 @@ import { t, changeLanguage } from './i18n.ts';
 import { ctcAlignerService } from './services/ctcAligner.ts';
 import { writeTempFile } from './services/fileUtils.ts';
 import { analyticsService } from './services/analyticsService.ts';
+import { initUpdateService } from './services/updateService.ts';
 
 const videoCompressorService = new VideoCompressorService();
 
@@ -1474,6 +1475,9 @@ const createWindow = () => {
     }
     // }, 500);
   });
+
+  // Initialize update service
+  initUpdateService(mainWindow);
 };
 
 const createMenu = () => {

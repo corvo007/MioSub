@@ -253,6 +253,22 @@
     "copyPath": "Copy Path",
     "showInFolder": "Show in Folder",
     "tagline": "AI-powered subtitle generation and translation",
-    "whisperGpuSupported": "Supported (GPU)"
+    "whisperGpuSupported": "Supported (GPU)",
+    "update": {
+      "checking": "Checking for updates...",
+      "upToDate": "You're up to date",
+      "available": "New version available: {{version}}",
+      "downloading": "Downloading update... {{progress}}%",
+      "downloaded": "Update downloaded, click to restart",
+      "error": "Failed to check for updates",
+      "checkNow": "Check for Updates",
+      "download": "Download Update",
+      "restart": "Restart to Update",
+      "goToDownload": "Go to Download"
+    },
+    "privacy": {
+      "title": "Data & Privacy",
+      "description": "This app collects anonymous diagnostic data and error reports to improve stability. No personally identifiable information is collected."
+    }
   }
 }

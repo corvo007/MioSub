@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Languages, Cpu, Info, Copy, ExternalLink } from 'lucide-react';
+import { Languages, Cpu, Info, Copy, ExternalLink, RefreshCw, Shield } from 'lucide-react';
 import pkg from '../../../../package.json';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { cn } from '@/lib/cn';
@@ -10,9 +10,26 @@ import { logger } from '@/services/utils/logger';
 let cachedAboutInfo: any = null;
 let cachedAboutInfoHash: string | null = null;
 
+type UpdateStatus = {
+  status:
+    | 'idle'
+    | 'checking'
+    | 'available'
+    | 'not-available'
+    | 'downloading'
+    | 'downloaded'
+    | 'error';
+  version: string | null;
+  error: string | null;
+  progress: number;
+  isPortable: boolean;
+};
+
 export const AboutTab: React.FC = () => {
   const { t } = useTranslation('settings');
   const [info, setInfo] = useState<any>(cachedAboutInfo);
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
   const loadAboutInfo = useCallback(async () => {
     if (window.electronAPI?.getAboutInfo) {
@@ -36,6 +53,40 @@ export const AboutTab: React.FC = () => {
   useEffect(() => {
     void loadAboutInfo();
   }, [loadAboutInfo]);
+
+  // Update status management
+  useEffect(() => {
+    if (!window.electronAPI?.update) return;
+
+    // Get initial status
+    void window.electronAPI.update.getStatus().then(setUpdateStatus);
+
+    // Listen for status changes
+    const unsubscribe = window.electronAPI.update.onStatus(setUpdateStatus);
+    return () => unsubscribe?.();
+  }, []);
+
+  const handleCheckUpdate = async () => {
+    if (!window.electronAPI?.update) return;
+    const result = await window.electronAPI.update.check();
+    if (result?.downloadUrl) {
+      setDownloadUrl(result.downloadUrl);
+    }
+  };
+
+  const handleDownloadUpdate = () => {
+    void window.electronAPI?.update?.download();
+  };
+
+  const handleInstallUpdate = () => {
+    void window.electronAPI?.update?.install();
+  };
+
+  const handleGoToDownload = () => {
+    if (downloadUrl) {
+      void window.electronAPI?.openExternal(downloadUrl);
+    }
+  };
 
   const handleCopy = (text: string) => {
     void navigator.clipboard.writeText(text);
@@ -61,7 +112,7 @@ export const AboutTab: React.FC = () => {
           <p className="text-sm text-slate-500 mt-1 font-medium">
             {t('about.tagline', 'AI-powered subtitle generation and translation')}
           </p>
-          <div className="flex items-center gap-3 mt-4">
+          <div className="flex items-center gap-3 mt-4 flex-wrap">
             <span className="px-3 py-1 bg-brand-purple/10 text-brand-purple text-sm font-bold rounded-lg border border-brand-purple/20">
               v{pkg.version}
             </span>
@@ -69,6 +120,17 @@ export const AboutTab: React.FC = () => {
               <span className="text-slate-500 text-sm">
                 {info.commitHash} ({info.isPackaged ? 'prod' : 'dev'})
               </span>
+            )}
+            {/* Update Status Badge */}
+            {updateStatus && (
+              <UpdateStatusBadge
+                status={updateStatus}
+                downloadUrl={downloadUrl}
+                onCheck={handleCheckUpdate}
+                onDownload={handleDownloadUpdate}
+                onInstall={handleInstallUpdate}
+                onGoToDownload={handleGoToDownload}
+              />
             )}
           </div>
         </div>
@@ -221,6 +283,130 @@ export const AboutTab: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Data & Privacy */}
+      <div className="space-y-3">
+        <SectionHeader icon={<Shield className="w-4 h-4" />}>
+          {t('about.privacy.title', 'Data & Privacy')}
+        </SectionHeader>
+        <p className="text-sm text-slate-500 px-1">{t('about.privacy.description')}</p>
+      </div>
     </div>
   );
+};
+
+// Update Status Badge Component
+const UpdateStatusBadge: React.FC<{
+  status: UpdateStatus;
+  downloadUrl: string | null;
+  onCheck: () => void;
+  onDownload: () => void;
+  onInstall: () => void;
+  onGoToDownload: () => void;
+}> = ({ status, downloadUrl, onCheck, onDownload, onInstall, onGoToDownload }) => {
+  const { t } = useTranslation('settings');
+
+  // Portable mode: show check button and status
+  if (status.isPortable) {
+    switch (status.status) {
+      case 'idle':
+        return (
+          <button
+            onClick={onCheck}
+            className="px-3 py-1 text-sm text-slate-600 hover:text-brand-purple border border-slate-200 hover:border-brand-purple/30 rounded-lg transition-colors flex items-center gap-1.5"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            {t('about.update.checkNow')}
+          </button>
+        );
+      case 'checking':
+        return (
+          <span className="px-3 py-1 text-sm text-slate-500 bg-slate-100 rounded-lg flex items-center gap-1.5">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            {t('about.update.checking')}
+          </span>
+        );
+      case 'not-available':
+        return (
+          <span className="px-3 py-1 text-sm text-emerald-600 bg-emerald-50 rounded-lg border border-emerald-200">
+            {t('about.update.upToDate')}
+          </span>
+        );
+      case 'available':
+        return (
+          <button
+            onClick={onGoToDownload}
+            className="px-3 py-1 text-sm text-brand-purple bg-brand-purple/10 hover:bg-brand-purple/20 rounded-lg border border-brand-purple/20 transition-colors flex items-center gap-1"
+          >
+            {t('about.update.available', { version: status.version })}
+            <ExternalLink className="w-3 h-3" />
+          </button>
+        );
+      case 'error':
+        return (
+          <button
+            onClick={onCheck}
+            className="px-3 py-1 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg border border-red-200 transition-colors"
+            title={status.error || ''}
+          >
+            {t('about.update.error')}
+          </button>
+        );
+      default:
+        return null;
+    }
+  }
+
+  // Installed mode: show auto-update status
+  switch (status.status) {
+    case 'idle':
+    case 'not-available':
+      return (
+        <span className="px-3 py-1 text-sm text-emerald-600 bg-emerald-50 rounded-lg border border-emerald-200">
+          {t('about.update.upToDate')}
+        </span>
+      );
+    case 'checking':
+      return (
+        <span className="px-3 py-1 text-sm text-slate-500 bg-slate-100 rounded-lg flex items-center gap-1.5">
+          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+          {t('about.update.checking')}
+        </span>
+      );
+    case 'available':
+      return (
+        <button
+          onClick={onDownload}
+          className="px-3 py-1 text-sm text-brand-purple bg-brand-purple/10 hover:bg-brand-purple/20 rounded-lg border border-brand-purple/20 transition-colors"
+        >
+          {t('about.update.available', { version: status.version })}
+        </button>
+      );
+    case 'downloading':
+      return (
+        <span className="px-3 py-1 text-sm text-blue-600 bg-blue-50 rounded-lg border border-blue-200">
+          {t('about.update.downloading', { progress: Math.round(status.progress) })}
+        </span>
+      );
+    case 'downloaded':
+      return (
+        <button
+          onClick={onInstall}
+          className="px-3 py-1 text-sm text-white bg-brand-purple hover:bg-brand-purple/90 rounded-lg transition-colors"
+        >
+          {t('about.update.restart')}
+        </button>
+      );
+    case 'error':
+      return (
+        <span
+          className="px-3 py-1 text-sm text-red-600 bg-red-50 rounded-lg border border-red-200"
+          title={status.error || ''}
+        >
+          {t('about.update.error')}
+        </span>
+      );
+    default:
+      return null;
+  }
 };

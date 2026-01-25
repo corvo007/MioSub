@@ -331,6 +331,49 @@ export interface ElectronAPI {
     ) => Promise<{ success: boolean }>;
   };
 
+  // Update APIs
+  update: {
+    check: () => Promise<{
+      success: boolean;
+      hasUpdate?: boolean;
+      version?: string;
+      downloadUrl?: string;
+      error?: string;
+    }>;
+    download: () => Promise<{ success: boolean; error?: string }>;
+    install: () => Promise<{ success: boolean; error?: string }>;
+    getStatus: () => Promise<{
+      status:
+        | 'idle'
+        | 'checking'
+        | 'available'
+        | 'not-available'
+        | 'downloading'
+        | 'downloaded'
+        | 'error';
+      version: string | null;
+      error: string | null;
+      progress: number;
+      isPortable: boolean;
+    }>;
+    onStatus: (
+      callback: (status: {
+        status:
+          | 'idle'
+          | 'checking'
+          | 'available'
+          | 'not-available'
+          | 'downloading'
+          | 'downloaded'
+          | 'error';
+        version: string | null;
+        error: string | null;
+        progress: number;
+        isPortable: boolean;
+      }) => void
+    ) => () => void;
+  };
+
   // End-to-End Pipeline APIs
   endToEnd: {
     start: (config: any) => Promise<{

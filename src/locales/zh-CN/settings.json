@@ -258,6 +258,22 @@
     "copyPath": "复制路径",
     "showInFolder": "在文件夹中显示",
     "tagline": "AI 字幕生成与翻译工具",
-    "whisperGpuSupported": "支持 (GPU)"
+    "whisperGpuSupported": "支持 (GPU)",
+    "update": {
+      "checking": "正在检测更新...",
+      "upToDate": "已是最新版本",
+      "available": "发现新版本：{{version}}",
+      "downloading": "正在下载更新... {{progress}}%",
+      "downloaded": "更新已下载，点击重启安装",
+      "error": "检测更新失败",
+      "checkNow": "检测更新",
+      "download": "下载更新",
+      "restart": "立即重启更新",
+      "goToDownload": "前往下载"
+    },
+    "privacy": {
+      "title": "数据与隐私",
+      "description": "本应用收集匿名诊断数据和错误报告以改进产品稳定性，不包含任何个人身份信息。"
+    }
   }
 }

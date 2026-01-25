@@ -180,6 +180,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('analytics:track', signal, payload, eventType),
   },
 
+  // Update APIs
+  update: {
+    check: () => ipcRenderer.invoke('update:check'),
+    download: () => ipcRenderer.invoke('update:download'),
+    install: () => ipcRenderer.invoke('update:install'),
+    getStatus: () => ipcRenderer.invoke('update:get-status'),
+    onStatus: (callback: (status: any) => void) => {
+      const handler = (_event: any, status: any) => callback(status);
+      ipcRenderer.on('update:status', handler);
+      return () => ipcRenderer.removeListener('update:status', handler);
+    },
+  },
+
   // End-to-End Pipeline APIs
   endToEnd: {
     start: (config: any) => ipcRenderer.invoke('end-to-end:start', config),
