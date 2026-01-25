@@ -502,6 +502,29 @@ ipcMain.handle('select-whisper-model', async () => {
   }
 });
 
+// IPC Handler: Select Whisper Executable
+ipcMain.handle('select-whisper-executable', async () => {
+  try {
+    const result = await dialog.showOpenDialog({
+      title: t('dialog.selectWhisperExecutable'),
+      filters: [
+        { name: t('fileFilter.executableFiles'), extensions: ['exe'] },
+        { name: t('fileFilter.allFiles'), extensions: ['*'] },
+      ],
+      properties: ['openFile'],
+    });
+
+    if (!result.canceled && result.filePaths.length > 0) {
+      const filePath = result.filePaths[0];
+      return { success: true, path: filePath };
+    }
+    return { success: false, canceled: true };
+  } catch (error: any) {
+    console.error('[Main] Whisper executable selection failed:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // IPC Handler: Select Aligner Executable
 ipcMain.handle('select-aligner-executable', async () => {
   try {

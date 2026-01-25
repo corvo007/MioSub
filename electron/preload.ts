@@ -23,6 +23,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // New: Local Whisper APIs
   selectWhisperModel: () => ipcRenderer.invoke('select-whisper-model'),
+  selectWhisperBinary: () => ipcRenderer.invoke('select-whisper-executable'),
   selectAlignerExecutable: () => ipcRenderer.invoke('select-aligner-executable'),
   selectAlignerModelDir: () => ipcRenderer.invoke('select-aligner-model-dir'),
   transcribeLocal: (data: {

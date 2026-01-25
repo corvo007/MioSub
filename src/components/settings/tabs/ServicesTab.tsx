@@ -88,11 +88,15 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
               <LocalWhisperSettings
                 useLocalWhisper={true}
                 whisperModelPath={settings.whisperModelPath}
+                localWhisperBinaryPath={settings.localWhisperBinaryPath}
                 onToggle={(enabled) => {
                   updateSetting('useLocalWhisper', enabled);
                 }}
                 onModelPathChange={(path) => {
                   updateSetting('whisperModelPath', path);
+                }}
+                onBinaryPathChange={(path) => {
+                  updateSetting('localWhisperBinaryPath', path);
                 }}
                 addToast={addToast}
               />

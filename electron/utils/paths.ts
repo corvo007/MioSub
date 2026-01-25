@@ -78,6 +78,16 @@ export function getBinaryPath(name: string): string {
 }
 
 /**
+ * Get the path to the resources directory.
+ */
+export function getResourcesPath(): string {
+  if (app.isPackaged) {
+    return process.resourcesPath;
+  }
+  return path.join(process.cwd(), 'resources');
+}
+
+/**
  * Get a hash string based on file path and modification time.
  * Used for detecting binary updates.
  */

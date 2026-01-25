@@ -28,47 +28,32 @@ export class LocalWhisperService {
     if (customBinaryPath && fs.existsSync(customBinaryPath)) {
       return { path: customBinaryPath, source: 'Custom' };
     }
+    const binaryPath = this.getBinaryPath(customBinaryPath);
+    return { path: binaryPath, source: binaryPath ? 'Bundled' : 'unknown' };
+  }
+
+  public getBinaryPath(customBinaryPath?: string): string {
+    // If custom path is provided, use it directly without any discovery logic
+    if (customBinaryPath && fs.existsSync(customBinaryPath)) {
+      return customBinaryPath;
+    }
+
+    // Fallback: Check bundled resources (only default locations)
     const binaryName = process.platform === 'win32' ? 'whisper-cli.exe' : 'whisper-cli';
     const exePath = app.getPath('exe');
     const exeDir = path.dirname(exePath);
 
-    // Check for portable executable directory
-    const portableExeDir = process.env.PORTABLE_EXECUTABLE_DIR;
+    const possiblePaths = [
+      path.join(exeDir, 'resources', binaryName),
+      path.join(exeDir, binaryName),
+      path.join(process.resourcesPath, binaryName),
+    ];
 
-    const searchPaths: { path: string; source: WhisperSource }[] = [];
-
-    if (app.isPackaged) {
-      if (portableExeDir) {
-        searchPaths.push({
-          path: path.join(portableExeDir, 'resources', binaryName),
-          source: 'Portable',
-        });
-        searchPaths.push({ path: path.join(portableExeDir, binaryName), source: 'Portable' });
-      }
-      searchPaths.push({ path: path.join(exeDir, 'resources', binaryName), source: 'Bundled' });
-      searchPaths.push({ path: path.join(exeDir, binaryName), source: 'Bundled' });
-      searchPaths.push({ path: path.join(process.resourcesPath, binaryName), source: 'Bundled' });
-    } else {
-      const projectRoot = path.join(app.getAppPath(), '..');
-      searchPaths.push({ path: path.join(projectRoot, 'resources', binaryName), source: 'Dev' });
-      searchPaths.push({
-        path: path.join(app.getAppPath(), 'resources', binaryName),
-        source: 'Dev',
-      });
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) return p;
     }
 
-    for (const item of searchPaths) {
-      if (fs.existsSync(item.path)) {
-        return item;
-      }
-    }
-
-    // Fallback if not found, but we should handle this gracefully
-    return { path: '', source: 'unknown' };
-  }
-
-  public getBinaryPath(customBinaryPath?: string): string {
-    return this.getBinaryPathWithSource(customBinaryPath).path;
+    return '';
   }
 
   private getVadModelPath(): string | null {

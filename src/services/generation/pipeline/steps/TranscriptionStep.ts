@@ -62,7 +62,7 @@ export class TranscriptionStep extends BaseStep<TranscriptionInput, SubtitleItem
       settings.whisperModelPath,
       4, // Hardcoded threads
       signal,
-      settings.debug?.whisperPath
+      settings.localWhisperBinaryPath // Use manual binary path
     );
 
     logger.debug(`[Chunk ${chunk.index}] Transcription complete. Segments: ${rawSegments.length}`);

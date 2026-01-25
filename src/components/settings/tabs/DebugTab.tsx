@@ -271,23 +271,6 @@ export const DebugTab: React.FC<TabProps> = ({ settings, updateSetting }) => {
                   className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple shadow-sm placeholder-slate-400"
                 />
               </div>
-              <div>
-                <label className="block text-xs text-slate-600 mb-1">
-                  {t('debug.whisperPath')}
-                </label>
-                <input
-                  type="text"
-                  value={settings.debug?.whisperPath || ''}
-                  onChange={(e) =>
-                    updateSetting('debug', {
-                      ...(settings.debug || {}),
-                      whisperPath: e.target.value,
-                    })
-                  }
-                  placeholder={t('debug.defaultAutoDetected')}
-                  className="w-full bg-white border border-slate-200 rounded px-3 py-2 text-xs text-slate-700 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple shadow-sm placeholder-slate-400"
-                />
-              </div>
             </div>
           </div>
         </div>

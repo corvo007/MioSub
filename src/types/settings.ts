@@ -31,7 +31,6 @@ export interface DebugSettings {
   // Custom paths
   ffmpegPath?: string;
   ffprobePath?: string;
-  whisperPath?: string;
   saveIntermediateArtifacts?: boolean;
 }
 
@@ -72,6 +71,7 @@ export interface AppSettings {
   // Local Whisper Settings
   useLocalWhisper?: boolean; // Whether to use local Whisper
   whisperModelPath?: string; // Model file path (.bin)
+  localWhisperBinaryPath?: string; // Whisper executable path (whisper-cli.exe)
 
   // Speaker Diarization Settings
   enableDiarization?: boolean; // Enable speaker identification (default: false)

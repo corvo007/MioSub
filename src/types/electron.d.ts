@@ -78,6 +78,12 @@ export interface ElectronAPI {
     error?: string;
     canceled?: boolean;
   }>;
+  selectWhisperBinary: () => Promise<{
+    success: boolean;
+    path?: string;
+    error?: string;
+    canceled?: boolean;
+  }>;
   selectAlignerExecutable: () => Promise<{
     success: boolean;
     path?: string;
