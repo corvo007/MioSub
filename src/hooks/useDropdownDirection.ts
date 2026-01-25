@@ -40,19 +40,8 @@ export function useDropdownDirection<T extends HTMLElement>(
 
     const rect = ref.current.getBoundingClientRect();
 
-    // 读取 zoom 值：优先从 CSS 变量读取，fallback 为 1
-    const zoom = parseFloat(
-      getComputedStyle(document.documentElement).getPropertyValue('--app-zoom') || '1'
-    );
-
-    // 计算 effective viewport（考虑 zoom）
-    // 当 zoom < 1 时，实际可用空间更大；当 zoom > 1 时，实际可用空间更小
-    const effectiveHeight = window.innerHeight / zoom;
-    const effectiveWidth = window.innerWidth / zoom;
-
-    // rect 值已经是 zoom 后的值，需要还原
-    const spaceBelow = effectiveHeight - rect.bottom / zoom;
-    const spaceRight = effectiveWidth - rect.right / zoom;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceRight = window.innerWidth - rect.right;
 
     return {
       dropUp: spaceBelow < minSpaceBelow,

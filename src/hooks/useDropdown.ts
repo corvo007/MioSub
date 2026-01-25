@@ -65,15 +65,11 @@ export function useDropdown<
 
     // Coords
     const rect = triggerRef.current.getBoundingClientRect();
-    const zoom = parseFloat(
-      getComputedStyle(document.documentElement).getPropertyValue('--app-zoom') || '1'
-    );
-
     setCoords({
-      left: rect.left / zoom,
-      top: rect.top / zoom,
-      width: rect.width / zoom,
-      bottom: rect.bottom / zoom,
+      left: rect.left,
+      top: rect.top,
+      width: rect.width,
+      bottom: rect.bottom,
     });
   }, [getDirection, triggerRef]);
 
