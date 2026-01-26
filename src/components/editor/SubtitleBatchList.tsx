@@ -13,7 +13,7 @@ interface SubtitleBatchListProps {
   virtuosoRef: React.RefObject<VirtuosoHandle>;
   // Callbacks
   checkDelete: (id: string) => void;
-  onManageSpeakers: () => void;
+
   // State
   isDeleteMode: boolean;
   selectedForDelete: Set<string>;
@@ -28,7 +28,7 @@ export const SubtitleBatchList: React.FC<SubtitleBatchListProps> = React.memo(
     status,
     virtuosoRef,
     checkDelete,
-    onManageSpeakers,
+
     isDeleteMode,
     selectedForDelete,
     toggleDeleteSelection,
@@ -38,30 +38,10 @@ export const SubtitleBatchList: React.FC<SubtitleBatchListProps> = React.memo(
     // Store Connectors
     const { subtitles } = useWorkspaceStore(useShallow(selectSubtitleState));
     const speakerProfiles = useWorkspaceStore(useShallow((s) => s.speakerProfiles));
-    const { selectedBatches, batchComments, showSourceText, editingCommentId } = useWorkspaceStore(
-      useShallow(selectUIState)
-    );
+    const { selectedBatches, batchComments } = useWorkspaceStore(useShallow(selectUIState));
     const actions = useWorkspaceStore((s) => s.actions);
 
-    const {
-      toggleBatch,
-      updateBatchComment,
-      handleBatchAction,
-      setEditingCommentId,
-      updateLineComment,
-      updateSubtitleText,
-      updateSubtitleOriginal,
-      updateSubtitleTime,
-      addSubtitle,
-    } = actions;
-
-    // Adapter for updateSpeaker to match signature
-    const updateSpeaker = React.useCallback(
-      (id: string, speaker: string, _applyToAll?: boolean) => {
-        actions.updateSpeaker(id, speaker);
-      },
-      [actions]
-    );
+    const { toggleBatch, updateBatchComment, handleBatchAction } = actions;
 
     // Batch size calculation
     // Priority: 1. Configured batch size (if available), 2. Infer from first chunk, 3. Default to 20

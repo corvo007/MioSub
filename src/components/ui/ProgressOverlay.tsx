@@ -104,9 +104,7 @@ export const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
           </div>
         </div>
 
-        {startTime && (
-          <TimeTracker startTime={startTime} completed={completed} total={total} status={status} />
-        )}
+        {startTime && <TimeTracker startTime={startTime} />}
 
         <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar bg-slate-50/50 p-4 rounded-xl border border-slate-200/60 shadow-inner">
           {chunks.length === 0 && (

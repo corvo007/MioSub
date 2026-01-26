@@ -11,7 +11,7 @@ interface FileUploaderProps {
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onFileSelectNative?: (file: File) => void; // Callback for native dialog (receives File with path)
   onNativeClick?: () => void; // Generic callback for native dialog click (no File returned)
-  onLoadingStart?: () => void; // Called before file reading starts (for loading indicators)
+
   disabled?: boolean;
   accept: string;
   icon: React.ReactNode;
@@ -30,7 +30,7 @@ export const FileUploader: React.FC<FileUploaderProps> = ({
   onFileSelect,
   onFileSelectNative,
   onNativeClick,
-  onLoadingStart,
+
   disabled = false,
   accept,
   icon,

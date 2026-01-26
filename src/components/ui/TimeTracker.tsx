@@ -1,21 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { type GenerationStatus } from '@/types/api';
+
 import { formatDuration } from '@/services/subtitle/time';
 
 interface TimeTrackerProps {
   startTime: number;
-  completed: number;
-  total: number;
-  status: GenerationStatus;
 }
 
-export const TimeTracker: React.FC<TimeTrackerProps> = ({
-  startTime,
-  completed,
-  total,
-  status,
-}) => {
+export const TimeTracker: React.FC<TimeTrackerProps> = ({ startTime }) => {
   const { t } = useTranslation('ui');
   const [now, setNow] = useState(Date.now());
 

@@ -4,7 +4,7 @@ import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import { Search } from 'lucide-react';
 import { SubtitleRow } from '@/components/editor/SubtitleRow';
 import { type SubtitleItem } from '@/types';
-import { useWorkspaceStore, selectSubtitleState, selectUIState } from '@/store/useWorkspaceStore';
+import { useWorkspaceStore, selectSubtitleState } from '@/store/useWorkspaceStore';
 import { useShallow } from 'zustand/react/shallow';
 
 interface SubtitleFilteredListProps {
@@ -14,7 +14,7 @@ interface SubtitleFilteredListProps {
   virtuosoRef: React.RefObject<VirtuosoHandle>;
   // Callbacks
   checkDelete: (id: string) => void;
-  onManageSpeakers: () => void;
+
   // State
   isDeleteMode: boolean;
   selectedForDelete: Set<string>;
@@ -30,7 +30,6 @@ export const SubtitleFilteredList: React.FC<SubtitleFilteredListProps> = React.m
     getFilterLabels,
     virtuosoRef,
     checkDelete,
-    onManageSpeakers,
     isDeleteMode,
     selectedForDelete,
     toggleDeleteSelection,
@@ -42,26 +41,6 @@ export const SubtitleFilteredList: React.FC<SubtitleFilteredListProps> = React.m
     // Store Connectors
     const { subtitles } = useWorkspaceStore(useShallow(selectSubtitleState));
     const speakerProfiles = useWorkspaceStore(useShallow((s) => s.speakerProfiles));
-    const { showSourceText, editingCommentId } = useWorkspaceStore(useShallow(selectUIState));
-    const actions = useWorkspaceStore((s) => s.actions);
-
-    // Destructure actions needed for Row
-    const {
-      setEditingCommentId,
-      updateLineComment,
-      updateSubtitleText,
-      updateSubtitleOriginal,
-      updateSubtitleTime,
-      addSubtitle,
-    } = actions;
-
-    // Adapter for updateSpeaker to match signature
-    const updateSpeaker = React.useCallback(
-      (id: string, speaker: string, _applyToAll?: boolean) => {
-        actions.updateSpeaker(id, speaker);
-      },
-      [actions]
-    );
 
     // Pre-compute index map for O(1) lookup
     const idToIndexMap = React.useMemo(

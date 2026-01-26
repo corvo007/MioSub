@@ -43,23 +43,13 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
 
   // Controller
   const controller = useWorkspaceController(activeTab);
-  const { settings, fileState, subtitleState, generationState, handlers } = controller;
+  const { settings, fileState, subtitleState, generationState } = controller;
 
   // Deconstruct state
   const { zoomLevel, showSnapshots } = settings;
-  const { file, duration, isLoadingFile } = fileState;
-  const { subtitles, subtitleFileName, isLoadingSubtitle } = subtitleState;
-  const { status, error } = generationState;
-
-  // Actions
-  const {
-    handleFileChange: onFileChange,
-    handleFileSelectNative: onFileChangeNative,
-    handleSubtitleImport: onSubtitleImport,
-    handleSubtitleImportNative: onSubtitleImportNative,
-    handleGenerate: onGenerate,
-    setShowSourceText: setShowSourceText,
-  } = handlers;
+  const { file } = fileState;
+  const { subtitles } = subtitleState;
+  const { status } = generationState;
 
   // Destructure direct actions for easier usage
   // Removed unused action destructuring (toggleAllBatches, etc)
@@ -108,9 +98,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   const [forceVerticalLayout, setForceVerticalLayout] = useState(false);
 
   // Thresholds for layout switching
-  const MIN_HEIGHT_FOR_TWO_COLUMN = 700; // Minimum height to use two-column layout
+  const MIN_HEIGHT_FOR_TWO_COLUMN = 600; // Minimum height to use two-column layout
   const MIN_WIDTH_FOR_TWO_COLUMN = 768; // Matches md: breakpoint
-  const COMPACT_HEIGHT_THRESHOLD = 600; // For auto-collapsing sections
+  const COMPACT_HEIGHT_THRESHOLD = 700; // For auto-collapsing sections
 
   // Detect viewport dimensions and switch layout accordingly
   useEffect(() => {
@@ -126,6 +116,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         effectiveHeight < MIN_HEIGHT_FOR_TWO_COLUMN || effectiveWidth < MIN_WIDTH_FOR_TWO_COLUMN;
 
       setForceVerticalLayout(shouldForceVertical);
+
+      // Auto-collapse sections on very short screens to maximize editor space
+      if (effectiveHeight < COMPACT_HEIGHT_THRESHOLD) {
+        setVideoPreviewCollapsed(true);
+        setSidebarCollapsed(true);
+      }
     };
 
     // Initial check
@@ -134,7 +130,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     // Listen for resize
     window.addEventListener('resize', checkViewportSize);
     return () => window.removeEventListener('resize', checkViewportSize);
-  }, [zoomLevel]);
+  }, [zoomLevel, setVideoPreviewCollapsed]);
 
   // Determine if compression button should show
   // For 'new' tab: requires video file

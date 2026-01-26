@@ -278,15 +278,7 @@ export function useFileOperations({
         logger.info('Subtitle file imported', { name: subFile.name });
 
         const currentOpId = ++operationIdRef.current;
-        const {
-          setIsLoadingSubtitle,
-          setSubtitles,
-          setSubtitleFileName,
-          setSpeakerProfiles,
-          setStatus,
-          setError,
-          setBatchComments,
-        } = useWorkspaceStore.getState();
+        const { setIsLoadingSubtitle, setStatus, setError } = useWorkspaceStore.getState();
 
         setIsLoadingSubtitle(true);
         try {
@@ -327,15 +319,7 @@ export function useFileOperations({
 
     // Declare opId outside try/catch so it's available in catch block
     const currentOpId = ++operationIdRef.current;
-    const {
-      setIsLoadingSubtitle,
-      setSubtitles,
-      setSubtitleFileName,
-      setSpeakerProfiles,
-      setStatus,
-      setError,
-      setBatchComments,
-    } = useWorkspaceStore.getState();
+    const { setIsLoadingSubtitle, setStatus, setError } = useWorkspaceStore.getState();
 
     try {
       const result = await window.electronAPI.selectSubtitleFile();

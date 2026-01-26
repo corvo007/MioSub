@@ -41,16 +41,13 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
     // Global App Store
     // Optimized: Only select the specific settings needed
     const proofreadBatchSize = useAppStore((s) => s.settings.proofreadBatchSize);
-    const setShowSpeakerManager = useAppStore((s) => s.setShowSpeakerManager);
 
     // Workspace Store
     const { subtitles } = useWorkspaceStore(useShallow(selectSubtitleState));
     const { file } = useWorkspaceStore(useShallow(selectFileState));
     const { status } = useWorkspaceStore(useShallow(selectGenerationState));
-    const { selectedBatches, batchComments, showSourceText, editingCommentId } = useWorkspaceStore(
-      useShallow(selectUIState)
-    );
-    const speakerProfiles = useWorkspaceStore(useShallow((s) => s.speakerProfiles));
+    const { selectedBatches } = useWorkspaceStore(useShallow(selectUIState));
+
     const actions = useWorkspaceStore((s) => s.actions);
 
     // Destructure actions
@@ -66,18 +63,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
     // SubtitleRow expects updateSpeaker to optionally accept applyToAll, but our logic ignores it.
     // We wrap it to satisfy the type signature of children.
     // Note: actions is now stable (P0 fix), so empty deps is safe
-    const updateSpeaker = React.useCallback(
-      (id: string, speaker: string, _applyToAll?: boolean) => {
-        actions.updateSpeaker(id, speaker);
-      },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      []
-    );
 
-    const onManageSpeakers = React.useCallback(
-      () => setShowSpeakerManager(true),
-      [setShowSpeakerManager]
-    );
     const { t } = useTranslation(['workspace', 'editor']);
     const [searchQuery, setSearchQuery] = React.useState('');
     const [filters, setFilters] = React.useState<SubtitleFilters>(defaultFilters);
@@ -177,7 +163,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
       (subs: SubtitleItem[]): SubtitleItem[] => {
         if (!hasActiveFilter) return subs;
 
-        return subs.filter((sub, index) => {
+        return subs.filter((sub) => {
           // Use pre-calculated validation if available (for full list filtering)
           // Fallback to on-the-fly for subset or edge cases if needed, but map covers all IDs
           const validation = validationMap.get(sub.id) || validateSubtitle(sub, undefined);
@@ -328,7 +314,6 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
     }, [filteredSubtitles, chunks, currentPlayTime]);
 
     // We need batchSize later for rendering
-    const batchSize = proofreadBatchSize || 20;
 
     // Use a helper function for parsing time to avoid cyclical dependencies if imported from utils
     // const parseTime = timeToSeconds;
@@ -533,7 +518,6 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
             getFilterLabels={getFilterLabels}
             virtuosoRef={virtuosoRef}
             checkDelete={checkDelete}
-            onManageSpeakers={onManageSpeakers}
             isDeleteMode={isDeleteMode}
             selectedForDelete={selectedForDelete}
             toggleDeleteSelection={toggleDeleteSelection}
@@ -546,7 +530,6 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
             status={status}
             virtuosoRef={virtuosoRef}
             checkDelete={checkDelete}
-            onManageSpeakers={onManageSpeakers}
             isDeleteMode={isDeleteMode}
             selectedForDelete={selectedForDelete}
             toggleDeleteSelection={toggleDeleteSelection}

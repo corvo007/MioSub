@@ -19,7 +19,6 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
   modeLabel,
   subtitleInfo,
   onBack,
-  showSnapshots,
   onToggleSnapshots,
   hasSnapshots,
 }) => {

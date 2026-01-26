@@ -42,12 +42,10 @@ export function EndToEndWizard({ settings, onComplete, onCancel }: EndToEndWizar
 
   const {
     state,
-    setStep,
     goNext,
     goBack,
     updateConfig,
     resetConfig,
-    resetToConfig,
     retryPipeline,
     parseUrl,
     videoInfo,

@@ -125,7 +125,6 @@ export const AboutTab: React.FC = () => {
             {updateStatus && (
               <UpdateStatusBadge
                 status={updateStatus}
-                downloadUrl={downloadUrl}
                 onCheck={handleCheckUpdate}
                 onDownload={handleDownloadUpdate}
                 onInstall={handleInstallUpdate}
@@ -298,12 +297,11 @@ export const AboutTab: React.FC = () => {
 // Update Status Badge Component
 const UpdateStatusBadge: React.FC<{
   status: UpdateStatus;
-  downloadUrl: string | null;
   onCheck: () => void;
   onDownload: () => void;
   onInstall: () => void;
   onGoToDownload: () => void;
-}> = ({ status, downloadUrl, onCheck, onDownload, onInstall, onGoToDownload }) => {
+}> = ({ status, onCheck, onDownload, onInstall, onGoToDownload }) => {
   const { t } = useTranslation('settings');
 
   // Portable mode: show check button and status

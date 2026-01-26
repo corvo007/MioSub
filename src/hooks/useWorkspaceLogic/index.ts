@@ -97,22 +97,6 @@ export const useWorkspaceLogic = ({
   const subtitleFileName = useWorkspaceStore((state) => state.subtitleFileName);
   const speakerProfiles = useWorkspaceStore((state) => state.speakerProfiles);
 
-  // Actions from store (for direct calling if needed)
-  const {
-    setFile,
-    setDuration,
-    setStatus: setStatusAction,
-    setSubtitles,
-    setBatchComments,
-    setSelectedBatches,
-    setError,
-    setChunkProgress,
-    setSpeakerProfiles,
-    setIsLoadingFile,
-    setSubtitleFileName,
-  } = useWorkspaceStore.getState(); // We use getState() for stable references, or hooks if we need reactivity?
-  // Actually, setters don't need to be reactive.
-
   // Worker
   const { parseSubtitle, cleanup } = useFileParserWorker();
 
@@ -131,7 +115,7 @@ export const useWorkspaceLogic = ({
     toggleAllBatches,
     selectBatchesWithComments,
     updateBatchComment,
-    resetBatchState,
+
     // Expose local setters as wrappers if needed by return signature
     setEditingCommentId: setEditingCommentIdAction,
     setShowSourceText: setShowSourceTextAction,
@@ -249,46 +233,39 @@ export const useWorkspaceLogic = ({
 
         logger.info('Loaded file from path', { path, size: fileObj.size, type: fileObj.type });
 
-        setFile(fileObj);
+        useWorkspaceStore.setState({ file: fileObj });
         audioCacheRef.current = null;
-        setError(null);
+        useWorkspaceStore.setState({ error: null });
 
         if (window.electronAPI && window.electronAPI.getAudioInfo) {
           try {
             const result = await window.electronAPI.getAudioInfo(path);
             if (result.success && result.info) {
-              setDuration(result.info.duration);
+              useWorkspaceStore.setState({ duration: result.info.duration });
             } else {
-              setDuration(0);
+              useWorkspaceStore.setState({ duration: 0 });
             }
           } catch {
-            setDuration(0);
+            useWorkspaceStore.setState({ duration: 0 });
           }
         } else {
-          setDuration(0);
+          useWorkspaceStore.setState({ duration: 0 });
         }
 
         // Reset workspace
-        setSubtitles([]);
-        setStatusAction(GenerationStatus.IDLE);
-        setBatchComments({});
-        setSelectedBatches(new Set());
+        useWorkspaceStore.setState({
+          subtitles: [],
+          status: GenerationStatus.IDLE,
+          batchComments: {},
+          selectedBatches: new Set(),
+        });
       } catch (e: unknown) {
         const error = e as Error;
         logger.error('Failed to load file from path', e);
-        setError(t('unableToLoadFile', { error: error.message }));
+        useWorkspaceStore.setState({ error: t('unableToLoadFile', { error: error.message }) });
       }
     },
-    [
-      t,
-      setFile,
-      setError,
-      setDuration,
-      setSubtitles,
-      setStatusAction,
-      setBatchComments,
-      setSelectedBatches,
-    ]
+    [t]
   );
 
   // ============================================
