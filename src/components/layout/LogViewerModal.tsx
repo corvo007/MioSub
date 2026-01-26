@@ -217,7 +217,7 @@ export const LogViewerModal: React.FC<LogViewerModalProps> = ({ isOpen, logs, on
                           log.data !== null &&
                           !Array.isArray(log.data)
                         ) {
-                          const { raw, source, ...rest } = log.data;
+                          const { raw: _raw, source: _source, ...rest } = log.data;
                           if (Object.keys(rest).length === 0) return null;
                           dataToShow = rest;
                         }

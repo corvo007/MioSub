@@ -296,7 +296,7 @@ class AnalyticsService {
 
             gpuModels = Array.from(new Set(models)).join('; ');
           }
-        } catch (e) {
+        } catch (_e) {
           // GPU info fetching failed
         }
 
@@ -305,7 +305,7 @@ class AnalyticsService {
           memory_gb: memoryGb,
           gpu_models: gpuModels,
         };
-      } catch (error) {
+      } catch (_error) {
         this.cachedHardwareInfo = {};
       }
     }

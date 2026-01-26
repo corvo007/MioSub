@@ -186,7 +186,7 @@ class MainLogger {
     if (this.isReady && this.logFile) {
       try {
         fs.appendFileSync(this.logFile, fullLogLine + os.EOL);
-      } catch (err) {
+      } catch (_err) {
         // Ignore write errors
       }
     } else {
