@@ -32,8 +32,8 @@ const OVERLAP_THRESHOLD = 0.5;
 // 类型定义
 // ============================================================================
 
-type SemanticField = (typeof SEMANTIC_FIELDS)[number];
-type InternalField = (typeof INTERNAL_FIELDS)[number];
+export type SemanticField = (typeof SEMANTIC_FIELDS)[number];
+export type InternalField = (typeof INTERNAL_FIELDS)[number];
 
 export interface ReconcileOptions {
   /** 重叠阈值，默认 0.5 */
@@ -147,25 +147,6 @@ function findMatches(prev: SubtitleItem[], currSeg: SubtitleItem, threshold: num
 }
 
 /**
- * 找到重叠时间最长的 prev segment
- */
-function findDominant(prev: SubtitleItem[], match: MatchResult): SubtitleItem | null {
-  if (match.prevIndices.length === 0) return null;
-
-  let maxIdx = 0;
-  let maxOverlap = match.overlaps[0];
-
-  for (let i = 1; i < match.overlaps.length; i++) {
-    if (match.overlaps[i] > maxOverlap) {
-      maxOverlap = match.overlaps[i];
-      maxIdx = i;
-    }
-  }
-
-  return prev[match.prevIndices[maxIdx]];
-}
-
-/**
  * 找到重叠时间最长的 prev segment 的索引
  */
 function findDominantIndex(match: MatchResult): number | null {
@@ -225,29 +206,21 @@ function mergeMetadata(
   // 合并元数据（当前阶段优先）
   const result: SubtitleItem = { ...currSeg };
 
-  // 语义元数据：始终继承（speaker）
+  // 语义元数据：始终继承
   // Note: comment is NOT inherited - it's cleared after processing
-  if (result.speaker === undefined && dominant.speaker !== undefined) {
-    result.speaker = dominant.speaker;
-  }
+  SEMANTIC_FIELDS.forEach((field) => {
+    if (result[field] === undefined && dominant[field] !== undefined) {
+      (result as any)[field] = dominant[field];
+    }
+  });
 
   // 状态标记：仅 1:1 映射时继承
   if (isOneToOne) {
-    if (result.alignmentScore === undefined && dominant.alignmentScore !== undefined) {
-      result.alignmentScore = dominant.alignmentScore;
-    }
-    if (result.lowConfidence === undefined && dominant.lowConfidence !== undefined) {
-      result.lowConfidence = dominant.lowConfidence;
-    }
-    if (result.hasRegressionIssue === undefined && dominant.hasRegressionIssue !== undefined) {
-      result.hasRegressionIssue = dominant.hasRegressionIssue;
-    }
-    if (
-      result.hasCorruptedRangeIssue === undefined &&
-      dominant.hasCorruptedRangeIssue !== undefined
-    ) {
-      result.hasCorruptedRangeIssue = dominant.hasCorruptedRangeIssue;
-    }
+    INTERNAL_FIELDS.forEach((field) => {
+      if (result[field] === undefined && dominant[field] !== undefined) {
+        (result as any)[field] = dominant[field];
+      }
+    });
   }
 
   return result;

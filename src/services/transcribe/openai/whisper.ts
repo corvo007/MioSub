@@ -162,7 +162,7 @@ export const transcribeWithWhisper = async (
       const segments = data.segments as OpenAIWhisperSegment[];
       if (!segments) return [];
 
-      return segments.map((seg, idx) => ({
+      return segments.map((seg) => ({
         id: generateSubtitleId(),
         startTime: formatTime(seg.start),
         endTime: formatTime(seg.end),

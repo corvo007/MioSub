@@ -90,7 +90,7 @@ export const transcribeWithOpenAIChat = async (
 
     if (!Array.isArray(segments)) return [];
 
-    return segments.map((seg, idx) => ({
+    return segments.map((seg) => ({
       id: generateSubtitleId(),
       startTime: formatTime(parseFloat(seg.start)),
       endTime: formatTime(parseFloat(seg.end)),
