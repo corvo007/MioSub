@@ -1572,8 +1572,12 @@ app.on('ready', async () => {
       await analyticsService.initialize(versionStr);
     } catch (error) {
       console.error('[Main] Failed to get system config for analytics:', error);
-      void analyticsService.initialize();
+      await analyticsService.initialize();
     }
+
+    // Log identity for debugging
+    console.log(`[Main] Debug ID: ${analyticsService.getUserId()}`);
+    console.log(`[Main] Session ID: ${analyticsService.getSessionId()}`);
   })();
 
   // Print startup system info and cache it

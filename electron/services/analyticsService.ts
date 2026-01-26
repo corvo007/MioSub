@@ -390,6 +390,14 @@ class AnalyticsService {
       console.log('[Analytics] Shutdown complete.');
     }
   }
+
+  public getUserId(): string | null {
+    return this.userId;
+  }
+
+  public getSessionId(): number {
+    return this.sessionId;
+  }
 }
 
 export const analyticsService = new AnalyticsService();
