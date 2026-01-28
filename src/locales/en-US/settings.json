@@ -172,7 +172,7 @@
     "description": "Mock mode allows skipping actual API requests or specific stages to test workflows and save quota.",
     "startFrom": {
       "title": "Start Pipeline From",
-      "desc": "Start execution from this stage, skipping previous steps. Uses file/preset data as input."
+      "desc": "Start execution from this stage, skipping previous steps. Uses file/preset data as input. (Enabling this automatically skips blocking steps like Speaker Analysis and Term Extraction)"
     },
     "mockApi": {
       "title": "Mock API Execution",
