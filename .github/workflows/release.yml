@@ -6,8 +6,25 @@ on:
       - 'v*'
 
 jobs:
-  release:
-    runs-on: windows-latest
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win32-x64
+            artifact: MioSub-*-win-x64.zip
+          - os: ubuntu-latest
+            platform: linux-x64
+            artifact: MioSub-*.AppImage
+          - os: macos-13
+            platform: darwin-x64
+            artifact: MioSub-*-x64.dmg
+          - os: macos-latest
+            platform: darwin-arm64
+            artifact: MioSub-*-arm64.dmg
+
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: write
 
@@ -21,11 +38,17 @@ jobs:
           node-version: 20
           cache: 'yarn'
 
+      - name: Install 7zip (macOS x64)
+        if: matrix.platform == 'darwin-x64'
+        run: brew install p7zip
+
       - name: Configure git to use HTTPS
         run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
+        env:
+          BINARY_PLATFORM: ${{ matrix.platform }}
 
       - name: Build Electron App
         run: yarn electron:build
@@ -38,8 +61,33 @@ jobs:
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
 
-      - name: Clean up release assets
-        shell: bash
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.platform }}
+          path: release/*
+          retention-days: 1
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out git repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+
+      - name: List release files
+        run: ls -la release/
+
+      - name: Clean up existing release assets
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -52,7 +100,6 @@ jobs:
 
       - name: Extract Changelog for Release
         id: changelog
-        shell: bash
         run: |
           VERSION="${{ github.ref_name }}"
           VERSION="${VERSION#v}"  # Remove 'v' prefix
@@ -72,10 +119,12 @@ jobs:
 
       - name: Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
             release/*.zip
+            release/*.dmg
+            release/*.AppImage
+            release/*.exe
           body: ${{ steps.changelog.outputs.content }}
           draft: false
           prerelease: false

@@ -77,3 +77,18 @@ docs/build/
 
 # Fumadocs
 .source/
+
+# Downloaded binaries (managed by postinstall script)
+# Keep: icon.png, editor.png, editor_en.png, fonts/, Chinese_to_Pinyin.txt, ggml-silero-v6.2.0.bin
+resources/*.exe
+resources/*.dll
+resources/*.pdb
+resources/*.so
+resources/*.dylib
+resources/ffmpeg
+resources/ffprobe
+resources/yt-dlp
+resources/qjs
+resources/whisper-cli
+resources/cpp-ort-aligner
+.binary-cache/

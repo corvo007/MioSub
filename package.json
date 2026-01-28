@@ -9,6 +9,9 @@
   "main": "dist-electron/main.cjs",
   "scripts": {
     "preinstall": "git config --global url.\"https://github.com/\".insteadOf ssh://git@github.com/",
+    "postinstall": "node scripts/download-binaries.mjs",
+    "download:binaries": "node scripts/download-binaries.mjs",
+    "download:binaries:force": "node scripts/download-binaries.mjs --force",
     "dev": "vite",
     "build": "vite build",
     "docs:dev": "cd docs && npx fumadocs-mdx && cd .. && next dev docs",
@@ -128,12 +131,21 @@
     "extraResources": [],
     "mac": {
       "target": "dmg",
+      "artifactName": "MioSub-${version}-mac-${arch}.${ext}",
       "extraResources": [
         {
-          "from": "resources/whisper-cli",
-          "to": "whisper-cli",
+          "from": "resources",
+          "to": ".",
           "filter": [
-            "**/*"
+            "whisper-cli",
+            "yt-dlp",
+            "qjs",
+            "ffmpeg",
+            "ffprobe",
+            "cpp-ort-aligner",
+            "ggml-silero-v6.2.0.bin",
+            "Chinese_to_Pinyin.txt",
+            "fonts/**/*"
           ]
         }
       ]
@@ -164,8 +176,10 @@
             "qjs.exe",
             "ffmpeg.exe",
             "ffprobe.exe",
+            "cpp-ort-aligner.exe",
             "*.dll",
             "ggml-silero-v6.2.0.bin",
+            "Chinese_to_Pinyin.txt",
             "fonts/**/*"
           ]
         }
@@ -185,12 +199,21 @@
     "afterAllArtifactBuild": "scripts/afterAllArtifactBuild.cjs",
     "linux": {
       "target": "AppImage",
+      "artifactName": "MioSub-${version}-linux-${arch}.${ext}",
       "extraResources": [
         {
-          "from": "resources/whisper-cli",
-          "to": "whisper-cli",
+          "from": "resources",
+          "to": ".",
           "filter": [
-            "**/*"
+            "whisper-cli",
+            "yt-dlp",
+            "qjs",
+            "ffmpeg",
+            "ffprobe",
+            "cpp-ort-aligner",
+            "ggml-silero-v6.2.0.bin",
+            "Chinese_to_Pinyin.txt",
+            "fonts/**/*"
           ]
         }
       ]
