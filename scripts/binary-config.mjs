@@ -139,27 +139,43 @@ export const BINARIES = {
     'win32-x64': {
       url: 'https://github.com/corvo007/cpp-ctc-aligner/releases/latest/download/cpp-ort-aligner-windows-x64-v0.1.2.zip',
       type: 'zip',
-      extractAll: true, // Extract all files from archive
+      extract: [
+        { from: 'cpp-ort-aligner.exe', to: 'cpp-ort-aligner.exe' },
+        { from: 'onnxruntime.dll', to: 'onnxruntime.dll' },
+        { from: 'Chinese_to_Pinyin.txt', to: 'Chinese_to_Pinyin.txt' },
+      ],
     },
     'linux-x64': {
       url: 'https://github.com/corvo007/cpp-ctc-aligner/releases/latest/download/cpp-ort-aligner-linux-x64-v0.1.2.tar.gz',
       type: 'tar.gz',
-      extractAll: true,
+      extract: [
+        { from: 'cpp-ort-aligner', to: 'cpp-ort-aligner' },
+        { from: 'Chinese_to_Pinyin.txt', to: 'Chinese_to_Pinyin.txt' },
+      ],
     },
     'linux-arm64': {
       url: 'https://github.com/corvo007/cpp-ctc-aligner/releases/latest/download/cpp-ort-aligner-linux-arm64-v0.1.2.tar.gz',
       type: 'tar.gz',
-      extractAll: true,
+      extract: [
+        { from: 'cpp-ort-aligner', to: 'cpp-ort-aligner' },
+        { from: 'Chinese_to_Pinyin.txt', to: 'Chinese_to_Pinyin.txt' },
+      ],
     },
     'darwin-x64': {
       url: 'https://github.com/corvo007/cpp-ctc-aligner/releases/latest/download/cpp-ort-aligner-macos-universal2-v0.1.2.tar.gz',
       type: 'tar.gz',
-      extractAll: true,
+      extract: [
+        { from: 'cpp-ort-aligner', to: 'cpp-ort-aligner' },
+        { from: 'Chinese_to_Pinyin.txt', to: 'Chinese_to_Pinyin.txt' },
+      ],
     },
     'darwin-arm64': {
       url: 'https://github.com/corvo007/cpp-ctc-aligner/releases/latest/download/cpp-ort-aligner-macos-universal2-v0.1.2.tar.gz',
       type: 'tar.gz',
-      extractAll: true,
+      extract: [
+        { from: 'cpp-ort-aligner', to: 'cpp-ort-aligner' },
+        { from: 'Chinese_to_Pinyin.txt', to: 'Chinese_to_Pinyin.txt' },
+      ],
     },
   },
 };
