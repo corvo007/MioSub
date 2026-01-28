@@ -17,7 +17,7 @@ jobs:
           - os: ubuntu-latest
             platform: linux-x64
             artifact: MioSub-*.AppImage
-          - os: macos-13
+          - os: macos-15-large
             platform: darwin-x64
             artifact: MioSub-*-x64.dmg
           - os: macos-latest
