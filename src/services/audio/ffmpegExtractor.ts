@@ -1,6 +1,7 @@
 import { isElectron } from '@/services/utils/env';
 import { logger } from '@/services/utils/logger';
 import i18n from '@/i18n';
+import { resolveBinaryPath } from '@/services/utils/binary';
 import type { AudioExtractionOptions, AudioExtractionProgress } from '@/types/electron';
 
 /**
@@ -47,26 +48,24 @@ export async function extractAudioWithFFmpeg(
     // 3. 提取音频
     logger.info('Extracting audio with FFmpeg...');
 
-    // Get settings to check for custom FFmpeg path
-    let customFfmpegPath: string | undefined;
+    // Resolve FFmpeg path
+    let ffmpegPath: string | undefined;
     try {
       const settings = await window.electronAPI.storage.getSettings();
-      if (settings?.debug?.ffmpegPath) {
-        customFfmpegPath = settings.debug.ffmpegPath;
-        logger.info('Using custom FFmpeg path from settings:', customFfmpegPath);
-      }
+      ffmpegPath = await resolveBinaryPath(settings?.debug?.ffmpegPath, 'ffmpeg.exe', 'FFmpeg');
+      logger.debug('Resolved FFmpeg path:', ffmpegPath);
     } catch (e: any) {
-      logger.warn('Failed to read settings for FFmpeg path', {
+      logger.warn('Failed to resolve FFmpeg path, relying on default', {
         error: e.message,
-        code: e.code,
       });
+      // Fallback: undefined means let main process handle it (or use system PATH)
     }
 
     const options: AudioExtractionOptions = {
       format: 'wav',
       sampleRate: 16000, // Whisper 推荐采样率
       channels: 1, // 单声道
-      customFfmpegPath,
+      customFfmpegPath: ffmpegPath,
     };
 
     const extractResult = await window.electronAPI.extractAudioFFmpeg(filePath, options);

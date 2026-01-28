@@ -867,6 +867,15 @@ ipcMain.handle('util:get-resource-path', async (_event, resourceName: string) =>
       return { success: false, error: 'Path traversal not allowed' };
     }
 
+    // Platform-specific handling: Append .exe on Windows if missing
+    // This allows the frontend to request 'ffmpeg' and have it resolve to 'ffmpeg.exe' on Windows
+    let finalResourceName = resourceName;
+    if (process.platform === 'win32' && !resourceName.toLowerCase().endsWith('.exe')) {
+      // List of known binary tools to apply this rule to, or apply generally if it looks like a binary request
+      // For now, applying generally as most resources in root are binaries or specific files
+      finalResourceName = `${resourceName}.exe`;
+    }
+
     const exePath = app.getPath('exe');
     const exeDir = path.dirname(exePath);
     const portableExeDir = process.env.PORTABLE_EXECUTABLE_DIR;
@@ -876,24 +885,35 @@ ipcMain.handle('util:get-resource-path', async (_event, resourceName: string) =>
     if (app.isPackaged) {
       // Portable App
       if (portableExeDir) {
-        possiblePaths.push(path.join(portableExeDir, 'resources', resourceName));
-        possiblePaths.push(path.join(portableExeDir, resourceName));
+        possiblePaths.push(path.join(portableExeDir, 'resources', finalResourceName));
+        possiblePaths.push(path.join(portableExeDir, finalResourceName));
       }
       // Standard/Installed
-      possiblePaths.push(path.join(exeDir, 'resources', resourceName));
-      possiblePaths.push(path.join(exeDir, resourceName));
-      possiblePaths.push(path.join(process.resourcesPath, resourceName));
+      possiblePaths.push(path.join(exeDir, 'resources', finalResourceName));
+      possiblePaths.push(path.join(exeDir, finalResourceName));
+      possiblePaths.push(path.join(process.resourcesPath, finalResourceName));
     } else {
       // Development
       const projectRoot = path.join(app.getAppPath(), '..');
-      possiblePaths.push(path.join(projectRoot, 'resources', resourceName));
-      possiblePaths.push(path.join(app.getAppPath(), 'resources', resourceName));
+      possiblePaths.push(path.join(projectRoot, 'resources', finalResourceName));
+      possiblePaths.push(path.join(app.getAppPath(), 'resources', finalResourceName));
     }
 
     for (const p of possiblePaths) {
       if (fs.existsSync(p)) {
-        console.log(`[Main] Found resource ${resourceName} at: ${p}`);
+        console.log(`[Main] Found resource ${resourceName} (as ${finalResourceName}) at: ${p}`);
         return { success: true, path: p };
+      }
+    }
+
+    // If not found with .exe, try original name (fallback for non-binary resources on Windows)
+    if (finalResourceName !== resourceName) {
+      const fallbackPaths = possiblePaths.map((p) => p.replace(finalResourceName, resourceName));
+      for (const p of fallbackPaths) {
+        if (fs.existsSync(p)) {
+          console.log(`[Main] Found resource ${resourceName} at: ${p}`);
+          return { success: true, path: p };
+        }
       }
     }
 
@@ -1606,6 +1626,7 @@ app.on('ready', async () => {
       console.log(`    yt-dlp:     ${info.versions.ytdlp}`);
       console.log(`    QuickJS:    ${info.versions.qjs}`);
       console.log(`    Whisper:    ${info.versions.whisper}`);
+      console.log(`    Aligner:    ${info.versions.aligner}`);
       console.log('');
       console.log('  GPU Acceleration:');
       console.log(
@@ -1852,6 +1873,7 @@ async function getSystemConfigHash() {
   // Read settings
   const settings = await storageService.readSettings();
   const customWhisperPath = settings?.debug?.whisperPath;
+  const customAlignerPath = settings?.enhance?.alignment?.alignerPath;
 
   // Resolve ACTUAL binary paths to detect auto-discovery or in-place updates
   const whisperInfo = localWhisperService.getBinaryPathWithSource(customWhisperPath);
@@ -1862,6 +1884,7 @@ async function getSystemConfigHash() {
   const ffprobePath = settings?.debug?.ffprobePath || getBinaryPath('ffprobe');
   const ytDlpPath = getBinaryPath('yt-dlp');
   const qjsPath = getBinaryPath('qjs');
+  const alignerPath = customAlignerPath || getBinaryPath('cpp-ort-aligner');
 
   // Check mtime for both (whether custom or bundled)
   const ffmpegHash = getFileHash(ffmpegPath);
@@ -1869,6 +1892,7 @@ async function getSystemConfigHash() {
   const ytDlpHash = getFileHash(ytDlpPath);
   const qjsHash = getFileHash(qjsPath);
   const whisperHash = getFileHash(whisperInfo.path);
+  const alignerHash = getFileHash(alignerPath);
 
   // Get commit hash (cached)
   if (!cachedCommitHash) {
@@ -1897,10 +1921,18 @@ async function getSystemConfigHash() {
     `fp:${ffprobeHash}`,
     `yd:${ytDlpHash}`,
     `qj:${qjsHash}`,
+    `al:${alignerHash}`,
     `p:${process.env.PORTABLE_EXECUTABLE_DIR || 'none'}`,
   ].join('|');
 
-  return { hash, settings, pkg, commitHash: cachedCommitHash, customWhisperPath };
+  return {
+    hash,
+    settings,
+    pkg,
+    commitHash: cachedCommitHash,
+    customWhisperPath,
+    customAlignerPath,
+  };
 }
 
 /**
@@ -1918,6 +1950,17 @@ async function getSystemInfo(preConfig?: any) {
   const ytDlpInfo = await ytDlpService.getVersions();
   const whisperDetails = await localWhisperService.getWhisperDetails(config.customWhisperPath);
   const whisperVersionStr = `${whisperDetails.version} (${whisperDetails.source}${whisperDetails.gpuSupport ? ' + GPU' : ''})`;
+
+  const alignerVersionRaw = await ctcAlignerService.getVersion(config.customAlignerPath);
+  let alignerVersion = alignerVersionRaw;
+  if (
+    alignerVersionRaw &&
+    alignerVersionRaw !== 'Not found' &&
+    alignerVersionRaw !== 'Error' &&
+    alignerVersionRaw !== 'Unknown'
+  ) {
+    alignerVersion = `v${alignerVersionRaw}`;
+  }
 
   // Get FFmpeg/FFprobe versions (async to avoid blocking main thread)
   let ffmpegVersion = 'unknown';
@@ -1955,6 +1998,7 @@ async function getSystemInfo(preConfig?: any) {
       ytdlp: ytDlpInfo.ytdlp,
       qjs: ytDlpInfo.qjs,
       whisper: whisperVersionStr,
+      aligner: alignerVersion,
       whisperDetails,
     },
     gpu: hwAccelInfo,
@@ -1964,6 +2008,7 @@ async function getSystemInfo(preConfig?: any) {
       logPath: getLogDir(),
       exePath: app.getPath('exe'),
       whisperPath: whisperDetails.path,
+      alignerPath: config.customAlignerPath || getBinaryPath('cpp-ort-aligner'),
     },
   };
 }

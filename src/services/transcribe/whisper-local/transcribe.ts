@@ -2,6 +2,7 @@ import { type SubtitleItem } from '@/types/subtitle';
 import { logger } from '@/services/utils/logger';
 import i18n from '@/i18n';
 import { generateSubtitleId } from '@/services/utils/id';
+import { resolveBinaryPath } from '@/services/utils/binary';
 
 // Error types
 class WhisperLocalError extends Error {
@@ -42,6 +43,10 @@ export const transcribeWithLocalWhisper = async (
       throw new Error(i18n.t('services:pipeline.errors.cancelled'));
     }
 
+    // Resolve Whisper binary path
+    const binaryPath = await resolveBinaryPath(customBinaryPath, 'whisper-cli', 'Whisper');
+    logger.debug(`[LocalWhisper] Resolved binary path: ${binaryPath}`);
+
     // Call Electron IPC
     logger.info(`[LocalWhisper] Sending request to main process. Model: ${modelPath}`);
 
@@ -51,7 +56,7 @@ export const transcribeWithLocalWhisper = async (
       modelPath,
       language,
       threads,
-      customBinaryPath,
+      customBinaryPath: binaryPath,
     });
 
     // Track abort handler for cleanup
