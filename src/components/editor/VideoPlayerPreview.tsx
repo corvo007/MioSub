@@ -17,7 +17,6 @@ import {
   Maximize2,
   Minimize2,
   Languages,
-  Music,
 } from 'lucide-react';
 import { Rnd } from 'react-rnd';
 import { createPortal } from 'react-dom';
@@ -498,14 +497,16 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
                 />
 
                 {/* ASS Subtitle Container - Absolute positioned over video */}
-                <div
-                  ref={assContainerRef}
-                  className="absolute inset-0 pointer-events-none z-10"
-                  style={{
-                    // Ensure it stays on top but lets events pass through to video
-                    pointerEvents: 'none',
-                  }}
-                />
+                {!isAudioMode && (
+                  <div
+                    ref={assContainerRef}
+                    className="absolute inset-0 pointer-events-none z-10"
+                    style={{
+                      // Ensure it stays on top but lets events pass through to video
+                      pointerEvents: 'none',
+                    }}
+                  />
+                )}
 
                 {/* Loading overlay - Inside wrapper to show over video area */}
                 {!ready && (
@@ -521,14 +522,6 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-linear-to-br from-slate-900 via-slate-800 to-indigo-950/40 text-indigo-100 gap-6 z-10 pointer-events-none overflow-hidden">
                       {/* Ambient Background Glow */}
                       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
-
-                      {/* Icon with Ring */}
-                      <div className="relative flex items-center justify-center">
-                        <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-2xl animate-pulse" />
-                        <div className="relative w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl backdrop-blur-md ring-1 ring-white/20">
-                          <Music className="w-10 h-10 text-indigo-300 drop-shadow-[0_0_15px_rgba(129,140,248,0.6)]" />
-                        </div>
-                      </div>
 
                       <div className="flex flex-col items-center gap-3 relative z-10">
                         <div className="text-lg font-medium text-slate-200 tracking-wide text-shadow-sm">
@@ -701,111 +694,116 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
       ]
     ); // Removed dockedHeight dependency
 
-    // Collapsed state - just show expand button
-    if (isCollapsed) {
-      return (
-        <button
-          onClick={onToggleCollapse}
-          className="w-full p-2 bg-white border-b border-slate-200 flex items-center gap-2 text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-all font-medium"
-        >
-          <ChevronDown className="w-4 h-4 text-slate-400" />
-          <span className="text-sm">{t('videoPreview.expand')}</span>
-          {isTranscoding && (
-            <span className="ml-auto text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-              {t('videoPreview.transcoding')} {transcodeProgress}%
-            </span>
-          )}
-        </button>
-      );
-    }
-
     return (
-      <div className="bg-white border-b border-slate-200 select-none shadow-sm z-30 relative">
-        {/* Header - Only show in docked mode */}
-        {!isFloating && (
-          <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 bg-slate-50/50">
-            <button
-              onClick={onToggleCollapse}
-              className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-medium"
-            >
-              <ChevronUp className="w-4 h-4 text-slate-400" />
-              <span className="text-sm">{t('videoPreview.title')}</span>
-            </button>
-            <div className="flex items-center gap-2">
-              {isTranscoding && (
-                <span className="text-xs text-amber-600 animate-pulse font-medium">
-                  {t('videoPreview.transcoding')} {transcodeProgress}%
-                </span>
-              )}
-              {/* Helper Float Button in Header too */}
-              <button
-                onClick={() => setIsFloating(true)}
-                className="p-1 hover:bg-white rounded text-slate-400 hover:text-brand-purple hover:shadow-sm border border-transparent hover:border-slate-200 transition-all"
-                title={t('videoPreview.float')}
-              >
-                <Maximize2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
+      <>
+        {/* Collapsed state - just show expand button */}
+        {isCollapsed && (
+          <button
+            onClick={onToggleCollapse}
+            className="w-full p-2 bg-white border-b border-slate-200 flex items-center gap-2 text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-all font-medium"
+          >
+            <ChevronDown className="w-4 h-4 text-slate-400" />
+            <span className="text-sm">{t('videoPreview.expand')}</span>
+            {isTranscoding && (
+              <span className="ml-auto text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                {t('videoPreview.transcoding')} {transcodeProgress}%
+              </span>
+            )}
+          </button>
         )}
 
-        {/* Content Container */}
-        {isFloating ? (
-          <>
-            <div className="h-10 bg-slate-100 flex items-center justify-center text-xs text-slate-500 gap-2">
-              <span>{t('videoPreview.floatingMode')}</span>
+        <div
+          className={cn(
+            'bg-white border-b border-slate-200 select-none shadow-sm z-30 relative',
+            isCollapsed && 'hidden'
+          )}
+        >
+          {/* Header - Only show in docked mode */}
+          {!isFloating && (
+            <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 bg-slate-50/50">
               <button
-                onClick={() => setIsFloating(false)}
-                className="text-indigo-400 hover:underline flex items-center gap-1"
+                onClick={onToggleCollapse}
+                className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-medium"
               >
-                <Minimize2 className="w-3 h-3" />
-                {t('videoPreview.restore')}
+                <ChevronUp className="w-4 h-4 text-slate-400" />
+                <span className="text-sm">{t('videoPreview.title')}</span>
               </button>
+              <div className="flex items-center gap-2">
+                {isTranscoding && (
+                  <span className="text-xs text-amber-600 animate-pulse font-medium">
+                    {t('videoPreview.transcoding')} {transcodeProgress}%
+                  </span>
+                )}
+                {/* Helper Float Button in Header too */}
+                <button
+                  onClick={() => setIsFloating(true)}
+                  className="p-1 hover:bg-white rounded text-slate-400 hover:text-brand-purple hover:shadow-sm border border-transparent hover:border-slate-200 transition-all"
+                  title={t('videoPreview.float')}
+                >
+                  <Maximize2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
-            {createPortal(
-              <Rnd
-                default={{
-                  x: window.innerWidth - 360,
-                  y: window.innerHeight - 280,
-                  width: 320,
-                  height: 220,
-                }}
-                minWidth={240}
-                minHeight={135}
-                bounds="window"
-                dragHandleClassName="drag-handle"
-                className="z-9999"
-                lockAspectRatio={false}
-                scale={rndScale}
-                onResizeStart={() => setIsResizing(true)}
-                onResizeStop={() => setIsResizing(false)}
+          )}
+
+          {/* Content Container */}
+          {isFloating ? (
+            <>
+              <div className="h-10 bg-slate-100 flex items-center justify-center text-xs text-slate-500 gap-2">
+                <span>{t('videoPreview.floatingMode')}</span>
+                <button
+                  onClick={() => setIsFloating(false)}
+                  className="text-indigo-400 hover:underline flex items-center gap-1"
+                >
+                  <Minimize2 className="w-3 h-3" />
+                  {t('videoPreview.restore')}
+                </button>
+              </div>
+              {createPortal(
+                <Rnd
+                  default={{
+                    x: window.innerWidth - 360,
+                    y: window.innerHeight - 280,
+                    width: 320,
+                    height: 220,
+                  }}
+                  minWidth={240}
+                  minHeight={135}
+                  bounds="window"
+                  dragHandleClassName="drag-handle"
+                  className="z-9999"
+                  lockAspectRatio={false}
+                  scale={rndScale}
+                  onResizeStart={() => setIsResizing(true)}
+                  onResizeStop={() => setIsResizing(false)}
+                >
+                  {playerContent}
+                </Rnd>,
+                document.body
+              )}
+            </>
+          ) : (
+            /* Docked Mode - Centered with Resize Handle */
+            <div className="relative w-full flex flex-col items-center">
+              <div
+                className="w-full transition-[height] duration-75 ease-out shadow-sm"
+                style={{ height: dockedHeight }}
               >
                 {playerContent}
-              </Rnd>,
-              document.body
-            )}
-          </>
-        ) : (
-          /* Docked Mode - Centered with Resize Handle */
-          <div className="relative w-full flex flex-col items-center">
-            <div
-              className="w-full transition-[height] duration-75 ease-out shadow-sm"
-              style={{ height: dockedHeight }}
-            >
-              {playerContent}
-            </div>
+              </div>
 
-            {/* Resize Handle - Integrated look */}
-            <div
-              className="w-full h-3 flex items-center justify-center cursor-ns-resize hover:bg-slate-100/50 transition-colors group/handle z-50 border-b border-slate-100"
-              onMouseDown={handleResizeStart}
-              title={t('videoPreview.resize')}
-            >
-              <div className="w-12 h-1 bg-slate-300 rounded-full group-hover/handle:bg-brand-purple transition-colors shadow-sm" />
+              {/* Resize Handle - Integrated look */}
+              <div
+                className="w-full h-3 flex items-center justify-center cursor-ns-resize hover:bg-slate-100/50 transition-colors group/handle z-50 border-b border-slate-100"
+                onMouseDown={handleResizeStart}
+                title={t('videoPreview.resize')}
+              >
+                <div className="w-12 h-1 bg-slate-300 rounded-full group-hover/handle:bg-brand-purple transition-colors shadow-sm" />
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </>
     );
   }
 );
