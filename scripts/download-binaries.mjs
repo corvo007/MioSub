@@ -18,7 +18,7 @@ import { createWriteStream } from 'fs';
 import { pipeline } from 'stream/promises';
 import { execSync } from 'child_process';
 
-import { BINARIES, EXPECTED_FILES, KEEP_FILES } from './binary-config.mjs';
+import { BINARIES, EXPECTED_FILES, KEEP_FILES, REQUIRED_FILES } from './binary-config.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -281,12 +281,22 @@ async function processBinary(name, config, platform) {
   // For archives, check if any expected output exists
   if (!forceDownload) {
     const expectedFiles = config.extract?.map((r) => r.to) || [];
-    // For extractAll, check if the main executable exists
+    // For extractAll, check all required files from REQUIRED_FILES config
     if (config.extractAll) {
-      const mainExe = process.platform === 'win32' ? `${name}.exe` : name;
-      if (fs.existsSync(path.join(RESOURCES_DIR, mainExe))) {
-        console.log(`  Skipping (${mainExe} already exists)`);
-        return;
+      const requiredFiles = REQUIRED_FILES[name]?.[platform] || [];
+      if (requiredFiles.length > 0) {
+        const allExist = requiredFiles.every((f) => fs.existsSync(path.join(RESOURCES_DIR, f)));
+        if (allExist) {
+          console.log(`  Skipping (all required files already exist)`);
+          return;
+        }
+      } else {
+        // Fallback: check main executable only
+        const mainExe = process.platform === 'win32' ? `${name}.exe` : name;
+        if (fs.existsSync(path.join(RESOURCES_DIR, mainExe))) {
+          console.log(`  Skipping (${mainExe} already exists)`);
+          return;
+        }
       }
     } else if (expectedFiles.length > 0) {
       const allExist = expectedFiles.every((f) => fs.existsSync(path.join(RESOURCES_DIR, f)));

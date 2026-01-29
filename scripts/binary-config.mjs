@@ -137,45 +137,29 @@ export const BINARIES = {
 
   'cpp-ort-aligner': {
     'win32-x64': {
-      url: 'https://github.com/corvo007/cpp-ctc-aligner/releases/latest/download/cpp-ort-aligner-windows-x64-v0.1.2.zip',
+      url: 'https://github.com/corvo007/cpp-ctc-aligner/releases/latest/download/cpp-ort-aligner-windows-x64.zip',
       type: 'zip',
-      extract: [
-        { from: 'cpp-ort-aligner.exe', to: 'cpp-ort-aligner.exe' },
-        { from: 'onnxruntime.dll', to: 'onnxruntime.dll' },
-        { from: 'Chinese_to_Pinyin.txt', to: 'Chinese_to_Pinyin.txt' },
-      ],
+      extractAll: true,
     },
     'linux-x64': {
-      url: 'https://github.com/corvo007/cpp-ctc-aligner/releases/latest/download/cpp-ort-aligner-linux-x64-v0.1.2.tar.gz',
+      url: 'https://github.com/corvo007/cpp-ctc-aligner/releases/latest/download/cpp-ort-aligner-linux-x64.tar.gz',
       type: 'tar.gz',
-      extract: [
-        { from: 'cpp-ort-aligner', to: 'cpp-ort-aligner' },
-        { from: 'Chinese_to_Pinyin.txt', to: 'Chinese_to_Pinyin.txt' },
-      ],
+      extractAll: true,
     },
     'linux-arm64': {
-      url: 'https://github.com/corvo007/cpp-ctc-aligner/releases/latest/download/cpp-ort-aligner-linux-arm64-v0.1.2.tar.gz',
+      url: 'https://github.com/corvo007/cpp-ctc-aligner/releases/latest/download/cpp-ort-aligner-linux-arm64.tar.gz',
       type: 'tar.gz',
-      extract: [
-        { from: 'cpp-ort-aligner', to: 'cpp-ort-aligner' },
-        { from: 'Chinese_to_Pinyin.txt', to: 'Chinese_to_Pinyin.txt' },
-      ],
+      extractAll: true,
     },
     'darwin-x64': {
-      url: 'https://github.com/corvo007/cpp-ctc-aligner/releases/latest/download/cpp-ort-aligner-macos-universal2-v0.1.2.tar.gz',
+      url: 'https://github.com/corvo007/cpp-ctc-aligner/releases/latest/download/cpp-ort-aligner-macos-universal2.tar.gz',
       type: 'tar.gz',
-      extract: [
-        { from: 'cpp-ort-aligner', to: 'cpp-ort-aligner' },
-        { from: 'Chinese_to_Pinyin.txt', to: 'Chinese_to_Pinyin.txt' },
-      ],
+      extractAll: true,
     },
     'darwin-arm64': {
-      url: 'https://github.com/corvo007/cpp-ctc-aligner/releases/latest/download/cpp-ort-aligner-macos-universal2-v0.1.2.tar.gz',
+      url: 'https://github.com/corvo007/cpp-ctc-aligner/releases/latest/download/cpp-ort-aligner-macos-universal2.tar.gz',
       type: 'tar.gz',
-      extract: [
-        { from: 'cpp-ort-aligner', to: 'cpp-ort-aligner' },
-        { from: 'Chinese_to_Pinyin.txt', to: 'Chinese_to_Pinyin.txt' },
-      ],
+      extractAll: true,
     },
   },
 };
@@ -204,9 +188,21 @@ export const EXPECTED_FILES = {
     'ggml-cpu.dll',
     'SDL2.dll',
     'cpp-ort-aligner.exe',
+    'onnxruntime.dll',
   ],
-  'linux-x64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner'],
-  'linux-arm64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner'],
-  'darwin-x64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner'],
-  'darwin-arm64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner'],
+  'linux-x64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner', 'libonnxruntime.so'],
+  'linux-arm64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner', 'libonnxruntime.so'],
+  'darwin-x64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner', 'libonnxruntime.dylib'],
+  'darwin-arm64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner', 'libonnxruntime.dylib'],
+};
+
+// Files required for each binary (used for skip logic with extractAll)
+export const REQUIRED_FILES = {
+  'cpp-ort-aligner': {
+    'win32-x64': ['cpp-ort-aligner.exe', 'onnxruntime.dll'],
+    'linux-x64': ['cpp-ort-aligner', 'libonnxruntime.so'],
+    'linux-arm64': ['cpp-ort-aligner', 'libonnxruntime.so'],
+    'darwin-x64': ['cpp-ort-aligner', 'libonnxruntime.dylib'],
+    'darwin-arm64': ['cpp-ort-aligner', 'libonnxruntime.dylib'],
+  },
 };
