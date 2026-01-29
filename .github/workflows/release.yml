@@ -14,16 +14,16 @@ jobs:
           - os: windows-latest
             platform: win32-x64
             arch: x64
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             platform: linux-x64
             arch: x64
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-22.04-arm
             platform: linux-arm64
             arch: arm64
-          - os: macos-latest
+          - os: macos-13
             platform: darwin-arm64
             arch: arm64
-          - os: macos-latest
+          - os: macos-13
             platform: darwin-x64
             arch: x64
 
@@ -65,6 +65,7 @@ jobs:
         run: yarn electron:build --${{ matrix.arch }} --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MACOSX_DEPLOYMENT_TARGET: '10.15'
           VITE_AMPLITUDE_API_KEY: ${{ secrets.VITE_AMPLITUDE_API_KEY }}
           VITE_MIXPANEL_TOKEN: ${{ secrets.VITE_MIXPANEL_TOKEN }}
           VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
