@@ -121,15 +121,44 @@ jobs:
         run: |
           VERSION="${{ github.ref_name }}"
           VERSION="${VERSION#v}"  # Remove 'v' prefix
-          # Extract content between this version and next version header
-          CHANGELOG=$(awk -v ver="$VERSION" '
+
+          # Extract English changelog (skip MDX frontmatter)
+          CHANGELOG_EN=$(awk -v ver="$VERSION" '
+            /^---$/ { frontmatter++; next }
+            frontmatter < 2 { next }
             /^## \[/ {
               if (found) exit
               if (index($0, "["ver"]")) found=1
               next
             }
             found { print }
-          ' CHANGELOG.md)
+          ' docs/content/docs/en/changelog.mdx)
+
+          # Extract Chinese changelog (skip MDX frontmatter)
+          CHANGELOG_ZH=$(awk -v ver="$VERSION" '
+            /^---$/ { frontmatter++; next }
+            frontmatter < 2 { next }
+            /^## \[/ {
+              if (found) exit
+              if (index($0, "["ver"]")) found=1
+              next
+            }
+            found { print }
+          ' docs/content/docs/zh/changelog.mdx)
+
+          # Warn if both changelogs are empty (version not found or format issue)
+          if [ -z "$CHANGELOG_ZH" ] && [ -z "$CHANGELOG_EN" ]; then
+            echo "::warning::No changelog found for version $VERSION. Check changelog.mdx format."
+            CHANGELOG="No changelog available for version $VERSION"
+          else
+            # Combine bilingual changelog
+            CHANGELOG="$CHANGELOG_ZH
+
+          ---
+
+          $CHANGELOG_EN"
+          fi
+
           # Escape for GitHub Actions output
           echo "content<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGELOG" >> $GITHUB_OUTPUT

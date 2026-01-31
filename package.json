@@ -14,8 +14,8 @@
     "download:binaries:force": "node scripts/download-binaries.mjs --force",
     "dev": "vite",
     "build": "vite build",
-    "docs:dev": "cd docs && npx fumadocs-mdx && cd .. && next dev docs",
-    "docs:build": "cd docs && npx fumadocs-mdx && cd .. && next build docs",
+    "docs:dev": "cd docs && npx fumadocs-mdx && next dev -p 3001",
+    "docs:build": "cd docs && npx fumadocs-mdx && next build",
     "i18n:extract": "node scripts/extract-chinese.mjs",
     "i18n:check": "node scripts/check-i18n.mjs",
     "i18n:check:missing": "node scripts/check-i18n.mjs --check-missing",
@@ -131,7 +131,7 @@
     "extraResources": [],
     "mac": {
       "target": "dmg",
-      "artifactName": "MioSub-${version}-mac-${arch}.${ext}",
+      "artifactName": "MioSub-mac-${arch}.${ext}",
       "extraResources": [
         {
           "from": "resources",
@@ -165,7 +165,7 @@
           ]
         }
       ],
-      "artifactName": "MioSub-${version}-win-x64.${ext}",
+      "artifactName": "MioSub-win-x64.${ext}",
       "extraResources": [
         {
           "from": "resources",
@@ -192,14 +192,14 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "MioSub",
-      "artifactName": "MioSub-${version}-win-x64-setup.${ext}"
+      "artifactName": "MioSub-win-x64-setup.${ext}"
     },
     "extraFiles": [],
     "afterPack": "scripts/afterPack.cjs",
     "afterAllArtifactBuild": "scripts/afterAllArtifactBuild.cjs",
     "linux": {
       "target": "AppImage",
-      "artifactName": "MioSub-${version}-linux-${arch}.${ext}",
+      "artifactName": "MioSub-linux-${arch}.${ext}",
       "extraResources": [
         {
           "from": "resources",
