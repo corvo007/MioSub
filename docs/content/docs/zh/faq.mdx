@@ -3,30 +3,11 @@ title: "常见问题"
 description: "MioSub 使用过程中的常见问题与解决方案"
 ---
 
-## 🔑 API 相关
+import { Callout } from 'fumadocs-ui/components/callout';
 
-### API 报错 429 怎么办？
-
-**错误含义**：请求频率超过了 API 限制。
-
-**解决方案**：
-1. **等待几分钟**：免费额度每分钟 15 次，等待后自动恢复
-2. **添加多个 Key**：在设置中用逗号分隔多个 API Key，系统会自动轮询
-3. **降低并发**：在设置中降低翻译并发数
-
----
-
-### 提示 "API Key 无效" 怎么办？
-
-1. 确认 Key 是否完整复制（以 `AIza` 开头）
-2. 确认 Key 前后没有多余的空格
-3. 尝试在 [AI Studio](https://aistudio.google.com/app/apikey) 重新生成一个
-
----
-
-### 提示 "地区不支持"？
-
-Gemini API 在部分地区受限。请确保网络环境可以正常访问 Google 服务。
+<Callout type="info" title="v3.0 用户">
+  如果你是从 v2.x 升级的用户，请先查看 [迁移指南](/docs/guide/migration)。
+</Callout>
 
 ---
 
@@ -42,7 +23,6 @@ Gemini API 在部分地区受限。请确保网络环境可以正常访问 Googl
 **解决方案**：
 1. 检查网络连接
 2. 使用单个视频链接（非播放列表）
-3. 尝试更新 yt-dlp（设置中可更新）
 
 ---
 
@@ -56,17 +36,6 @@ Gemini API 在部分地区受限。请确保网络环境可以正常访问 Googl
 1. 使用较小的 Whisper 模型（Base 或 Small）
 2. [配置 GPU 加速](/docs/guide/whisper)
 3. 使用 Whisper API 而非本地模型
-
----
-
-### FFmpeg 找不到怎么办？
-
-MioSub 已内置 FFmpeg，通常不需要额外配置。
-
-如果仍然报错：
-1. 确认使用的是完整版安装包（不是精简版）
-2. 检查 `resources` 文件夹下是否有 `ffmpeg.exe`
-3. 尝试重新下载完整安装包
 
 ---
 
@@ -90,17 +59,6 @@ MioSub 已内置 FFmpeg，通常不需要额外配置。
 
 ---
 
-### Windows 下出现乱码？
-
-**可能原因**：字体不支持或编码问题
-
-**解决方案**：
-1. 导出时选择 UTF-8 编码
-2. 在字幕样式中选择支持中文的字体（如微软雅黑）
-3. 检查系统语言设置
-
----
-
 ## 🖥️ 软件使用
 
 ### 软件打不开/闪退？
@@ -114,10 +72,61 @@ MioSub 已内置 FFmpeg，通常不需要额外配置。
 
 ### 如何更新软件？
 
-MioSub 支持自动更新。如果自动更新失败：
+v3.0 支持自动更新检测。当有新版本时，应用会提示你更新。
+
+如果自动更新失败：
 1. 访问 [Releases 页面](https://github.com/corvo007/Gemini-Subtitle-Pro/releases)
 2. 下载最新版本
 3. 直接覆盖旧版本即可
+
+---
+
+## v3.0 相关
+
+### 从 v2.x 升级后配置丢失？
+
+v3.0 的配置文件位置可能有变化。请查看 [迁移指南](/docs/guide/migration) 了解如何手动迁移配置。
+
+### macOS/Linux 版本在哪下载？
+
+v3.0 新增了 macOS 和 Linux 支持。在 [Releases 页面](https://github.com/corvo007/Gemini-Subtitle-Pro/releases) 下载对应平台的安装包：
+- macOS: `.dmg` 文件
+- Linux: `.AppImage` 文件
+
+### macOS 提示「无法打开，因为无法验证开发者」？
+
+这是 macOS Gatekeeper 的安全提示。由于 MioSub 是开源软件，暂未购买 Apple 开发者证书进行签名。
+
+**方法一：右键打开（推荐）**
+
+1. 在 Finder 中找到 MioSub.app
+2. 按住 **Control** 键并点击应用图标（或右键点击）
+3. 在弹出菜单中选择「打开」
+4. 在弹出的对话框中再次点击「打开」
+
+首次打开后，系统会记住你的选择，之后可以正常双击打开。
+
+**方法二：系统偏好设置**
+
+1. 尝试打开应用（会被阻止）
+2. 打开「系统偏好设置」>「安全性与隐私」>「通用」
+3. 在底部会看到被阻止的应用，点击「仍要打开」
+
+**方法三：终端命令**
+
+打开终端，执行以下命令移除隔离（quarantine）属性：
+
+```bash
+# 移除 quarantine 属性（推荐）
+xattr -d com.apple.quarantine /Applications/MioSub.app
+
+# 或者清除所有扩展属性
+xattr -cr /Applications/MioSub.app
+```
+
+<Callout type="warn" title="安全提示">
+  请务必从 [官方 GitHub Releases](https://github.com/corvo007/Gemini-Subtitle-Pro/releases) 下载应用，不要从第三方来源下载，以确保软件未被篡改。
+</Callout>
 
 ---
 
@@ -126,5 +135,5 @@ MioSub 支持自动更新。如果自动更新失败：
 如果以上内容没有解决你的问题：
 
 1. **查看 Issue**：[GitHub Issues](https://github.com/corvo007/Gemini-Subtitle-Pro/issues) 可能已有解答
-2. **提交 Issue**：描述问题 + 错误截图 + 系统信息
-3. **加入社区**：在 Discord 或群组中交流
+2. **提交 Issue**：描述问题 + 错误截图 + 日志文件
+3. **加入社区**：在 QQ群（群号：1082480420）中交流

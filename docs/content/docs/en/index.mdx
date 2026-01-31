@@ -6,7 +6,7 @@ description: The AI subtitle editor that truly understands context — Make the 
 import { Callout } from 'fumadocs-ui/components/callout';
 
 <Callout type="info" title="v3.0 Just Launched">
-  Brand new AI translation engine — now with Gemini 2.5 Flash, long context windows, and smart glossary extraction.
+  Brand new AI translation engine — now with speaker extraction, smart glossary, and context-aware translation.
 </Callout>
 
 ## Why We Built MioSub
@@ -28,26 +28,43 @@ We combined the **speed** of generative AI with the **depth** of context awarene
 
 ---
 
+## Interface Preview
+
+<div style={{ textAlign: 'center', margin: '2rem 0' }}>
+  <img src="/editor_en.png" alt="MioSub Interface" style={{ maxWidth: '100%', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
+</div>
+
+---
+
+## Demo Showcase
+
+| Type         | Link                                                         | Description                       |
+| :----------- | :----------------------------------------------------------- | :-------------------------------- |
+| 🎙️ Voice Actor Radio | [BV1XBrsBZE92](https://www.bilibili.com/video/BV1XBrsBZE92/) | Japanese, 30 min, with speaker labels |
+| 🚃 Railway Vlog | [BV1k1mgBJEEY](https://www.bilibili.com/video/BV1k1mgBJEEY/) | Japanese, 29 min, technical terminology |
+| 🎬 Movie Commentary | [BV1MG6CBvEzd](https://www.bilibili.com/video/BV1MG6CBvEzd/) | PJSK movie easter eggs, fast Yukuri narration, many character/group/producer/song names |
+
+---
+
 ## What Can MioSub Do?
 
 | Capability | Description |
 |:----------:|:------------|
 | 🧠 **Context-Aware** | Powered by Gemini's long context window — reads the entire video before translating |
 | 📚 **Smart Glossary** | Auto-extracts names, places, and terminology — keeps translations consistent |
-| 🌊 **Waveform Sync** | Built-in forced alignment — millisecond precision for every line |
+| 🌊 **Waveform Sync** | Built-in CTC forced alignment — millisecond precision for every line |
 | 🎨 **WYSIWYG Editor** | Edit and preview in real-time — as intuitive as writing a document |
 | 🚀 **Fully Automated** | Paste a link → auto-download → transcribe → translate → burn-in subtitles |
 | 🌍 **Multi-Language** | Chinese/English/Japanese UI, auto-detect source, translate to any target |
 
 ---
 
-## Who Uses MioSub?
+## Who Is MioSub For?
 
-- **Fansubbers**: Batch process anime and movies, 5x efficiency boost
-- **Content Creators**: Generate multi-language subtitles for YouTube videos
-- **Educators**: Localize international course content
-- **Enterprise Training**: Rapid localization of training videos across regions
-- **Language Learners**: Watch raw content with accurate, context-aware subtitles
+- **Fansubbers** — Batch process anime and movies, say goodbye to repetitive work
+- **Content Creators** — Generate multi-language subtitles for your videos
+- **Language Learners** — Watch raw content without the pain
+- **Anyone who needs subtitles** — If you have a video, MioSub can help
 
 ---
 
@@ -56,23 +73,23 @@ We combined the **speed** of generative AI with the **depth** of context awarene
 import { Cards, Card } from 'fumadocs-ui/components/card';
 
 <Cards>
-  <Card 
-    href="/en/docs/guide" 
+  <Card
+    href="/en/docs/guide"
     title="🚀 Quick Start"
     description="Get up and running in 5 minutes"
   />
-  <Card 
-    href="/en/docs/guide/whisper" 
+  <Card
+    href="/en/docs/guide/whisper"
     title="🎙️ Local Whisper Setup"
     description="Offline transcription, faster and private"
   />
-  <Card 
-    href="/en/docs/guide/alignment" 
+  <Card
+    href="/en/docs/guide/alignment"
     title="⚡ Forced Alignment"
     description="Millisecond-precise timestamps"
   />
-  <Card 
-    href="/en/docs/architecture" 
+  <Card
+    href="/en/docs/technology"
     title="🏗️ Architecture"
     description="Deep dive into the technical design"
   />
@@ -82,7 +99,5 @@ import { Cards, Card } from 'fumadocs-ui/components/card';
 
 ## Links
 
-- 📥 [Download Latest Release](https://github.com/corvo007/Gemini-Subtitle-Pro/releases)
 - 🐛 [Report Issues](https://github.com/corvo007/Gemini-Subtitle-Pro/issues)
 - 🌐 [中文文档](/docs/)
-

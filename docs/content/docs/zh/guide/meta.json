@@ -1,4 +1,4 @@
 {
   "title": "使用指南",
-  "pages": ["index", "get-key", "context", "glossary", "whisper", "alignment", "video-download"]
+  "pages": ["index", "get-key", "whisper", "alignment", "video-download", "migration"]
 }

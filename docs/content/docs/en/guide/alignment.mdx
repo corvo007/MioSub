@@ -1,0 +1,61 @@
+---
+title: 'Timeline Forced Alignment'
+description: 'Get millisecond-precise timestamps with CTC forced alignment'
+---
+
+<Callout type="info" title="v3.0 New Feature">
+  v3.0 includes a brand new built-in CTC aligner — no extra downloads needed, works out of the box!
+</Callout>
+
+Use forced alignment models to get higher precision character-level timestamps, ideal for scenarios requiring precise timing.
+
+---
+
+## ⚡ Quick Setup (v3.0+)
+
+v3.0 has a built-in CTC aligner. Simply:
+
+1. Open **Settings > Enhancement > Timeline Alignment**
+2. Set **Alignment Mode** to "CTC"
+3. Download the alignment model
+4. Set the model directory in CTC aligner configuration to the model path (folder)
+
+<Callout type="info" title="Model Download Links">
+  [Hugging Face](https://huggingface.co/Corvo007/mms-300m-1130-forced-aligner-onnx/tree/main)
+
+
+  [HF Mirror (for users in China)](https://hf-mirror.com/Corvo007/mms-300m-1130-forced-aligner-onnx/tree/main)
+
+
+  Please download all four files, place them in the same folder, then select that folder in settings.
+</Callout>
+
+---
+
+## 🎯 How It Works
+
+High-precision timeline alignment based on CTC (Connectionist Temporal Classification) technology:
+
+- **Millisecond Precision**: Supports character-level timestamp alignment
+- **Auto Correction**: Fixes timing drift in Whisper transcription
+- **Multi-Language Support**: Supports Chinese, English, Japanese, and more
+- **GPU Acceleration**: Supports ONNX Runtime GPU acceleration (if available)
+
+---
+
+## Alignment Mode Comparison
+
+| Mode | Precision | Speed | Use Case |
+|:-----|:----------|:------|:---------|
+| **Off** | Original | Fastest | Quick preview |
+| **CTC** | Millisecond | Medium | Professional subtitle production |
+
+---
+
+## ❓ FAQ
+
+### Alignment is slow?
+
+CTC alignment requires computational resources. Optimization tips:
+1. Ensure sufficient memory (16GB+ recommended)
+2. For long videos, alignment is processed in segments

@@ -1,54 +1,50 @@
 ---
 title: "获取 API Key"
-description: "3 分钟免费获取 Gemini API Key 的保姆级教程"
+description: "3 分钟获取 Gemini API Key 的保姆级教程"
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
 import { Step, Steps } from 'fumadocs-ui/components/steps';
 
-> 🎯 **Gemini API Key 完全免费**，每分钟 15 次请求，个人使用完全够用！
+## 🚀 获取步骤
 
 <Callout type="info">
-MioSub 使用 Google Gemini 进行智能翻译。好消息是：Google 为开发者提供了**永久免费**的 API 额度！
+考虑到国内的网络环境，以及官方API需要绑定信用卡，因此本教程使用 [云雾 API](https://yunwu.ai/register?aff=wmHr) 进行演示。
 </Callout>
-
-## 📋 准备工作
-
-- 一个 Google 账号（Gmail 即可）
-- 能访问 Google 服务的网络环境
-
----
-
-## 🚀 获取步骤
 
 <Steps>
 
 <Step>
-### 访问 Google AI Studio
+### 注册
 
-打开浏览器，访问 [Google AI Studio](https://aistudio.google.com/app/apikey)
+    打开浏览器，访问 [云雾 API](https://yunwu.ai/register?aff=wmHr) 进行注册。
 
-> 如果提示登录，使用你的 Google 账号登录即可。
+    <Callout type="info">
+此中转站无需信用卡、无需翻墙、无最低充值限制。是我个人很多家中转体验下来体验比较好的一个。当然，你也可以使用其他的中转站，或者是官方API（如果你Google Cloud 300美元额度还没用完的话）。
+</Callout>
+
 </Step>
 
 <Step>
 ### 创建 API Key
 
-1. 点击左上角的 **「Get API Key」** 按钮
-2. 在弹出的窗口中点击 **「Create API key in new project」**
-3. 等待几秒钟，系统会自动生成一个 API Key
+1. 点击左边的 **「API 令牌」** 菜单
+2. 点击 **「添加令牌」**
+3. 按下方图片配置，选择一个最便宜的分组和一个比较稳定的分组，保证又便宜又稳。  
+
+<img
+    src="/apikey.png"
+    alt="配置API Key 图片"
+    style={{ maxWidth: '400px', borderRadius: '12px' }}
+  />
+
 </Step>
 
 <Step>
 ### 复制你的 Key
 
-生成成功后，你会看到一个以 `AIza` 开头的长字符串，这就是你的 API Key。
+生成成功后，把界面向右滚动，能看到密钥一栏，点击复制按钮，就得到了 API Key，保存好这个 Key。
 
-点击复制按钮，保存好这个 Key。
-
-<Callout type="warning">
-**注意**：这个 Key 只会显示一次！请立即复制保存。如果忘记了，可以删除重新创建。
-</Callout>
 </Step>
 
 <Step>
@@ -56,8 +52,9 @@ MioSub 使用 Google Gemini 进行智能翻译。好消息是：Google 为开发
 
 1. 打开 MioSub 应用
 2. 点击右上角 **「设置」** ⚙️
-3. 找到 **「服务」→「Gemini API Key」**
+3. 找到 **「服务」→「Gemini API 密钥」**
 4. 粘贴刚才复制的 Key
+5. 填写 Gemini 端点，注意只需要填写域名（如：https://yunwu.zeabur.app 或 https://api3.wlai.vip）
 5. 点击保存
 
 🎉 **大功告成！** 现在你可以开始使用 MioSub 了！
@@ -67,30 +64,6 @@ MioSub 使用 Google Gemini 进行智能翻译。好消息是：Google 为开发
 
 ---
 
-## ❓ 常见问题
-
-### 提示 "地区不支持" 怎么办？
-
-Gemini API 在部分地区有限制。请确保你的网络环境可以正常访问 Google 服务。
-
-### 我有多个 Google 账号，可以叠加额度吗？
-
-可以！MioSub 支持填入多个 API Key（用逗号分隔），系统会自动轮询使用，有效提高并发上限。
-
-### API Key 会过期吗？
-
-不会！免费额度的 Key 是永久有效的，除非你手动删除。
-
-### 免费额度够用吗？
-
-对于个人用户来说，完全够用：
-- **免费额度**：每分钟 15 次请求
-- **实际使用**：处理一个 30 分钟视频大约需要 50-100 次请求
-- **等效**：每天可以处理 10+ 个视频，完全够用
-
----
-
 ## 🔗 快速链接
 
-- [Google AI Studio](https://aistudio.google.com/app/apikey) - 获取 API Key
 - [返回快速开始](/docs/guide) - 继续学习如何使用 MioSub

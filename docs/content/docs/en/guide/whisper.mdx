@@ -1,0 +1,65 @@
+---
+title: 'Local Whisper Setup'
+---
+
+This project supports integrating [whisper.cpp](https://github.com/ggerganov/whisper.cpp) for completely offline speech transcription.
+
+- **Default Support**: The installer includes CPU version Whisper core components (`whisper-cli.exe`)
+- **Manual Download Required**: You need to download model files (`.bin`) yourself
+- **GPU Acceleration**: You can manually replace with GPU version components for faster speed
+
+---
+
+## ⚡ Quick Start
+
+1. **Download Model**: Visit [Hugging Face](https://huggingface.co/ggerganov/whisper.cpp/tree/main) to download GGML format models
+2. **Enable Feature**: Settings > Services > Speech Recognition, select "Local Whisper"
+3. **Load Model**: Click "Browse" to select the downloaded `.bin` model file
+4. **Start Using**: Once the model path is set, you're ready to go
+
+<Callout type="info">
+Users in China can use [HF Mirror](https://hf-mirror.com/ggerganov/whisper.cpp/tree/main) to download.
+</Callout>
+
+---
+
+## 📦 Model Download Guide
+
+### Recommended Downloads
+
+Download **standard** models with filename format `ggml-[model].bin`:
+
+| Model        | Filename            | Size   | Memory  | Speed  | Use Case         |
+| :----------- | :------------------ | :----- | :------ | :----- | :--------------- |
+| **Tiny**     | `ggml-tiny.bin`     | 75 MB  | ~390 MB | Fastest | Quick testing    |
+| **Base**     | `ggml-base.bin`     | 142 MB | ~500 MB | Fast   | Daily conversation ⭐ |
+| **Small**    | `ggml-small.bin`    | 466 MB | ~1 GB   | Medium | Podcasts/Videos ⭐ |
+| **Medium**   | `ggml-medium.bin`   | 1.5 GB | ~2.6 GB | Slow   | Complex audio    |
+| **Large-v3** | `ggml-large-v3.bin` | 2.9 GB | ~4.7 GB | Slowest | Professional needs |
+
+### Filename Suffix Explanation
+
+- **`.en` (e.g., `ggml-base.en.bin`)**: **English-only** model. More accurate than multilingual models for English-only content, but **does not support** Chinese or other languages.
+- **`q5_0`, `q8_0` (e.g., `ggml-base-q5_0.bin`)**: **Quantized** models. Smaller size, faster speed, but slightly reduced accuracy.
+  - `q8_0`: Nearly lossless, recommended.
+  - `q5_0`: Slight accuracy loss, significantly smaller size.
+- **`.mlmodelc.zip`**: ❌ **Do not download**. This is macOS CoreML format, not usable on Windows.
+
+---
+
+## 🛠️ GPU Acceleration (NVIDIA GPUs)
+
+**Prerequisites**: Latest NVIDIA GPU drivers installed
+
+1. Visit [whisper.cpp Releases](https://github.com/ggerganov/whisper.cpp/releases) and download `whisper-cublas-bin-x64.zip`
+2. Extract the archive
+3. Settings > Services > Speech Recognition > "Local Whisper" > "Whisper-cli.exe Path" > "Browse" and select the extracted `whisper-cli.exe`
+4. Start using
+
+---
+
+## ❓ FAQ
+
+- **Can't find the option?** Make sure you're using the **desktop version** — web version doesn't support this feature
+- **Status error?** Check if you've correctly selected a `.bin` model file
+- **Too slow?** CPU mode speed depends on processor performance. Consider using `Base` or `Small` models

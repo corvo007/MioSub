@@ -1,4 +1,4 @@
 {
   "title": "Guides",
-  "pages": ["index", "get-key", "context", "glossary", "whisper", "alignment", "video-download"]
+  "pages": ["index", "get-key", "whisper", "alignment", "migration"]
 }

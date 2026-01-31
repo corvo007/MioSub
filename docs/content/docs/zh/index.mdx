@@ -5,8 +5,8 @@ description: 真正读懂上下文的 AI 字幕编辑器——让世界的内容
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
-<Callout type="info" title="v3.0 重磅发布">
-  全新 AI 翻译引擎上线——支持 Gemini 2.5 Flash、长上下文窗口、智能术语表，翻译质量大幅提升。
+<Callout type="info" title="v3.0 正式发布">
+  全新 AI 翻译引擎上线——支持 说话人提取、智能术语表、智能语境翻译。
 </Callout>
 
 ## 我们为什么做 MioSub？
@@ -22,9 +22,27 @@ import { Callout } from 'fumadocs-ui/components/callout';
 
 **MioSub 为此而生。**
 
-我们将生成式 AI 的**速度**与上下文感知的**深度**完美融合。它不只是在翻译单词，它在**读懂故事**。它将「做字幕」从一项枯燥的苦力活，变成了一次流畅的创作流。
+我们将生成式 AI 的**速度**与上下文感知的**深度**结合在一起。它不只是在翻译单词，它在**读懂故事**。它将「做字幕」从一项枯燥的苦力活，变成了一次流畅的创作流。
 
 > **让世界的内容，真正属于你。**
+
+---
+
+## 界面预览
+
+<div style={{ textAlign: 'center', margin: '2rem 0' }}>
+  <img src="/editor.png" alt="MioSub 界面截图" style={{ maxWidth: '100%', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
+</div>
+
+---
+
+## 效果展示
+
+| 类型         | 链接                                                         | 说明                       |
+| :----------- | :----------------------------------------------------------- | :------------------------- |
+| 🎙️ 声优电台  | [BV1XBrsBZE92](https://www.bilibili.com/video/BV1XBrsBZE92/) | 日语 30 分钟，含说话人标注 |
+| 🚃 铁道 vlog | [BV1k1mgBJEEY](https://www.bilibili.com/video/BV1k1mgBJEEY/) | 日语 29 分钟，大量专业术语 |
+| 🎬 电影解说  | [BV1MG6CBvEzd](https://www.bilibili.com/video/BV1MG6CBvEzd/) | 油库里 PJSK 剧场版彩蛋解说，语速极快、大量角色/组合/P主/歌曲名 |
 
 ---
 
@@ -34,20 +52,19 @@ import { Callout } from 'fumadocs-ui/components/callout';
 |:----:|:-----|
 | 🧠 **上下文理解** | Gemini 长上下文窗口加持，先读完全片再落笔翻译，杜绝断章取义 |
 | 📚 **智能术语表** | 一键提取人名、地名、专业术语，全片译名前后一致 |
-| 🌊 **波形级对齐** | 内置强制对齐算法，时间轴精准到毫秒，每句台词都「踩在点上」 |
+| 🌊 **波形级对齐** | 内置 CTC 强制对齐算法，时间轴精准到毫秒，每句台词都「踩在点上」 |
 | 🎨 **所见即所得** | 边改边看效果，字幕编辑像写文档一样简单 |
 | 🚀 **全自动流水线** | 粘贴链接 → 自动下载 → 转写 → 翻译 → 压制，一键出成品 |
 | 🌍 **多语言支持** | 中/英/日 界面，自动检测源语言，翻译到任意目标语言 |
 
 ---
 
-## 谁在使用 MioSub？
+## 谁适合用 MioSub？
 
-- **字幕组**：批量处理番剧、电影，效率提升 5 倍以上
-- **内容创作者**：为 YouTube/B站 视频快速生成多语言字幕
-- **教育工作者**：将国外课程视频本地化为中文教材
-- **企业培训**：跨国公司培训视频的快速本地化
-- **个人学习**：追生肉番、看外语教程不再痛苦
+- **字幕组** — 批量处理番剧、电影，告别重复劳动
+- **内容创作者** — 为视频快速生成多语言字幕
+- **学习者** — 追生肉番、看外语教程不再痛苦
+- **任何需要字幕的人** — 只要你有视频，MioSub 就能帮你
 
 ---
 
@@ -56,23 +73,23 @@ import { Callout } from 'fumadocs-ui/components/callout';
 import { Cards, Card } from 'fumadocs-ui/components/card';
 
 <Cards>
-  <Card 
-    href="/docs/guide" 
+  <Card
+    href="/docs/guide"
     title="🚀 快速开始"
     description="5 分钟上手，从安装到出片"
   />
-  <Card 
-    href="/docs/guide/whisper" 
+  <Card
+    href="/docs/guide/whisper"
     title="🎙️ 本地 Whisper 配置"
     description="离线转写，更快更私密"
   />
-  <Card 
-    href="/docs/guide/alignment" 
+  <Card
+    href="/docs/guide/alignment"
     title="⚡ 强制对齐配置"
     description="毫秒级精准时间戳"
   />
-  <Card 
-    href="/docs/architecture" 
+  <Card
+    href="/docs/technology"
     title="🏗️ 技术架构"
     description="深入了解底层设计"
   />
@@ -82,7 +99,6 @@ import { Cards, Card } from 'fumadocs-ui/components/card';
 
 ## 相关链接
 
-- 📥 [下载最新版](https://github.com/corvo007/Gemini-Subtitle-Pro/releases)
 - 🐛 [反馈问题](https://github.com/corvo007/Gemini-Subtitle-Pro/issues)
-- 🌐 [English Documentation](/en/)
+- 💬 [QQ 群](https://qm.qq.com/cgi-bin/qm/qr?k=qBoSXr8a668tJm80UbPcyvpey8mwfQ2H&jump_from=webapi&authKey=6fQajPs64A/yue/dKEMfZTxBQ8+SBuPugOTA6tC+3CuHW1NyNZFRwomo75sF1zUR)
 

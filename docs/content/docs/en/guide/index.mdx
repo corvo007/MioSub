@@ -5,11 +5,14 @@ description: From installation to your first professional subtitle in 5 minutes
 
 import { Callout } from 'fumadocs-ui/components/callout';
 import { Steps, Step } from 'fumadocs-ui/components/steps';
+import { DownloadButton } from '../../../../components/DownloadButton';
 
 Welcome to MioSub! This guide will take you from installation to generating your first professional subtitle in **under 5 minutes**.
 
 <Callout type="info" title="System Requirements">
   - Windows 10/11 (64-bit)
+  - macOS 12+ (Intel / Apple Silicon)
+  - Linux (x64 / arm64, AppImage)
   - 4GB+ available RAM
   - Internet connection (for API calls)
 </Callout>
@@ -18,12 +21,16 @@ Welcome to MioSub! This guide will take you from installation to generating your
 
 ## Step 1: Download & Install
 
+Choose the right version for your system:
+
+<DownloadButton locale="en" />
+
 <Steps>
-  <Step title="Get the Installer">
-    Visit [GitHub Releases](https://github.com/corvo007/Gemini-Subtitle-Pro/releases) and download the latest `MioSub-x.x.x-win-x64.zip`
-  </Step>
-  <Step title="Extract & Run">
-    Extract to any location (recommended: `D:\Apps\MioSub`) and double-click `MioSub.exe`
+  <Step title="Install & Run">
+    - **Windows Portable**: Extract to any location (recommended: `D:\Apps\MioSub`) and double-click `MioSub.exe`
+    - **Windows Installer**: Run the installer and follow the prompts
+    - **macOS**: Open DMG and drag to Applications folder
+    - **Linux**: Make executable and run: `chmod +x MioSub-*.AppImage && ./MioSub-*.AppImage`
   </Step>
   <Step title="First Launch">
     On first launch, MioSub will create configuration files automatically. Wait for the UI to load.
@@ -41,19 +48,16 @@ MioSub uses the Gemini API for intelligent translation. You'll need to configure
     Click the **⚙️ Settings** button in the top-right corner
   </Step>
   <Step title="Enter API Key">
-    In the "API Configuration" section, enter your **Gemini API Key**
-    
-    > 💡 **Tip**: Consider using an API proxy service for better stability
-  </Step>
-  <Step title="Test Connection">
-    Click "Test Connection" to verify your configuration
+    Find **"Services" → "Gemini API Key"** and enter your **Gemini API Key**
+
+    > 💡 **Need a key?** Get one free from [Google AI Studio](https://aistudio.google.com/app/apikey)
   </Step>
 </Steps>
 
 <Callout type="warning" title="Model Requirements">
   Ensure your API key has access to:
-  - Gemini 2.5 Flash (main translation)
-  - Gemini 2.5 Pro (glossary extraction)
+  - Gemini 2.5/3 Flash (main translation)
+  - Gemini 3 Pro (glossary extraction)
 </Callout>
 
 ---
@@ -64,17 +68,19 @@ Now let's create your first professional subtitle!
 
 <Steps>
   <Step title="Select Video">
-    **Option A**: Click "Open File" to select a local video
-    
-    **Option B**: Paste a YouTube/Bilibili URL for auto-download
+    **Option A**: Click "New Project", then "Upload Video/Audio" to select a local file
+
+    **Option B**: Click "One-Click Generate (Full Auto Mode)", paste a YouTube/Bilibili URL, and click Parse
   </Step>
-  <Step title="Choose Languages">
-    - **Source Language**: Original audio language (auto-detect supported)
+  <Step title="Configure Settings">
     - **Target Language**: Translation target (e.g., English)
+    - **Type**: What type of video is this? Presets are available for common types. Select "Custom" for more specific descriptions
+    - **Glossary Extraction**: Optional, enable in "Settings" → "Enhancement". Auto-extracts terminology from video/audio (**no manual glossary upload needed!**)
+    - **Speaker Recognition**: Optional, enable in "Settings" → "Enhancement". Distinguishes different speakers, ideal for interviews/radio shows
   </Step>
   <Step title="Start Processing">
     Click the "Start" button. MioSub will automatically:
-    
+
     1. 🎵 Extract and denoise audio
     2. 🎙️ Transcribe with AI
     3. 📚 Extract smart glossary
@@ -83,17 +89,19 @@ Now let's create your first professional subtitle!
   </Step>
   <Step title="Preview & Edit">
     Once complete, use the editor to:
-    
+
     - Preview subtitles in real-time
     - Edit translations
     - Adjust timing
-    - Batch-replace terminology
+    - Batch search & replace terminology or other issues
+    - Regenerate unsatisfactory segments
+    - Polish translations with AI
   </Step>
   <Step title="Export">
-    When satisfied, click "Export":
-    
+    When satisfied, click "Export Subtitles..." or "Compress Video":
+
     - **SRT/ASS**: Subtitle files only
-    - **Burn-in**: Hardcode subtitles into video
+    - **Video Compression**: Hardcode subtitles into video
   </Step>
 </Steps>
 
@@ -107,10 +115,8 @@ You've successfully generated your first professional AI subtitle!
 
 - **[Local Whisper Setup](/en/docs/guide/whisper)** - Offline transcription, faster and private
 - **[Forced Alignment](/en/docs/guide/alignment)** - Millisecond-precise timestamps
-- **[Video Download Config](/en/docs/guide/video-download)** - Customize download parameters
 
 ### Need Help?
 
 - 📖 Browse the full documentation
 - 🐛 [Submit an Issue](https://github.com/corvo007/Gemini-Subtitle-Pro/issues)
-- 💬 Join the community for support

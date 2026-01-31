@@ -1,6 +1,54 @@
-# Changelog
+---
+title: "Changelog"
+description: "All notable changes to MioSub"
+---
 
 All notable changes to this project will be documented in this file.
+
+## [3.0.0] - 2026-01-31
+
+### Highlights
+
+This major release brings significant architectural improvements, new features, and better stability.
+
+### New Features
+
+- **Project Renamed to MioSub**: The project has been officially renamed from Gemini-Subtitle-Pro to MioSub.
+- **CTC Forced Aligner**: Integrated CTC-based forced alignment for precise subtitle timing synchronization.
+- **Audio-Only File Support**: Full support for audio files (MP3, WAV, etc.) without video, including optimized player UI.
+- **Editor Search & Replace**: New search and replace functionality in the subtitle editor for batch text modifications.
+- **Manual Whisper Path Selection**: Users can now manually specify the Whisper executable path for custom installations.
+- **Auto-Update System**: Built-in update detection and automatic update support for seamless upgrades.
+- **Startup Splash Screen**: New splash screen prevents white flash during application startup.
+- **Enhanced Logging System**: New logging system with JSON view, log viewer UI, and improved debugging capabilities.
+- **Linux ARM64 Support**: Added build support for Linux ARM64 architecture.
+
+### Improvements
+
+- **UI Overhaul**: Redesigned editor, layout components, and settings panel for a more unified look and smoother interactions.
+- **Built-in CJK Fonts**: Integrated NotoSans JP/SC fonts for better subtitle rendering.
+- **React Compiler Integration**: Integrated React Compiler v1.0 for automatic performance optimizations.
+- **State Management Migration**: Migrated from React Context to Zustand stores for better performance and maintainability.
+- **JSON Parsing Enhancement**: Unified JSON parsing with jsonrepair library for better handling of malformed AI responses.
+- **Cancellation Improvements**: Transcoding and download tasks now support cancellation with automatic temp file cleanup.
+- **Error Tracking**: Integrated Sentry for error tracking and analytics to improve stability.
+- **Resource Cleanup**: Fixed multiple resource leaks and improved memory management throughout the application.
+- **Subtitle Editor Performance**: Fixed 10+ performance issues in the subtitle editor for smoother editing experience.
+- **Pipeline Robustness**: Enhanced cancellation handling and error boundaries in the generation pipeline.
+- **Bundle Optimization**: Improved bundle splitting and reduced application size.
+
+### Documentation
+
+- **New Documentation Site**: Migrated documentation to Fumadocs with full i18n support (English/Chinese).
+- **Redesigned README**: New landing page style README with improved layout and badges.
+
+### Other Changes
+
+- **License Change**: Switched to AGPL-3.0 license.
+- **macOS x64 Cross-Compile**: Added macOS x64 cross-compilation support on ARM64 runners.
+- **CI Improvements**: Faster builds with binary caching and newer OS runners.
+
+---
 
 ## [2.13.0] - 2026-01-15
 
@@ -95,7 +143,7 @@ All notable changes to this project will be documented in this file.
 - **Scripts**: Add i18n key validation script
 - **Deps**: Update dependencies and types
 
-## [2.11.0] - 2026-01-01 🎆
+## [2.11.0] - 2026-01-01
 
 ### Features
 
@@ -146,7 +194,7 @@ All notable changes to this project will be documented in this file.
 
 - **i18n**: Added infrastructure documentation for the v2.10.0 internationalization system.
 
-## [2.10.0] - 2025-12-25 🎄
+## [2.10.0] - 2025-12-25
 
 ### Features
 

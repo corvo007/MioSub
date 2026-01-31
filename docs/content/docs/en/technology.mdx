@@ -1,0 +1,98 @@
+---
+title: "Technology"
+description: "Deep dive into MioSub's core technology"
+---
+
+MioSub's subtitle generation engine and editor are built from scratch, optimized for AI-powered subtitle workflows.
+
+## Subtitle Generation Engine
+
+### Automatic Terminology Extraction
+
+The problem with traditional machine translation: inconsistent proper noun translations — "東京" becomes "Tokyo" in one place and "Dongjing" in another.
+
+**MioSub's approach:**
+- Intelligently extract proper nouns from audio (names, places, titles, etc.)
+- Verify standard translations via search engines
+- Generate a glossary for consistent terminology throughout the video
+
+### Long-Context Translation
+
+Traditional MT processes sentence by sentence, losing context and meaning.
+
+**MioSub's approach:**
+- Segment by semantics into 5-10 minute chunks
+- Preserve full context for translation, understanding speaker intent
+- Support scene presets (anime, film, news, tech) for optimized translation style
+
+### Post-Transcription Processing
+
+Raw Whisper output has issues with sentence segmentation and timing accuracy.
+
+**MioSub's approach:**
+- **Smart segmentation**: Auto-split subtitles based on semantics and pauses
+- **Timeline correction**: Fix timing drift in Whisper output
+- **Terminology replacement**: Auto-apply glossary for consistent translations
+
+### CTC Forced Alignment
+
+High-precision timeline alignment based on CTC (Connectionist Temporal Classification) technology.
+
+- Millisecond-level character alignment
+- Built-in aligner in v3.0, works out of the box
+- Auto-downloads model on first use
+
+### Speaker Identification
+
+Automatically identify and label speakers in multi-person conversations.
+
+- LLM-based speaker inference
+- Customizable speaker names and colors
+- Merge adjacent subtitles from the same speaker
+
+### Smart Concurrency Control
+
+Dynamically adjust concurrency based on model to maximize speed while avoiding rate limits:
+
+| Model | Concurrency | Strategy |
+|:--|:--|:--|
+| Gemini Flash | 5 | Speed priority |
+| Gemini Pro | 2 | Avoid rate limits |
+
+**Result**: 30-minute video processed in ~8-10 minutes.
+
+## Fully Automated Pipeline
+
+Paste a video link (YouTube/Bilibili), and the entire workflow runs automatically:
+
+1. **Auto Download** — yt-dlp fetches the best quality video
+2. **Audio Extraction** — Extract audio and perform VAD segmentation
+3. **Smart Transcription** — Whisper speech-to-text
+4. **AI Translation & Polish** — Gemini context-aware translation and refinement
+5. **Auto Hardcoding** — FFmpeg burns bilingual subtitles (GPU acceleration supported)
+6. **Output** — Ready-to-share MP4 with hardcoded subtitles
+
+## Subtitle Editor
+
+### Real-Time Preview
+
+- Built-in assjs rendering engine for accurate font, color, and position rendering
+- WYSIWYG — edit and preview simultaneously
+- One-click toggle between source and translated text for quick review
+
+### Smart Caching
+
+- Efficient transcoding cache for smooth playback
+- Audio-only file support with adaptive player UI
+
+### Batch Operations
+
+- **Batch Regenerate**: Re-run the full pipeline on selected segments (transcription → polish → align → translate)
+- **Polish Translation**: Optimize translation quality for selected segments while maintaining context
+- Auto-save snapshots before operations, rollback anytime
+
+### Version Management
+
+- Auto-save edit history
+- Snapshot rollback support
+- Prevent accidental work loss

@@ -17,6 +17,10 @@ title: '本地 Whisper 配置'
 3. **加载模型**: 点击「浏览」选择下载的 `.bin` 模型文件
 4. **开始使用**: 模型路径设置完成后即可使用
 
+<Callout type="info">
+国内可以使用 [HF Mirror](https://hf-mirror.com/ggerganov/whisper.cpp/tree/main) 下载。
+</Callout>
+
 ---
 
 ## 📦 模型下载指南
@@ -35,8 +39,11 @@ title: '本地 Whisper 配置'
 
 ### 文件名后缀说明
 
-- **`.en`**: 仅英语模型，不支持中文等其他语言
-- **`q5_0`, `q8_0`**: 量化版，体积更小、速度更快，精度略有下降
+- **`.en` (如 `ggml-base.en.bin`)**: **仅英语**模型。如果您只转写英文视频，它比同级的多语言模型更准；但**不支持**中文或其他语言。
+- **`q5_0`, `q8_0` (如 `ggml-base-q5_0.bin`)**: **量化版**模型。体积更小、速度更快，但精度略有下降。
+  - `q8_0`: 几乎无损，推荐。
+  - `q5_0`: 损失少量精度，体积显著减小。
+- **`.mlmodelc.zip`**: ❌ **不要下载**。这是 macOS CoreML 专用格式，Windows 无法使用。
 
 ---
 
@@ -45,9 +52,9 @@ title: '本地 Whisper 配置'
 **前提条件**: 已安装最新版 NVIDIA 显卡驱动
 
 1. 访问 [whisper.cpp Releases](https://github.com/ggerganov/whisper.cpp/releases) 下载 `whisper-cublas-bin-x64.zip`
-2. 解压获取 `whisper-cli.exe` 和 `.dll` 文件
-3. 将所有文件放入 `.exe` 同级目录的 `resources` 文件夹（如果没有这个文件夹，可以手动创建一个）
-4. 重启应用，尝试转写验证加速效果
+2. 解压。
+3. 设置 > 服务 > 语音识别 > 「本地 Whisper」> 「Whisper-cli.exe 路径」 >「浏览」选择解压后的 `whisper-cli.exe` 文件
+4. 开始使用
 
 ---
 

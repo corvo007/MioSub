@@ -1,42 +1,86 @@
 # MioSub
 
-> AI-powered professional subtitle generation tool with auto glossary extraction, speaker recognition, and millisecond alignment.
+> The AI subtitle editor that truly understands context — Make the world's content yours.
 
 ## About
 
-MioSub is an open-source subtitle generation application powered by Google Gemini AI. It transforms 30-minute videos into professionally subtitled content in just 8 minutes, with zero manual proofreading required.
+MioSub is an open-source AI-powered subtitle generation and editing tool. It uses Google Gemini for intelligent translation and OpenAI Whisper for speech transcription. Transform 30-minute videos into professionally subtitled content in just 8 minutes, with zero manual proofreading required.
 
 ## Key Features
 
-- **Glossary Auto-Extraction**: Automatically extracts domain-specific terms and maintains consistent translations
-- **Speaker Diarization**: Identifies and labels different speakers in conversations
-- **Millisecond Alignment**: Precise subtitle timing using forced alignment technology
-- **Multi-language Support**: Chinese, English, Japanese UI with auto-detection of source language
-- **Full Automation**: Download → Transcribe → Translate → Encode in one seamless pipeline
+### v3.0 Highlights
+- **Built-in CTC Aligner**: Millisecond-precise subtitle timing, works out of the box
+- **Brand New Interface**: Completely redesigned editor and settings panel
+- **Audio File Support**: Process podcasts, radio shows, and audiobooks directly
+- **CJK Font Support**: Built-in NotoSans fonts for clear Chinese/Japanese rendering
 
-## Documentation
+### Core Capabilities
+- **Context-Aware Translation**: Gemini's long context window reads entire video before translating
+- **Smart Glossary Extraction**: Auto-extracts names, places, terminology for consistent translations
+- **Speaker Recognition**: Automatically identifies and labels different speakers
+- **Full Automation Pipeline**: Paste link → Download → Transcribe → Translate → Hardcode subtitles
+- **Multi-language Support**: Chinese/English/Japanese UI, supports 100+ language pairs
+- **WYSIWYG Editor**: Real-time subtitle preview with edit-while-watching experience
 
-- [Home (Chinese)](https://aisub.netlify.app/)
-- [Home (English)](https://aisub.netlify.app/en/)
-- [Quick Start Guide](https://aisub.netlify.app/guide/)
-- [Quick Start Guide (English)](https://aisub.netlify.app/en/guide/)
-- [Architecture Overview](https://aisub.netlify.app/architecture/)
-- [Architecture Overview (English)](https://aisub.netlify.app/en/architecture/)
+## Use Cases
+
+- **Fansubbers**: Batch process anime and movies efficiently
+- **Content Creators**: Generate multi-language subtitles for videos
+- **Language Learners**: Watch foreign content with accurate subtitles
+- **Podcasters**: Transcribe and translate audio content
 
 ## Technical Stack
 
-- Frontend: React + TypeScript
-- Desktop: Electron
-- AI: Google Gemini API
-- Speech Recognition: Whisper (local or cloud)
-- Forced Alignment: MMS-FA model
+- **Frontend**: React 19 + TypeScript 5.8 + TailwindCSS 4
+- **Desktop**: Electron 39
+- **AI Translation**: Google Gemini API (Flash & Pro models)
+- **Speech Recognition**: OpenAI Whisper (cloud or local via whisper.cpp)
+- **Forced Alignment**: CTC-based MMS-FA ONNX model
+- **Video Processing**: FFmpeg, yt-dlp
+
+## Documentation
+
+- [Documentation (Chinese)](https://miosub.app/docs)
+- [Documentation (English)](https://miosub.app/en/docs)
+- [Quick Start Guide](https://miosub.app/docs/guide)
+- [Quick Start Guide (English)](https://miosub.app/en/docs/guide)
+- [Local Whisper Setup](https://miosub.app/docs/guide/whisper)
+- [Forced Alignment Setup](https://miosub.app/docs/guide/alignment)
+- [Technology Overview](https://miosub.app/docs/technology)
+- [FAQ](https://miosub.app/docs/faq)
 
 ## Links
 
-- GitHub: https://github.com/corvo007/Gemini-Subtitle-Pro
-- Live Demo: https://aisub-demo.netlify.app/
-- Documentation: https://aisub.netlify.app/
+- **GitHub**: https://github.com/corvo007/Gemini-Subtitle-Pro
+- **Live Demo**: https://demo.miosub.app
+- **Documentation**: https://miosub.app
+- **Releases**: https://github.com/corvo007/Gemini-Subtitle-Pro/releases
+
+## Comparison with Alternatives
+
+MioSub is a free, open-source alternative to:
+- CapCut (subtitle generation)
+- VEED.io (video subtitling)
+- Descript (transcription & editing)
+- Kapwing (auto captions)
+
+Key differentiators:
+- Context-aware AI translation (not just word-by-word)
+- Automatic glossary extraction for consistent terminology
+- Speaker diarization for multi-person content
+- Millisecond-precise forced alignment
+- Fully offline capable with local Whisper
+- Open source and self-hostable
 
 ## License
 
-MIT License - Copyright © 2024 Corvo007
+AGPL-3.0 License - Copyright © 2024-2026 Corvo007
+
+## Keywords
+
+### English
+AI subtitle generator, automatic subtitles, video translation, Gemini AI, subtitle editor, speech to text, video transcription, bilingual subtitles, YouTube auto captions, fansub tool, anime subtitle maker, forced alignment, CapCut alternative, VEED alternative, Descript alternative, free subtitle generator, no watermark
+
+### 中文关键词
+AI字幕生成器, 自动字幕, 视频翻译软件, Gemini翻译, 字幕编辑器, 语音转文字, 双语字幕, YouTube字幕下载, B站字幕工具, Whisper语音识别, 强制对齐, 字幕时间轴, 字幕组工具, 番剧翻译, 动漫字幕, 电影字幕, 字幕压制, 硬字幕, 免费字幕生成, 剪映替代, 智能字幕, 毫秒级对齐, 播客转录, 多语言字幕
+

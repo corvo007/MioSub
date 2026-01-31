@@ -3,30 +3,11 @@ title: "FAQ"
 description: "Frequently asked questions and solutions for MioSub"
 ---
 
-## 🔑 API Issues
+import { Callout } from 'fumadocs-ui/components/callout';
 
-### Getting error 429?
-
-**Meaning**: Request rate exceeded API limits.
-
-**Solutions**:
-1. **Wait a few minutes**: Free tier allows 15 requests/minute, auto-recovers
-2. **Add multiple Keys**: Comma-separate multiple API Keys in settings for rotation
-3. **Lower concurrency**: Reduce translation concurrency in settings
-
----
-
-### "Invalid API Key" error?
-
-1. Verify the key is complete (starts with `AIza`)
-2. Check for extra spaces before/after the key
-3. Try regenerating at [AI Studio](https://aistudio.google.com/app/apikey)
-
----
-
-### "Region not supported"?
-
-Gemini API has regional restrictions. Ensure your network can access Google services.
+<Callout type="info" title="v3.0 Users">
+  If you upgraded from v2.x, please check the [Migration Guide](/en/docs/guide/migration) first.
+</Callout>
 
 ---
 
@@ -41,8 +22,7 @@ Gemini API has regional restrictions. Ensure your network can access Google serv
 
 **Solutions**:
 1. Check network connection
-2. Use individual video links
-3. Update yt-dlp in settings
+2. Use individual video links (not playlists)
 
 ---
 
@@ -56,17 +36,6 @@ Gemini API has regional restrictions. Ensure your network can access Google serv
 1. Use smaller Whisper models (Base or Small)
 2. [Configure GPU acceleration](/en/docs/guide/whisper)
 3. Use Whisper API instead of local models
-
----
-
-### FFmpeg not found?
-
-MioSub includes FFmpeg by default, no extra setup needed.
-
-If still getting errors:
-1. Ensure you're using the full installation package
-2. Check for `ffmpeg.exe` in the `resources` folder
-3. Try re-downloading the full package
 
 ---
 
@@ -90,17 +59,6 @@ If still getting errors:
 
 ---
 
-### Garbled text on Windows?
-
-**Possible causes**: Font or encoding issues
-
-**Solutions**:
-1. Export with UTF-8 encoding
-2. Select fonts that support your language in subtitle styles
-3. Check system language settings
-
----
-
 ## 🖥️ Software Usage
 
 ### App won't open / crashes?
@@ -114,10 +72,61 @@ If still getting errors:
 
 ### How to update?
 
-MioSub supports auto-update. If auto-update fails:
+v3.0 supports automatic update detection. When a new version is available, the app will prompt you to update.
+
+If auto-update fails:
 1. Visit [Releases page](https://github.com/corvo007/Gemini-Subtitle-Pro/releases)
 2. Download the latest version
 3. Simply overwrite the old version
+
+---
+
+## v3.0 Specific
+
+### Settings lost after upgrading from v2.x?
+
+v3.0 config file location may have changed. See the [Migration Guide](/en/docs/guide/migration) for manual migration steps.
+
+### Where to download macOS/Linux versions?
+
+v3.0 adds macOS and Linux support. Download from [Releases page](https://github.com/corvo007/Gemini-Subtitle-Pro/releases):
+- macOS: `.dmg` files
+- Linux: `.AppImage` files
+
+### macOS shows "cannot be opened because the developer cannot be verified"?
+
+This is a macOS Gatekeeper security warning. Since MioSub is open-source software, we haven't purchased an Apple Developer certificate for code signing.
+
+**Method 1: Right-click to Open (Recommended)**
+
+1. Find MioSub.app in Finder
+2. Hold **Control** and click the app icon (or right-click)
+3. Select "Open" from the context menu
+4. Click "Open" again in the dialog that appears
+
+After opening once, the system remembers your choice and you can double-click normally.
+
+**Method 2: System Preferences**
+
+1. Try to open the app (it will be blocked)
+2. Open "System Preferences" > "Security & Privacy" > "General"
+3. You'll see the blocked app at the bottom, click "Open Anyway"
+
+**Method 3: Terminal Command**
+
+Open Terminal and run this command to remove the quarantine attribute:
+
+```bash
+# Remove quarantine attribute (recommended)
+xattr -d com.apple.quarantine /Applications/MioSub.app
+
+# Or clear all extended attributes
+xattr -cr /Applications/MioSub.app
+```
+
+<Callout type="warn" title="Security Note">
+  Always download from the [official GitHub Releases](https://github.com/corvo007/Gemini-Subtitle-Pro/releases), not third-party sources, to ensure the software hasn't been tampered with.
+</Callout>
 
 ---
 
@@ -126,5 +135,4 @@ MioSub supports auto-update. If auto-update fails:
 If the above didn't solve your problem:
 
 1. **Check Issues**: [GitHub Issues](https://github.com/corvo007/Gemini-Subtitle-Pro/issues) may have answers
-2. **Submit Issue**: Include problem description + screenshots + system info
-3. **Join Community**: Discuss in Discord or groups
+2. **Submit Issue**: Include problem description + screenshots + app logs

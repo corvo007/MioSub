@@ -1,0 +1,83 @@
+---
+title: '从 v2.x 迁移到 v3.0'
+description: '升级到 MioSub v3.0 的完整迁移指南'
+---
+
+<Callout type="warning" title="重要提示">
+  v3.0 是一个重大版本更新，包含架构重构和配置变更。请在升级前阅读本指南。
+</Callout>
+
+## 🎉 v3.0 新特性概览
+
+| 特性 | 说明 |
+|:--|:--|
+| **时间轴对齐，开箱即用** | 内置 CTC 对齐器，毫秒级精度，告别繁琐的外部工具配置 |
+| **界面焕然一新** | 编辑器、设置面板全面重构，更清爽、更流畅、功能更强大 |
+| **不只是视频** | 播客、电台、有声书——纯音频文件也能直接处理 |
+| **中日文渲染更清晰** | 内置 NotoSans 字体，告别缺字和方块 |
+
+---
+
+## 📋 升级步骤
+
+### 1. 下载新版本
+
+访问 [快速开始](/docs/guide#第一步下载安装) 下载 v3.0 安装包。
+
+### 2. 安装/覆盖
+- **Windows**: 直接解压覆盖旧版本，或使用安装程序
+- **macOS/Linux**: 删除旧版本后安装新版本
+
+### 3. 首次启动
+
+v3.0 不会自动迁移配置。请将旧版本的配置目录复制到新版本的目录下。
+<Callout type="info" title="如何查看配置目录路径？">
+  打开设置-关于，找到"配置路径"即是。
+</Callout>
+
+---
+
+## ⚠️ 破坏性变更
+
+### 对齐器配置变更
+
+| v2.x | v3.0 |
+|:-----|:-----|
+| 需要手动下载 `align.exe` | 内置对齐器，无需额外下载 |
+| 需要配置执行文件路径 | 自动管理，只需选择模式 |
+| 使用 bin 格式模型文件 | 使用更高效的 ONNX 模型文件 |
+
+**迁移操作**：
+1. 打开 **设置 > 增强 > 时间轴对齐**
+2. 将对齐模式设置为「CTC」
+3. 将CTC 对齐器配置中模型目录设置为新模型的路径（文件夹）
+
+<Callout type="info" title="新模型下载链接">
+  [Hugging Face](https://huggingface.co/Corvo007/mms-300m-1130-forced-aligner-onnx/tree/main)  
+
+
+  [HF Mirror（国内用户）](https://hf-mirror.com/Corvo007/mms-300m-1130-forced-aligner-onnx/tree/main)  
+
+  
+  请下载全部四个文件后，放置在同一文件夹内，然后在设置中选择该文件夹。
+</Callout>
+
+---
+
+## 🔧 常见迁移问题
+
+### Q: 旧版本的字幕项目能打开吗？
+
+A: 可以。v3.0 完全兼容 v2.x 的字幕文件格式（SRT/ASS）。
+
+---
+
+## 需要帮助？
+
+如果在迁移过程中遇到问题：
+
+1. 查看 [常见问题](/docs/faq)
+2. 在 [GitHub Issues](https://github.com/corvo007/Gemini-Subtitle-Pro/issues) 搜索或提交问题
+3. 提供详细的错误信息和系统环境，或者App日志
+4. 加入我们的 [QQ 群](https://qm.qq.com/cgi-bin/qm/qr?k=qBoSXr8a668tJm80UbPcyvpey8mwfQ2H&jump_from=webapi&authKey=6fQajPs64A/yue/dKEMfZTxBQ8+SBuPugOTA6tC+3CuHW1NyNZFRwomo75sF1zUR) 寻求帮助
+

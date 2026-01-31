@@ -1,0 +1,81 @@
+---
+title: 'Migrating from v2.x to v3.0'
+description: 'Complete migration guide for upgrading to MioSub v3.0'
+---
+
+<Callout type="warning" title="Important">
+  v3.0 is a major version update with architecture changes and configuration updates. Please read this guide before upgrading.
+</Callout>
+
+## 🎉 v3.0 New Features Overview
+
+| Feature | Description |
+|:--|:--|
+| **Timeline Alignment, Out of the Box** | Built-in CTC aligner with millisecond precision, no more tedious external tool configuration |
+| **Brand New Interface** | Editor and settings panel completely redesigned - cleaner, smoother, more powerful |
+| **Not Just Video** | Podcasts, radio, audiobooks - pure audio files can be processed directly |
+| **Clearer CJK Rendering** | Built-in NotoSans font, no more missing characters or boxes |
+
+---
+
+## 📋 Upgrade Steps
+
+### 1. Download New Version
+
+Visit [Quick Start](/docs/guide#step-1-download-and-install) to download the v3.0 installer.
+
+### 2. Install/Overwrite
+- **Windows**: Extract and overwrite old version, or use the installer
+- **macOS/Linux**: Remove old version, then install new
+
+### 3. First Launch
+
+v3.0 does not auto-migrate configuration. Please copy the config directory from the old version to the new version's directory.
+<Callout type="info" title="How to find the config directory path?">
+  Open Settings - About, and find "Config Path".
+</Callout>
+
+---
+
+## ⚠️ Breaking Changes
+
+### Aligner Configuration Changes
+
+| v2.x | v3.0 |
+|:-----|:-----|
+| Manual `align.exe` download required | Built-in aligner, no extra downloads |
+| Configure executable path | Auto-managed, just select mode |
+| Uses bin format model files | Uses more efficient ONNX model files |
+
+**Migration Steps**:
+1. Open **Settings > Enhancement > Timeline Alignment**
+2. Set alignment mode to "CTC"
+3. Set the model directory in CTC aligner configuration to the new model path (folder)
+
+<Callout type="info" title="New Model Download Links">
+  [Hugging Face](https://huggingface.co/Corvo007/mms-300m-1130-forced-aligner-onnx/tree/main)
+
+
+  [HF Mirror (for users in China)](https://hf-mirror.com/Corvo007/mms-300m-1130-forced-aligner-onnx/tree/main)
+
+
+  Please download all four files, place them in the same folder, then select that folder in settings.
+</Callout>
+
+---
+
+## 🔧 Common Migration Issues
+
+### Q: Can I open old subtitle projects?
+
+A: Yes. v3.0 is fully compatible with v2.x subtitle formats (SRT/ASS).
+
+---
+
+## Need Help?
+
+If you encounter issues during migration:
+
+1. Check the [FAQ](/docs/faq)
+2. Search or submit issues on [GitHub Issues](https://github.com/corvo007/Gemini-Subtitle-Pro/issues)
+3. Provide detailed error messages, system info, or app logs
