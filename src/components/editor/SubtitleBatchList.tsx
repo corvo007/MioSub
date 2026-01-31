@@ -4,7 +4,6 @@ import { SubtitleBatch } from '@/components/editor/SubtitleBatch';
 import { type SubtitleItem } from '@/types';
 import type { GenerationStatus } from '@/types/api';
 import { useWorkspaceStore, selectSubtitleState, selectUIState } from '@/store/useWorkspaceStore';
-import { useAppStore } from '@/store/useAppStore';
 import { useShallow } from 'zustand/react/shallow';
 
 interface SubtitleBatchListProps {
@@ -43,10 +42,16 @@ export const SubtitleBatchList: React.FC<SubtitleBatchListProps> = React.memo(
 
     const { toggleBatch, updateBatchComment, handleBatchAction } = actions;
 
-    // Batch size calculation
-    // Priority: 1. Configured batch size (if available), 2. Infer from first chunk, 3. Default to 20
-    const proofreadBatchSize = useAppStore(useShallow((s) => s.settings.proofreadBatchSize));
-    const batchSize = proofreadBatchSize || (chunks.length > 0 ? chunks[0].length : 20);
+    // Pre-calculate chunk start indices for accurate global index calculation
+    const chunkStartIndices = React.useMemo(() => {
+      const indices: number[] = [];
+      let runningIndex = 0;
+      for (const chunk of chunks) {
+        indices.push(runningIndex);
+        runningIndex += chunk.length;
+      }
+      return indices;
+    }, [chunks]);
 
     return (
       <div className="flex-1 min-h-0">
@@ -61,6 +66,7 @@ export const SubtitleBatchList: React.FC<SubtitleBatchListProps> = React.memo(
                 key={chunkIdx}
                 chunk={chunk}
                 chunkIdx={chunkIdx}
+                chunkStartIndex={chunkStartIndices[chunkIdx] ?? 0}
                 isSelected={selectedBatches.has(chunkIdx)}
                 status={status}
                 batchComment={batchComments[String(chunkIdx)] || ''}
@@ -69,7 +75,6 @@ export const SubtitleBatchList: React.FC<SubtitleBatchListProps> = React.memo(
                 handleBatchAction={handleBatchAction}
                 deleteSubtitle={checkDelete}
                 subtitles={subtitles}
-                batchSize={batchSize}
                 isDeleteMode={isDeleteMode}
                 selectedForDelete={selectedForDelete}
                 onToggleDeleteSelection={toggleDeleteSelection}

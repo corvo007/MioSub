@@ -2,7 +2,8 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronUp, ChevronDown, FolderOpen } from 'lucide-react';
 
-import { type SubtitleSnapshot } from '@/types/subtitle';
+import { type SubtitleSnapshot, type SubtitleItem } from '@/types/subtitle';
+import { type SpeakerUIProfile } from '@/types/speaker';
 
 import { GenerationStatus } from '@/types/api';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
@@ -26,6 +27,14 @@ interface WorkspacePageProps {
   onToggleSnapshots: () => void;
   onRestoreSnapshot: (snapshot: SubtitleSnapshot) => void;
   onDeleteSnapshot: (id: string) => void;
+  onCreateSnapshot?: (
+    description: string,
+    subtitles: SubtitleItem[],
+    batchComments?: Record<string, string>,
+    fileId?: string,
+    fileName?: string,
+    speakerProfiles?: SpeakerUIProfile[]
+  ) => void;
   onStartCompression?: () => void;
 }
 
@@ -37,6 +46,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   onToggleSnapshots,
   onRestoreSnapshot,
   onDeleteSnapshot,
+  onCreateSnapshot,
   onStartCompression,
 }) => {
   const { t } = useTranslation('workspace');
@@ -253,6 +263,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
                       scrollContainerRef={subtitleListRef}
                       currentPlayTime={currentTime}
                       onRowClick={_handleSubtitleRowClick}
+                      onCreateSnapshot={onCreateSnapshot}
                     />
                   </ErrorBoundary>
                 </div>

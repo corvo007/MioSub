@@ -74,6 +74,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
     // Optimized: Granular settings selection to prevent re-renders on unrelated settings changes (e.g. language/genre)
     const includeSpeakerInExport = useAppStore((s) => s.settings.includeSpeakerInExport);
     const useSpeakerColors = useAppStore((s) => s.settings.useSpeakerColors);
+    const targetLanguage = useAppStore((s) => s.settings.targetLanguage);
 
     const { subtitles, isLoadingSubtitle } = useWorkspaceStore(useShallow(selectSubtitleState));
     const { status } = useWorkspaceStore(useShallow(selectGenerationState));
@@ -222,7 +223,8 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
         showSourceText,
         includeSpeakerInExport,
         useSpeakerColors,
-        speakerProfiles
+        speakerProfiles,
+        targetLanguage
       );
     }, [
       subtitles,
@@ -231,6 +233,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
       useSpeakerColors,
       showSourceText,
       isGenerating,
+      targetLanguage,
     ]);
 
     // Debounce the ASS content updates (Issue 3 fix: 300ms delay)

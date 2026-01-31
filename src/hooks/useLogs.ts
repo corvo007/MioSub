@@ -79,6 +79,8 @@ export function useLogs() {
                 newLogs.push(pl);
               }
             });
+            // Sort by timestamp to ensure correct order
+            newLogs.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
             return newLogs;
           });
         } catch (err) {
@@ -99,6 +101,31 @@ export function useLogs() {
           } else {
             const { parseBackendLog } = await import('@/services/utils/logParser');
             parsed = parseBackendLog(String(newLog));
+          }
+
+          // Sync to frontend console for developer visibility
+          const prefix = `[Main]`;
+          const logMsg = parsed.message;
+          const logData = parsed.data;
+
+          // Avoid logging duplicate [Renderer] logs that originated from here
+          if (!logMsg.startsWith('[Renderer]')) {
+            switch (parsed.level) {
+              case 'ERROR':
+                console.error(prefix, logMsg, logData || '');
+                break;
+              case 'WARN':
+                console.warn(prefix, logMsg, logData || '');
+                break;
+              case 'INFO':
+                // console.info(prefix, logMsg, logData || ''); // Optional: lessen noise
+                break;
+              case 'DEBUG':
+                // console.debug(prefix, logMsg, logData || '');
+                break;
+              default:
+                console.log(prefix, logMsg, logData || '');
+            }
           }
 
           setLogs((prev) => {

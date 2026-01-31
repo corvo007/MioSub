@@ -50,14 +50,14 @@ interface UseWorkspaceLogicProps {
     createSnapshot: (
       description: string,
       subtitles: SubtitleItem[],
-      batchComments?: Record<number, string>,
+      batchComments?: Record<string, string>,
       fileId?: string,
       fileName?: string,
       speakerProfiles?: any
     ) => void;
     createAutoSaveSnapshot: (
       subtitles: SubtitleItem[],
-      batchComments: Record<number, string>,
+      batchComments: Record<string, string>,
       fileId?: string,
       fileName?: string
     ) => boolean;
@@ -402,6 +402,7 @@ export const useWorkspaceLogic = ({
         useWorkspaceStore.setState({
           subtitles: typeof subs === 'function' ? subs(subtitles) : subs,
         }),
+      setStatus: (status: GenerationStatus) => useWorkspaceStore.setState({ status }),
       error,
       startTime,
       selectedBatches,
@@ -412,6 +413,8 @@ export const useWorkspaceLogic = ({
       setShowSourceText: setShowSourceTextAction,
       editingCommentId,
       setEditingCommentId: setEditingCommentIdAction,
+      setEditingSubtitleId: (id: string | null) =>
+        useWorkspaceStore.setState({ editingSubtitleId: id }),
       isLoadingFile,
       isLoadingSubtitle,
       subtitleFileName,

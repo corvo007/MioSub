@@ -14,6 +14,7 @@ import {
   downloadThumbnail as downloadThumbnailService,
 } from '@/services/download';
 import { logger } from '@/services/utils/logger';
+import { useAppStore } from '@/store/useAppStore';
 
 interface UseDownloadReturn {
   // State
@@ -39,6 +40,7 @@ interface UseDownloadReturn {
 
 export function useDownload(): UseDownloadReturn {
   const { t } = useTranslation(['download']);
+  const addToast = useAppStore((s) => s.addToast);
   const [status, setStatus] = useState<DownloadStatus>('idle');
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
   const [progress, setProgress] = useState<DownloadProgress | null>(null);
@@ -84,7 +86,9 @@ export function useDownload(): UseDownloadReturn {
     } catch (err: any) {
       // Check if error contains errorInfo from backend
       const errInfo = err.errorInfo as DownloadError | undefined;
-      setError(errInfo?.message || err.message);
+      const errorMessage = errInfo?.message || err.message;
+      logger.error(`[Download] Parse failed: ${errorMessage}`, { err, errInfo });
+      setError(errorMessage);
       setErrorInfo(errInfo || null);
       setStatus('error');
     }
@@ -106,7 +110,9 @@ export function useDownload(): UseDownloadReturn {
         return path;
       } catch (err: any) {
         const errInfo = err.errorInfo as DownloadError | undefined;
-        setError(errInfo?.message || err.message);
+        const errorMessage = errInfo?.message || err.message;
+        logger.error(`[Download] Download failed: ${errorMessage}`, { err, errInfo });
+        setError(errorMessage);
         setErrorInfo(errInfo || null);
         setStatus('error');
         return undefined;
@@ -126,17 +132,16 @@ export function useDownload(): UseDownloadReturn {
         videoId: videoInfo.id,
       });
       setThumbnailPath(path);
+      addToast(t('download:thumbnailSuccess'), 'success');
       return path;
     } catch (err: any) {
-      logger.error('Thumbnail download failed', err);
+      logger.error('[Download] Thumbnail download failed', { err });
       // Don't set error state for thumbnail failures - it's not critical
       // But show a toast to notify the user
-      if (typeof window !== 'undefined' && (window as any).showToast) {
-        (window as any).showToast(t('download:errors.thumbnailFailed'), 'warning');
-      }
+      addToast(t('download:errors.thumbnailFailed'), 'warning');
       return undefined;
     }
-  }, [videoInfo, outputDir, t]);
+  }, [videoInfo, outputDir, t, addToast]);
 
   const cancel = useCallback(async () => {
     await cancelDownload();

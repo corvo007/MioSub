@@ -39,14 +39,27 @@ export const sanitizeSpeakerForStyle = (speaker: string): string => {
  * Extracts speaker name and content from a text line.
  * Format: "Speaker Name: Content"
  * Returns the separated speaker and content.
+ *
+ * Requirements for valid speaker extraction:
+ * - Must have content after the colon (not just trailing colon)
+ * - Speaker name should be reasonably short (max 30 chars)
  */
 export const extractSpeakerFromText = (text: string): { speaker?: string; content: string } => {
   // Match "Speaker: Content" or "Speaker：Content" (Chinese colon)
   // Support optional space after colon
-  const match = text.match(/^(.+?)[:：]\s*(.*)$/s);
+  // Require at least one non-whitespace character after the colon
+  const match = text.match(/^(.+?)[:：]\s*(.+)$/s);
 
   if (match) {
-    return { speaker: match[1]?.trim(), content: match[2] };
+    const potentialSpeaker = match[1]?.trim();
+    const content = match[2];
+
+    // Validate speaker name:
+    // - Must not be too long (likely not a speaker name if > 30 chars)
+    // - Must have actual content after the colon
+    if (potentialSpeaker && potentialSpeaker.length <= 30 && content?.trim()) {
+      return { speaker: potentialSpeaker, content: content };
+    }
   }
   return { content: text };
 };

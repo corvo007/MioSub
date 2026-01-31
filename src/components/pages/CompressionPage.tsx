@@ -43,6 +43,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
   // Store actions
   const setShowLogs = useAppStore((s) => s.setShowLogs);
   const setShowSettings = useAppStore((s) => s.setShowSettings);
+  const targetLanguage = useAppStore((s) => s.settings.targetLanguage);
 
   const { t } = useTranslation('compression');
   const [file, setFile] = useState<File | null>(null);
@@ -211,7 +212,8 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
             true,
             false,
             true,
-            workspaceSpeakerProfiles
+            workspaceSpeakerProfiles,
+            targetLanguage
           );
           const res = await window.electronAPI.writeTempFile(assContent, 'ass');
           if (res.success && res.path) {

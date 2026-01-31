@@ -12,6 +12,7 @@ import { timeToSeconds } from '@/services/subtitle/time';
 interface SubtitleBatchProps {
   chunk: SubtitleItem[];
   chunkIdx: number;
+  chunkStartIndex: number; // Global index of first item in this chunk
   isSelected: boolean;
   status: GenerationStatus;
   batchComment: string;
@@ -24,7 +25,6 @@ interface SubtitleBatchProps {
   ) => void;
   deleteSubtitle?: (id: string) => void;
   subtitles?: SubtitleItem[];
-  batchSize?: number;
   // Delete mode
   isDeleteMode?: boolean;
   selectedForDelete?: Set<string>;
@@ -38,6 +38,7 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
   ({
     chunk,
     chunkIdx,
+    chunkStartIndex,
     isSelected,
     status,
     batchComment,
@@ -46,7 +47,6 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
     handleBatchAction,
     deleteSubtitle,
     subtitles,
-    batchSize = 20,
     // Delete mode
     isDeleteMode,
     selectedForDelete,
@@ -58,9 +58,6 @@ export const SubtitleBatch: React.FC<SubtitleBatchProps> = React.memo(
     const { t } = useTranslation('workspace');
     const startTime = chunk[0].startTime.split(',')[0];
     const endTime = chunk[chunk.length - 1].endTime.split(',')[0];
-
-    // Calculate the starting index of this chunk in the full subtitles array
-    const chunkStartIndex = chunkIdx * batchSize;
 
     return (
       <div

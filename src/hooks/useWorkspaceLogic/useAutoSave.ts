@@ -7,7 +7,7 @@ import { type SnapshotsValuesProps } from '@/types/workspace';
 
 interface UseAutoSaveProps {
   subtitles: SubtitleItem[];
-  batchComments: Record<number, string>;
+  batchComments: Record<string, string>;
   status: GenerationStatus;
   file: File | null;
   speakerProfiles: SpeakerUIProfile[];

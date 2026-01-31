@@ -3,18 +3,21 @@ import { useTranslation } from 'react-i18next';
 import { type SubtitleSnapshot, type SubtitleItem } from '@/types/subtitle';
 import { type SpeakerUIProfile } from '@/types/speaker';
 import { type SnapshotsValuesProps } from '@/types/workspace';
+import { GenerationStatus } from '@/types/api';
 
 interface SnapshotRestoreWorkspace {
   file: File | null;
   subtitles: SubtitleItem[];
   setSubtitles: (subs: SubtitleItem[]) => void;
-  batchComments: Record<number, string>;
-  setBatchComments: (comments: Record<number, string>) => void;
+  setStatus: (status: GenerationStatus) => void;
+  batchComments: Record<string, string>;
+  setBatchComments: (comments: Record<string, string>) => void;
   speakerProfiles: SpeakerUIProfile[];
   setSpeakerProfiles: (profiles: SpeakerUIProfile[]) => void;
   setSubtitleFileName: (name: string | null) => void;
   setSelectedBatches: (selected: Set<number>) => void;
   setEditingCommentId: (id: string | null) => void;
+  setEditingSubtitleId: (id: string | null) => void;
 }
 
 interface UseSnapshotRestoreProps {
@@ -70,7 +73,17 @@ export function useSnapshotRestore({
 
           // 2. Restore subtitles and batch comments (use structuredClone for perf)
           workspace.setSubtitles(structuredClone(snap.subtitles));
-          workspace.setBatchComments({ ...snap.batchComments });
+          // Normalize batchComments keys to strings (snapshot stores string keys from JSON)
+          const normalizedComments: Record<string, string> = {};
+          for (const [key, value] of Object.entries(snap.batchComments)) {
+            normalizedComments[String(key)] = value;
+          }
+          workspace.setBatchComments(normalizedComments);
+
+          // 2.5. Set status based on whether there are subtitles to export
+          workspace.setStatus(
+            snap.subtitles.length > 0 ? GenerationStatus.COMPLETED : GenerationStatus.IDLE
+          );
 
           // 3. Sync speakerProfiles (use saved profiles if available, otherwise extract from subtitles)
           if (snap.speakerProfiles && snap.speakerProfiles.length > 0) {
@@ -89,9 +102,10 @@ export function useSnapshotRestore({
           // 4. Sync subtitle file name
           workspace.setSubtitleFileName(snap.fileName || null);
 
-          // 5. Clear selection state
+          // 5. Clear selection and editing state
           workspace.setSelectedBatches(new Set());
           workspace.setEditingCommentId(null);
+          workspace.setEditingSubtitleId(null);
 
           // 6. Close snapshot panel
           setShowSnapshots(false);

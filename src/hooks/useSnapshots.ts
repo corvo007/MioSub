@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { type SubtitleSnapshot, type SubtitleItem } from '@/types/subtitle';
 import { type SpeakerUIProfile } from '@/types/speaker';
 import { snapshotStorage } from '@/services/utils/snapshotStorage';
@@ -34,7 +35,14 @@ const computeContentHash = (
  * Custom hook for managing subtitle snapshots (history)
  * Maintains up to 20 snapshots for version control
  */
-import { useTranslation } from 'react-i18next';
+
+/**
+ * Generate a unique snapshot ID using timestamp + random suffix
+ * Avoids collision when multiple snapshots are created in the same millisecond
+ */
+const generateSnapshotId = (): string => {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+};
 
 export const useSnapshots = () => {
   const { t } = useTranslation('services');
@@ -51,14 +59,14 @@ export const useSnapshots = () => {
       speakerProfiles?: SpeakerUIProfile[]
     ) => {
       const newSnapshot: SubtitleSnapshot = {
-        id: Date.now().toString(),
+        id: generateSnapshotId(),
         timestamp: new Date().toLocaleString(),
         description,
-        subtitles: JSON.parse(JSON.stringify(subtitles)),
+        subtitles: structuredClone(subtitles),
         batchComments: { ...batchComments },
         fileId,
         fileName,
-        speakerProfiles: speakerProfiles ? JSON.parse(JSON.stringify(speakerProfiles)) : undefined,
+        speakerProfiles: speakerProfiles ? structuredClone(speakerProfiles) : undefined,
       };
       // Keep最多20个快照
       setSnapshots((prev) => {
@@ -90,14 +98,14 @@ export const useSnapshots = () => {
       }
 
       const newSnapshot: SubtitleSnapshot = {
-        id: Date.now().toString(),
+        id: generateSnapshotId(),
         timestamp: new Date().toLocaleString(),
         description: t('snapshots.autoSave'),
-        subtitles: JSON.parse(JSON.stringify(subtitles)),
+        subtitles: structuredClone(subtitles),
         batchComments: { ...batchComments },
         fileId,
         fileName,
-        speakerProfiles: speakerProfiles ? JSON.parse(JSON.stringify(speakerProfiles)) : undefined,
+        speakerProfiles: speakerProfiles ? structuredClone(speakerProfiles) : undefined,
       };
       setSnapshots((prev) => {
         const updated = [newSnapshot, ...prev].slice(0, 20);

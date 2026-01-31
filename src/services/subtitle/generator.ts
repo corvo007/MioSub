@@ -3,7 +3,7 @@ import { type SpeakerUIProfile } from '@/types/speaker';
 import { toAssTime } from '@/services/subtitle/time';
 import { getSpeakerColorWithCustom } from '@/services/utils/colors';
 import { sanitizeSpeakerForStyle } from './utils';
-import { containsJapaneseKana } from '@/services/utils/language';
+import { containsJapaneseKana, isJapanese } from '@/services/utils/language';
 
 // Helper to convert Hex (#RRGGBB) to ASS BGR (&HBBGGRR)
 // Helper to convert Hex (#RRGGBB) to ASS BGR (&HBBGGRR)
@@ -17,13 +17,10 @@ const hexToAssBgr = (hex?: string): string => {
 };
 
 /**
- * Returns the preferred font based on language content.
- * JP -> MS Mincho (Serif/Mincho) - Matches standard Japanese subtitle aesthetics
- * CN/Other -> Noto Sans SC (Sans-serif) - Matches standard Chinese aesthetics
+ * Returns the preferred font for original text based on content detection.
+ * Uses per-line kana detection to handle mixed-language content correctly.
  */
-const getFontForText = (text: string, languageCode?: string): string => {
-  if (languageCode === 'ja') return 'Noto Sans JP';
-  if (languageCode === 'zh') return 'Noto Sans SC';
+const getFontForOriginal = (text: string): string => {
   return containsJapaneseKana(text) ? 'Noto Sans JP' : 'Noto Sans SC';
 };
 
@@ -50,38 +47,28 @@ ${text}
     .join('\n');
 };
 
-// Heuristic: If > threshold of lines contain Japanese Kana, assume the track is Japanese.
-// Threshold protects against "teaching videos" (mixed content) or AI hallucinations.
-const detectLanguageForLines = (lines: string[]): 'ja' | 'zh' => {
-  const total = lines.length;
-  if (total === 0) return 'zh';
-
-  const kanaCount = lines.filter((text) => containsJapaneseKana(text)).length;
-  // Threshold: If more than 5% of lines OR more than 5 lines (absolute) contain Kana, it's Japanese.
-  // This allows short Japanese clips to work, while ignoring occasional accidental Kana in Chinese tracks.
-  const isJapanese = kanaCount > 0 && (kanaCount / total > 0.05 || kanaCount > 5);
-
-  return isJapanese ? 'ja' : 'zh';
-};
-
 export const generateAssContent = (
   subtitles: SubtitleItem[],
   title: string,
   bilingual: boolean = true,
   includeSpeaker: boolean = false,
   useSpeakerColors: boolean = false,
-  speakerProfiles?: SpeakerUIProfile[]
+  speakerProfiles?: SpeakerUIProfile[],
+  targetLanguage?: string
 ): string => {
   // Updated Styles:
   // Default: Fontsize 82 (Large), White (Primary) -> Used for Translation
   // Secondary: Fontsize 54 (Small), Yellow (Original) -> Used for Original Text
 
-  // Detect language separately for Original and Translated tracks
-  const langOriginal = detectLanguageForLines(subtitles.map((s) => s.original));
-  const langTranslated = detectLanguageForLines(subtitles.map((s) => s.translated));
+  // Translated text font: Use targetLanguage setting directly (no detection needed)
+  // This fixes the bug where Japanese source content caused Chinese translations to use JP font
+  const isTargetJapanese = targetLanguage ? isJapanese(targetLanguage) : false;
+  const langTranslated: 'ja' | 'zh' = isTargetJapanese ? 'ja' : 'zh';
 
-  // Default font for styles
+  // Default font for styles (based on target language)
   const defaultFont = langTranslated === 'ja' ? 'Noto Sans JP' : 'Noto Sans SC';
+  // Font for translated text (same as default, based on target language)
+  const fontTranslated = defaultFont;
 
   // Generate speaker styles
   // We prefer to iterate over ALL profiles if provided, or derive unique speakers from subtitles if not.
@@ -157,8 +144,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
       const cleanOriginal = originalText.replace(/\n/g, '\\N').replace(/\r/g, '');
       const cleanTranslated = translatedText.replace(/\n/g, '\\N').replace(/\r/g, '');
 
-      const fontOriginal = getFontForText(sub.original || '', langOriginal);
-      const fontTranslated = getFontForText(sub.translated || '', langTranslated);
+      // Original text: per-line detection to handle mixed-language content
+      const fontOriginal = getFontForOriginal(sub.original || '');
+      // Translated text: use pre-determined font based on targetLanguage setting
 
       // Determine Style Name
       let style = 'Default';

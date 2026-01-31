@@ -60,7 +60,7 @@ export function useBatchActions({
   const snapshotBeforeOperationRef = useRef<{
     subtitles: SubtitleItem[];
     selectedBatches: Set<number>;
-    batchComments: Record<number, string>;
+    batchComments: Record<string, string>;
   } | null>(null);
 
   const handleBatchAction = useCallback(
@@ -146,13 +146,16 @@ export function useBatchActions({
 
         if (mode === 'regenerate') {
           // Use the new regenerate operation for full pipeline re-run
+          // Note: speakerProfiles is undefined because regenerate extracts fresh profiles
+          // from audio. SpeakerUIProfile (UI state) is incompatible with SpeakerProfile
+          // (extraction result) - they have different schemas.
           refined = await runRegenerateOperation(
             file!,
             subtitles,
             indices,
             settings,
             prompts || {},
-            undefined, // speakerProfiles - regenerate will use existing context
+            undefined,
             settings.glossary,
             handleProgress,
             signal
@@ -227,7 +230,8 @@ export function useBatchActions({
             isBilingual,
             includeSpeaker,
             settings.useSpeakerColors,
-            speakerProfiles
+            speakerProfiles,
+            settings.targetLanguage
           );
     const filename = file ? file.name.replace(/\.[^/.]+$/, '') : 'subtitles';
     logger.info(`Downloading subtitles: ${filename}.${format}`);

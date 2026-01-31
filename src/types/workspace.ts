@@ -39,14 +39,14 @@ export interface SnapshotsValuesProps {
   createSnapshot: (
     description: string,
     subtitles: SubtitleItem[],
-    batchComments?: Record<number, string>,
+    batchComments?: Record<string, string>,
     fileId?: string,
     fileName?: string,
     speakerProfiles?: SpeakerUIProfile[]
   ) => void;
   createAutoSaveSnapshot: (
     subtitles: SubtitleItem[],
-    batchComments: Record<number, string>,
+    batchComments: Record<string, string>,
     fileId?: string,
     fileName?: string,
     speakerProfiles?: SpeakerUIProfile[]

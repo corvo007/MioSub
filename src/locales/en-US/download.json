@@ -17,6 +17,7 @@
   "openOutputDir": "Open Download Directory",
   "downloadNewVideo": "Download New Video",
   "continueGenerating": "Continue Generating Subtitles",
+  "thumbnailSuccess": "Thumbnail downloaded",
   "errors": {
     "thumbnailFailed": "Thumbnail download failed"
   },

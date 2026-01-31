@@ -364,34 +364,23 @@ export const parseAss = (content: string): SubtitleItem[] => {
       original = clean(original);
       translated = clean(translated);
 
-      // 3. Always try to extract/clean speaker from text content
-      // This ensures that if the file was exported with "Include Speaker", we strip it back out
-      // to avoid duplication (e.g., "Bob: Hello" -> Speaker="Bob", Text="Hello")
+      // If speaker was found from Name/Style fields and text was exported with "Include Speaker",
+      // we need to strip the "Speaker: " prefix from text to avoid duplication.
+      // But we do NOT extract speaker from text content for ASS files - ASS has dedicated fields for that.
+      if (speaker) {
+        const origRes = extractSpeakerFromText(original);
+        const transRes = extractSpeakerFromText(translated);
 
-      const origRes = extractSpeakerFromText(original);
-      const transRes = extractSpeakerFromText(translated);
-
-      // Update text content with stripped versions
-      original = origRes.content;
-      if (transRes.speaker) {
-        // Only update translated if we cleaned something?
-        // Actually extractSpeaker always returns content (cleaned or valid).
-        translated = transRes.content;
-      }
-
-      // Logic for resolving speaker conflicts or missing speaker
-      if (!speaker) {
-        if (origRes.speaker) {
-          speaker = origRes.speaker;
-        } else if (transRes.speaker) {
-          speaker = transRes.speaker;
+        // Only strip prefix if it matches the speaker we already found
+        if (origRes.speaker === speaker) {
+          original = origRes.content;
         }
-      } else {
-        // If speaker was already found (Name/Style), we trust it.
-        // But we successfully stripped the prefix from text above, so we are good.
-        // Optional: warn if mismatch? content says "Bob:", metadata says "Alice"?
-        // For now, trust metadata for the 'speaker' property, but keep text clean.
+        if (transRes.speaker === speaker) {
+          translated = transRes.content;
+        }
       }
+      // Note: We intentionally do NOT extract speaker from text content for ASS files.
+      // ASS format has dedicated Name and Style fields for speaker information.
 
       items.push({
         id: generateSubtitleId(),

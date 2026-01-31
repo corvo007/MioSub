@@ -416,9 +416,7 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
           </div>
         )}
 
-        {(status === GenerationStatus.COMPLETED ||
-          status === GenerationStatus.PROOFREADING ||
-          status === GenerationStatus.CANCELLED) &&
+        {(status === GenerationStatus.COMPLETED || status === GenerationStatus.CANCELLED) &&
           subtitles.length > 0 && (
             <button
               onClick={() => setShowExportModal(true)}

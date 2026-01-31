@@ -57,7 +57,7 @@ export function useBatchSelection() {
     useWorkspaceStore.setState({ selectedBatches: batches });
   }, []);
 
-  const setBatchComments = useCallback((comments: React.SetStateAction<Record<number, string>>) => {
+  const setBatchComments = useCallback((comments: React.SetStateAction<Record<string, string>>) => {
     useWorkspaceStore.setState((state) => {
       const newComments =
         typeof comments === 'function' ? (comments as any)(state.batchComments) : comments;
@@ -78,7 +78,7 @@ export function useBatchSelection() {
   };
 }
 
-// Helper to handle key conversion if needed, though Record<number, string> keys are strings in JS.
+// Helper to handle key conversion. Using string keys for consistency with Record<string, string>.
 function numberToString(n: number): string {
   return String(n);
 }

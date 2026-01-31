@@ -330,7 +330,7 @@ export function useEndToEndSubtitleGeneration({
         };
 
         // Generate subtitles
-        const { subtitles, chunkAnalytics } = await generateSubtitles(
+        const { subtitles, speakerProfiles, chunkAnalytics } = await generateSubtitles(
           audioBuffer,
           audioBuffer.duration,
           mergedSettings,
@@ -388,7 +388,9 @@ export function useEndToEndSubtitleGeneration({
             title,
             bilingual,
             !!config.includeSpeaker,
-            !!config.useSpeakerColors
+            !!config.useSpeakerColors,
+            speakerProfiles,
+            config.targetLanguage
           );
         }
 

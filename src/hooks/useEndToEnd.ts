@@ -15,6 +15,7 @@ import type {
 import type { VideoInfo } from '@electron/services/ytdlp';
 import type { AppSettings } from '@/types/settings';
 import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
+import { logger } from '@/services/utils/logger';
 
 // Re-export types for convenience
 export type { EndToEndConfig, PipelineProgress, PipelineResult, WizardStep };
@@ -222,9 +223,12 @@ export function useEndToEnd(): UseEndToEndReturn {
       } catch (error: any) {
         // Handle timeout specifically
         if (error.message === t('errors.parseTimeout')) {
+          logger.error('[EndToEnd] Parse timeout', { url });
           if (window.electronAPI?.download?.cancelParse) {
             window.electronAPI.download.cancelParse(url).catch(console.error);
           }
+        } else {
+          logger.error(`[EndToEnd] Parse failed: ${error.message}`, { url });
         }
 
         setState((prev) => ({
@@ -296,12 +300,15 @@ export function useEndToEnd(): UseEndToEndReturn {
 
         return result as PipelineResult;
       } catch (error: any) {
+        const errorMessage = error.message || t('errors.executionFailed');
+        logger.error(`[EndToEnd] Pipeline execution failed: ${errorMessage}`, error);
+
         const errorResult = {
           success: false,
           finalStage: 'failed' as const,
           outputs: {},
           duration: 0,
-          error: error.message || t('errors.executionFailed'),
+          error: errorMessage,
         } as PipelineResult;
 
         setState((prev) => ({

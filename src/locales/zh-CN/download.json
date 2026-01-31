@@ -17,6 +17,7 @@
   "openOutputDir": "打开下载目录",
   "downloadNewVideo": "下载新视频",
   "continueGenerating": "继续生成字幕",
+  "thumbnailSuccess": "封面下载成功",
   "errors": {
     "thumbnailFailed": "封面下载失败"
   },

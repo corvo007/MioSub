@@ -43,9 +43,10 @@ interface WorkspaceState {
 
   // UI state
   selectedBatches: Set<number>;
-  batchComments: Record<number, string>;
+  batchComments: Record<string, string>;
   showSourceText: boolean;
   editingCommentId: string | null;
+  editingSubtitleId: string | null;
   isLoadingFile: boolean;
   isLoadingSubtitle: boolean;
 
@@ -74,9 +75,10 @@ interface WorkspaceActions {
 
   // UI setters
   setSelectedBatches: (batches: Set<number>) => void;
-  setBatchComments: (comments: Record<number, string>) => void;
+  setBatchComments: (comments: Record<string, string>) => void;
   setShowSourceText: (show: boolean) => void;
   setEditingCommentId: (id: string | null) => void;
+  setEditingSubtitleId: (id: string | null) => void;
   setIsLoadingFile: (loading: boolean) => void;
   setIsLoadingSubtitle: (loading: boolean) => void;
 
@@ -146,6 +148,7 @@ const initialState: WorkspaceState = {
   batchComments: {},
   showSourceText: true,
   editingCommentId: null,
+  editingSubtitleId: null,
   isLoadingFile: false,
   isLoadingSubtitle: false,
   speakerProfiles: [],
@@ -207,6 +210,7 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>()(
     setBatchComments: (batchComments) => set({ batchComments }),
     setShowSourceText: (showSourceText) => set({ showSourceText }),
     setEditingCommentId: (editingCommentId) => set({ editingCommentId }),
+    setEditingSubtitleId: (editingSubtitleId) => set({ editingSubtitleId }),
     setIsLoadingFile: (isLoadingFile) => set({ isLoadingFile }),
     setIsLoadingSubtitle: (isLoadingSubtitle) => set({ isLoadingSubtitle }),
 
@@ -228,6 +232,7 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>()(
         selectedBatches: new Set(),
         batchComments: {},
         editingCommentId: null,
+        editingSubtitleId: null,
         isLoadingFile: false,
         isLoadingSubtitle: false,
         speakerProfiles: [],
@@ -238,6 +243,42 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>()(
     setActions: (actions) => set((state) => ({ actions: { ...state.actions, ...actions } })),
   }))
 );
+
+// ============================================
+// HMR Protection - Preserve state during hot reload
+// ============================================
+if (import.meta.hot) {
+  // Save current state before module is disposed
+  import.meta.hot.dispose((data) => {
+    const state = useWorkspaceStore.getState();
+    // Only save serializable state (exclude functions and File objects)
+    data.savedState = {
+      subtitles: state.subtitles,
+      subtitleFileName: state.subtitleFileName,
+      status: state.status,
+      error: state.error,
+      progressMsg: state.progressMsg,
+      selectedBatches: Array.from(state.selectedBatches),
+      batchComments: state.batchComments,
+      showSourceText: state.showSourceText,
+      editingCommentId: state.editingCommentId,
+      editingSubtitleId: state.editingSubtitleId,
+      speakerProfiles: state.speakerProfiles,
+      duration: state.duration,
+      startTime: state.startTime,
+      chunkProgress: state.chunkProgress,
+    };
+  });
+
+  // Restore state after module is reloaded
+  if (import.meta.hot.data?.savedState) {
+    const saved = import.meta.hot.data.savedState;
+    useWorkspaceStore.setState({
+      ...saved,
+      selectedBatches: new Set(saved.selectedBatches),
+    });
+  }
+}
 
 // ============================================
 // Selector helpers for performance
@@ -271,4 +312,5 @@ export const selectUIState = (state: WorkspaceState & WorkspaceActions) => ({
   batchComments: state.batchComments,
   showSourceText: state.showSourceText,
   editingCommentId: state.editingCommentId,
+  editingSubtitleId: state.editingSubtitleId,
 });

@@ -270,6 +270,7 @@ export default function App() {
           onRestoreSnapshot={handleRestoreSnapshot}
           onStartCompression={() => setView('compression')}
           onDeleteSnapshot={snapshotsValues.deleteSnapshot}
+          onCreateSnapshot={snapshotsValues.createSnapshot}
         />
       )}
       <GenreSettingsDialog
