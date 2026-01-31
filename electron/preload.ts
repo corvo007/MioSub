@@ -47,8 +47,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.removeListener('audio-extraction-progress', subscription);
     };
   },
-  onNewLog: (callback: (log: string) => void) => {
-    const subscription = (_event: any, log: string) => callback(log);
+  onNewLog: (
+    callback: (log: { timestamp: string; level: string; message: string; data?: any }) => void
+  ) => {
+    const subscription = (
+      _event: any,
+      log: { timestamp: string; level: string; message: string; data?: any }
+    ) => callback(log);
     ipcRenderer.on('new-log', subscription);
     return () => {
       ipcRenderer.removeListener('new-log', subscription);

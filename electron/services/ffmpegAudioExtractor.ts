@@ -4,30 +4,28 @@ import os from 'os';
 import fs from 'fs';
 import { app } from 'electron';
 
-// 获取正确的 FFmpeg/FFprobe 路径
-const getBinaryPath = (binaryName: string) => {
-  const isProd = app.isPackaged;
-  const basePath = isProd ? process.resourcesPath : path.join(process.cwd(), 'resources');
+import { getBinaryPath } from '../utils/paths.ts';
 
-  const binaryPath = path.join(basePath, binaryName);
-
-  // 在开发环境检查文件是否存在
-  if (!isProd && !fs.existsSync(binaryPath)) {
+const checkBinaryExistence = (name: string, pathStr: string) => {
+  if (!app.isPackaged && !fs.existsSync(pathStr)) {
     console.warn(
-      `[FFmpeg] Binary not found at ${binaryPath}. Please run 'yarn postinstall' or manually copy binaries to resources/`
+      `[FFmpeg] Binary not found at ${pathStr}. Please run 'yarn postinstall' or manually copy binaries to resources/`
     );
   }
-
-  return binaryPath;
 };
 
 // 设置 FFmpeg 路径
 const ffmpegPath = getBinaryPath('ffmpeg');
+checkBinaryExistence('ffmpeg', ffmpegPath);
+
 // Log the ffmpeg path for debugging
 console.log('[FFmpeg] Initializing with path:', ffmpegPath);
 
 ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(getBinaryPath('ffprobe'));
+
+const ffprobePath = getBinaryPath('ffprobe');
+checkBinaryExistence('ffprobe', ffprobePath);
+ffmpeg.setFfprobePath(ffprobePath);
 
 // 导出获取函数供其他模块使用（如日志）
 export const getFFmpegPath = () => getBinaryPath('ffmpeg');

@@ -147,7 +147,13 @@ export class CTCAlignerService {
         let stderr = '';
 
         proc.stdout?.on('data', (data) => {
-          stdout += data.toString();
+          const chunk = data.toString();
+          stdout += chunk;
+          // Log stdout for debugging
+          const lines = chunk.split('\n').filter((l: string) => l.trim());
+          lines.forEach((line: string) => {
+            console.log(`[CTCAligner] ${line}`);
+          });
         });
 
         proc.stderr?.on('data', (data) => {

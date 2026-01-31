@@ -346,33 +346,6 @@ export function validateUrl(url: string): UrlValidation {
 export function classifyError(stderr: string): DownloadError {
   const lowerError = stderr.toLowerCase();
 
-  // Network errors - retryable
-  // Examples: "urlopen error", "connection", "timeout", "socket timeout"
-  // Bilibili: "Remote end closed connection", "Connection aborted", "Read timed out"
-  if (
-    lowerError.includes('urlopen error') ||
-    lowerError.includes('connection reset') ||
-    lowerError.includes('connection refused') ||
-    lowerError.includes('connection aborted') ||
-    lowerError.includes('remote end closed connection') ||
-    lowerError.includes('socket timeout') ||
-    lowerError.includes('timed out') ||
-    lowerError.includes('read timed out') ||
-    lowerError.includes('network is unreachable') ||
-    lowerError.includes('temporary failure in name resolution') ||
-    lowerError.includes('unable to download video data') ||
-    lowerError.includes('ssl') || // SSL errors
-    lowerError.includes('certificate verify failed') ||
-    lowerError.includes('handshake failure')
-  ) {
-    return {
-      type: 'network',
-      message: t('ytdlp.networkError'),
-      originalError: stderr,
-      retryable: true,
-    };
-  }
-
   // YouTube rate limit: "This content isn't available, try again later"
   if (
     lowerError.includes("this content isn't available") ||
@@ -648,6 +621,33 @@ export function classifyError(stderr: string): DownloadError {
     };
   }
 
+  // Network errors - retryable (Moved down to avoid masking specific errors)
+  // Examples: "urlopen error", "connection", "timeout", "socket timeout"
+  // Bilibili: "Remote end closed connection", "Connection aborted", "Read timed out"
+  if (
+    lowerError.includes('urlopen error') ||
+    lowerError.includes('connection reset') ||
+    lowerError.includes('connection refused') ||
+    lowerError.includes('connection aborted') ||
+    lowerError.includes('remote end closed connection') ||
+    lowerError.includes('socket timeout') ||
+    lowerError.includes('timed out') ||
+    lowerError.includes('read timed out') ||
+    lowerError.includes('network is unreachable') ||
+    lowerError.includes('temporary failure in name resolution') ||
+    lowerError.includes('unable to download video data') ||
+    lowerError.includes('ssl') || // SSL errors
+    lowerError.includes('certificate verify failed') ||
+    lowerError.includes('handshake failure')
+  ) {
+    return {
+      type: 'network',
+      message: t('ytdlp.networkError'),
+      originalError: stderr,
+      retryable: true,
+    };
+  }
+
   // Unknown error - may be retryable
   return {
     type: 'unknown',
@@ -661,6 +661,7 @@ class YtDlpService {
   private process: ChildProcess | null = null;
   private binaryPath: string;
   private quickjsPath: string;
+  private ffmpegPath: string;
   // Track active parse processes (url -> process)
   private activeParseProcesses: Map<string, ChildProcess> = new Map();
   // Track active download output path for cleanup
@@ -669,9 +670,11 @@ class YtDlpService {
   constructor() {
     this.binaryPath = getBinaryPath('yt-dlp');
     this.quickjsPath = getBinaryPath('qjs');
+    this.ffmpegPath = getBinaryPath('ffmpeg');
 
     // console.log('[DEBUG] [YtDlpService] Binary path:', this.binaryPath);
     // console.log('[DEBUG] [YtDlpService] QuickJS path:', this.quickjsPath);
+    // console.log('[DEBUG] [YtDlpService] FFmpeg path:', this.ffmpegPath);
   }
 
   private execute(args: string[], timeoutMs: number = 60000, trackKey?: string): Promise<string> {
@@ -757,7 +760,29 @@ class YtDlpService {
       args.push('--js-runtimes', `quickjs:${this.quickjsPath}`);
     }
 
+    // Default robustness options
+    args.push(
+      '--impersonate',
+      'chrome', // Browser impersonation to bypass bot detection
+      '--retries',
+      '5', // Retry count for download errors
+      '--extractor-retries',
+      '3' // Retry count for extractor errors
+    );
+
     args.push('-j', '--no-playlist');
+
+    // YouTube client configuration:
+    // - web: blocked by SABR, needs PO token
+    // - android: only 360p
+    // - tv: DRM protected (issue #12563)
+    // - mweb: needs PO token
+    // Solution: Use default clients but exclude tv client
+    // See: https://github.com/yt-dlp/yt-dlp/issues/12563
+    // See: https://github.com/yt-dlp/yt-dlp/issues/12482
+    if (isYouTube) {
+      args.push('--extractor-args', 'youtube:player_client=default,-tv');
+    }
 
     // For Bilibili, if no ?p= specified but video has multiple parts,
     // yt-dlp will return JSON array. We handle first part by default.
@@ -868,6 +893,24 @@ class YtDlpService {
       ? ['--js-runtimes', `quickjs:${this.quickjsPath}`]
       : [];
 
+    // Add ffmpeg location if our bundled ffmpeg exists
+    if (this.ffmpegPath && fs.existsSync(this.ffmpegPath)) {
+      // --ffmpeg-location expects the directory containing ffmpeg, not the file itself
+      baseArgs.push('--ffmpeg-location', path.dirname(this.ffmpegPath));
+    }
+
+    // Default robustness options
+    baseArgs.push(
+      '--impersonate',
+      'chrome', // Browser impersonation to bypass bot detection
+      '-N',
+      '4', // Parallel fragment downloads for faster HLS/DASH
+      '--retries',
+      '5', // Retry count for download errors
+      '--extractor-retries',
+      '3' // Retry count for extractor errors
+    );
+
     // Map friendly format names to yt-dlp selectors
     let formatSelector = formatId;
     if (formatId === 'best') {
@@ -879,6 +922,9 @@ class YtDlpService {
     } else if (formatId === '480p') {
       formatSelector = 'bestvideo[height<=480]';
     }
+
+    // Detect if URL is YouTube to apply YouTube-specific workarounds
+    const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
 
     const args = [
       ...baseArgs,
@@ -893,6 +939,9 @@ class YtDlpService {
       '--verbose', // Enable verbose logging
       '--encoding',
       'utf-8', // Force UTF-8 output
+      // Exclude tv client due to DRM issues (issue #12563)
+      // See: https://github.com/yt-dlp/yt-dlp/issues/12563
+      ...(isYouTube ? ['--extractor-args', 'youtube:player_client=default,-tv'] : []),
       url,
     ];
 
@@ -909,14 +958,19 @@ class YtDlpService {
       this.currentDownloadOutputPath = null;
 
       this.process.stdout?.on('data', (data) => {
-        const line = data.toString();
+        const line = data.toString().trim();
+        if (!line) return;
+
+        // Log non-progress output for debugging (skip noisy progress lines)
+        if (!line.match(/\[download\]\s+[\d.]+%/)) {
+          console.log(`[Download] ${line}`);
+        }
 
         // Parse destination to detect stage
         const destMatch = line.match(/\[download\] Destination: (.+)/);
         if (destMatch) {
           fileCount++;
           outputPath = destMatch[1].trim();
-          console.log(`[DEBUG] [Download] 目标文件 (${fileCount}): ${outputPath}`);
 
           // Heuristic: 1st file is usually video, 2nd is audio (if split)
           if (fileCount === 1) currentStage = 'video';
@@ -927,7 +981,6 @@ class YtDlpService {
         const mergeMatch = line.match(/\[Merger\] Merging formats into "(.+)"/);
         if (mergeMatch) {
           outputPath = mergeMatch[1].trim();
-          console.log(`[DEBUG] [Download] 合并视频: ${outputPath}`);
           currentStage = 'merging';
           // Update current path for cleanup if needed
           this.currentDownloadOutputPath = outputPath;
@@ -958,8 +1011,11 @@ class YtDlpService {
         }
       });
 
+      let stderrOutput = '';
       this.process.stderr?.on('data', (data) => {
-        console.warn(`[Download] ${data.toString().trim()}`);
+        const chunk = data.toString();
+        stderrOutput += chunk;
+        console.warn(`[Download] ${chunk.trim()}`);
       });
 
       this.process.on('close', (code) => {
@@ -988,7 +1044,9 @@ class YtDlpService {
             formatId,
             outputDir,
           });
-          reject(new Error(`yt-dlp exited with code ${code}`));
+
+          const errorMessage = stderrOutput.trim() || `yt-dlp exited with code ${code}`;
+          reject(new Error(errorMessage));
         }
       });
 

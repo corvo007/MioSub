@@ -24,6 +24,9 @@ if (!app.isPackaged) {
 
 import { isPortableMode } from './utils/paths.ts';
 
+// Import mainLogger BEFORE any console.log calls to ensure all logs are captured
+import { mainLogger } from './logger.ts';
+
 // Initialize Sentry for error tracking
 const SENTRY_DSN = process.env.VITE_SENTRY_DSN;
 if (SENTRY_DSN) {
@@ -51,8 +54,6 @@ if (SENTRY_DSN) {
     `[Main] Sentry initialized in ${app.isPackaged ? 'production' : 'development'} mode, release: ${process.env.APP_VERSION || app.getVersion()}, mode: ${appMode}`
   );
 }
-
-import { mainLogger } from './logger.ts'; // Must be first after Sentry!
 
 import squirrelStartup from 'electron-squirrel-startup';
 import fs from 'fs';
