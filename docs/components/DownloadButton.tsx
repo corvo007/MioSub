@@ -13,7 +13,7 @@ const GITHUB_DOWNLOAD_BASE = `https://github.com/${GITHUB_REPO}/releases/latest/
 
 // 中国镜像地址（留空则不显示镜像选项）
 // 镜像需要支持 /latest/download/FILENAME 格式
-const CHINA_MIRROR_BASE = 'https://bgithub.xyz/releases/latest/download';
+const CHINA_MIRROR_BASE = '';
 // 示例: const CHINA_MIRROR_BASE = 'https://mirror.example.com/releases/latest/download';
 
 // 文件名配置
