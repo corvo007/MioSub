@@ -2,6 +2,7 @@
   <img src="../resources/icon.png" alt="MioSub" width="120" height="120">
 
   <h1>MioSub</h1>
+  <p><em>formerly Gemini-Subtitle-Pro</em></p>
 
   <p><strong>World's content, your language.</strong></p>
   <p>The AI subtitle editor that actually understands context</p>
@@ -168,7 +169,7 @@ This project is open source under [AGPL-3.0 License](../LICENSE)
 <details>
 <summary>🔍 SEO Keywords</summary>
 
-**Primary Keywords**: `AI subtitle generator` · `automatic subtitles` · `video translation software` · `Gemini AI translation` · `subtitle editor` · `speech to text` · `video transcription` · `bilingual subtitles` · `YouTube auto captions` · `auto caption generator` · `Whisper transcription` · `forced alignment` · `subtitle timing sync`
+**Primary Keywords**: `AI subtitle generator` · `automatic subtitles` · `video translation software` · `Gemini AI translation` · `subtitle editor` · `speech to text` · `video transcription` · `bilingual subtitles` · `YouTube auto captions` · `auto caption generator` · `Whisper transcription` · `forced alignment` · `subtitle timing sync` · `Gemini-Subtitle-Pro` · `MioSub`
 
 **Use Case Keywords**: `fansub tool` · `anime subtitle maker` · `video localization` · `subtitle translator` · `video to text` · `hardcoded subtitles` · `burn in subtitles` · `SRT editor` · `ASS subtitle editor` · `podcast transcription` · `audiobook subtitles`
 

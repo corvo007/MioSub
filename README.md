@@ -2,6 +2,7 @@
   <img src="./resources/icon.png" alt="MioSub" width="120" height="120">
 
   <h1>MioSub</h1>
+  <p><em>formerly Gemini-Subtitle-Pro</em></p>
 
   <p><strong>世界的内容，你的语言。</strong></p>
   <p>真正读懂上下文的 AI 字幕编辑器</p>
@@ -169,7 +170,7 @@ yarn electron:build
 <details>
 <summary>🔍 SEO 关键词</summary>
 
-**核心关键词**：`AI字幕生成器` · `自动字幕` · `视频翻译软件` · `Gemini翻译` · `字幕编辑器` · `语音转文字` · `视频转录` · `双语字幕` · `自动生成字幕` · `智能字幕`
+**核心关键词**：`AI字幕生成器` · `自动字幕` · `视频翻译软件` · `Gemini翻译` · `字幕编辑器` · `语音转文字` · `视频转录` · `双语字幕` · `自动生成字幕` · `智能字幕` · `Gemini-Subtitle-Pro` · `MioSub`
 
 **平台关键词**：`YouTube字幕下载` · `YouTube自动字幕` · `B站字幕工具` · `哔哩哔哩字幕` · `抖音字幕` · `视频号字幕` · `短视频字幕`
 
@@ -181,7 +182,7 @@ yarn electron:build
 
 ---
 
-**Primary Keywords**: `AI subtitle generator` · `automatic subtitles` · `video translation software` · `Gemini AI translation` · `subtitle editor` · `speech to text` · `video transcription` · `bilingual subtitles`
+**Primary Keywords**: `AI subtitle generator` · `automatic subtitles` · `video translation software` · `Gemini AI translation` · `subtitle editor` · `speech to text` · `video transcription` · `bilingual subtitles` · `Gemini-Subtitle-Pro` · `MioSub`
 
 **Platform Keywords**: `YouTube auto captions` · `YouTube subtitle download` · `Bilibili subtitle tool` · `TikTok captions` · `social media subtitles`
 
