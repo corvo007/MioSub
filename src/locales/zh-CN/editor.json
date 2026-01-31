@@ -84,7 +84,9 @@
     "enableAutoScroll": "启用自动滚动",
     "disableAutoScroll": "禁用自动滚动",
     "autoScrollOn": "自动滚动: 开",
-    "autoScrollOff": "自动滚动: 关"
+    "autoScrollOff": "自动滚动: 关",
+    "batchReplace": "批量替换",
+    "batchReplaceDesc": "在字幕中查找并替换文本"
   },
   "regenerateModal": {
     "title": "重新生成字幕",
@@ -99,5 +101,49 @@
   },
   "noMatchingSubtitles": "未找到匹配的字幕",
   "foundResults": "找到 {{count}} 个结果",
-  "filtering": "筛选"
+  "filtering": "筛选",
+  "searchReplace": {
+    "title": "搜索替换",
+    "searchPlaceholder": "搜索...",
+    "replacePlaceholder": "替换为...",
+    "regex": "正则表达式",
+    "caseSensitive": "区分大小写",
+    "noResults": "无结果",
+    "prevMatch": "上一个匹配",
+    "nextMatch": "下一个匹配",
+    "replace": "替换",
+    "replaceAll": "全部替换",
+    "nextHint": "下一个",
+    "replaceAllHint": "全部替换"
+  },
+  "batchReplace": {
+    "title": "批量替换",
+    "subtitle": "在字幕中查找并替换文本",
+    "searchLabel": "查找内容",
+    "searchPlaceholder": "输入要查找的文本或正则表达式...",
+    "replaceLabel": "替换为",
+    "replacePlaceholder": "输入替换文本 (支持 $1, $2 捕获组)...",
+    "target": "目标",
+    "targetOriginal": "原文",
+    "targetTranslated": "译文",
+    "targetBoth": "两者",
+    "regex": "正则",
+    "caseSensitive": "区分大小写",
+    "wholeWord": "全词匹配",
+    "preview": "预览",
+    "matchSummary": "共 {{total}} 处匹配，影响 {{subtitles}} 条字幕",
+    "matchSummaryTruncated": "显示前 {{showing}} 条，共 {{total}} 处匹配，影响 {{subtitles}} 条字幕",
+    "searchTooShort": "搜索词太短，请输入至少 2 个字符以缩小范围",
+    "truncatedHint": "匹配结果过多，仅显示前 100 条预览。替换操作将应用于所有匹配项。",
+    "noMatches": "未找到匹配项",
+    "fieldOriginal": "原文",
+    "fieldTranslated": "译文",
+    "matchCount": "{{count}} 处",
+    "cancel": "取消",
+    "replaceAll": "全部替换",
+    "replaceSingle": "替换",
+    "replaced": "已替换",
+    "shortcutHint": "Ctrl+Enter 执行替换",
+    "snapshotDesc": "批量替换前备份: \"{{pattern}}\""
+  }
 }

@@ -19,12 +19,13 @@ import { Portal } from '@/components/ui/Portal';
 import { type SubtitleItem } from '@/types';
 
 import { SpeakerSelect } from '@/components/editor/SpeakerSelect';
+import { HighlightedText } from '@/components/editor/HighlightedText';
 import { cn } from '@/lib/cn';
 import { useDropdownDirection } from '@/hooks/useDropdownDirection';
 import { formatTime, timeToSeconds } from '@/services/subtitle/time';
 import { useWorkspaceStore, selectUIState } from '@/store/useWorkspaceStore';
 import { useShallow } from 'zustand/react/shallow';
-import { useAppStore } from '@/store/useAppStore';
+import { useSearchReplaceContext } from '@/contexts/SearchReplaceContext';
 
 import {
   validateSubtitle,
@@ -83,11 +84,18 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
   }) => {
     const { t } = useTranslation('editor');
 
+    // Search replace context for highlighting
+    const { searchConfig, showDiff, currentMatchId } = useSearchReplaceContext();
+    const isCurrentMatch = (field: 'original' | 'translated') =>
+      currentMatchId === `${sub.id}:${field}`;
+
     // Store State & Actions
-    const { showSourceText, editingCommentId } = useWorkspaceStore(useShallow(selectUIState));
+    const { showSourceText, editingCommentId, editingSubtitleId } = useWorkspaceStore(
+      useShallow(selectUIState)
+    );
     const speakerProfiles = useWorkspaceStore(useShallow((s) => s.speakerProfiles));
     const actions = useWorkspaceStore((s) => s.actions);
-    const setShowSpeakerManager = useAppStore((s) => s.setShowSpeakerManager);
+    const setEditingSubtitleId = useWorkspaceStore((s) => s.setEditingSubtitleId);
 
     const {
       setEditingCommentId,
@@ -244,6 +252,28 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
       setTempEndTime(sub.endTime || '');
       setEditing(true);
     };
+
+    // Auto-enter edit mode when this row is newly added
+    React.useEffect(() => {
+      if (editingSubtitleId === sub.id && !editing) {
+        // Inline the edit initialization to avoid stale closure issues
+        setTempText(sub.translated);
+        setTempOriginal(sub.original);
+        setTempStartTime(sub.startTime || '');
+        setTempEndTime(sub.endTime || '');
+        setEditing(true);
+        setEditingSubtitleId(null);
+      }
+    }, [
+      editingSubtitleId,
+      sub.id,
+      sub.translated,
+      sub.original,
+      sub.startTime,
+      sub.endTime,
+      editing,
+      setEditingSubtitleId,
+    ]);
 
     const handleSave = () => {
       // 1. Validation: Empty content
@@ -531,17 +561,31 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
           ) : (
             <>
               {showSourceText && (
-                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed opacity-70 mb-1">
-                  {sub.original}
+                <p
+                  className={cn(
+                    'text-xs sm:text-sm text-slate-500 leading-relaxed opacity-70 mb-1',
+                    isCurrentMatch('original') && 'bg-yellow-100 rounded px-1 -mx-1'
+                  )}
+                >
+                  <HighlightedText
+                    text={sub.original || ''}
+                    searchConfig={searchConfig}
+                    showDiff={showDiff && isCurrentMatch('original')}
+                  />
                 </p>
               )}
               <p
                 className={cn(
                   'text-base sm:text-lg leading-relaxed font-medium transition-colors',
-                  isActive ? 'text-slate-900' : 'text-slate-700'
+                  isActive ? 'text-slate-900' : 'text-slate-700',
+                  isCurrentMatch('translated') && 'bg-yellow-100 rounded px-1 -mx-1'
                 )}
               >
-                {sub.translated}
+                <HighlightedText
+                  text={sub.translated || ''}
+                  searchConfig={searchConfig}
+                  showDiff={showDiff && isCurrentMatch('translated')}
+                />
               </p>
             </>
           )}
@@ -616,28 +660,30 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
                       {showAddSubmenu && (
                         <div
                           className={cn(
-                            'absolute top-0 bg-white border border-slate-200 rounded-lg shadow-xl z-50 py-1 min-w-27.5 ring-1 ring-slate-900/5',
-                            submenuDropLeft ? 'right-full mr-1' : 'left-full ml-1'
+                            'absolute top-0 z-50',
+                            submenuDropLeft ? 'right-full pr-1' : 'left-full pl-1'
                           )}
                         >
-                          <button
-                            onClick={() => {
-                              addSubtitle(sub.id, 'before', sub.startTime);
-                              setShowAddMenu(false);
-                            }}
-                            className="w-full px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-purple transition-colors"
-                          >
-                            {t('subtitleRow.addBefore')}
-                          </button>
-                          <button
-                            onClick={() => {
-                              addSubtitle(sub.id, 'after', sub.endTime);
-                              setShowAddMenu(false);
-                            }}
-                            className="w-full px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-purple transition-colors"
-                          >
-                            {t('subtitleRow.addAfter')}
-                          </button>
+                          <div className="bg-white border border-slate-200 rounded-lg shadow-xl py-1 min-w-27.5 ring-1 ring-slate-900/5">
+                            <button
+                              onClick={() => {
+                                addSubtitle(sub.id, 'before', sub.startTime);
+                                setShowAddMenu(false);
+                              }}
+                              className="w-full px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-purple transition-colors"
+                            >
+                              {t('subtitleRow.addBefore')}
+                            </button>
+                            <button
+                              onClick={() => {
+                                addSubtitle(sub.id, 'after', sub.endTime);
+                                setShowAddMenu(false);
+                              }}
+                              className="w-full px-3 py-2 text-left text-sm text-slate-600 hover:bg-slate-50 hover:text-brand-purple transition-colors"
+                            >
+                              {t('subtitleRow.addAfter')}
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -677,6 +723,12 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
       </div>
     );
   },
+  // Memo comparison for props only.
+  // Note: This component uses useSearchReplaceContext() internally for search highlighting.
+  // Context changes (searchConfig, showDiff, currentMatchId) will trigger re-renders
+  // regardless of this memo comparison, because React Context updates bypass memo.
+  // This is intentional - we only memoize based on props to avoid unnecessary re-renders
+  // from parent component updates, while still responding to context changes.
   (prev, next) => {
     return (
       prev.sub === next.sub &&

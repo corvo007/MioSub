@@ -83,7 +83,9 @@
     "enableAutoScroll": "自動スクロールを有効にする",
     "disableAutoScroll": "自動スクロールを無効にする",
     "autoScrollOn": "自動スクロール: オン",
-    "autoScrollOff": "自動スクロール: オフ"
+    "autoScrollOff": "自動スクロール: オフ",
+    "batchReplace": "一括置換",
+    "batchReplaceDesc": "字幕内のテキストを検索して置換"
   },
   "regenerateModal": {
     "title": "字幕を再生成",
@@ -98,5 +100,49 @@
   },
   "noMatchingSubtitles": "一致する字幕が見つかりませんでした",
   "foundResults": "{{count}} 件の結果が見つかりました",
-  "filtering": "フィルタリング中..."
+  "filtering": "フィルタリング中...",
+  "searchReplace": {
+    "title": "検索と置換",
+    "searchPlaceholder": "検索...",
+    "replacePlaceholder": "置換後...",
+    "regex": "正規表現",
+    "caseSensitive": "大文字小文字を区別",
+    "noResults": "結果なし",
+    "prevMatch": "前の一致",
+    "nextMatch": "次の一致",
+    "replace": "置換",
+    "replaceAll": "すべて置換",
+    "nextHint": "次へ",
+    "replaceAllHint": "すべて置換"
+  },
+  "batchReplace": {
+    "title": "一括置換",
+    "subtitle": "字幕内のテキストを検索して置換",
+    "searchLabel": "検索",
+    "searchPlaceholder": "検索するテキストまたは正規表現を入力...",
+    "replaceLabel": "置換後",
+    "replacePlaceholder": "置換テキストを入力 ($1, $2 キャプチャグループ対応)...",
+    "target": "対象",
+    "targetOriginal": "原文",
+    "targetTranslated": "翻訳",
+    "targetBoth": "両方",
+    "regex": "正規表現",
+    "caseSensitive": "大文字小文字を区別",
+    "wholeWord": "単語全体",
+    "preview": "プレビュー",
+    "matchSummary": "{{subtitles}} 件の字幕で {{total}} 件一致",
+    "matchSummaryTruncated": "{{subtitles}} 件の字幕で {{total}} 件一致 ({{showing}} 件表示)",
+    "searchTooShort": "検索語が短すぎます。結果を絞り込むには2文字以上入力してください。",
+    "truncatedHint": "一致件数が多すぎます。最初の100件のみプレビュー表示。置換はすべての一致に適用されます。",
+    "noMatches": "一致するものが見つかりません",
+    "fieldOriginal": "原文",
+    "fieldTranslated": "翻訳",
+    "matchCount": "{{count}} 件",
+    "cancel": "キャンセル",
+    "replaceAll": "すべて置換",
+    "replaceSingle": "置換",
+    "replaced": "置換済み",
+    "shortcutHint": "Ctrl+Enter で置換",
+    "snapshotDesc": "一括置換前のバックアップ: \"{{pattern}}\""
+  }
 }

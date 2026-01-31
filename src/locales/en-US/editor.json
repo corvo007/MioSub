@@ -83,7 +83,9 @@
     "enableAutoScroll": "Enable Auto Scroll",
     "disableAutoScroll": "Disable Auto Scroll",
     "autoScrollOn": "Auto Scroll: On",
-    "autoScrollOff": "Auto Scroll: Off"
+    "autoScrollOff": "Auto Scroll: Off",
+    "batchReplace": "Batch Replace",
+    "batchReplaceDesc": "Find and replace text in subtitles"
   },
   "regenerateModal": {
     "title": "Regenerate Subtitles",
@@ -98,5 +100,49 @@
   },
   "noMatchingSubtitles": "No matching subtitles found",
   "foundResults": "Found {{count}} results",
-  "filtering": "Filtering"
+  "filtering": "Filtering",
+  "searchReplace": {
+    "title": "Search & Replace",
+    "searchPlaceholder": "Search...",
+    "replacePlaceholder": "Replace with...",
+    "regex": "Regular expression",
+    "caseSensitive": "Case sensitive",
+    "noResults": "No results",
+    "prevMatch": "Previous match",
+    "nextMatch": "Next match",
+    "replace": "Replace",
+    "replaceAll": "Replace All",
+    "nextHint": "Next",
+    "replaceAllHint": "Replace all"
+  },
+  "batchReplace": {
+    "title": "Batch Replace",
+    "subtitle": "Find and replace text in subtitles",
+    "searchLabel": "Find",
+    "searchPlaceholder": "Enter text or regex pattern to find...",
+    "replaceLabel": "Replace with",
+    "replacePlaceholder": "Enter replacement text (supports $1, $2 capture groups)...",
+    "target": "Target",
+    "targetOriginal": "Original",
+    "targetTranslated": "Translated",
+    "targetBoth": "Both",
+    "regex": "Regex",
+    "caseSensitive": "Case Sensitive",
+    "wholeWord": "Whole Word",
+    "preview": "Preview",
+    "matchSummary": "{{total}} matches in {{subtitles}} subtitles",
+    "matchSummaryTruncated": "Showing {{showing}} of {{total}} matches in {{subtitles}} subtitles",
+    "searchTooShort": "Search term too short. Enter at least 2 characters to narrow results.",
+    "truncatedHint": "Too many matches. Showing first 100 previews. Replace will apply to all matches.",
+    "noMatches": "No matches found",
+    "fieldOriginal": "Original",
+    "fieldTranslated": "Translated",
+    "matchCount": "{{count}} matches",
+    "cancel": "Cancel",
+    "replaceAll": "Replace All",
+    "replaceSingle": "Replace",
+    "replaced": "Replaced",
+    "shortcutHint": "Ctrl+Enter to replace",
+    "snapshotDesc": "Backup before batch replace: \"{{pattern}}\""
+  }
 }

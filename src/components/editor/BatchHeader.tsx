@@ -19,6 +19,7 @@ import {
   Trash2,
   ArrowDownCircle,
   Timer,
+  Replace,
 } from 'lucide-react';
 import { type SubtitleItem, type SubtitleIssueType } from '@/types';
 import { getSpeakerColorWithCustom } from '@/services/utils/colors';
@@ -63,6 +64,11 @@ interface BatchHeaderProps {
   // Auto-scroll logic
   autoScrollEnabled?: boolean;
   onToggleAutoScroll?: () => void;
+
+  // Search replace panel
+  onSearchReplacePanelToggle?: () => void;
+  isSearchReplacePanelOpen?: boolean;
+  searchInputRef?: React.RefObject<HTMLInputElement | null>;
 }
 
 export const BatchHeader: React.FC<BatchHeaderProps> = ({
@@ -88,6 +94,10 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
 
   autoScrollEnabled,
   onToggleAutoScroll,
+
+  onSearchReplacePanelToggle,
+  isSearchReplacePanelOpen,
+  searchInputRef: externalSearchInputRef,
 }) => {
   const { t } = useTranslation('editor');
 
@@ -107,7 +117,8 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
     direction: { dropUp: issueDropUp },
   } = useDropdown<HTMLDivElement>();
 
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const internalSearchInputRef = React.useRef<HTMLInputElement>(null);
+  const searchInputRef = externalSearchInputRef || internalSearchInputRef;
 
   const {
     isOpen: isSpeakerFilterOpen,
@@ -173,23 +184,40 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
         {/* Left: Search & Filter Tools */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
           {/* Search Input */}
-          <div className="relative group shrink min-w-0">
-            <Search className="absolute left-2 sm:left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-focus-within:text-brand-purple transition-colors" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('batchHeader.searchPlaceholder')}
-              className="w-full min-w-20 max-w-30 focus:max-w-37.5 sm:min-w-25 sm:max-w-35 sm:focus:max-w-45 md:max-w-60 md:focus:max-w-75 bg-white border border-slate-200 rounded-md pl-7 sm:pl-9 pr-7 sm:pr-8 py-1 sm:py-1.5 text-xs text-slate-700 placeholder-slate-400 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple/20 transition-all shadow-sm"
-            />
-            {searchQuery && (
+          <div className="relative group shrink min-w-0 flex items-center gap-1">
+            <div className="relative">
+              <Search className="absolute left-2 sm:left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-focus-within:text-brand-purple transition-colors" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={t('batchHeader.searchPlaceholder')}
+                className="w-full min-w-20 max-w-30 focus:max-w-37.5 sm:min-w-25 sm:max-w-35 sm:focus:max-w-45 md:max-w-60 md:focus:max-w-75 bg-white border border-slate-200 rounded-md pl-7 sm:pl-9 pr-7 sm:pr-8 py-1 sm:py-1.5 text-xs text-slate-700 placeholder-slate-400 focus:border-brand-purple focus:outline-none focus:ring-1 focus:ring-brand-purple/20 transition-all shadow-sm"
+              />
+              {searchQuery && (
+                <button
+                  onClick={handleClearSearch}
+                  className="absolute right-1 sm:right-1.5 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors"
+                  title={t('batchHeader.clearSearch')}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+            {/* Replace toggle button */}
+            {onSearchReplacePanelToggle && (
               <button
-                onClick={handleClearSearch}
-                className="absolute right-1 sm:right-1.5 top-1/2 transform -translate-y-1/2 p-0.5 hover:bg-slate-100 rounded text-slate-400 hover:text-slate-600 transition-colors"
-                title={t('batchHeader.clearSearch')}
+                onClick={onSearchReplacePanelToggle}
+                className={cn(
+                  'p-1.5 rounded-md border transition-colors shrink-0',
+                  isSearchReplacePanelOpen
+                    ? 'bg-brand-purple/10 border-brand-purple/20 text-brand-purple'
+                    : 'bg-white border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-300'
+                )}
+                title={t('searchReplace.title')}
               >
-                <X className="w-3 h-3" />
+                <Replace className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
