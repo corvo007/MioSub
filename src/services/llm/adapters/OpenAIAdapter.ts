@@ -15,6 +15,7 @@ import type {
 import { BaseAdapter } from './BaseAdapter';
 import { logger } from '@/services/utils/logger';
 import { safeParseJsonObject } from '@/services/utils/jsonParser';
+import { UserActionableError } from '@/services/utils/errors';
 import { STEP_CONFIGS, type StepName as ConfigStepName } from '@/config/models';
 import i18n from '@/i18n';
 import {
@@ -197,7 +198,7 @@ export class OpenAIAdapter extends BaseAdapter {
       // OpenAI-specific error handling
       const actionableMessage = this.extractActionableError(error);
       if (actionableMessage) {
-        throw new Error(actionableMessage);
+        throw new UserActionableError(actionableMessage);
       }
       throw error;
     }

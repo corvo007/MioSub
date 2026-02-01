@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { type GlossaryItem, type GlossaryExtractionMetadata } from '@/types/glossary';
 import { GenerationStatus, type ChunkStatus, type ChunkAnalytics } from '@/types/api';
 import { logger } from '@/services/utils/logger';
+import { UserActionableError } from '@/services/utils/errors';
 import { autoConfirmGlossaryTerms } from '@/services/glossary/autoConfirm';
 import { generateSubtitles } from '@/services/generation/pipeline';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
@@ -428,10 +429,7 @@ export function useGeneration({
 
         // Sentry: Report error with context ONLY if not expected
         if (
-          !error.message?.includes('API key') &&
-          !error.message?.includes('密钥') &&
-          !error.message?.includes('rate limit') &&
-          !error.message?.includes('timeout') &&
+          !(error instanceof UserActionableError) &&
           !(error instanceof ExpectedError) &&
           !(error as any).isExpected
         ) {

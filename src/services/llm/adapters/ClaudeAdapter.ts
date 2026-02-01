@@ -7,6 +7,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { AdapterCapabilities, GenerateOptions, ProviderConfig } from '@/types/llm';
 import { BaseAdapter } from './BaseAdapter';
 import { safeParseJsonObject } from '@/services/utils/jsonParser';
+import { UserActionableError } from '@/services/utils/errors';
 import { STEP_CONFIGS, type StepName as ConfigStepName } from '@/config/models';
 import { logger } from '@/services/utils/logger';
 import i18n from '@/i18n';
@@ -163,7 +164,7 @@ export class ClaudeAdapter extends BaseAdapter {
           model: this.model,
           error: actionableMessage,
         });
-        throw new Error(actionableMessage);
+        throw new UserActionableError(actionableMessage);
       }
       throw error;
     }

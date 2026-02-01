@@ -2,6 +2,7 @@ import { type SubtitleItem, type OpenAIWhisperSegment } from '@/types/subtitle';
 import { generateSubtitleId } from '@/services/utils/id';
 import { formatTime } from '@/services/subtitle/time';
 import { logger } from '@/services/utils/logger';
+import { UserActionableError } from '@/services/utils/errors';
 import i18n from '@/i18n';
 
 /**
@@ -190,7 +191,7 @@ export const transcribeWithWhisper = async (
       // Don't retry for authentication/permission errors - they won't resolve
       const actionableMsg = getActionableWhisperError(e);
       if (actionableMsg && (e.status === 401 || e.status === 403)) {
-        throw new Error(actionableMsg);
+        throw new UserActionableError(actionableMsg);
       }
 
       attempt++;
@@ -202,7 +203,7 @@ export const transcribeWithWhisper = async (
   // Check for actionable error message before throwing
   const actionableMessage = getActionableWhisperError(lastError);
   if (actionableMessage) {
-    throw new Error(actionableMessage);
+    throw new UserActionableError(actionableMessage);
   }
 
   throw lastError || new Error(i18n.t('services:api.errors.connectionFailed'));

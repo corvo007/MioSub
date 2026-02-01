@@ -12,6 +12,7 @@ import {
 } from '@/services/llm/providers/gemini';
 import { buildStepConfig, type StepName as ConfigStepName } from '@/config/models';
 import { safeParseJsonObject } from '@/services/utils/jsonParser';
+import { UserActionableError } from '@/services/utils/errors';
 import { logger } from '@/services/utils/logger';
 import i18n from '@/i18n';
 import { findModel, parseCapabilities, type ModelCapabilities } from '../ModelCapabilities';
@@ -152,7 +153,7 @@ export class GeminiAdapter extends BaseAdapter {
           actionableMessage,
           originalError: error.message,
         });
-        throw new Error(actionableMessage);
+        throw new UserActionableError(actionableMessage);
       }
       throw error;
     }

@@ -12,6 +12,7 @@ import { decodeAudioWithRetry } from '@/services/audio/decoder';
 import { autoConfirmGlossaryTerms } from '@/services/glossary/autoConfirm';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
 import { logger } from '@/services/utils/logger';
+import { UserActionableError } from '@/services/utils/errors';
 import type { AppSettings } from '@/types/settings';
 import type { SubtitleItem } from '@/types/subtitle';
 import type { ChunkStatus } from '@/types/api';
@@ -443,11 +444,21 @@ export function useEndToEndSubtitleGeneration({
 
         // Analytics: End-to-End Generation Failed
         if (window.electronAPI?.analytics) {
-          const errorCode = error.message?.includes('API key')
-            ? 'API_KEY_ERROR'
-            : error.message?.includes('timeout')
-              ? 'TIMEOUT'
-              : 'UNKNOWN';
+          let errorCode = 'UNKNOWN';
+          if (error instanceof UserActionableError) {
+            const msg = error.message.toLowerCase();
+            if (msg.includes('key') || msg.includes('密钥')) errorCode = 'API_KEY_ERROR';
+            else if (
+              msg.includes('rate') ||
+              msg.includes('quota') ||
+              msg.includes('频率') ||
+              msg.includes('配额')
+            )
+              errorCode = 'RATE_LIMITED';
+            else errorCode = 'USER_ACTION_REQUIRED';
+          } else if (error.message?.includes('timeout') || error.message?.includes('超时')) {
+            errorCode = 'TIMEOUT';
+          }
 
           void window.electronAPI.analytics.track(
             'end_to_end_generation_failed',
@@ -464,12 +475,7 @@ export function useEndToEndSubtitleGeneration({
         // Sentry: Report error with context
         // Only report if it's not a known expected error
         if (
-          !error.message?.includes('API key') &&
-          !error.message?.includes('密钥') &&
-          !error.message?.includes('rate limit') &&
-          !error.message?.includes('429') &&
-          !error.message?.includes('timeout') &&
-          !error.message?.includes('超时') &&
+          !(error instanceof UserActionableError) &&
           !(error instanceof ExpectedError) &&
           !(error as any).isExpected
         ) {
@@ -478,16 +484,23 @@ export function useEndToEndSubtitleGeneration({
           });
         }
 
-        if (error.message?.includes('API key') || error.message?.includes('密钥')) {
-          return { success: false, error: t('errors.invalidApiKey'), errorCode: 'API_KEY_ERROR' };
-        }
-
-        if (error.message?.includes('rate limit') || error.message?.includes('429')) {
-          return {
-            success: false,
-            error: t('errors.rateLimited'),
-            errorCode: 'RATE_LIMITED',
-          };
+        // Return user-friendly error based on error type
+        if (error instanceof UserActionableError) {
+          // UserActionableError already has a user-friendly message
+          const msg = error.message.toLowerCase();
+          if (msg.includes('key') || msg.includes('密钥')) {
+            return { success: false, error: t('errors.invalidApiKey'), errorCode: 'API_KEY_ERROR' };
+          }
+          if (
+            msg.includes('rate') ||
+            msg.includes('quota') ||
+            msg.includes('频率') ||
+            msg.includes('配额')
+          ) {
+            return { success: false, error: t('errors.rateLimited'), errorCode: 'RATE_LIMITED' };
+          }
+          // Generic user-actionable error
+          return { success: false, error: error.message, errorCode: 'USER_ACTION_REQUIRED' };
         }
 
         if (error.message?.includes('timeout') || error.message?.includes('超时')) {

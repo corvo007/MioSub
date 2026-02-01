@@ -16,6 +16,7 @@ import { type ChunkParams } from './preprocessor';
 import { type StepContext, type ChunkDependencies } from './core/types';
 import { MockFactory } from '@/services/generation/debug/mockFactory';
 import { logger } from '@/services/utils/logger';
+import { UserActionableError } from '@/services/utils/errors';
 import { formatTime, timeToSeconds } from '@/services/subtitle/time';
 import { getActionableErrorMessage } from '@/services/llm/providers/gemini';
 import * as Sentry from '@sentry/electron/renderer';
@@ -369,14 +370,15 @@ export class ChunkProcessor {
         analytics,
       });
 
-      // Sentry: Report chunk failure with context (filter expected errors)
-      if (
-        !e.message?.includes('cancelled') &&
-        !e.message?.includes('aborted') &&
-        !e.message?.includes('API key') &&
-        !e.message?.includes('rate limit') &&
-        !e.message?.includes('timeout')
-      ) {
+      // Sentry: Report chunk failure with context
+      // Skip user-actionable errors (auth, quota, billing) - these are not bugs
+      const isUserActionable =
+        e instanceof UserActionableError ||
+        actionableMsg != null ||
+        e.message?.includes('cancelled') ||
+        e.message?.includes('aborted');
+
+      if (!isUserActionable) {
         Sentry.captureException(e, {
           level: 'warning',
           tags: { source: 'chunk_processor' },

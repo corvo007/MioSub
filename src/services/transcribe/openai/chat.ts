@@ -4,7 +4,7 @@ import i18n from '@/i18n';
 import { blobToBase64 } from '@/services/audio/converter';
 import { logger } from '@/services/utils/logger';
 import { safeParseJsonArray } from '@/services/utils/jsonParser';
-
+import { UserActionableError } from '@/services/utils/errors';
 import { generateSubtitleId } from '@/services/utils/id';
 
 export const transcribeWithOpenAIChat = async (
@@ -69,9 +69,27 @@ export const transcribeWithOpenAIChat = async (
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
+      const status = response.status;
+      const errorMsg = err.error?.message || response.statusText;
+
+      // Check for user-actionable errors
+      if (status === 401 || errorMsg.toLowerCase().includes('invalid api key')) {
+        throw new UserActionableError(i18n.t('services:api.errors.invalidKey'));
+      }
+      if (
+        status === 429 ||
+        errorMsg.toLowerCase().includes('quota') ||
+        errorMsg.toLowerCase().includes('rate limit')
+      ) {
+        throw new UserActionableError(i18n.t('services:api.network.rateLimited'));
+      }
+      if (status === 403) {
+        throw new UserActionableError(i18n.t('services:api.errors.permissionDenied'));
+      }
+
       throw new Error(
         i18n.t('services:api.openai.errors.transcriptionFailed', {
-          error: err.error?.message || response.statusText,
+          error: errorMsg,
         })
       );
     }
