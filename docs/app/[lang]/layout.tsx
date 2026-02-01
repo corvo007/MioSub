@@ -3,6 +3,7 @@ import { RootProvider } from 'fumadocs-ui/provider/next';
 import type { ReactNode } from 'react';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import Script from 'next/script';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -127,6 +128,10 @@ export default async function Layout({
         >
           {children}
         </RootProvider>
+        <Script src="//sdk.51.la/js-sdk-pro.min.js" id="LA_COLLECT" strategy="afterInteractive" />
+        <Script id="la-init" strategy="afterInteractive">
+          {`LA.init({id:"3OsYmsqZ2WlnOM4o",ck:"3OsYmsqZ2WlnOM4o",autoTrack:true,hashMode:true})`}
+        </Script>
       </body>
     </html>
   );
