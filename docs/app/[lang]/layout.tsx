@@ -116,6 +116,12 @@ export default async function Layout({
 
   return (
     <html lang={locale} className={inter.className} suppressHydrationWarning>
+      <head>
+        <Script src="//sdk.51.la/js-sdk-pro.min.js" id="LA_COLLECT" strategy="beforeInteractive" />
+        <Script id="la-init" strategy="beforeInteractive">
+          {`LA.init({id:"3OsYmsqZ2WlnOM4o",ck:"3OsYmsqZ2WlnOM4o",autoTrack:true,hashMode:true})`}
+        </Script>
+      </head>
       <body suppressHydrationWarning>
         <RootProvider
           i18n={{
@@ -128,10 +134,6 @@ export default async function Layout({
         >
           {children}
         </RootProvider>
-        <Script src="//sdk.51.la/js-sdk-pro.min.js" id="LA_COLLECT" strategy="afterInteractive" />
-        <Script id="la-init" strategy="afterInteractive">
-          {`LA.init({id:"3OsYmsqZ2WlnOM4o",ck:"3OsYmsqZ2WlnOM4o",autoTrack:true,hashMode:true})`}
-        </Script>
       </body>
     </html>
   );
