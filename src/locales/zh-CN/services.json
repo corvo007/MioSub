@@ -34,6 +34,7 @@
       "errors": {
         "notElectron": "本地 Whisper 仅在桌面端应用可用",
         "transcriptionFailed": "本地 Whisper 转录失败",
+        "transcriptionWarning": "转录过程中出现警告: {{details}}",
         "noModelPath": "未找到 Whisper 模型路径",
         "fallbackToApi": "正在回退到 OpenAI API"
       }

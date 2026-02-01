@@ -5,7 +5,7 @@ import {
 } from '@/types/glossary';
 import { type PipelineContext } from '@/types/pipeline';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
-import { getActionableErrorMessage } from '@/services/llm/providers/gemini';
+import { getActionableErrorInfo } from '@/services/llm/providers/gemini';
 import { ArtifactSaver } from '@/services/generation/debug/artifactSaver';
 import { logger } from '@/services/utils/logger';
 import i18n from '@/i18n';
@@ -100,9 +100,9 @@ export class GlossaryHandler {
           });
         } else {
           logger.warn('Glossary extraction failed or timed out', e);
-          const actionableMsg = getActionableErrorMessage(e);
+          const actionableInfo = getActionableErrorInfo(e);
           const errorMsg =
-            actionableMsg || i18n.t('services:pipeline.status.glossaryExtractionFailed');
+            actionableInfo?.message || i18n.t('services:pipeline.status.glossaryExtractionFailed');
           onProgress?.({ id: 'glossary', total: 1, status: 'error', message: errorMsg });
         }
       }

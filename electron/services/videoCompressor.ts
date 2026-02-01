@@ -516,7 +516,9 @@ export class VideoCompressorService {
           // Check if this was a user cancellation
           if (this.isCancelled) {
             logMsg(`[Compression] Cancelled by user`);
-            reject(new Error('CANCELLED'));
+            const cancelError = new Error('CANCELLED');
+            cancelError.name = 'CancellationError';
+            reject(cancelError);
             return;
           }
           logMsg(`[ERROR] [Compression] Failed: ${err.message}`);

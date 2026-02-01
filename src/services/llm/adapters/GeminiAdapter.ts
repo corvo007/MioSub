@@ -8,7 +8,7 @@ import type { AdapterCapabilities, GenerateOptions, TokenUsage, ProviderConfig }
 import { BaseAdapter } from './BaseAdapter';
 import {
   generateContentWithLongOutput,
-  getActionableErrorMessage,
+  getActionableErrorInfo,
 } from '@/services/llm/providers/gemini';
 import { buildStepConfig, type StepName as ConfigStepName } from '@/config/models';
 import { safeParseJsonObject } from '@/services/utils/jsonParser';
@@ -146,14 +146,15 @@ export class GeminiAdapter extends BaseAdapter {
 
       return safeParseJsonObject<T>(text);
     } catch (error: any) {
-      // Extract actionable error message if available
-      const actionableMessage = getActionableErrorMessage(error);
-      if (actionableMessage) {
+      // Extract actionable error info if available
+      const actionableInfo = getActionableErrorInfo(error);
+      if (actionableInfo) {
         logger.error('Gemini generateObject failed with actionable error', {
-          actionableMessage,
+          actionableMessage: actionableInfo.message,
+          actionableCode: actionableInfo.code,
           originalError: error.message,
         });
-        throw new UserActionableError(actionableMessage);
+        throw new UserActionableError(actionableInfo.message, actionableInfo.code);
       }
       throw error;
     }

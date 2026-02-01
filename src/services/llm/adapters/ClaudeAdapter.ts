@@ -7,7 +7,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { AdapterCapabilities, GenerateOptions, ProviderConfig } from '@/types/llm';
 import { BaseAdapter } from './BaseAdapter';
 import { safeParseJsonObject } from '@/services/utils/jsonParser';
-import { UserActionableError } from '@/services/utils/errors';
+import { UserActionableError, type UserActionableErrorCode } from '@/services/utils/errors';
 import { STEP_CONFIGS, type StepName as ConfigStepName } from '@/config/models';
 import { logger } from '@/services/utils/logger';
 import i18n from '@/i18n';
@@ -158,33 +158,44 @@ export class ClaudeAdapter extends BaseAdapter {
       return safeParseJsonObject<T>(content);
     } catch (error: any) {
       // Claude-specific error handling
-      const actionableMessage = this.extractActionableError(error);
-      if (actionableMessage) {
+      const actionableInfo = this.extractActionableError(error);
+      if (actionableInfo) {
         logger.error('Claude generateObject failed', {
           model: this.model,
-          error: actionableMessage,
+          error: actionableInfo.message,
         });
-        throw new UserActionableError(actionableMessage);
+        throw new UserActionableError(actionableInfo.message, actionableInfo.code);
       }
       throw error;
     }
   }
 
   /**
-   * Extract actionable error message from Claude API error
+   * Extract actionable error info from Claude API error
    */
-  private extractActionableError(error: any): string | undefined {
+  private extractActionableError(
+    error: any
+  ): { message: string; code: UserActionableErrorCode } | undefined {
     const msg = (error.message || '').toLowerCase();
     const status = error.status;
 
     if (status === 401 || msg.includes('invalid api key') || msg.includes('unauthorized')) {
-      return i18n.t('services:api.claude.errors.invalidKey');
+      return {
+        message: i18n.t('services:api.claude.errors.invalidKey'),
+        code: 'INVALID_API_KEY',
+      };
     }
     if (status === 429 || msg.includes('rate limit')) {
-      return i18n.t('services:api.claude.errors.rateLimited');
+      return {
+        message: i18n.t('services:api.claude.errors.rateLimited'),
+        code: 'RATE_LIMITED',
+      };
     }
     if (status === 403 || msg.includes('permission')) {
-      return i18n.t('services:api.claude.errors.permissionDenied');
+      return {
+        message: i18n.t('services:api.claude.errors.permissionDenied'),
+        code: 'PERMISSION_DENIED',
+      };
     }
 
     return undefined;

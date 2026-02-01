@@ -11,6 +11,15 @@ export interface SubtitleItem {
   text: string;
 }
 
+export type TranscribeStatus = 'success' | 'empty' | 'empty_with_error';
+
+export interface TranscribeResult {
+  segments: SubtitleItem[];
+  status: TranscribeStatus;
+  /** Only present when status is 'empty_with_error' */
+  errorHint?: string;
+}
+
 export type WhisperSource = 'Custom' | 'Portable' | 'Bundled' | 'Dev' | 'unknown';
 
 export interface WhisperDetails {
@@ -141,7 +150,7 @@ export class LocalWhisperService {
     threads: number = 4,
     onLog?: (message: string) => void,
     customBinaryPath?: string
-  ): Promise<SubtitleItem[]> {
+  ): Promise<TranscribeResult> {
     // Validate model first
     const validation = this.validateModel(modelPath);
     if (!validation.valid) {
@@ -307,7 +316,41 @@ export class LocalWhisperService {
               text: item.text.trim(),
             }));
 
-            resolve(subtitles);
+            // Determine status based on results and stderr
+            let status: TranscribeStatus = 'success';
+            let errorHint: string | undefined;
+
+            if (subtitles.length === 0) {
+              // Check if stderr contains error indicators
+              const stderrLower = stderr.toLowerCase();
+              const hasErrorIndicators =
+                stderrLower.includes('error') ||
+                stderrLower.includes('failed') ||
+                stderrLower.includes('exception') ||
+                stderrLower.includes('panic') ||
+                stderrLower.includes('fatal');
+
+              if (hasErrorIndicators) {
+                status = 'empty_with_error';
+                // Extract a meaningful hint from stderr (first line with error keyword)
+                const lines = stderr.split('\n');
+                const errorLine = lines.find((line) => {
+                  const lower = line.toLowerCase();
+                  return (
+                    lower.includes('error') ||
+                    lower.includes('failed') ||
+                    lower.includes('exception') ||
+                    lower.includes('panic') ||
+                    lower.includes('fatal')
+                  );
+                });
+                errorHint = errorLine?.trim().slice(0, 200) || stderr.slice(0, 200);
+              } else {
+                status = 'empty';
+              }
+            }
+
+            resolve({ segments: subtitles, status, errorHint });
           } catch (error) {
             reject(error);
           } finally {

@@ -34,6 +34,7 @@
       "errors": {
         "notElectron": "Local Whisper is available on Desktop App only",
         "transcriptionFailed": "Local Whisper transcription failed",
+        "transcriptionWarning": "Warning during transcription: {{details}}",
         "noModelPath": "Whisper model path not found",
         "fallbackToApi": "Falling back to OpenAI API"
       }

@@ -74,17 +74,20 @@ export const transcribeWithOpenAIChat = async (
 
       // Check for user-actionable errors
       if (status === 401 || errorMsg.toLowerCase().includes('invalid api key')) {
-        throw new UserActionableError(i18n.t('services:api.errors.invalidKey'));
+        throw new UserActionableError(i18n.t('services:api.errors.invalidKey'), 'INVALID_API_KEY');
       }
       if (
         status === 429 ||
         errorMsg.toLowerCase().includes('quota') ||
         errorMsg.toLowerCase().includes('rate limit')
       ) {
-        throw new UserActionableError(i18n.t('services:api.network.rateLimited'));
+        throw new UserActionableError(i18n.t('services:api.network.rateLimited'), 'RATE_LIMITED');
       }
       if (status === 403) {
-        throw new UserActionableError(i18n.t('services:api.errors.permissionDenied'));
+        throw new UserActionableError(
+          i18n.t('services:api.errors.permissionDenied'),
+          'PERMISSION_DENIED'
+        );
       }
 
       throw new Error(

@@ -13,7 +13,7 @@ import { GLOSSARY_SCHEMA } from '@/services/llm/schemas';
 import {
   generateContentWithRetry,
   isRetryableError,
-  getActionableErrorMessage,
+  getActionableErrorInfo,
 } from '@/services/llm/providers/gemini';
 import { GLOSSARY_EXTRACTION_PROMPT } from '@/services/llm/prompts';
 import { STEP_MODELS, buildStepConfig } from '@/config';
@@ -90,8 +90,8 @@ export const extractGlossaryFromAudio = async (
         return extractSingleChunk(chunk, attemptNumber + 1);
       } else {
         // All retries exhausted or non-retryable error
-        // Check for actionable error message to provide user-friendly feedback
-        const actionableMsg = getActionableErrorMessage(e);
+        // Check for actionable error info to provide user-friendly feedback
+        const actionableInfo = getActionableErrorInfo(e);
         const reason = isRetryable ? `after ${attemptNumber} attempts` : '(non-retryable error)';
         logger.error(`[Chunk ${index}] Extraction failed ${reason}`, {
           error: e.message,
@@ -99,8 +99,8 @@ export const extractGlossaryFromAudio = async (
         });
 
         // Throw with actionable message if available
-        if (actionableMsg) {
-          const enhancedError = new Error(actionableMsg);
+        if (actionableInfo) {
+          const enhancedError = new Error(actionableInfo.message);
           (enhancedError as any).status = e.status;
           (enhancedError as any).originalError = e;
           throw enhancedError;

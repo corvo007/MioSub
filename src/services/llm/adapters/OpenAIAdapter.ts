@@ -15,7 +15,7 @@ import type {
 import { BaseAdapter } from './BaseAdapter';
 import { logger } from '@/services/utils/logger';
 import { safeParseJsonObject } from '@/services/utils/jsonParser';
-import { UserActionableError } from '@/services/utils/errors';
+import { UserActionableError, type UserActionableErrorCode } from '@/services/utils/errors';
 import { STEP_CONFIGS, type StepName as ConfigStepName } from '@/config/models';
 import i18n from '@/i18n';
 import {
@@ -196,32 +196,46 @@ export class OpenAIAdapter extends BaseAdapter {
       }
 
       // OpenAI-specific error handling
-      const actionableMessage = this.extractActionableError(error);
-      if (actionableMessage) {
-        throw new UserActionableError(actionableMessage);
+      const actionableInfo = this.extractActionableError(error);
+      if (actionableInfo) {
+        throw new UserActionableError(actionableInfo.message, actionableInfo.code);
       }
       throw error;
     }
   }
 
   /**
-   * Extract actionable error message from OpenAI API error
+   * Extract actionable error info from OpenAI API error
    */
-  private extractActionableError(error: any): string | undefined {
+  private extractActionableError(
+    error: any
+  ): { message: string; code: UserActionableErrorCode } | undefined {
     const msg = (error.message || '').toLowerCase();
     const status = error.status;
 
     if (status === 401 || msg.includes('invalid api key') || msg.includes('unauthorized')) {
-      return i18n.t('services:api.openai.errors.invalidKey');
+      return {
+        message: i18n.t('services:api.openai.errors.invalidKey'),
+        code: 'INVALID_API_KEY',
+      };
     }
     if (status === 429 || msg.includes('rate limit') || msg.includes('quota')) {
-      return i18n.t('services:api.openai.errors.rateLimited');
+      return {
+        message: i18n.t('services:api.openai.errors.rateLimited'),
+        code: 'RATE_LIMITED',
+      };
     }
     if (status === 403) {
-      return i18n.t('services:api.openai.errors.permissionDenied');
+      return {
+        message: i18n.t('services:api.openai.errors.permissionDenied'),
+        code: 'PERMISSION_DENIED',
+      };
     }
     if (msg.includes('model') && msg.includes('not found')) {
-      return i18n.t('services:api.openai.errors.modelNotFound', { model: this.model });
+      return {
+        message: i18n.t('services:api.openai.errors.modelNotFound', { model: this.model }),
+        code: 'MODEL_NOT_FOUND',
+      };
     }
 
     return undefined;

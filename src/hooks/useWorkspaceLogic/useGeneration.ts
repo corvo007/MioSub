@@ -337,7 +337,10 @@ export function useGeneration({
 
         if (allFailuresUserActionable) {
           // Don't report to Sentry - root cause is user-actionable
-          throw new UserActionableError(t('workspace:hooks.generation.errors.noSubtitles'));
+          throw new UserActionableError(
+            t('workspace:hooks.generation.errors.noSubtitles'),
+            'NO_SUBTITLES'
+          );
         }
         throw new Error(t('workspace:hooks.generation.errors.noSubtitles'));
       }

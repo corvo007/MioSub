@@ -179,6 +179,27 @@ OPENAI_API_KEY=your_key    # Required for cloud Whisper transcription
 
 Web: Variables are injected via Vite `define` in `vite.config.ts`.
 
+## Analytics & Monitoring
+
+### Sentry (Error Tracking)
+
+- **Organization**: `corvo007`
+- **Production Project**: `miosub` (use this for issue analysis)
+- **Test Project**: `miosub-test` (ignore, for development only)
+
+### Amplitude (Product Analytics)
+
+- **Organization**: `frosty-water-275285`
+- **Production Project**: `miosub-3.0` (appId: `781359`)
+- **Legacy Project**: `miosub` (appId: `777663`, deprecated)
+
+### Mixpanel (Product Analytics)
+
+- **Production Project**: `miosub` (project_id: `3985897`)
+- **Dev Project**: `miosub-dev` (project_id: `3981231`, ignore)
+
+When analyzing issues or statistics, always use the production projects (`miosub` for Sentry/Mixpanel, `miosub-3.0` for Amplitude).
+
 ## Code Style
 
 - **Imports**: Path aliases mandatory; avoid relative paths across directories

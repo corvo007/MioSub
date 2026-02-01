@@ -250,7 +250,9 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
       setShowSuccessModal(true);
     } catch (e: any) {
       // Don't show error for user-initiated cancellation
-      if (!e.message?.includes('CANCELLED')) {
+      // Check error name first (structured), then fallback to message check
+      const isCancellation = e.name === 'CancellationError' || e.message?.includes('CANCELLED');
+      if (!isCancellation) {
         setErrorMessage(t('errors.compressFailed') + ': ' + e.message);
       }
     } finally {

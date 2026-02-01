@@ -92,6 +92,24 @@ export const transcribeWithLocalWhisper = async (
         );
       }
 
+      // Check status for empty results with error indicators
+      if (result.status === 'empty_with_error') {
+        logger.warn('[LocalWhisper] Transcription returned empty with error indicators', {
+          errorHint: result.errorHint,
+        });
+        throw new WhisperLocalError(
+          'TRANSCRIPTION_WARNING',
+          i18n.t('services:api.whisperLocal.errors.transcriptionWarning', {
+            details: result.errorHint || '',
+          })
+        );
+      }
+
+      if (result.status === 'empty') {
+        // Genuine "no speech" case
+        logger.info('[LocalWhisper] No speech detected in audio');
+      }
+
       logger.info(`[Success] Received ${result.segments?.length || 0} segments`);
 
       if (!result.segments) return [];

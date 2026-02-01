@@ -111,6 +111,10 @@ export interface ElectronAPI {
     success: boolean;
     segments?: { start: string; end: string; text: string }[];
     error?: string;
+    /** Transcription result status: 'success' | 'empty' | 'empty_with_error' */
+    status?: 'success' | 'empty' | 'empty_with_error';
+    /** Error hint when status is 'empty_with_error' */
+    errorHint?: string;
   }>;
   abortLocalWhisper: () => Promise<void>;
 

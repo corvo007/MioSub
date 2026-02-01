@@ -18,7 +18,7 @@ import { MockFactory } from '@/services/generation/debug/mockFactory';
 import { logger } from '@/services/utils/logger';
 import { UserActionableError } from '@/services/utils/errors';
 import { formatTime, timeToSeconds } from '@/services/subtitle/time';
-import { getActionableErrorMessage } from '@/services/llm/providers/gemini';
+import { getActionableErrorInfo } from '@/services/llm/providers/gemini';
 import * as Sentry from '@sentry/electron/renderer';
 import {
   TranscriptionStep,
@@ -358,17 +358,17 @@ export class ChunkProcessor {
       }
 
       logger.error(`Chunk ${index} failed`, e);
-      const actionableMsg = getActionableErrorMessage(e);
-      const errorMsg = actionableMsg || i18n.t('services:pipeline.status.failed');
+      const actionableInfo = getActionableErrorInfo(e);
+      const errorMsg = actionableInfo?.message || i18n.t('services:pipeline.status.failed');
       analytics.status = 'failed';
       analytics.process_ms = Date.now() - processStartTime;
 
       // Track whether this failure was due to a user-actionable error
+      // Use structured checks instead of string matching where possible
+      const isCancellation =
+        e.name === 'AbortError' || e.name === 'StepCancelledError' || context.signal?.aborted;
       const isUserActionable =
-        e instanceof UserActionableError ||
-        actionableMsg != null ||
-        e.message?.includes('cancelled') ||
-        e.message?.includes('aborted');
+        e instanceof UserActionableError || actionableInfo != null || isCancellation;
       analytics.isUserActionable = isUserActionable;
 
       onProgress?.({

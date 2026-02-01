@@ -233,13 +233,18 @@ ipcMain.handle(
       void analyticsService.track(
         'transcription_completed',
         {
-          segment_count: result.length,
+          segment_count: result.segments.length,
           duration_ms: Date.now() - startAt,
         },
         'interaction'
       );
 
-      return { success: true, segments: result };
+      return {
+        success: true,
+        segments: result.segments,
+        status: result.status,
+        errorHint: result.errorHint,
+      };
     } catch (error: any) {
       console.error('[Main] Local transcription failed:', error);
 

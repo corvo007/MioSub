@@ -2,11 +2,11 @@ import { type SubtitleItem, type OpenAIWhisperSegment } from '@/types/subtitle';
 import { generateSubtitleId } from '@/services/utils/id';
 import { formatTime } from '@/services/subtitle/time';
 import { logger } from '@/services/utils/logger';
-import { UserActionableError } from '@/services/utils/errors';
+import { UserActionableError, type UserActionableErrorCode } from '@/services/utils/errors';
 import i18n from '@/i18n';
 
 /**
- * Extracts a user-actionable error message from a Whisper/OpenAI API error.
+ * Extracts a user-actionable error info from a Whisper/OpenAI API error.
  *
  * OpenAI error structure (from official SDK):
  * - status_code: HTTP status (400, 401, 403, 404, 429, 5xx)
@@ -14,7 +14,9 @@ import i18n from '@/i18n';
  * - error.type: string like "invalid_request_error", "authentication_error"
  * - error.message: human-readable message
  */
-function getActionableWhisperError(error: any): string | undefined {
+function getActionableWhisperError(
+  error: any
+): { message: string; code: UserActionableErrorCode } | undefined {
   if (!error) return undefined;
 
   // Extract HTTP status and error details
@@ -35,7 +37,7 @@ function getActionableWhisperError(error: any): string | undefined {
     combined.includes('invalid api key') ||
     combined.includes('incorrect api key')
   ) {
-    return i18n.t('services:api.errors.invalidKey');
+    return { message: i18n.t('services:api.errors.invalidKey'), code: 'INVALID_API_KEY' };
   }
 
   // === PermissionDeniedError (403) ===
@@ -45,7 +47,7 @@ function getActionableWhisperError(error: any): string | undefined {
     combined.includes('forbidden') ||
     combined.includes('permission denied')
   ) {
-    return i18n.t('services:api.errors.permissionDenied');
+    return { message: i18n.t('services:api.errors.permissionDenied'), code: 'PERMISSION_DENIED' };
   }
 
   // === RateLimitError (429) - Quota exceeded ===
@@ -58,7 +60,7 @@ function getActionableWhisperError(error: any): string | undefined {
     combined.includes('rate limit') ||
     combined.includes('too many requests')
   ) {
-    return i18n.t('services:api.network.rateLimited');
+    return { message: i18n.t('services:api.network.rateLimited'), code: 'RATE_LIMITED' };
   }
 
   // === Billing/Payment issues ===
@@ -69,7 +71,10 @@ function getActionableWhisperError(error: any): string | undefined {
     combined.includes('payment') ||
     combined.includes('balance')
   ) {
-    return i18n.t('services:api.openai.errors.billingHardLimit');
+    return {
+      message: i18n.t('services:api.openai.errors.billingHardLimit'),
+      code: 'BILLING_REQUIRED',
+    };
   }
 
   // === NotFoundError (404) ===
@@ -79,13 +84,13 @@ function getActionableWhisperError(error: any): string | undefined {
     combined.includes('model not found') ||
     combined.includes('not found')
   ) {
-    return i18n.t('services:api.errors.modelNotFound');
+    return { message: i18n.t('services:api.errors.modelNotFound'), code: 'MODEL_NOT_FOUND' };
   }
 
   // === BadRequestError (400) - Invalid parameters ===
   if (httpStatus === 400 && !combined.includes('api key')) {
     if (combined.includes('audio') || combined.includes('file')) {
-      return i18n.t('services:api.openai.errors.invalidAudioFormat');
+      return { message: i18n.t('services:api.openai.errors.invalidAudioFormat'), code: 'UNKNOWN' };
     }
   }
 
@@ -196,9 +201,9 @@ export const transcribeWithWhisper = async (
       lastError = e;
 
       // Don't retry for authentication/permission errors - they won't resolve
-      const actionableMsg = getActionableWhisperError(e);
-      if (actionableMsg && (e.status === 401 || e.status === 403)) {
-        throw new UserActionableError(actionableMsg);
+      const actionableInfo = getActionableWhisperError(e);
+      if (actionableInfo && (e.status === 401 || e.status === 403)) {
+        throw new UserActionableError(actionableInfo.message, actionableInfo.code);
       }
 
       attempt++;
@@ -207,10 +212,10 @@ export const transcribeWithWhisper = async (
     }
   }
 
-  // Check for actionable error message before throwing
-  const actionableMessage = getActionableWhisperError(lastError);
-  if (actionableMessage) {
-    throw new UserActionableError(actionableMessage);
+  // Check for actionable error info before throwing
+  const actionableInfo = getActionableWhisperError(lastError);
+  if (actionableInfo) {
+    throw new UserActionableError(actionableInfo.message, actionableInfo.code);
   }
 
   throw lastError || new Error(i18n.t('services:api.errors.connectionFailed'));

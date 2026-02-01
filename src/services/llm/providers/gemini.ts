@@ -3,6 +3,7 @@ import { logger } from '@/services/utils/logger';
 import { SAFETY_SETTINGS } from '@/services/llm/schemas';
 import { safeParseJsonArray, safeParseJsonObject, isValidJson } from '@/services/utils/jsonParser';
 import { type TokenUsage } from '@/types/api';
+import { type UserActionableErrorCode } from '@/services/utils/errors';
 import i18n from '@/i18n';
 
 /**
@@ -52,6 +53,11 @@ export function formatGeminiError(e: any): any {
   return errorInfo;
 }
 
+export interface ActionableErrorInfo {
+  message: string;
+  code: UserActionableErrorCode;
+}
+
 /**
  * Extracts a user-actionable error message from an API error.
  * Leverages the SDK's ApiError structure (name, message, status, rawError).
@@ -66,7 +72,7 @@ export function formatGeminiError(e: any): any {
  * - 503 UNAVAILABLE
  * - 504 DEADLINE_EXCEEDED
  */
-export function getActionableErrorMessage(error: any): string | undefined {
+export function getActionableErrorInfo(error: any): ActionableErrorInfo | undefined {
   if (!error) return undefined;
 
   // SDK ApiError provides: name, message, status (HTTP code), rawError
@@ -130,7 +136,7 @@ export function getActionableErrorMessage(error: any): string | undefined {
     httpStatus === 401 ||
     combinedMsg.includes('unauthorized')
   ) {
-    return i18n.t('services:api.errors.invalidKey');
+    return { message: i18n.t('services:api.errors.invalidKey'), code: 'INVALID_API_KEY' };
   }
 
   // === FAILED_PRECONDITION (400) - Need to enable billing ===
@@ -142,7 +148,7 @@ export function getActionableErrorMessage(error: any): string | undefined {
     combinedMsg.includes('free tier') ||
     combinedMsg.includes('免费层级')
   ) {
-    return i18n.t('services:api.errors.billingRequired');
+    return { message: i18n.t('services:api.errors.billingRequired'), code: 'BILLING_REQUIRED' };
   }
 
   // === PERMISSION_DENIED (403) - API key doesn't have permission ===
@@ -153,7 +159,7 @@ export function getActionableErrorMessage(error: any): string | undefined {
     combinedMsg.includes('forbidden') ||
     combinedMsg.includes('access denied')
   ) {
-    return i18n.t('services:api.errors.permissionDenied');
+    return { message: i18n.t('services:api.errors.permissionDenied'), code: 'PERMISSION_DENIED' };
   }
 
   // === RESOURCE_EXHAUSTED (429) - Rate limit / quota exceeded ===
@@ -164,15 +170,15 @@ export function getActionableErrorMessage(error: any): string | undefined {
     combinedMsg.includes('rate limit') ||
     combinedMsg.includes('too many requests')
   ) {
-    return i18n.t('services:api.network.rateLimited');
+    return { message: i18n.t('services:api.network.rateLimited'), code: 'RATE_LIMITED' };
   }
 
   // === NOT_FOUND (404) - Resource not found ===
   if (httpStatus === 404 || errorStatus === 'not_found') {
     if (combinedMsg.includes('model')) {
-      return i18n.t('services:api.errors.modelNotFound');
+      return { message: i18n.t('services:api.errors.modelNotFound'), code: 'MODEL_NOT_FOUND' };
     }
-    return i18n.t('services:api.errors.notFound');
+    return { message: i18n.t('services:api.errors.notFound'), code: 'NOT_FOUND' };
   }
 
   // === Region/Location restrictions ===
@@ -182,11 +188,19 @@ export function getActionableErrorMessage(error: any): string | undefined {
     combinedMsg.includes('not available in') ||
     combinedMsg.includes('国家/地区')
   ) {
-    return i18n.t('services:api.errors.regionRestricted');
+    return { message: i18n.t('services:api.errors.regionRestricted'), code: 'REGION_RESTRICTED' };
   }
 
   // Return undefined for transient errors (500, 503, 504) - these should be retried
   return undefined;
+}
+
+/**
+ * @deprecated Use getActionableErrorInfo instead
+ */
+export function getActionableErrorMessage(error: any): string | undefined {
+  const info = getActionableErrorInfo(error);
+  return info?.message;
 }
 
 export function isRetryableError(error: any): boolean {

@@ -14,7 +14,7 @@ import { getTranslationBatchPrompt } from '@/services/llm/prompts';
 import {
   generateContentWithRetry,
   formatGeminiError,
-  getActionableErrorMessage,
+  getActionableErrorInfo,
 } from '@/services/llm/providers/gemini';
 import { TRANSLATION_SCHEMA, TRANSLATION_WITH_DIARIZATION_SCHEMA } from '@/services/llm/schemas';
 import { STEP_MODELS, buildStepConfig } from '@/config';
@@ -99,9 +99,9 @@ export async function processTranslationBatch(
   } catch (e: any) {
     // API or parse error - log and fallback to original text
     logger.error('Translation batch failed', formatGeminiError(e));
-    const actionableMsg = getActionableErrorMessage(e);
-    const errorMsg = actionableMsg
-      ? i18n.t('services:pipeline.errors.translationFailed', { error: actionableMsg })
+    const actionableInfo = getActionableErrorInfo(e);
+    const errorMsg = actionableInfo
+      ? i18n.t('services:pipeline.errors.translationFailed', { error: actionableInfo.message })
       : i18n.t('services:pipeline.errors.translationFailedUseOriginal');
     onStatusUpdate?.({
       toast: {

@@ -3,7 +3,7 @@ import { type PipelineContext } from '@/types/pipeline';
 import { MockFactory } from '@/services/generation/debug/mockFactory';
 import { intelligentAudioSampling } from '@/services/audio/sampler';
 import { extractSpeakerProfiles } from '@/services/generation/extractors/speakerProfile';
-import { getActionableErrorMessage } from '@/services/llm/providers/gemini';
+import { getActionableErrorInfo } from '@/services/llm/providers/gemini';
 import { logger } from '@/services/utils/logger';
 import i18n from '@/i18n';
 
@@ -68,9 +68,10 @@ export class SpeakerAnalyzer {
       }));
     } catch (e: any) {
       logger.error('Speaker profile extraction failed', e);
-      // Use actionable error message if available
-      const actionableMsg = getActionableErrorMessage(e);
-      const errorMsg = actionableMsg || i18n.t('services:pipeline.status.speakerAnalysisFailed');
+      // Use actionable error info if available
+      const actionableInfo = getActionableErrorInfo(e);
+      const errorMsg =
+        actionableInfo?.message || i18n.t('services:pipeline.status.speakerAnalysisFailed');
       onProgress?.({ id: 'diarization', total: 1, status: 'error', message: errorMsg });
       return [];
     }

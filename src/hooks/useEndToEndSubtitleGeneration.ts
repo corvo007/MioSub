@@ -437,7 +437,10 @@ export function useEndToEndSubtitleGeneration({
 
         // Categorize error types
         // Check for cancellation first to avoid error logging
-        if (error.name === 'AbortError' || error.message?.includes('cancelled') || signal.aborted) {
+        // Use structured checks: AbortError name, StepCancelledError name, or signal.aborted
+        const isCancellation =
+          error.name === 'AbortError' || error.name === 'StepCancelledError' || signal.aborted;
+        if (isCancellation) {
           logger.info('[EndToEnd] Subtitle generation cancelled');
 
           // Analytics: End-to-End Generation Cancelled
@@ -461,17 +464,24 @@ export function useEndToEndSubtitleGeneration({
         if (window.electronAPI?.analytics) {
           let errorCode = 'UNKNOWN';
           if (error instanceof UserActionableError) {
-            const msg = error.message.toLowerCase();
-            if (msg.includes('key') || msg.includes('密钥')) errorCode = 'API_KEY_ERROR';
-            else if (
-              msg.includes('rate') ||
-              msg.includes('quota') ||
-              msg.includes('频率') ||
-              msg.includes('配额')
-            )
-              errorCode = 'RATE_LIMITED';
-            else errorCode = 'USER_ACTION_REQUIRED';
-          } else if (error.message?.includes('timeout') || error.message?.includes('超时')) {
+            // Use error code directly instead of string matching
+            switch (error.code) {
+              case 'INVALID_API_KEY':
+                errorCode = 'API_KEY_ERROR';
+                break;
+              case 'RATE_LIMITED':
+                errorCode = 'RATE_LIMITED';
+                break;
+              default:
+                errorCode = 'USER_ACTION_REQUIRED';
+            }
+          } else if (
+            error.code === 'ETIMEDOUT' ||
+            error.code === 'ECONNABORTED' ||
+            error.name === 'TimeoutError' ||
+            error.message?.includes('timeout') ||
+            error.message?.includes('超时')
+          ) {
             errorCode = 'TIMEOUT';
           }
 
@@ -501,24 +511,30 @@ export function useEndToEndSubtitleGeneration({
 
         // Return user-friendly error based on error type
         if (error instanceof UserActionableError) {
-          // UserActionableError already has a user-friendly message
-          const msg = error.message.toLowerCase();
-          if (msg.includes('key') || msg.includes('密钥')) {
-            return { success: false, error: t('errors.invalidApiKey'), errorCode: 'API_KEY_ERROR' };
+          // Use error code directly instead of string matching
+          switch (error.code) {
+            case 'INVALID_API_KEY':
+              return {
+                success: false,
+                error: t('errors.invalidApiKey'),
+                errorCode: 'API_KEY_ERROR',
+              };
+            case 'RATE_LIMITED':
+              return { success: false, error: t('errors.rateLimited'), errorCode: 'RATE_LIMITED' };
+            default:
+              // Generic user-actionable error - use the error message directly
+              return { success: false, error: error.message, errorCode: 'USER_ACTION_REQUIRED' };
           }
-          if (
-            msg.includes('rate') ||
-            msg.includes('quota') ||
-            msg.includes('频率') ||
-            msg.includes('配额')
-          ) {
-            return { success: false, error: t('errors.rateLimited'), errorCode: 'RATE_LIMITED' };
-          }
-          // Generic user-actionable error
-          return { success: false, error: error.message, errorCode: 'USER_ACTION_REQUIRED' };
         }
 
-        if (error.message?.includes('timeout') || error.message?.includes('超时')) {
+        // Check for timeout errors using structured checks first, then fallback to string matching
+        const isTimeout =
+          error.code === 'ETIMEDOUT' ||
+          error.code === 'ECONNABORTED' ||
+          error.name === 'TimeoutError' ||
+          error.message?.includes('timeout') ||
+          error.message?.includes('超时');
+        if (isTimeout) {
           return { success: false, error: t('errors.timeout'), errorCode: 'TIMEOUT' };
         }
 
