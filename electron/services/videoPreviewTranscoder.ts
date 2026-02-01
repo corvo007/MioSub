@@ -25,6 +25,9 @@ let compressorInstance: VideoCompressorService | null = null;
 const activeCommands: Map<string, { command: ReturnType<typeof ffmpeg>; outputPath: string }> =
   new Map();
 
+// Track cancelled tasks to distinguish user cancellation from actual errors
+const cancelledPaths: Set<string> = new Set();
+
 function getCompressor(): VideoCompressorService {
   if (!compressorInstance) {
     compressorInstance = new VideoCompressorService();
@@ -39,6 +42,9 @@ export function cancelTranscode(filePath: string): boolean {
   const active = activeCommands.get(filePath);
   if (active) {
     try {
+      // Mark as cancelled BEFORE killing to prevent CPU fallback
+      cancelledPaths.add(filePath);
+
       active.command.kill('SIGKILL');
 
       // Cleanup partial file (with retry for file locks)
@@ -486,6 +492,15 @@ export async function transcodeForPreview(
       })
       .on('error', (err, stdout, stderr) => {
         activeCommands.delete(filePath);
+
+        // Check if this was a user cancellation
+        if (cancelledPaths.has(filePath)) {
+          cancelledPaths.delete(filePath);
+          log(`Transcode cancelled by user`);
+          reject(new Error('Transcode cancelled by user'));
+          return;
+        }
+
         log(`Transcode error: ${err.message}`);
         log(`stderr: ${stderr}`);
 
@@ -574,6 +589,15 @@ async function transcodeWithCpu(
       })
       .on('error', (err) => {
         activeCommands.delete(inputPath);
+
+        // Check if this was a user cancellation
+        if (cancelledPaths.has(inputPath)) {
+          cancelledPaths.delete(inputPath);
+          log?.(`CPU transcode cancelled by user`);
+          reject(new Error('Transcode cancelled by user'));
+          return;
+        }
+
         log?.(`CPU transcode error: ${err.message}`);
         reject(err);
       })
