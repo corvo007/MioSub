@@ -14,6 +14,13 @@ All notable changes to this project will be documented in this file.
 ### Fixes
 
 - **Electron**: Fixed duplicate IPC handler registration in update service that could cause errors on app restart.
+- **Path Handling**: Improved filename sanitization to handle more special characters (shell metacharacters, smart quotes) that could cause file creation failures.
+- **Path Handling**: Limited yt-dlp output filename to 80 characters to avoid path length issues on Windows.
+- **FFmpeg**: Fixed subtitle path escaping for single quotes in FFmpeg filter syntax.
+
+### Refactor
+
+- **Error Handling**: Introduced `UserActionableError` class for better error categorization, preventing user-resolvable errors (API key, quota, billing) from being reported to Sentry.
 
 ## [3.0.0] - 2026-01-31
 
