@@ -65,7 +65,13 @@
     "glossary": "术语表",
     "manageGlossary": "术语表管理",
     "settings": "设置",
-    "subtitle": "AI 字幕生成与翻译工具"
+    "subtitle": "AI 字幕生成与翻译工具",
+    "help": "帮助",
+    "viewHelp": "查看帮助文档",
+    "docs": "文档",
+    "qqGroup": "QQ群",
+    "qqGroupNumber": "1082480420",
+    "copied": "已复制"
   },
   "upload": {
     "changeFile": "更改文件"

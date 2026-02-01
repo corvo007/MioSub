@@ -4,6 +4,7 @@ import { type SpeakerUIProfile } from '@/types/speaker';
 import { type CompressionOptions, type CompressionProgress } from '@/types/compression';
 import { FileVideo, Settings, Play, FolderOpen, FileText, AlertCircle, X } from 'lucide-react';
 import { PageHeader, HeaderButton } from '@/components/layout/PageHeader';
+import { HelpButton } from '@/components/layout/HelpButton';
 import { SimpleConfirmationModal } from '@/components/modals/SimpleConfirmationModal';
 import { generateAssContent } from '@/services/subtitle/generator';
 import { type SubtitleItem } from '@/types/subtitle';
@@ -282,6 +283,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                 label={t('settings')}
                 hoverColor="emerald"
               />
+              <HelpButton />
             </>
           }
         />

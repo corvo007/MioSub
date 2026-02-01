@@ -65,7 +65,9 @@
     "glossary": "Glossary",
     "manageGlossary": "Manage Glossary",
     "settings": "Settings",
-    "subtitle": "AI Subtitle Generation & Translation Tool"
+    "subtitle": "AI Subtitle Generation & Translation Tool",
+    "help": "Help",
+    "viewHelp": "View Help Documentation"
   },
   "upload": {
     "changeFile": "Change File"

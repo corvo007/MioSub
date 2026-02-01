@@ -48,16 +48,24 @@ class AnalyticsService {
     // 2. Get App ID from Env
     const amplitudeApiKey = process.env.VITE_AMPLITUDE_API_KEY;
     const mixpanelToken = process.env.VITE_MIXPANEL_TOKEN;
+    const sentryDsn = process.env.VITE_SENTRY_DSN;
 
-    if (this.isDev) {
-      console.log('[Analytics] Loaded Amplitude Key:', amplitudeApiKey ? 'Yes' : 'No');
-      console.log('[Analytics] Loaded Mixpanel Token:', mixpanelToken ? 'Yes' : 'No');
-    }
+    // Always log key status for debugging (keys are masked)
+    console.log(
+      '[Analytics] Amplitude Key:',
+      amplitudeApiKey ? `Yes (${amplitudeApiKey.length} chars)` : 'No'
+    );
+    console.log(
+      '[Analytics] Mixpanel Token:',
+      mixpanelToken ? `Yes (${mixpanelToken.length} chars)` : 'No'
+    );
+    console.log(
+      '[Analytics] Sentry DSN (for comparison):',
+      sentryDsn ? `Yes (${sentryDsn.length} chars)` : 'No'
+    );
 
     if (!amplitudeApiKey && !mixpanelToken) {
-      if (this.isDev) {
-        console.warn('[Analytics] Both Analytics Keys are missing. Analytics disabled (Dev mode).');
-      }
+      console.warn('[Analytics] Both Analytics Keys are missing. Analytics disabled.');
       return;
     }
 

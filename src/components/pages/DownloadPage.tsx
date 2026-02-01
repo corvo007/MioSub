@@ -23,6 +23,7 @@ import { VideoPreview } from '@/components/download/VideoPreview';
 import { QualitySelector } from '@/components/download/QualitySelector';
 import { DownloadProgress } from '@/components/download/DownloadProgress';
 import { PageHeader, HeaderButton } from '@/components/layout/PageHeader';
+import { HelpButton } from '@/components/layout/HelpButton';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/cn';
 
@@ -140,6 +141,7 @@ export function DownloadPage({ onDownloadComplete, onGoBack }: DownloadPageProps
                 label={t('settings')}
                 hoverColor="emerald"
               />
+              <HelpButton />
             </>
           }
         />

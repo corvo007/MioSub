@@ -24,6 +24,7 @@ import { StepInput } from '@/components/endToEnd/wizard/steps/StepInput';
 import { StepConfig } from '@/components/endToEnd/wizard/steps/StepConfig';
 import { StepResult } from '@/components/endToEnd/wizard/steps/StepResult';
 import { PageHeader, HeaderButton } from '@/components/layout/PageHeader';
+import { HelpButton } from '@/components/layout/HelpButton';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { useAppStore } from '@/store/useAppStore';
 
@@ -151,6 +152,7 @@ export function EndToEndWizard({ settings, onComplete, onCancel }: EndToEndWizar
                 label={t('wizard.header.settings')}
                 hoverColor="emerald"
               />
+              <HelpButton />
             </>
           }
         />

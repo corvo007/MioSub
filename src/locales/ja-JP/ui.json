@@ -65,7 +65,9 @@
     "glossary": "用語集",
     "manageGlossary": "用語集管理",
     "settings": "設定",
-    "subtitle": "AI 字幕生成・翻訳ツール"
+    "subtitle": "AI 字幕生成・翻訳ツール",
+    "help": "ヘルプ",
+    "viewHelp": "ヘルプドキュメントを表示"
   },
   "upload": {
     "changeFile": "ファイルを変更"

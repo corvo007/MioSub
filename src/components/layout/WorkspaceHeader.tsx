@@ -2,6 +2,7 @@ import React from 'react';
 import { GitCommit, FileText, Book, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { PageHeader, HeaderButton } from './PageHeader';
+import { HelpButton } from './HelpButton';
 import { useAppStore } from '@/store/useAppStore';
 
 interface WorkspaceHeaderProps {
@@ -70,6 +71,7 @@ export const WorkspaceHeader: React.FC<WorkspaceHeaderProps> = ({
             label={t('header.settings')}
             hoverColor="emerald"
           />
+          <HelpButton />
         </>
       }
     />

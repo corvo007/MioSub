@@ -41,7 +41,7 @@ export function initUpdateService(window: BrowserWindow) {
 
   if (!isPortableMode()) {
     // 安装版：配置 electron-updater
-    autoUpdater.autoDownload = false;
+    autoUpdater.autoDownload = true;
     autoUpdater.autoInstallOnAppQuit = true;
 
     autoUpdater.on('checking-for-update', () => {

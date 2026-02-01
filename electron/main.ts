@@ -1460,6 +1460,7 @@ const ALLOWED_EXTERNAL_HOSTS = [
   'www.youtube.com',
   'electronjs.org',
   'www.electronjs.org',
+  'miosub.app',
 ];
 
 ipcMain.handle('open-external', async (_event, url: string) => {
