@@ -104,7 +104,7 @@
 ### 三步上手
 
 1. **下载** — 访问 [Releases](https://github.com/corvo007/Gemini-Subtitle-Pro/releases)，选择对应平台安装包
-2. **配置** — 打开设置，填写 Gemini API Key（和Gemini Endpoint，注意只需要填写域名（如：https://yunwu.zeabur.app）。如需使用本地 Whisper，请参考[完整文档](https://miosub.app/docs/guide/whisper)）
+2. **配置** — 打开设置，填写 Gemini API Key（和Gemini Endpoint，注意只需要填写域名（如：https://yunwu.zeabur.app ）。如需使用本地 Whisper，请参考[完整文档](https://miosub.app/docs/guide/whisper)）
 3. **开始** — 粘贴视频链接或导入本地文件
 
 > **提示**：
