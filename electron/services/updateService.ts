@@ -30,6 +30,7 @@ let updateState: UpdateState = {
   error: null,
   progress: 0,
 };
+let ipcHandlersRegistered = false;
 
 const GITHUB_OWNER = 'Corvo007';
 const GITHUB_REPO = 'Gemini-Subtitle-Pro';
@@ -96,6 +97,9 @@ function sendUpdateStatus() {
 }
 
 function registerIpcHandlers() {
+  if (ipcHandlersRegistered) return;
+  ipcHandlersRegistered = true;
+
   ipcMain.handle('update:check', async () => {
     if (isPortableMode()) {
       return checkGitHubRelease();
