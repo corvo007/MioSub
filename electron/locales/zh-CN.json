@@ -89,6 +89,7 @@
     "modelNotExist": "模型文件不存在",
     "modelInvalidFormat": "模型文件格式错误 (需 .bin)",
     "modelTooSmall": "模型文件过小 (可能是无效文件)",
+    "modelIncompatibleFormat": "模型格式不兼容。whisper.cpp 需要 GGML/GGUF 格式的模型，不支持 faster-whisper (CTranslate2) 格式。请下载正确格式的模型。",
     "modelReadError": "无法读取模型文件",
     "binaryNotFound": "未检测到 Whisper 运行程序。请检查设置中的路径，或确保软件安装完整。"
   },

@@ -101,7 +101,14 @@ export const transcribeWithWhisper = async (
   signal?: AbortSignal
 ): Promise<SubtitleItem[]> => {
   const formData = new FormData();
-  formData.append('file', audioBlob, 'audio.wav');
+  // Convert File to pure Blob to ensure filename override works
+  // File objects ignore the third parameter in FormData.append(), using their own name property
+  // which may contain non-ASCII characters that violate HTTP header ISO-8859-1 requirements
+  const pureBlob =
+    audioBlob instanceof File
+      ? new Blob([audioBlob], { type: audioBlob.type || 'audio/wav' })
+      : audioBlob;
+  formData.append('file', pureBlob, 'audio.wav');
   formData.append('model', model); // usually 'whisper-1'
   formData.append('response_format', 'verbose_json');
 

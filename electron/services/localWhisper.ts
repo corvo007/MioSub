@@ -105,6 +105,21 @@ export class LocalWhisperService {
       if (stats.size < 50 * 1024 * 1024) {
         return { valid: false, error: t('localWhisper.modelTooSmall') };
       }
+
+      // Check magic number for GGML/GGUF format compatibility
+      const fd = fs.openSync(filePath, 'r');
+      const buffer = Buffer.alloc(4);
+      fs.readSync(fd, buffer, 0, 4, 0);
+      fs.closeSync(fd);
+
+      const magic = buffer.readUInt32LE(0);
+      const GGML_MAGIC = 0x67676d6c; // "ggml" in little-endian
+      const GGUF_MAGIC = 0x46554747; // "GGUF" in little-endian
+
+      if (magic !== GGML_MAGIC && magic !== GGUF_MAGIC) {
+        return { valid: false, error: t('localWhisper.modelIncompatibleFormat') };
+      }
+
       return { valid: true };
     } catch (_error) {
       return { valid: false, error: t('localWhisper.modelReadError') };
