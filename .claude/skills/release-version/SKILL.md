@@ -7,7 +7,7 @@ description: Use when releasing a new version - guides through version bump, cha
 
 ## Overview
 
-A complete release workflow for Gemini-Subtitle-Pro that handles version bumping, changelog generation from git history, grouped commits, tagging, and GitHub CI monitoring.
+A complete release workflow for MioSub that handles version bumping, changelog generation from git history, grouped commits, tagging, and GitHub CI monitoring.
 
 ## When to Use
 
@@ -55,10 +55,23 @@ Ask the user:
    - **Documentation** - Doc updates (docs:)
    - **Performance** - Performance improvements (perf:)
 
-4. Update `CHANGELOG.md`:
-   - Add new version section at the top (after header)
+   **Exclude from changelog** (internal/infrastructure changes not relevant to users):
+   - Error tracking changes (Sentry integration, error reporting)
+   - Analytics/telemetry service modifications
+   - Internal monitoring or logging infrastructure
+
+4. Update changelog files in the documentation site (bilingual):
+
+   **English** (`docs/content/docs/en/changelog.mdx`):
+   - Add new version section after the frontmatter and intro paragraph
    - Format: `## [X.X.X] - YYYY-MM-DD` (no 'v' prefix)
    - Group entries by category (Keep a Changelog format)
+   - Use English descriptions
+
+   **Chinese** (`docs/content/docs/zh/changelog.mdx`):
+   - Mirror the same structure as English
+   - Translate all descriptions to Chinese
+   - Use Chinese category names: 新功能, 修复, 重构, 杂项, 文档, 性能
 
 5. Update `package.json`:
    - Change `"version": "X.X.X"` to new version (no 'v' prefix)
@@ -66,7 +79,7 @@ Ask the user:
 ### Step 3: Commit Release Files
 
 ```bash
-git add CHANGELOG.md package.json
+git add docs/content/docs/en/changelog.mdx docs/content/docs/zh/changelog.mdx package.json
 git commit -m "Release vX.X.X"
 ```
 
@@ -108,14 +121,21 @@ Note: Tag uses 'v' prefix (e.g., v2.12.0).
 
 ## Version Format Rules
 
-| Location       | Format          | Example                    |
-| -------------- | --------------- | -------------------------- |
-| Git tag        | With 'v' prefix | `v2.12.0`                  |
-| Commit message | With 'v' prefix | `Release v2.12.0`          |
-| CHANGELOG.md   | No 'v' prefix   | `## [2.12.0] - 2026-01-06` |
-| package.json   | No 'v' prefix   | `"version": "2.12.0"`      |
+| Location              | Format          | Example                    |
+| --------------------- | --------------- | -------------------------- |
+| Git tag               | With 'v' prefix | `v2.12.0`                  |
+| Commit message        | With 'v' prefix | `Release v2.12.0`          |
+| changelog.mdx (en/zh) | No 'v' prefix   | `## [2.12.0] - 2026-01-06` |
+| package.json          | No 'v' prefix   | `"version": "2.12.0"`      |
 
-## CHANGELOG Format
+## Changelog File Locations
+
+| Language | Path                                 |
+| -------- | ------------------------------------ |
+| English  | `docs/content/docs/en/changelog.mdx` |
+| Chinese  | `docs/content/docs/zh/changelog.mdx` |
+
+## CHANGELOG Format (English)
 
 ```markdown
 ## [X.X.X] - YYYY-MM-DD
@@ -137,15 +157,53 @@ Note: Tag uses 'v' prefix (e.g., v2.12.0).
 - **Component**: Maintenance description.
 ```
 
+## CHANGELOG Format (Chinese)
+
+```markdown
+## [X.X.X] - YYYY-MM-DD
+
+### 新功能
+
+- **组件名**: 新功能描述。
+
+### 修复
+
+- **组件名**: Bug 修复描述。
+
+### 重构
+
+- **组件名**: 重构描述。
+
+### 杂项
+
+- **组件名**: 维护工作描述。
+```
+
+## Category Name Mapping
+
+| English       | Chinese  |
+| ------------- | -------- |
+| Features      | 新功能   |
+| Fixes         | 修复     |
+| Refactor      | 重构     |
+| Chore         | 杂项     |
+| Documentation | 文档     |
+| Performance   | 性能     |
+| Highlights    | 亮点     |
+| Improvements  | 改进     |
+| Other Changes | 其他变更 |
+
 ## Common Mistakes
 
-| Mistake                       | Fix                                                         |
-| ----------------------------- | ----------------------------------------------------------- |
-| Forgetting to push the tag    | CI only triggers on tag push, not commit push               |
-| Wrong version in package.json | Version must match tag (without 'v' prefix)                 |
-| Changelog in wrong position   | New version goes after the header, before previous versions |
-| Not grouping commits          | Related changes should be in one commit for cleaner history |
-| Inconsistent 'v' prefix       | Tag and commit use 'v', files don't                         |
+| Mistake                          | Fix                                                              |
+| -------------------------------- | ---------------------------------------------------------------- |
+| Forgetting to push the tag       | CI only triggers on tag push, not commit push                    |
+| Wrong version in package.json    | Version must match tag (without 'v' prefix)                      |
+| Changelog in wrong position      | New version goes after the frontmatter, before previous versions |
+| Not grouping commits             | Related changes should be in one commit for cleaner history      |
+| Inconsistent 'v' prefix          | Tag and commit use 'v', files don't                              |
+| Missing Chinese translation      | Both en and zh changelog files must be updated together          |
+| Mismatched category translations | Use the Category Name Mapping table for consistency              |
 
 ## Pre-release Handling
 
