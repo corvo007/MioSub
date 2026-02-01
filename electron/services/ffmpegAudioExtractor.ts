@@ -58,6 +58,11 @@ export interface AudioExtractionOptions {
   customFfprobePath?: string;
 }
 
+export interface AudioSegmentOptions extends AudioExtractionOptions {
+  startTime: number; // Start time in seconds
+  duration: number; // Duration in seconds
+}
+
 export interface AudioExtractionProgress {
   percent: number;
   currentTime: string;
@@ -200,6 +205,130 @@ export async function cleanupTempAudio(audioPath: string): Promise<void> {
   } catch (err) {
     console.warn('Failed to cleanup temp audio:', err);
   }
+}
+
+/**
+ * 从视频文件提取指定时间段的音频（用于长视频按需分段提取）
+ * Uses -ss before input for fast seeking
+ */
+export async function extractAudioSegment(
+  videoPath: string,
+  options: AudioSegmentOptions,
+  onProgress?: (progress: AudioExtractionProgress) => void,
+  onLog?: (message: string) => void
+): Promise<string> {
+  const {
+    format = 'wav',
+    sampleRate = 16000,
+    channels = 1,
+    bitrate = '128k',
+    startTime,
+    duration,
+    customFfmpegPath,
+    customFfprobePath,
+  } = options;
+
+  // Set custom FFprobe path if provided
+  if (customFfprobePath) {
+    if (fs.existsSync(customFfprobePath)) {
+      if (onLog) onLog(`[DEBUG] Using Custom FFprobe Path: ${customFfprobePath}`);
+      ffmpeg.setFfprobePath(customFfprobePath);
+    } else {
+      if (onLog)
+        onLog(`[WARN] Custom FFprobe Path not found: ${customFfprobePath}, using default.`);
+    }
+  }
+
+  // Set custom FFmpeg path if provided
+  if (customFfmpegPath) {
+    if (fs.existsSync(customFfmpegPath)) {
+      if (onLog) onLog(`[DEBUG] Using Custom FFmpeg Path: ${customFfmpegPath}`);
+      ffmpeg.setFfmpegPath(customFfmpegPath);
+    } else {
+      if (onLog) onLog(`[WARN] Custom FFmpeg Path not found: ${customFfmpegPath}, using default.`);
+    }
+  }
+
+  // Create temp output file path
+  const tempDir = os.tmpdir();
+  const outputFileName = `audio_segment_${Date.now()}_${startTime.toFixed(0)}.${format}`;
+  const outputPath = path.join(tempDir, outputFileName);
+
+  return new Promise((resolve, reject) => {
+    // Use -ss before -i for fast seeking (input seeking)
+    let command = ffmpeg(videoPath)
+      .inputOptions([`-ss ${startTime}`]) // Seek to start time before reading input
+      .outputOptions([
+        `-t ${duration}`, // Duration to extract
+        `-ar ${sampleRate}`, // Sample rate
+        `-ac ${channels}`, // Channels
+      ])
+      .output(outputPath);
+
+    // Set bitrate for mp3 format
+    if (format === 'mp3') {
+      command = command.audioBitrate(bitrate);
+    }
+
+    // Log FFmpeg path and command
+    if (onLog) {
+      onLog(`[DEBUG] FFmpeg Path: ${getFFmpegPath()}`);
+      onLog(`[DEBUG] Extracting segment: start=${startTime}s, duration=${duration}s`);
+    }
+
+    // Listen for logs
+    if (onLog) {
+      command.on('start', (commandLine) => {
+        onLog(`[DEBUG] FFmpeg Start: ${commandLine}`);
+      });
+      command.on('stderr', (stderrLine) => {
+        const lowerLine = stderrLine.toLowerCase();
+        if (
+          lowerLine.includes('error') ||
+          lowerLine.includes('exception') ||
+          lowerLine.includes('failed') ||
+          lowerLine.includes('warning') ||
+          lowerLine.includes('fatal') ||
+          lowerLine.includes('panic')
+        ) {
+          onLog(`[WARN] [FFmpeg] ${stderrLine}`);
+        }
+      });
+    }
+
+    // Listen for progress
+    if (onProgress) {
+      command.on('progress', (progress) => {
+        onProgress({
+          percent: progress.percent || 0,
+          currentTime: progress.timemark || '00:00:00',
+          targetSize: progress.targetSize ? `${progress.targetSize}KB` : 'Unknown',
+        });
+      });
+    }
+
+    // Listen for completion
+    command.on('end', () => {
+      activeAudioCommands.delete(command);
+      resolve(outputPath);
+    });
+
+    // Listen for errors
+    command.on('error', (err) => {
+      activeAudioCommands.delete(command);
+      // Clean up temp file if it was created
+      if (fs.existsSync(outputPath)) {
+        fs.unlinkSync(outputPath);
+      }
+      reject(new Error(`FFmpeg segment extraction failed: ${err.message}`));
+    });
+
+    // Start processing
+    command.run();
+
+    // Track this command for cleanup on app quit
+    activeAudioCommands.add(command);
+  });
 }
 
 /**

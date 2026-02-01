@@ -243,6 +243,7 @@ export async function runRegenerateOperation(
     refinementSemaphore: semaphores.refinement,
     alignmentSemaphore: semaphores.alignment,
     audioBuffer,
+    isLongVideo: false, // Regeneration always uses in-memory AudioBuffer
     chunkDuration,
     totalChunks: chunks.length,
   };

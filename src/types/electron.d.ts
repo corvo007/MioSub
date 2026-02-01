@@ -10,6 +10,11 @@ export interface AudioExtractionOptions {
   customFfmpegPath?: string;
 }
 
+export interface AudioSegmentOptions extends AudioExtractionOptions {
+  startTime: number; // Start time in seconds
+  duration: number; // Duration in seconds
+}
+
 export interface AudioExtractionProgress {
   percent: number;
   currentTime: string;
@@ -113,6 +118,14 @@ export interface ElectronAPI {
   extractAudioFFmpeg: (
     videoPath: string,
     options?: AudioExtractionOptions
+  ) => Promise<{
+    success: boolean;
+    audioPath?: string;
+    error?: string;
+  }>;
+  extractAudioSegment: (
+    videoPath: string,
+    options: AudioSegmentOptions
   ) => Promise<{
     success: boolean;
     audioPath?: string;

@@ -37,6 +37,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // FFmpeg APIs
   extractAudioFFmpeg: (videoPath: string, options?: any) =>
     ipcRenderer.invoke('extract-audio-ffmpeg', videoPath, options),
+  extractAudioSegment: (videoPath: string, options: any) =>
+    ipcRenderer.invoke('extract-audio-segment', videoPath, options),
   readExtractedAudio: (audioPath: string) => ipcRenderer.invoke('read-extracted-audio', audioPath),
   cleanupTempAudio: (audioPath: string) => ipcRenderer.invoke('cleanup-temp-audio', audioPath),
   getAudioInfo: (videoPath: string) => ipcRenderer.invoke('get-audio-info', videoPath),

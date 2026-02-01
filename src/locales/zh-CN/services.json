@@ -121,7 +121,8 @@
       "waitingTranslation": "等待翻译...",
       "waitingWaitDeps": "等待依赖...",
       "waitingProofread": "等待校对...",
-      "regenerating": "正在重新生成 ({{current}}/{{total}})..."
+      "regenerating": "正在重新生成 ({{current}}/{{total}})...",
+      "longVideoMode": "检测到长视频 ({{duration}})，使用按需提取模式。"
     },
     "errors": {
       "translationFailed": "翻译失败: {{error}}",

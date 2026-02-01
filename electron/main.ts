@@ -60,6 +60,7 @@ import fs from 'fs';
 import { getBinaryPath, getFileHash, getLogDir, getStorageDir } from './utils/paths.ts';
 import {
   extractAudioFromVideo,
+  extractAudioSegment,
   readAudioBuffer,
   cleanupTempAudio,
   getAudioInfo,
@@ -67,6 +68,7 @@ import {
 import type {
   AudioExtractionOptions,
   AudioExtractionProgress,
+  AudioSegmentOptions,
 } from './services/ffmpegAudioExtractor.ts';
 import { storageService } from './services/storage.ts';
 import { Readable } from 'stream';
@@ -757,6 +759,42 @@ ipcMain.handle('get-audio-info', async (_event, videoPath: string) => {
     return { success: false, error: error.message };
   }
 });
+
+// IPC Handler: Extract Audio Segment (for long video on-demand extraction)
+ipcMain.handle(
+  'extract-audio-segment',
+  async (event, videoPath: string, options: AudioSegmentOptions) => {
+    try {
+      const audioPath = await extractAudioSegment(
+        videoPath,
+        options,
+        (progress: AudioExtractionProgress) => {
+          // Send progress updates to renderer
+          event.sender.send('audio-extraction-progress', progress);
+        },
+        (logMessage: string) => {
+          // Capture FFmpeg logs
+          if (logMessage.startsWith('[DEBUG]')) {
+            console.log(`[DEBUG] [FFmpeg Segment] ${logMessage.replace('[DEBUG] ', '')}`);
+          } else {
+            console.log(`[DEBUG] [FFmpeg Segment] ${logMessage}`);
+          }
+        }
+      );
+      return { success: true, audioPath };
+    } catch (error: any) {
+      console.error('[Main] FFmpeg segment extraction failed:', error);
+      if (
+        !error.message?.includes('cancelled') &&
+        !error.message?.includes('SIGKILL') &&
+        !error.message?.includes('killed')
+      ) {
+        Sentry.captureException(error, { tags: { action: 'extract-audio-segment' } });
+      }
+      return { success: false, error: error.message };
+    }
+  }
+);
 
 // IPC Handler: Storage
 ipcMain.handle('storage-get', async () => {

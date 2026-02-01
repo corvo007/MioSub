@@ -36,7 +36,8 @@ export const generateSubtitles = async (
   onGlossaryReady?: (metadata: GlossaryExtractionMetadata) => Promise<GlossaryItem[]>,
   signal?: AbortSignal,
   videoInfo?: VideoInfo,
-  existingProfiles: SpeakerUIProfile[] = []
+  existingProfiles: SpeakerUIProfile[] = [],
+  videoPath?: string // Optional video path for long video on-demand extraction
 ): Promise<{
   subtitles: SubtitleItem[];
   speakerProfiles: SpeakerUIProfile[];
@@ -97,6 +98,8 @@ export const generateSubtitles = async (
   let chunksParams: any[]; // Using explicit type locally from preprocessor/index if imported, or inference
   let vadSegments: any[];
   let chunkDuration: number;
+  let isLongVideoMode = false; // Flag for long video on-demand extraction
+  let longVideoPath: string | undefined; // Video path for long video extraction
 
   if (shouldSkipAudioProcessing) {
     logger.info('🚀 [OPTIMIZATION] Skipping Audio Processing (Decoding/Segmentation).');
@@ -119,11 +122,14 @@ export const generateSubtitles = async (
     });
   } else {
     // Preprocess: Decode audio and segment into chunks
-    const result = await preprocessAudio(audioSource, settings, onProgress, signal);
+    const result = await preprocessAudio(audioSource, settings, onProgress, signal, videoPath);
     audioBuffer = result.audioBuffer;
     chunksParams = result.chunksParams;
     vadSegments = result.vadSegments;
     chunkDuration = result.chunkDuration;
+    // Store long video info for chunk processing
+    isLongVideoMode = result.isLongVideo;
+    longVideoPath = result.videoPath;
   }
   const totalChunks = chunksParams.length;
 
@@ -292,6 +298,8 @@ export const generateSubtitles = async (
         refinementSemaphore,
         alignmentSemaphore,
         audioBuffer,
+        videoPath: longVideoPath,
+        isLongVideo: isLongVideoMode,
         chunkDuration,
         totalChunks,
       });

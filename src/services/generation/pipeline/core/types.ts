@@ -42,7 +42,9 @@ export interface ChunkDependencies {
   transcriptionSemaphore: Semaphore;
   refinementSemaphore: Semaphore;
   alignmentSemaphore: Semaphore;
-  audioBuffer: AudioBuffer;
+  audioBuffer: AudioBuffer | null; // null for long videos (on-demand extraction)
+  videoPath?: string; // Required for long videos (on-demand extraction)
+  isLongVideo: boolean; // Flag to indicate long video mode
   chunkDuration: number;
   totalChunks: number;
   /** Temporary storage for chunk analytics (set during processing) */

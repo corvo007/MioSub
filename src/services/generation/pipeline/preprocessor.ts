@@ -3,6 +3,7 @@ import { type ChunkStatus } from '@/types/api';
 import { decodeAudioWithRetry } from '@/services/audio/decoder';
 import { formatTime } from '@/services/subtitle/time';
 import { SmartSegmenter } from '@/services/audio/segmenter';
+import { LONG_VIDEO_THRESHOLD, isLongVideo } from '@/services/audio/segmentExtractor';
 import { logger } from '@/services/utils/logger';
 import i18n from '@/i18n';
 
@@ -13,7 +14,9 @@ export interface ChunkParams {
 }
 
 export interface PreprocessResult {
-  audioBuffer: AudioBuffer;
+  audioBuffer: AudioBuffer | null; // null for long videos (on-demand extraction)
+  videoPath?: string; // Required for long videos (on-demand extraction)
+  isLongVideo: boolean; // Flag to indicate long video mode
   chunksParams: ChunkParams[];
   vadSegments?: { start: number; end: number }[];
   totalDuration: number;
@@ -22,13 +25,66 @@ export interface PreprocessResult {
 
 /**
  * Preprocess audio: decode and segment into chunks
+ * For long videos (>2h), uses fixed segmentation without loading AudioBuffer to avoid OOM
  */
 export async function preprocessAudio(
   audioSource: File | AudioBuffer,
   settings: AppSettings,
   onProgress?: (update: ChunkStatus) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  videoPath?: string // Optional video path for long video on-demand extraction
 ): Promise<PreprocessResult> {
+  const chunkDuration = settings.chunkDuration || 300;
+
+  // Check if we should use long video mode (on-demand extraction)
+  // This requires: Electron environment + video path + duration > threshold
+  if (videoPath && window.electronAPI?.getAudioInfo) {
+    try {
+      const infoResult = await window.electronAPI.getAudioInfo(videoPath);
+      if (infoResult.success && infoResult.info) {
+        const duration = infoResult.info.duration;
+
+        if (isLongVideo(duration)) {
+          logger.info(
+            `Long video detected (${formatTime(duration)} > ${formatTime(LONG_VIDEO_THRESHOLD)}). Using on-demand segment extraction.`
+          );
+
+          onProgress?.({
+            id: 'decoding',
+            total: 1,
+            status: 'completed',
+            message: i18n.t('services:pipeline.status.longVideoMode', {
+              duration: formatTime(duration),
+            }),
+          });
+
+          // Generate fixed chunks without loading AudioBuffer
+          const chunksParams = generateFixedChunks(duration, chunkDuration);
+
+          logger.info('Fixed Segmentation Results (Long Video Mode)', {
+            count: chunksParams.length,
+            chunks: chunksParams,
+          });
+
+          return {
+            audioBuffer: null,
+            videoPath,
+            isLongVideo: true,
+            chunksParams,
+            totalDuration: duration,
+            chunkDuration,
+          };
+        }
+      }
+    } catch (e) {
+      logger.warn(
+        'Failed to get audio info for long video detection, falling back to standard mode',
+        e
+      );
+    }
+  }
+
+  // Standard mode: decode audio into memory
   // 1. Decode Audio
   onProgress?.({
     id: 'decoding',
@@ -66,7 +122,6 @@ export async function preprocessAudio(
   }
 
   const totalDuration = audioBuffer.duration;
-  const chunkDuration = settings.chunkDuration || 300;
   const totalChunks = Math.ceil(totalDuration / chunkDuration);
 
   // 2. Prepare chunks
@@ -126,9 +181,29 @@ export async function preprocessAudio(
 
   return {
     audioBuffer,
+    videoPath,
+    isLongVideo: false,
     chunksParams,
     vadSegments,
     totalDuration,
     chunkDuration,
   };
+}
+
+/**
+ * Generate fixed-size chunks for long videos
+ */
+function generateFixedChunks(duration: number, chunkDuration: number): ChunkParams[] {
+  const chunks: ChunkParams[] = [];
+  let cursor = 0;
+  let index = 1;
+
+  while (cursor < duration) {
+    const end = Math.min(cursor + chunkDuration, duration);
+    chunks.push({ index, start: cursor, end });
+    cursor = end;
+    index++;
+  }
+
+  return chunks;
 }

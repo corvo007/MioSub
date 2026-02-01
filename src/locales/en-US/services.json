@@ -121,7 +121,8 @@
       "waitingTranslation": "Waiting for translation...",
       "waitingWaitDeps": "Waiting for dependencies...",
       "waitingProofread": "Waiting for proofreading...",
-      "regenerating": "Regenerating ({{current}}/{{total}})..."
+      "regenerating": "Regenerating ({{current}}/{{total}})...",
+      "longVideoMode": "Long video detected ({{duration}}). Using on-demand extraction mode."
     },
     "errors": {
       "translationFailed": "Translation failed: {{error}}",

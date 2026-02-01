@@ -319,7 +319,9 @@ export function useGeneration({
         signal,
         // Video info for artifact metadata
         { filename: file.name, duration },
-        speakerProfiles
+        speakerProfiles,
+        // Video path for long video on-demand extraction (Electron only)
+        (file as any).path || window.electronAPI?.getFilePath?.(file)
       );
 
       // Capture analytics for reporting
