@@ -177,7 +177,15 @@ export class EndToEndPipeline {
       if (this.isAborted) throw new Error(t('endToEnd.userCancelled'));
 
       // Create output directory with video title
-      const safeTitle = videoInfo.title.replace(/[<>:"/\\|?*]/g, '_').substring(0, 100);
+      // Replace characters that are:
+      // - Windows illegal: < > : " / \ | ? *
+      // - Shell special: ' ` $ & ! # % @ ; ~ ( ) [ ] { }
+      // - Smart quotes: ' ' " "
+      const safeTitle = videoInfo.title
+        .replace(/[<>:"/\\|?*'`$&!#%@;~(){}''""[\]]/g, '_')
+        .replace(/_+/g, '_') // Collapse multiple underscores
+        .replace(/^_|_$/g, '') // Trim leading/trailing underscores
+        .substring(0, 100);
       const outputDir = path.join(config.outputDir, safeTitle);
       if (!fs.existsSync(outputDir)) {
         fs.mkdirSync(outputDir, { recursive: true });

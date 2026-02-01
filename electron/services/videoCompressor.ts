@@ -392,18 +392,17 @@ export class VideoCompressorService {
 
       // Subtitle Hardsub
       if (options.subtitlePath) {
-        // Escape path for FFmpeg filter:
-        // Windows path separators '\' need to be escaped as '\\' or '/'
-        // Colons ':' need to be escaped as '\:'
-        // Escape path for FFmpeg filter:
-        // 1. Convert backslashes to forward slashes
-        // 2. Escape colons (key for Windows paths like C:/)
-        // 3. Escape single quotes (because we wrap the path in single quotes)
-        // 4. Escape brackets [ and ] (FFmpeg treats them specially)
+        // Escape path for FFmpeg filter (libavfilter escaping rules):
+        // 1. Convert backslashes to forward slashes (Windows path compatibility)
+        // 2. Escape colons (required for Windows drive letters like C:/)
+        // 3. Escape single quotes with backslash (FFmpeg filter escaping, NOT shell escaping)
+        //    - Shell escaping uses '\'' but fluent-ffmpeg passes args directly without shell
+        //    - FFmpeg filter parser expects \' for literal single quote inside single-quoted string
+        // 4. Escape brackets [ and ] (FFmpeg treats them as special characters)
         const escapedPath = options.subtitlePath
           .replace(/\\/g, '/')
           .replace(/:/g, '\\:')
-          .replace(/'/g, "'\\''")
+          .replace(/'/g, "\\'")
           .replace(/\[/g, '\\[')
           .replace(/\]/g, '\\]');
         logMsg(`[Compression] Subtitle path escaped: ${escapedPath}`);
@@ -413,11 +412,11 @@ export class VideoCompressorService {
         // Check for bundled fonts directory
         const fontsDir = path.join(getResourcesPath(), 'fonts');
         if (fs.existsSync(fontsDir)) {
-          // Escape fonts dir similar to subtitle path
+          // Escape fonts dir using same FFmpeg filter escaping rules
           const escapedFontsDir = fontsDir
             .replace(/\\/g, '/')
             .replace(/:/g, '\\:')
-            .replace(/'/g, "'\\''")
+            .replace(/'/g, "\\'")
             .replace(/\[/g, '\\[')
             .replace(/\]/g, '\\]');
 

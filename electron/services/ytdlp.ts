@@ -888,7 +888,9 @@ class YtDlpService {
   ): Promise<string> {
     console.log(`[DEBUG] [Download] 开始下载: formatId=${formatId}, 保存到: ${outputDir}`);
     // Add video ID to filename to prevent overwriting different videos with same title
-    const outputTemplate = path.join(outputDir, '%(title)s [%(id)s].%(ext)s');
+    // Limit title to 80 characters to avoid path length issues (YouTube max is 100 chars)
+    // Using .80s truncates at 80 characters (not bytes)
+    const outputTemplate = path.join(outputDir, '%(title).80s [%(id)s].%(ext)s');
     const baseArgs = fs.existsSync(this.quickjsPath)
       ? ['--js-runtimes', `quickjs:${this.quickjsPath}`]
       : [];
