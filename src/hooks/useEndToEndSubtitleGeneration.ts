@@ -365,6 +365,21 @@ export function useEndToEndSubtitleGeneration({
         // Guard: No subtitles generated
         if (!subtitles || subtitles.length === 0) {
           logger.warn('[EndToEnd] No subtitles generated');
+
+          // Check if all failures were due to user-actionable errors (e.g., API quota exhausted)
+          const failedChunks = chunkAnalytics.filter((c) => c.status === 'failed');
+          const allFailuresUserActionable =
+            failedChunks.length > 0 && failedChunks.every((c) => c.isUserActionable);
+
+          if (allFailuresUserActionable) {
+            // Return rate limit error instead of generic "no speech" error
+            return {
+              success: false,
+              error: t('errors.rateLimited'),
+              errorCode: 'RATE_LIMITED',
+            };
+          }
+
           return {
             success: false,
             error: t('errors.noSpeech'),

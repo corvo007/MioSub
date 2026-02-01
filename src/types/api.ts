@@ -54,6 +54,8 @@ export interface ChunkAnalytics {
   duration_ms: number;
   /** Total wall-clock time spent processing this chunk in ms */
   process_ms: number;
+  /** Whether the failure was due to a user-actionable error (auth, quota, billing) */
+  isUserActionable?: boolean;
 
   /** Structured analytics for each processing step */
   steps: {

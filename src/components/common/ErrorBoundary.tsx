@@ -2,6 +2,7 @@ import React, { type ErrorInfo, type ReactNode } from 'react';
 import { Translation } from 'react-i18next';
 import { AlertCircle, RefreshCcw } from 'lucide-react';
 import { logger } from '@/services/utils/logger';
+import { UserActionableError } from '@/services/utils/errors';
 import * as Sentry from '@sentry/electron/renderer';
 
 interface Props {
@@ -31,9 +32,12 @@ export class ErrorBoundary extends React.Component<Props, State> {
     this.setState({ errorInfo });
 
     // Report to Sentry with React component context
-    Sentry.captureException(error, {
-      extra: { componentStack: errorInfo.componentStack },
-    });
+    // Skip user-actionable errors (auth, quota, billing) - these are not bugs
+    if (!(error instanceof UserActionableError)) {
+      Sentry.captureException(error, {
+        extra: { componentStack: errorInfo.componentStack },
+      });
+    }
   }
 
   private handleRetry = () => {

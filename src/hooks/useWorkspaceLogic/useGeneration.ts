@@ -329,7 +329,18 @@ export function useGeneration({
       chunkAnalytics = resultAnalytics;
 
       // Then check subtitle results
-      if (result.length === 0) throw new Error(t('workspace:hooks.generation.errors.noSubtitles'));
+      if (result.length === 0) {
+        // Check if all failures were due to user-actionable errors (e.g., API quota exhausted)
+        const failedChunks = chunkAnalytics.filter((c) => c.status === 'failed');
+        const allFailuresUserActionable =
+          failedChunks.length > 0 && failedChunks.every((c) => c.isUserActionable);
+
+        if (allFailuresUserActionable) {
+          // Don't report to Sentry - root cause is user-actionable
+          throw new UserActionableError(t('workspace:hooks.generation.errors.noSubtitles'));
+        }
+        throw new Error(t('workspace:hooks.generation.errors.noSubtitles'));
+      }
 
       setSubtitles(result);
       setSpeakerProfiles(updatedProfiles);

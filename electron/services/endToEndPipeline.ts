@@ -347,7 +347,21 @@ export class EndToEndPipeline {
       );
 
       if (!subtitleResult.success) {
-        throw new Error(subtitleResult.error || t('endToEnd.subtitleFailed'));
+        // Check if this is a user-actionable error (API key, rate limit, etc.)
+        const userActionableErrorCodes = [
+          'API_KEY_ERROR',
+          'RATE_LIMITED',
+          'USER_ACTION_REQUIRED',
+          'CANCELLED',
+        ];
+        const isUserActionable =
+          subtitleResult.errorCode && userActionableErrorCodes.includes(subtitleResult.errorCode);
+
+        const error = new Error(subtitleResult.error || t('endToEnd.subtitleFailed'));
+        if (isUserActionable) {
+          (error as any).isExpected = true;
+        }
+        throw error;
       }
 
       this.outputs.subtitles = subtitleResult.subtitles;
@@ -512,6 +526,7 @@ export class EndToEndPipeline {
     subtitleContent?: string;
     subtitleFormat?: string;
     error?: string;
+    errorCode?: string;
     chunkAnalytics?: any[];
   }> {
     return new Promise((resolve, reject) => {
@@ -540,6 +555,7 @@ export class EndToEndPipeline {
           subtitleContent?: string;
           subtitleFormat?: string;
           error?: string;
+          errorCode?: string;
           chunkAnalytics?: any[];
         }
       ) => {

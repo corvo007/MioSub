@@ -362,6 +362,15 @@ export class ChunkProcessor {
       const errorMsg = actionableMsg || i18n.t('services:pipeline.status.failed');
       analytics.status = 'failed';
       analytics.process_ms = Date.now() - processStartTime;
+
+      // Track whether this failure was due to a user-actionable error
+      const isUserActionable =
+        e instanceof UserActionableError ||
+        actionableMsg != null ||
+        e.message?.includes('cancelled') ||
+        e.message?.includes('aborted');
+      analytics.isUserActionable = isUserActionable;
+
       onProgress?.({
         id: index,
         total: totalChunks,
@@ -372,12 +381,6 @@ export class ChunkProcessor {
 
       // Sentry: Report chunk failure with context
       // Skip user-actionable errors (auth, quota, billing) - these are not bugs
-      const isUserActionable =
-        e instanceof UserActionableError ||
-        actionableMsg != null ||
-        e.message?.includes('cancelled') ||
-        e.message?.includes('aborted');
-
       if (!isUserActionable) {
         Sentry.captureException(e, {
           level: 'warning',
