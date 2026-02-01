@@ -81,15 +81,25 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       // Build-time environment variables
-      // Note: DEBUG_BUILD comes from CLI (cross-env), others from .env file
+      // Note: DEBUG_BUILD comes from CLI (cross-env), others from .env file or CI env
       // eslint-disable-next-line no-undef
       'process.env.DEBUG_BUILD': JSON.stringify(process.env.DEBUG_BUILD || 'false'),
       'process.env.COMMIT_HASH': JSON.stringify(commitHash),
-      // Analytics API Keys (from .env)
-      'process.env.VITE_AMPLITUDE_API_KEY': JSON.stringify(env.VITE_AMPLITUDE_API_KEY || ''),
-      'process.env.VITE_MIXPANEL_TOKEN': JSON.stringify(env.VITE_MIXPANEL_TOKEN || ''),
-      // Sentry DSN (from .env)
-      'process.env.VITE_SENTRY_DSN': JSON.stringify(env.VITE_SENTRY_DSN || ''),
+      // Analytics API Keys (from CI env or .env file)
+      // Note: process.env.* for CI, env.* for local .env file
+      'process.env.VITE_AMPLITUDE_API_KEY': JSON.stringify(
+        // eslint-disable-next-line no-undef
+        process.env.VITE_AMPLITUDE_API_KEY || env.VITE_AMPLITUDE_API_KEY || ''
+      ),
+      'process.env.VITE_MIXPANEL_TOKEN': JSON.stringify(
+        // eslint-disable-next-line no-undef
+        process.env.VITE_MIXPANEL_TOKEN || env.VITE_MIXPANEL_TOKEN || ''
+      ),
+      // Sentry DSN (from CI env or .env file)
+      'process.env.VITE_SENTRY_DSN': JSON.stringify(
+        // eslint-disable-next-line no-undef
+        process.env.VITE_SENTRY_DSN || env.VITE_SENTRY_DSN || ''
+      ),
       'process.env.APP_VERSION': JSON.stringify(packageJson.version),
     },
   };
