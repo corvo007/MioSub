@@ -113,7 +113,8 @@
     "replace": "Replace",
     "replaceAll": "Replace All",
     "nextHint": "Next",
-    "replaceAllHint": "Replace all"
+    "replaceAllHint": "Replace all",
+    "regexError": "Invalid regex syntax"
   },
   "batchReplace": {
     "title": "Batch Replace",

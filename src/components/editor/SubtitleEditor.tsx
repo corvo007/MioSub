@@ -781,6 +781,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
             caseSensitive={searchReplace.state.caseSensitive}
             currentMatchIndex={searchReplace.currentMatchIndex}
             totalMatches={searchReplace.totalMatches}
+            regexError={searchReplace.regexError}
             onSearchChange={searchReplace.setSearchPattern}
             onReplaceChange={searchReplace.setReplaceWith}
             onRegexChange={searchReplace.setIsRegex}

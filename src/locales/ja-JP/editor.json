@@ -113,7 +113,8 @@
     "replace": "置換",
     "replaceAll": "すべて置換",
     "nextHint": "次へ",
-    "replaceAllHint": "すべて置換"
+    "replaceAllHint": "すべて置換",
+    "regexError": "正規表現の構文エラー"
   },
   "batchReplace": {
     "title": "一括置換",

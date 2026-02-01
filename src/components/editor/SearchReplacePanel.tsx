@@ -24,6 +24,8 @@ interface SearchReplacePanelProps {
   caseSensitive: boolean;
   currentMatchIndex: number;
   totalMatches: number;
+  /** Error message when regex is invalid */
+  regexError?: string | null;
   // Callbacks
   onSearchChange: (pattern: string) => void;
   onReplaceChange: (text: string) => void;
@@ -44,6 +46,7 @@ export const SearchReplacePanel: React.FC<SearchReplacePanelProps> = ({
   caseSensitive,
   currentMatchIndex,
   totalMatches,
+  regexError,
   onSearchChange,
   onReplaceChange,
   onRegexChange,
@@ -149,8 +152,18 @@ export const SearchReplacePanel: React.FC<SearchReplacePanelProps> = ({
             value={searchPattern}
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={t('searchReplace.searchPlaceholder')}
-            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-md text-slate-700 placeholder-slate-400 focus:border-brand-purple focus:bg-white focus:outline-none focus:ring-1 focus:ring-brand-purple/20 transition-all"
+            className={cn(
+              'w-full px-3 py-2 text-sm bg-slate-50 border rounded-md text-slate-700 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-1 transition-all',
+              regexError
+                ? 'border-red-300 focus:border-red-400 focus:ring-red-200/50'
+                : 'border-slate-200 focus:border-brand-purple focus:ring-brand-purple/20'
+            )}
           />
+          {regexError && (
+            <div className="mt-1 text-xs text-red-500 truncate" title={regexError}>
+              {t('searchReplace.regexError')}
+            </div>
+          )}
         </div>
 
         {/* Replace Input */}

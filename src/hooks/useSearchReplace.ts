@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect, useDeferredValue } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { type SubtitleItem } from '@/types/subtitle';
 import {
   type BatchReplaceConfig,
@@ -10,6 +10,7 @@ import {
 // Performance limits
 const MIN_SEARCH_LENGTH = 1;
 const MAX_SUBTITLES_FOR_SHORT_PATTERN = 5000;
+const REGEX_COMPILE_DEBOUNCE_MS = 300;
 
 export interface SearchMatch {
   subtitleId: string;
@@ -31,6 +32,8 @@ export interface UseSearchReplaceReturn {
   matches: SearchMatch[];
   currentMatchIndex: number;
   totalMatches: number;
+  /** Error message when regex is invalid (only in regex mode) */
+  regexError: string | null;
 
   // Actions
   setSearchPattern: (pattern: string) => void;
@@ -65,29 +68,58 @@ export function useSearchReplace(subtitles: SubtitleItem[]): UseSearchReplaceRet
 
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
 
-  // B1: Defer search pattern for large datasets to avoid blocking UI
-  const deferredSearchPattern = useDeferredValue(state.searchPattern);
+  // Debounced search pattern for regex compilation (300ms delay)
+  const [debouncedSearchPattern, setDebouncedSearchPattern] = useState('');
+  const [regexError, setRegexError] = useState<string | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Build config from deferred state for matching
-  const deferredConfig: BatchReplaceConfig = useMemo(
+  // Debounce search pattern updates
+  useEffect(() => {
+    // Clear previous timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Clear error immediately when user starts typing (responsive feedback)
+    if (state.searchPattern !== debouncedSearchPattern) {
+      setRegexError(null);
+    }
+
+    // Set new timer
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedSearchPattern(state.searchPattern);
+    }, REGEX_COMPILE_DEBOUNCE_MS);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [state.searchPattern, debouncedSearchPattern]);
+
+  // Build config from debounced state for matching
+  const debouncedConfig: BatchReplaceConfig = useMemo(
     () => ({
-      searchPattern: deferredSearchPattern,
+      searchPattern: debouncedSearchPattern,
       replaceWith: state.replaceWith,
       isRegex: state.isRegex,
       caseSensitive: state.caseSensitive,
       targetField: 'both',
     }),
-    [deferredSearchPattern, state.replaceWith, state.isRegex, state.caseSensitive]
+    [debouncedSearchPattern, state.replaceWith, state.isRegex, state.caseSensitive]
   );
 
-  // Find all matches with performance protection
+  // Find all matches with performance protection and error handling
   const matches = useMemo(() => {
-    if (!deferredSearchPattern || deferredSearchPattern.length < MIN_SEARCH_LENGTH) return [];
+    if (!debouncedSearchPattern || debouncedSearchPattern.length < MIN_SEARCH_LENGTH) {
+      setRegexError(null);
+      return [];
+    }
 
     // Skip search for very large datasets with short patterns (non-regex)
     if (
       !state.isRegex &&
-      deferredSearchPattern.length < 2 &&
+      debouncedSearchPattern.length < 2 &&
       subtitles.length > MAX_SUBTITLES_FOR_SHORT_PATTERN
     ) {
       return [];
@@ -96,7 +128,8 @@ export function useSearchReplace(subtitles: SubtitleItem[]): UseSearchReplaceRet
     const result: SearchMatch[] = [];
 
     try {
-      const regex = createSearchRegex(deferredConfig);
+      const regex = createSearchRegex(debouncedConfig);
+      setRegexError(null);
 
       subtitles.forEach((sub, index) => {
         // Check original
@@ -111,12 +144,17 @@ export function useSearchReplace(subtitles: SubtitleItem[]): UseSearchReplaceRet
         }
         regex.lastIndex = 0;
       });
-    } catch {
-      // Invalid regex, return empty
+    } catch (e) {
+      // Only show error in regex mode
+      if (state.isRegex) {
+        const message = e instanceof Error ? e.message : 'Invalid regex pattern';
+        setRegexError(message);
+      }
+      return [];
     }
 
     return result;
-  }, [subtitles, deferredSearchPattern, state.isRegex, deferredConfig]);
+  }, [subtitles, debouncedSearchPattern, state.isRegex, debouncedConfig]);
 
   // A2: Build O(1) lookup set for isMatch
   const matchSet = useMemo(() => {
@@ -240,6 +278,7 @@ export function useSearchReplace(subtitles: SubtitleItem[]): UseSearchReplaceRet
     matches,
     currentMatchIndex,
     totalMatches: matches.length,
+    regexError,
     setSearchPattern,
     setReplaceWith,
     setIsRegex,

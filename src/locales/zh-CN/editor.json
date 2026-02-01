@@ -114,7 +114,8 @@
     "replace": "替换",
     "replaceAll": "全部替换",
     "nextHint": "下一个",
-    "replaceAllHint": "全部替换"
+    "replaceAllHint": "全部替换",
+    "regexError": "正则表达式语法错误"
   },
   "batchReplace": {
     "title": "批量替换",
