@@ -8,6 +8,7 @@ import { BaseStep } from '@/services/generation/pipeline/core/BaseStep';
 import { type StepContext, type StepName } from '@/services/generation/pipeline/core/types';
 import { type SubtitleItem } from '@/types/subtitle';
 import { sliceAudioBuffer } from '@/services/audio/processor';
+import { extractSegmentAsBlob } from '@/services/audio/segmentExtractor';
 import { blobToBase64 } from '@/services/audio/converter';
 import { getSystemInstructionWithDiarization, getRefinementPrompt } from '@/services/llm/prompts';
 import { REFINEMENT_SCHEMA, REFINEMENT_WITH_DIARIZATION_SCHEMA } from '@/services/llm/schemas';
@@ -43,7 +44,7 @@ export class RefinementStep extends BaseStep<RefinementInput, SubtitleItem[]> {
   protected async execute(input: RefinementInput, ctx: StepContext): Promise<SubtitleItem[]> {
     const { chunk, deps, pipelineContext, chunkDuration } = ctx;
     const { ai, settings, signal, trackUsage } = pipelineContext;
-    const { audioBuffer } = deps;
+    const { audioBuffer, videoPath, isLongVideo } = deps;
     const targetLanguage = settings.targetLanguage || 'Simplified Chinese';
     const glossary = ctx.glossary || [];
     const speakerProfiles = ctx.speakerProfiles;
@@ -54,7 +55,21 @@ export class RefinementStep extends BaseStep<RefinementInput, SubtitleItem[]> {
     // Prepare audio (skip if mockApi.refinement - optimization matching original)
     let base64Audio = '';
     if (!settings.debug?.mockApi?.refinement) {
-      const refineWavBlob = await sliceAudioBuffer(audioBuffer, chunk.start, chunk.end);
+      let refineWavBlob: Blob;
+
+      if (isLongVideo && videoPath) {
+        // Long video mode: extract segment on-demand via FFmpeg
+        logger.debug(
+          `[Chunk ${chunk.index}] Using on-demand segment extraction for refinement (long video mode)`
+        );
+        refineWavBlob = await extractSegmentAsBlob(videoPath, chunk.start, chunk.end - chunk.start);
+      } else if (audioBuffer) {
+        // Standard mode: slice from in-memory AudioBuffer
+        refineWavBlob = await sliceAudioBuffer(audioBuffer, chunk.start, chunk.end);
+      } else {
+        throw new Error('No audio source available for refinement');
+      }
+
       base64Audio = await blobToBase64(refineWavBlob);
       ctx.base64Audio = base64Audio; // Cache for alignment step
     }

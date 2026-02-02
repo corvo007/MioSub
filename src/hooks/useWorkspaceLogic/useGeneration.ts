@@ -180,6 +180,12 @@ export function useGeneration({
       );
     }
 
+    // Register active generation task for app quit tracking
+    const taskId = `workspace_${startAt}`;
+    if (window.electronAPI?.generation) {
+      void window.electronAPI.generation.register(taskId, 'workspace');
+    }
+
     // Create new AbortController
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
@@ -376,6 +382,11 @@ export function useGeneration({
         );
       }
 
+      // Unregister active generation task
+      if (window.electronAPI?.generation) {
+        void window.electronAPI.generation.unregister(`workspace_${startAt}`);
+      }
+
       addToast(t('workspace:hooks.generation.status.success'), 'success');
     } catch (err: unknown) {
       const error = err as Error;
@@ -417,10 +428,16 @@ export function useGeneration({
             {
               partial_count: currentSubtitles.length,
               duration_ms: Date.now() - startAt,
+              reason: 'user_cancelled',
               chunk_durations: chunkAnalytics,
             },
             'interaction'
           );
+        }
+
+        // Unregister active generation task
+        if (window.electronAPI?.generation) {
+          void window.electronAPI.generation.unregister(`workspace_${startAt}`);
         }
       } else {
         setStatus(GenerationStatus.ERROR);
@@ -439,6 +456,11 @@ export function useGeneration({
             },
             'interaction'
           );
+        }
+
+        // Unregister active generation task
+        if (window.electronAPI?.generation) {
+          void window.electronAPI.generation.unregister(`workspace_${startAt}`);
         }
 
         // Sentry: Report error with context ONLY if not expected

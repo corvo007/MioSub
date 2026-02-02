@@ -374,6 +374,10 @@ export class EndToEndPipeline {
         const ext = subtitleResult.subtitleFormat || 'ass';
         const videoName = path.basename(videoPath, path.extname(videoPath));
         const subtitlePath = path.join(outputDir, `${videoName}.${ext}`);
+        // Ensure output directory exists (may have been deleted by user)
+        if (!fs.existsSync(outputDir)) {
+          fs.mkdirSync(outputDir, { recursive: true });
+        }
         fs.writeFileSync(subtitlePath, subtitleResult.subtitleContent);
         this.outputs.subtitlePath = subtitlePath;
         console.log(`[DEBUG] [Pipeline] Subtitle file saved: ${subtitlePath}`);

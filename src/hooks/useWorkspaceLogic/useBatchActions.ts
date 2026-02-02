@@ -70,6 +70,7 @@ export function useBatchActions({
       const { addToast } = useAppStore.getState();
       const {
         file,
+        duration,
         subtitles,
         selectedBatches,
         batchComments,
@@ -162,6 +163,8 @@ export function useBatchActions({
           );
         } else {
           // Use existing proofread operation
+          // Get video path for long video support
+          const videoPath = file ? window.electronAPI?.getFilePath?.(file) : undefined;
           refined = await runProofreadOperation(
             file,
             subtitles,
@@ -170,7 +173,10 @@ export function useBatchActions({
             mode,
             batchComments,
             handleProgress,
-            signal
+            signal,
+            undefined, // speakerProfiles - proofread mode doesn't use it
+            videoPath,
+            duration || undefined
           );
         }
         setSubtitles(refined);

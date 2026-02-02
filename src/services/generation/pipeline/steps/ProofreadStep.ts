@@ -14,6 +14,7 @@ import { type SubtitleItem } from '@/types/subtitle';
 import { type StepResult, type StepName } from '../core/types';
 import { type StageKey } from '../core/BaseStep';
 import { sliceAudioBuffer } from '@/services/audio/processor';
+import { extractSegmentAsBlob } from '@/services/audio/segmentExtractor';
 import { blobToBase64 } from '@/services/audio/converter';
 import { timeToSeconds } from '@/services/subtitle/time';
 import { toBatchPayloads } from '@/services/subtitle/payloads';
@@ -25,7 +26,10 @@ import { getProofreadPrompt } from '@/services/llm/prompts';
 import { BATCH_SCHEMA, BATCH_WITH_DIARIZATION_SCHEMA } from '@/services/llm/schemas';
 import { generateContentWithLongOutput } from '@/services/llm/providers/gemini';
 import { STEP_MODELS, buildStepConfig } from '@/config';
+import { UserActionableError } from '@/services/utils/errors';
+import { ExpectedError } from '@/utils/expectedError';
 import { logger } from '@/services/utils/logger';
+import * as Sentry from '@sentry/electron/renderer';
 import i18n from '@/i18n';
 
 // ============================================================================
@@ -48,8 +52,12 @@ export interface ProofreadContext {
   pipelineContext: PipelineContext;
   /** Semaphore for rate limiting */
   semaphore: Semaphore;
-  /** Audio buffer for context (may be null for text-only) */
+  /** Audio buffer for context (may be null for text-only or long videos) */
   audioBuffer: AudioBuffer | null;
+  /** Video path for long video on-demand extraction */
+  videoPath?: string;
+  /** Flag indicating long video mode */
+  isLongVideo?: boolean;
   /** Total video duration for timestamp validation */
   totalVideoDuration?: number;
   /** Batch label for logging */
@@ -133,6 +141,26 @@ export class ProofreadStep {
     } catch (error) {
       logger.error(`[Batch ${batchLabel}] Proofread failed`, error);
 
+      // Report to Sentry if not a user-actionable error
+      if (
+        !(error instanceof UserActionableError) &&
+        !(error instanceof ExpectedError) &&
+        !(error as any).isExpected
+      ) {
+        Sentry.captureException(error, {
+          level: 'error',
+          tags: {
+            source: 'proofread_step_fallback',
+            batch_label: batchLabel,
+          },
+          extra: {
+            batch_index: batchIndex,
+            total_batches: totalBatches,
+            batch_size: input.batch.length,
+          },
+        });
+      }
+
       // Report error progress
       onProgress?.({
         id: batchLabel,
@@ -161,7 +189,8 @@ export class ProofreadStep {
    */
   private async execute(input: ProofreadInput, ctx: ProofreadContext): Promise<SubtitleItem[]> {
     const { batch, batchComment, systemInstruction } = input;
-    const { pipelineContext, audioBuffer, totalVideoDuration, batchLabel } = ctx;
+    const { pipelineContext, audioBuffer, videoPath, isLongVideo, totalVideoDuration, batchLabel } =
+      ctx;
     const { ai, settings, signal, trackUsage } = pipelineContext;
 
     if (batch.length === 0) return [];
@@ -175,16 +204,31 @@ export class ProofreadStep {
     let base64Audio = '';
     let audioOffset = 0;
 
-    if (audioBuffer && startSec < endSec) {
+    if (startSec < endSec) {
       try {
         // Add padding (5 seconds before and after)
         audioOffset = Math.max(0, startSec - 5);
-        const blob = await sliceAudioBuffer(
-          audioBuffer,
-          audioOffset,
-          Math.min(audioBuffer.duration, endSec + 5)
-        );
-        base64Audio = await blobToBase64(blob);
+        const audioDuration = totalVideoDuration || (audioBuffer?.duration ?? 0);
+        const audioEnd = Math.min(audioDuration, endSec + 5);
+
+        let blob: Blob;
+        if (isLongVideo && videoPath) {
+          // Long video mode: extract segment on-demand via FFmpeg
+          logger.debug(
+            `[Batch ${batchLabel}] Using on-demand segment extraction for proofread (long video mode)`
+          );
+          blob = await extractSegmentAsBlob(videoPath, audioOffset, audioEnd - audioOffset);
+        } else if (audioBuffer) {
+          // Standard mode: slice from in-memory AudioBuffer
+          blob = await sliceAudioBuffer(audioBuffer, audioOffset, audioEnd);
+        } else {
+          // No audio source available, skip audio context
+          blob = null as unknown as Blob;
+        }
+
+        if (blob) {
+          base64Audio = await blobToBase64(blob);
+        }
       } catch (e) {
         logger.warn(`Audio slice failed for ${batchLabel}, falling back to text-only.`);
       }

@@ -188,6 +188,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('analytics:track', signal, payload, eventType),
   },
 
+  // Generation Task Lifecycle (for tracking active tasks on app quit)
+  generation: {
+    register: (taskId: string, type: 'end_to_end' | 'workspace', metadata?: Record<string, any>) =>
+      ipcRenderer.invoke('generation:register', taskId, type, metadata),
+    unregister: (taskId: string) => ipcRenderer.invoke('generation:unregister', taskId),
+  },
+
   // Update APIs
   update: {
     check: () => ipcRenderer.invoke('update:check'),

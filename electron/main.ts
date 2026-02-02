@@ -168,7 +168,37 @@ import { initUpdateService } from './services/updateService.ts';
 
 const videoCompressorService = new VideoCompressorService();
 
-// IPC Handler: Analytics Track
+// ============================================================================
+// Active Generation Task Tracking
+// ============================================================================
+// Track active generation tasks to send cancellation events on app quit
+interface ActiveGenerationTask {
+  type: 'end_to_end' | 'workspace';
+  startTime: number;
+  metadata?: Record<string, any>;
+}
+
+const activeGenerationTasks = new Map<string, ActiveGenerationTask>();
+
+// IPC Handler: Register active generation task
+ipcMain.handle(
+  'generation:register',
+  (_event, taskId: string, type: 'end_to_end' | 'workspace', metadata?: Record<string, any>) => {
+    activeGenerationTasks.set(taskId, {
+      type,
+      startTime: Date.now(),
+      metadata,
+    });
+    return { success: true };
+  }
+);
+
+// IPC Handler: Unregister active generation task (completed/failed/cancelled)
+ipcMain.handle('generation:unregister', (_event, taskId: string) => {
+  activeGenerationTasks.delete(taskId);
+  return { success: true };
+});
+
 // IPC Handler: Analytics Track
 ipcMain.handle(
   'analytics:track',
@@ -2125,11 +2155,45 @@ app.on('will-quit', (event) => {
 
   event.preventDefault();
 
-  // Start analytics shutdown (non-blocking)
-  void analyticsService.shutdown().finally(() => {
-    // Exit after analytics completes or after timeout (whichever comes first)
-    app.exit(0);
-  });
+  // Track cancellation for any active generation tasks that were interrupted by app quit
+  const trackActiveTaskCancellations = async () => {
+    const cancellationPromises: Promise<void>[] = [];
+
+    for (const [taskId, task] of activeGenerationTasks) {
+      const eventName =
+        task.type === 'end_to_end'
+          ? 'end_to_end_generation_cancelled'
+          : 'workspace_generation_cancelled';
+
+      cancellationPromises.push(
+        analyticsService.track(
+          eventName,
+          {
+            duration_ms: Date.now() - task.startTime,
+            reason: 'app_closed',
+            ...task.metadata,
+          },
+          'interaction'
+        )
+      );
+
+      mainLogger.info(`[Main] Tracking ${eventName} for task ${taskId} due to app quit`);
+    }
+
+    // Clear the map after tracking
+    activeGenerationTasks.clear();
+
+    // Wait for all cancellation events to be tracked
+    await Promise.all(cancellationPromises);
+  };
+
+  // Track active task cancellations, then shutdown analytics
+  void trackActiveTaskCancellations()
+    .then(() => analyticsService.shutdown())
+    .finally(() => {
+      // Exit after analytics completes or after timeout (whichever comes first)
+      app.exit(0);
+    });
 
   // Safety timeout: force exit after 5 seconds max
   setTimeout(() => {

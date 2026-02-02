@@ -6,9 +6,10 @@ import { BaseStep } from '@/services/generation/pipeline/core/BaseStep';
 import { type StepContext, type StepName } from '@/services/generation/pipeline/core/types';
 import { type SubtitleItem } from '@/types/subtitle';
 import { sliceAudioBuffer } from '@/services/audio/processor';
+import { extractSegmentAsBlob } from '@/services/audio/segmentExtractor';
 import { createAligner } from '@/services/alignment';
 import { iso639_1To3, detectLanguage } from '@/services/utils/language';
-import { CONFIDENCE_THRESHOLD } from '@/services/alignment/utils';
+import { CONFIDENCE_THRESHOLD, requiresRomanization } from '@/services/alignment/utils';
 import { ArtifactSaver } from '@/services/generation/debug/artifactSaver';
 import { logger } from '@/services/utils/logger';
 
@@ -49,7 +50,7 @@ export class AlignmentStep extends BaseStep<AlignmentInput, SubtitleItem[]> {
   protected async execute(input: AlignmentInput, ctx: StepContext): Promise<SubtitleItem[]> {
     const { chunk, deps, pipelineContext } = ctx;
     const { ai, settings, signal, trackUsage } = pipelineContext;
-    const { audioBuffer } = deps;
+    const { audioBuffer, videoPath, isLongVideo } = deps;
 
     // Mock API: pass-through (skip CTC processing)
     if (settings.debug?.mockApi?.alignment) {
@@ -79,9 +80,21 @@ export class AlignmentStep extends BaseStep<AlignmentInput, SubtitleItem[]> {
     }
 
     const language = iso639_1To3(detectedLang);
+    const romanize = requiresRomanization(language);
     logger.info(
-      `[Chunk ${chunk.index}] Alignment Language: ${detectedLang} → ${language} (Source: ${settings.debug?.mockLanguage ? 'Manual' : 'Auto'})`
+      `[Chunk ${chunk.index}] Alignment Language: ${detectedLang} → ${language} (Source: ${settings.debug?.mockLanguage ? 'Manual' : 'Auto'}, Romanize: ${romanize})`
     );
+
+    // Store alignment context for error logging
+    (ctx as any).alignmentContext = {
+      language,
+      romanize,
+      segmentCount: input.segments.length,
+      sampleText: input.segments
+        .slice(0, 3)
+        .map((s) => s.original?.substring(0, 50))
+        .join(' | '),
+    };
 
     // Prepare temp audio file for CTC alignment
     let tempAudioPath = '';
@@ -90,10 +103,25 @@ export class AlignmentStep extends BaseStep<AlignmentInput, SubtitleItem[]> {
         let audioDataForTemp: string | ArrayBuffer;
 
         if (ctx.base64Audio) {
+          // Use cached base64 audio from refinement step
           audioDataForTemp = ctx.base64Audio;
-        } else {
+        } else if (isLongVideo && videoPath) {
+          // Long video mode: extract segment on-demand via FFmpeg
+          logger.debug(
+            `[Chunk ${chunk.index}] Using on-demand segment extraction for alignment (long video mode)`
+          );
+          const wavBlob = await extractSegmentAsBlob(
+            videoPath,
+            chunk.start,
+            chunk.end - chunk.start
+          );
+          audioDataForTemp = await wavBlob.arrayBuffer();
+        } else if (audioBuffer) {
+          // Standard mode: slice from in-memory AudioBuffer
           const wavBlob = await sliceAudioBuffer(audioBuffer, chunk.start, chunk.end);
           audioDataForTemp = await wavBlob.arrayBuffer();
+        } else {
+          throw new Error('No audio source available for alignment');
         }
 
         const result = await window.electronAPI.writeTempAudioFile(audioDataForTemp, 'wav');
@@ -144,10 +172,23 @@ export class AlignmentStep extends BaseStep<AlignmentInput, SubtitleItem[]> {
   }
 
   protected getFallback(input: AlignmentInput, error: Error, ctx: StepContext): SubtitleItem[] {
-    logger.error(
-      `[Chunk ${ctx.chunk.index}] Alignment failed, using refinement timestamps:`,
-      error
-    );
+    // Log detailed context for debugging CTC failures
+    const alignmentContext = (ctx as any).alignmentContext;
+    if (alignmentContext) {
+      logger.error(`[Chunk ${ctx.chunk.index}] Alignment failed with context:`, {
+        language: alignmentContext.language,
+        romanize: alignmentContext.romanize,
+        segmentCount: alignmentContext.segmentCount,
+        sampleText: alignmentContext.sampleText,
+        errorMessage: error.message,
+        errorStack: error.stack,
+      });
+    } else {
+      logger.error(
+        `[Chunk ${ctx.chunk.index}] Alignment failed, using refinement timestamps:`,
+        error
+      );
+    }
     return [...input.segments];
   }
 

@@ -354,6 +354,16 @@ export interface ElectronAPI {
     ) => Promise<{ success: boolean }>;
   };
 
+  // Generation Task Lifecycle (for tracking active tasks on app quit)
+  generation: {
+    register: (
+      taskId: string,
+      type: 'end_to_end' | 'workspace',
+      metadata?: Record<string, any>
+    ) => Promise<{ success: boolean }>;
+    unregister: (taskId: string) => Promise<{ success: boolean }>;
+  };
+
   // Update APIs
   update: {
     check: () => Promise<{

@@ -262,6 +262,12 @@ export function useEndToEndSubtitleGeneration({
           );
         }
 
+        // Register active generation task for app quit tracking
+        const taskId = `e2e_${startTime}`;
+        if (window.electronAPI?.generation) {
+          void window.electronAPI.generation.register(taskId, 'end_to_end');
+        }
+
         // Guard: Very short audio (less than 1 second)
         if (audioBuffer.duration < 1) {
           logger.error('[EndToEnd] Audio too short', { duration: audioBuffer.duration });
@@ -423,6 +429,11 @@ export function useEndToEndSubtitleGeneration({
           );
         }
 
+        // Unregister active generation task
+        if (window.electronAPI?.generation) {
+          void window.electronAPI.generation.unregister(`e2e_${startTime}`);
+        }
+
         // Return subtitles and content to main process
         return {
           success: true,
@@ -449,10 +460,16 @@ export function useEndToEndSubtitleGeneration({
               'end_to_end_generation_cancelled',
               {
                 duration_ms: Date.now() - startTime,
+                reason: 'user_cancelled',
                 chunk_durations: accumulatedChunkAnalytics, // Use accumulated analytics
               },
               'interaction'
             );
+          }
+
+          // Unregister active generation task
+          if (window.electronAPI?.generation) {
+            void window.electronAPI.generation.unregister(`e2e_${startTime}`);
           }
 
           return { success: false, error: t('errors.cancelled'), errorCode: 'CANCELLED' };
@@ -495,6 +512,11 @@ export function useEndToEndSubtitleGeneration({
             },
             'interaction'
           );
+        }
+
+        // Unregister active generation task
+        if (window.electronAPI?.generation) {
+          void window.electronAPI.generation.unregister(`e2e_${startTime}`);
         }
 
         // Sentry: Report error with context

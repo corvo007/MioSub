@@ -12,7 +12,10 @@
 
 import { type Semaphore } from '@/services/utils/concurrency';
 import { type StepName, type StepContext, type StepResult, type PostCheckResult } from './types';
+import { UserActionableError } from '@/services/utils/errors';
+import { ExpectedError } from '@/utils/expectedError';
 import { logger } from '@/services/utils/logger';
+import * as Sentry from '@sentry/electron/renderer';
 import i18n from '@/i18n';
 
 /** Error thrown when a step is cancelled, carrying timing data */
@@ -201,8 +204,37 @@ export abstract class BaseStep<TInput, TOutput> {
         const fallback = this.getFallback(input, e as Error, ctx);
         await this.saveArtifact?.(fallback, ctx);
 
+        // Report to Sentry if not a user-actionable error
+        if (
+          !(e instanceof UserActionableError) &&
+          !(e instanceof ExpectedError) &&
+          !(e as any).isExpected
+        ) {
+          // Collect step-specific context if available
+          const stepContext = (ctx as any).alignmentContext || {};
+
+          Sentry.captureException(e, {
+            level: 'error',
+            tags: {
+              source: 'pipeline_step_fallback',
+              step_name: this.name,
+            },
+            extra: {
+              chunk_index: ctx.chunk.index,
+              total_chunks: ctx.totalChunks,
+              chunk_start: ctx.chunk.start,
+              chunk_end: ctx.chunk.end,
+              // Include step-specific context (e.g., alignment language, romanize flag)
+              ...stepContext,
+            },
+          });
+        }
+
         // Analytics: Track step fallback with context (keeping for error dashboards)
         if (typeof window !== 'undefined' && window.electronAPI?.analytics) {
+          // Collect step-specific context for analytics
+          const analyticsContext = (ctx as any).alignmentContext || {};
+
           void window.electronAPI.analytics.track(
             'step_fallback',
             {
@@ -210,7 +242,9 @@ export abstract class BaseStep<TInput, TOutput> {
               chunk_index: ctx.chunk.index,
               total_chunks: ctx.totalChunks,
               error_name: (e as Error).name,
-              error_message: (e as Error).message?.substring(0, 300),
+              error_message: (e as Error).message?.substring(0, 2000), // Capture full stderr for CTC aligner errors
+              // Include step-specific context
+              ...analyticsContext,
             },
             'interaction'
           );

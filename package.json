@@ -144,6 +144,7 @@
             "ffmpeg",
             "ffprobe",
             "cpp-ort-aligner",
+            "libonnxruntime.dylib",
             "ggml-silero-v6.2.0.bin",
             "Chinese_to_Pinyin.txt",
             "fonts/**/*"

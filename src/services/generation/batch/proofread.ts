@@ -10,8 +10,10 @@ import { type SubtitleItem, type BatchOperationMode } from '@/types/subtitle';
 import { type AppSettings } from '@/types/settings';
 import { type ChunkStatus } from '@/types/api';
 import { decodeAudio } from '@/services/audio/decoder';
+import { isLongVideo, LONG_VIDEO_THRESHOLD } from '@/services/audio/segmentExtractor';
 import { mapInParallel } from '@/services/utils/concurrency';
 import { logger } from '@/services/utils/logger';
+import { formatTime } from '@/services/subtitle/time';
 import { getSystemInstructionWithDiarization } from '@/services/llm/prompts';
 import { type SpeakerProfile } from '@/services/generation/extractors/speakerProfile';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
@@ -35,7 +37,9 @@ export const runProofreadOperation = async (
   batchComments: Record<string, string> = {}, // Pass map of batch index -> comment
   onProgress?: (update: ChunkStatus) => void,
   signal?: AbortSignal,
-  speakerProfiles?: SpeakerProfile[]
+  speakerProfiles?: SpeakerProfile[],
+  videoPath?: string, // Optional video path for long video on-demand extraction
+  totalVideoDuration?: number // Optional total video duration (for long video detection)
 ): Promise<SubtitleItem[]> => {
   // ===== Initialize Pipeline Context =====
   // Use shared initialization (skip OpenAI since proofread doesn't need it)
@@ -46,9 +50,27 @@ export const runProofreadOperation = async (
     skipOpenAI: true, // Proofread uses only Gemini
   });
 
+  // ===== Check for Long Video Mode =====
+  const isLongVideoMode = !!(videoPath && totalVideoDuration && isLongVideo(totalVideoDuration));
+
   // ===== Decode Audio =====
   let audioBuffer: AudioBuffer | null = null;
-  if (file) {
+  let audioDuration: number | undefined = totalVideoDuration;
+
+  if (isLongVideoMode) {
+    // Long video mode: skip audio decoding, use on-demand extraction
+    logger.info(
+      `Long video detected (${formatTime(totalVideoDuration!)} > ${formatTime(LONG_VIDEO_THRESHOLD)}). Using on-demand segment extraction for proofread.`
+    );
+    onProgress?.({
+      id: 'init',
+      total: 0,
+      status: 'completed',
+      message: i18n.t('services:pipeline.status.longVideoMode', {
+        duration: formatTime(totalVideoDuration!),
+      }),
+    });
+  } else if (file) {
     onProgress?.({
       id: 'init',
       total: 0,
@@ -57,6 +79,7 @@ export const runProofreadOperation = async (
     });
     try {
       audioBuffer = await decodeAudio(file);
+      audioDuration = audioBuffer.duration;
 
       // Update init status to completed
       onProgress?.({
@@ -182,7 +205,9 @@ export const runProofreadOperation = async (
         pipelineContext: context,
         semaphore: semaphores.refinement, // Use refinement semaphore (Pro model)
         audioBuffer,
-        totalVideoDuration: audioBuffer?.duration,
+        videoPath: isLongVideoMode ? videoPath : undefined,
+        isLongVideo: isLongVideoMode,
+        totalVideoDuration: audioDuration,
         batchLabel: groupLabel,
         totalBatches: groups.length,
         batchIndex: i,
