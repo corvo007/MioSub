@@ -5,6 +5,18 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.3] - 2026-02-02
+
+### Fixes
+
+- **Electron**: Fixed Windows Unicode path encoding issues affecting Whisper, yt-dlp, and CTC aligner when paths contain non-ASCII characters (Chinese, Japanese, etc.).
+- **Electron**: Fixed IPC crash when window is destroyed during long-running operations (audio extraction, compression, download progress).
+- **Editor**: Added regex syntax error feedback with debounced validation in search & replace panel.
+
+### Refactor
+
+- **Error Handling**: Added error codes to `UserActionableError` for type-safe error handling.
+
 ## [3.0.2] - 2026-02-01
 
 ### Fixes
