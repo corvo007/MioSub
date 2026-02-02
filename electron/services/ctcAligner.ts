@@ -12,6 +12,7 @@ import { spawn, type ChildProcess } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import { writeTempFile } from './fileUtils.ts';
 import { getBinaryPath } from '../utils/paths.ts';
+import { escapeShellArg } from '../utils/shell.ts';
 
 // ============================================================================
 // Type Definitions
@@ -138,7 +139,9 @@ export class CTCAlignerService {
       return await new Promise((resolve, reject) => {
         this.activeJobRejects.set(jobId, reject);
 
-        const proc = spawn(config.alignerPath, args, {
+        // Escape args for shell mode on Windows (handles spaces in paths)
+        const escapedArgs = args.map(escapeShellArg);
+        const proc = spawn(config.alignerPath, escapedArgs, {
           stdio: ['ignore', 'pipe', 'pipe'], // Ignore stdin, capture stdout/stderr for logging
           cwd: path.dirname(config.alignerPath),
           // Windows-specific: use shell to handle Unicode paths correctly
@@ -257,7 +260,9 @@ export class CTCAlignerService {
 
     return new Promise((resolve) => {
       try {
-        const proc = spawn(alignerPath, ['-v'], {
+        // Escape args for shell mode on Windows
+        const escapedArgs = ['-v'].map(escapeShellArg);
+        const proc = spawn(alignerPath, escapedArgs, {
           windowsHide: true,
           // Windows-specific: use shell to handle Unicode paths correctly
           ...(platform() === 'win32' && { shell: true }),

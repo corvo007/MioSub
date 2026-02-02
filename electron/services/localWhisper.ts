@@ -5,6 +5,7 @@ import { platform } from 'os';
 import { spawn, type ChildProcess } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import { t } from '../i18n.ts';
+import { escapeShellArg } from '../utils/shell.ts';
 
 export interface SubtitleItem {
   start: string;
@@ -227,11 +228,13 @@ export class LocalWhisperService {
       );
 
       return new Promise((resolve, reject) => {
-        const process = spawn(binaryPath, args, {
+        // Escape args for shell mode on Windows (handles spaces in paths)
+        const escapedArgs = args.map(escapeShellArg);
+        const process = spawn(binaryPath, escapedArgs, {
           windowsHide: true,
           // Windows-specific: use shell to handle Unicode paths correctly
           // This fixes path encoding issues for non-ASCII characters (e.g., Chinese paths)
-          // Arguments are validated and not user-controlled, so shell injection is not a concern
+          // Arguments are escaped above to prevent shell injection
           ...(platform() === 'win32' && { shell: true }),
         });
         this.activeProcesses.set(jobId, process);
