@@ -5,6 +5,14 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.4] - 2026-02-02
+
+**Important: Users who downloaded v3.0.3 should update immediately.** This release fixes a critical bug that prevented downloading certain videos and generating subtitles for them.
+
+### Fixes
+
+- **Electron**: Fixed shell argument escaping to prevent URL parsing errors. URLs containing special characters (like `&` in Bilibili's `vd_source` parameter) were incorrectly interpreted as command separators on Windows, causing video downloads and subtitle generation to fail.
+
 ## [3.0.3] - 2026-02-02
 
 ### Fixes
