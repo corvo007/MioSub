@@ -5,6 +5,14 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.5] - 2026-02-03
+
+### Fixes
+
+- **Pipeline**: Fixed crash when processing videos longer than 2 hours. The long video mode now correctly extracts audio segments on-demand instead of accessing null audio buffer.
+- **Electron**: Fixed ENOENT error when saving subtitle files. The output directory is now recreated if deleted by user during processing.
+- **macOS**: Fixed missing `libonnxruntime.dylib` that caused CTC forced alignment to fail on macOS. The dynamic library is now included in the app bundle.
+
 ## [3.0.4] - 2026-02-02
 
 **Important: Users who downloaded v3.0.3 should update immediately.** This release fixes a critical bug that prevented downloading certain videos and generating subtitles for them.
