@@ -682,6 +682,8 @@ class YtDlpService {
       // Force UTF-8 output
       const options = {
         env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
+        // Windows-specific: use shell to handle Unicode paths correctly
+        ...(process.platform === 'win32' && { shell: true }),
       };
       const proc = spawn(this.binaryPath, args, options);
 
@@ -951,6 +953,8 @@ class YtDlpService {
       // Force UTF-8 output to fix mojibake on Windows
       const options = {
         env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
+        // Windows-specific: use shell to handle Unicode paths correctly
+        ...(process.platform === 'win32' && { shell: true }),
       };
       this.process = spawn(this.binaryPath, args, options);
       let outputPath = '';

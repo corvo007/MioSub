@@ -20,6 +20,7 @@
     "i18n:check": "node scripts/check-i18n.mjs",
     "i18n:check:missing": "node scripts/check-i18n.mjs --check-missing",
     "i18n:check:unused": "node scripts/check-i18n.mjs --check-unused",
+    "docs:analytics": "npx tsx scripts/extract-analytics.ts",
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"cross-env BROWSER=none yarn dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron -r ts-node/register electron/main.ts\"",
     "electron:build": "yarn build:main && vite build && electron-builder",

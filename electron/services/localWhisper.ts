@@ -1,6 +1,7 @@
 import { app } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import { platform } from 'os';
 import { spawn, type ChildProcess } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import { t } from '../i18n.ts';
@@ -226,7 +227,13 @@ export class LocalWhisperService {
       );
 
       return new Promise((resolve, reject) => {
-        const process = spawn(binaryPath, args);
+        const process = spawn(binaryPath, args, {
+          windowsHide: true,
+          // Windows-specific: use shell to handle Unicode paths correctly
+          // This fixes path encoding issues for non-ASCII characters (e.g., Chinese paths)
+          // Arguments are validated and not user-controlled, so shell injection is not a concern
+          ...(platform() === 'win32' && { shell: true }),
+        });
         this.activeProcesses.set(jobId, process);
 
         let stderr = '';

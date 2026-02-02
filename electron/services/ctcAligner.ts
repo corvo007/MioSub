@@ -7,6 +7,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { platform } from 'os';
 import { spawn, type ChildProcess } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import { writeTempFile } from './fileUtils.ts';
@@ -140,6 +141,8 @@ export class CTCAlignerService {
         const proc = spawn(config.alignerPath, args, {
           stdio: ['ignore', 'pipe', 'pipe'], // Ignore stdin, capture stdout/stderr for logging
           cwd: path.dirname(config.alignerPath),
+          // Windows-specific: use shell to handle Unicode paths correctly
+          ...(platform() === 'win32' && { shell: true }),
         });
         this.activeProcesses.set(jobId, proc);
 
@@ -256,6 +259,8 @@ export class CTCAlignerService {
       try {
         const proc = spawn(alignerPath, ['-v'], {
           windowsHide: true,
+          // Windows-specific: use shell to handle Unicode paths correctly
+          ...(platform() === 'win32' && { shell: true }),
         });
 
         let output = '';

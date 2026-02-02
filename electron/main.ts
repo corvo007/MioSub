@@ -691,7 +691,9 @@ ipcMain.handle(
         options,
         (progress: AudioExtractionProgress) => {
           // 向渲染进程发送进度更新
-          event.sender.send('audio-extraction-progress', progress);
+          if (!event.sender.isDestroyed()) {
+            event.sender.send('audio-extraction-progress', progress);
+          }
         },
         (logMessage: string) => {
           // Capture FFmpeg logs
@@ -775,7 +777,9 @@ ipcMain.handle(
         options,
         (progress: AudioExtractionProgress) => {
           // Send progress updates to renderer
-          event.sender.send('audio-extraction-progress', progress);
+          if (!event.sender.isDestroyed()) {
+            event.sender.send('audio-extraction-progress', progress);
+          }
         },
         (logMessage: string) => {
           // Capture FFmpeg logs
@@ -1026,7 +1030,9 @@ ipcMain.handle(
         outputPath,
         options,
         (progress) => {
-          event.sender.send('video:compression-progress', progress);
+          if (!event.sender.isDestroyed()) {
+            event.sender.send('video:compression-progress', progress);
+          }
         },
         (logMessage) => {
           console.log(logMessage);
@@ -1246,7 +1252,9 @@ ipcMain.handle(
       }
 
       const outputPath = await ytDlpService.download(url, formatId, outputDir, (progress) => {
-        event.sender.send('download:progress', progress);
+        if (!event.sender.isDestroyed()) {
+          event.sender.send('download:progress', progress);
+        }
       });
 
       // Analytics: Success
@@ -1411,8 +1419,10 @@ ipcMain.handle('end-to-end:start', async (event, config: EndToEndConfig) => {
     }
 
     const result = await endToEndPipeline.execute(config, (progress) => {
-      // Send progress updates to renderer
-      event.sender.send('end-to-end:progress', progress);
+      // Send progress updates to renderer (check if window still exists)
+      if (!event.sender.isDestroyed()) {
+        event.sender.send('end-to-end:progress', progress);
+      }
     });
 
     // Track Success

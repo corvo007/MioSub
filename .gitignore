@@ -92,3 +92,11 @@ resources/qjs
 resources/whisper-cli
 resources/cpp-ort-aligner
 .binary-cache/
+
+# Sentry Investigation Records (local only)
+docs/sentry-investigations/
+
+# Auto-generated analytics documentation
+docs/analytics-events.md
+docs/analytics-monitoring.md
+scripts/extract-analytics.ts
