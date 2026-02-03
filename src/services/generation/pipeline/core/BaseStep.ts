@@ -242,7 +242,7 @@ export abstract class BaseStep<TInput, TOutput> {
               chunk_index: ctx.chunk.index,
               total_chunks: ctx.totalChunks,
               error_name: (e as Error).name,
-              error_message: (e as Error).message?.substring(0, 2000), // Capture full stderr for CTC aligner errors
+              error_message: (e as Error).message?.substring(0, 500), // Truncate to avoid overly long error messages
               // Include step-specific context
               ...analyticsContext,
             },
