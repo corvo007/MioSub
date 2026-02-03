@@ -6,7 +6,9 @@
  */
 
 import { logger } from './logger';
-import eld from 'eld';
+// Use static import to ensure ngrams data is bundled at build time
+// (dynamic import via 'eld' fails in production because Vite can't bundle dynamic paths)
+import eld from 'eld/medium';
 
 // ============================================================================
 // ISO 639-1 to ISO 639-3 Mapping (2-letter to 3-letter)
@@ -128,61 +130,64 @@ export function toLocaleCode(code: string): string {
 // Language Detection
 // ============================================================================
 
-// Initialized flag/promise
-let eldInitializationPromise: Promise<void> | null = null;
-
 /**
- * Ensure ELD database is loaded.
- * Handles both static and dynamic versions of ELD.
- * Singleton pattern prevents multiple concurrent loads.
+ * Fallback language detection using Unicode character ranges.
+ * Used when eld library fails or returns no result.
+ *
+ * Detection priority:
+ * 1. Japanese: Contains Hiragana (U+3040-309F) or Katakana (U+30A0-30FF)
+ * 2. Korean: Contains Hangul (U+AC00-D7AF, U+1100-11FF)
+ * 3. Chinese: Contains CJK Unified Ideographs (U+4E00-9FFF) without Japanese kana
+ * 4. Default: English
  */
-async function ensureEldInitialized() {
-  if (eldInitializationPromise !== null) return eldInitializationPromise;
+function detectLanguageFallback(text: string): string {
+  // Japanese: has hiragana or katakana
+  if (/[\u3040-\u309F\u30A0-\u30FF]/.test(text)) {
+    return 'ja';
+  }
 
-  eldInitializationPromise = (async () => {
-    try {
-      // Check if eld has a load method (dynamic version)
-      // @ts-ignore - eld might be Eld or EldWithLoader
-      if (typeof eld.load === 'function') {
-        // @ts-ignore
-        await eld.load('medium'); // Load medium database
-        logger.info('ELD (Efficient Language Detector) database loaded');
-      }
-    } catch (e) {
-      logger.error('Failed to initialize ELD:', e);
-      // We don't re-throw, just let it be (it might still work or default to en)
-    }
-  })();
+  // Korean: has hangul
+  if (/[\uAC00-\uD7AF\u1100-\u11FF]/.test(text)) {
+    return 'ko';
+  }
 
-  return eldInitializationPromise;
+  // Chinese: has CJK ideographs (but no kana, already checked above)
+  if (/[\u4E00-\u9FFF]/.test(text)) {
+    return 'zh';
+  }
+
+  // Default to English
+  return 'en';
 }
 
 /**
  * Detect language from text using the eld library.
+ * Falls back to character-based CJK detection if eld fails.
  * Returns ISO 639-1 language code.
  *
  * @param text - Text to detect language from
  * @returns ISO 639-1 language code (e.g., 'zh', 'ja', 'en')
  */
 export async function detectLanguage(text: string): Promise<string> {
-  await ensureEldInitialized();
-
   try {
     const result = eld.detect(text);
-    if (!result.language) {
-      logger.warn(
-        `detectLanguage: No language detected for text: "${text.substring(0, 50)}...", defaulting to "en"`
-      );
-      return 'en';
+    if (result.language) {
+      return result.language;
     }
-    return result.language;
+    // eld returned empty result, use fallback
+    logger.debug(
+      `detectLanguage: eld returned empty for "${text.substring(0, 30)}...", using fallback`
+    );
   } catch (e: any) {
     logger.warn(
-      `detectLanguage: eld.detect() failed used text: "${text.substring(0, 50)}...", error: ${e.message}`,
-      e
+      `detectLanguage: eld.detect() failed for "${text.substring(0, 30)}...": ${e.message}, using fallback`
     );
-    return 'en';
   }
+
+  // Fallback to character-based detection
+  const fallbackLang = detectLanguageFallback(text);
+  logger.info(`detectLanguage: fallback detection → ${fallbackLang}`);
+  return fallbackLang;
 }
 
 // ============================================================================
