@@ -5,6 +5,7 @@ import { intelligentAudioSampling } from '@/services/audio/sampler';
 import { extractSpeakerProfiles } from '@/services/generation/extractors/speakerProfile';
 import { getActionableErrorInfo } from '@/services/llm/providers/gemini';
 import { logger } from '@/services/utils/logger';
+import * as Sentry from '@sentry/electron/renderer';
 import i18n from '@/i18n';
 
 export class SpeakerAnalyzer {
@@ -73,6 +74,16 @@ export class SpeakerAnalyzer {
       const errorMsg =
         actionableInfo?.message || i18n.t('services:pipeline.status.speakerAnalysisFailed');
       onProgress?.({ id: 'diarization', total: 1, status: 'error', message: errorMsg });
+
+      // Report to Sentry if not user-actionable
+      if (!actionableInfo) {
+        Sentry.captureException(e, {
+          level: 'warning',
+          tags: { source: 'speaker_analyzer' },
+          extra: { fallback_used: true },
+        });
+      }
+
       return [];
     }
   }

@@ -19,6 +19,7 @@ import {
 import { TRANSLATION_SCHEMA, TRANSLATION_WITH_DIARIZATION_SCHEMA } from '@/services/llm/schemas';
 import { STEP_MODELS, buildStepConfig } from '@/config';
 import { withPostCheck } from '@/services/subtitle/postCheck';
+import * as Sentry from '@sentry/electron/renderer';
 import {
   createTranslationPostProcessor,
   type RawTranslationResult,
@@ -109,6 +110,16 @@ export async function processTranslationBatch(
         type: 'error',
       },
     });
+
+    // Report to Sentry if not user-actionable (API key, quota, billing errors are actionable)
+    if (!actionableInfo) {
+      Sentry.captureException(e, {
+        level: 'warning',
+        tags: { source: 'translation_batch' },
+        extra: { batch_size: batch.length, fallback_used: true },
+      });
+    }
+
     return batch.map((item) => ({ ...item, translated: item.original }));
   }
 }

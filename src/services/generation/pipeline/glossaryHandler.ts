@@ -8,6 +8,7 @@ import { getActiveGlossaryTerms } from '@/services/glossary/utils';
 import { getActionableErrorInfo } from '@/services/llm/providers/gemini';
 import { ArtifactSaver } from '@/services/generation/debug/artifactSaver';
 import { logger } from '@/services/utils/logger';
+import * as Sentry from '@sentry/electron/renderer';
 import i18n from '@/i18n';
 
 export class GlossaryHandler {
@@ -104,6 +105,15 @@ export class GlossaryHandler {
           const errorMsg =
             actionableInfo?.message || i18n.t('services:pipeline.status.glossaryExtractionFailed');
           onProgress?.({ id: 'glossary', total: 1, status: 'error', message: errorMsg });
+
+          // Report to Sentry if not user-actionable
+          if (!actionableInfo) {
+            Sentry.captureException(e, {
+              level: 'warning',
+              tags: { source: 'glossary_handler' },
+              extra: { fallback_used: true },
+            });
+          }
         }
       }
       return { glossary: finalGlossary, raw: extractedGlossaryResults };
