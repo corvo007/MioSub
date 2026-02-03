@@ -524,38 +524,36 @@ export async function generateContentWithLongOutput(
     let text = response.text || '';
     fullText += text;
 
-    // Check for truncation (finishReason or JSON parse failure)
+    // Check for truncation - ONLY continue on MAX_TOKENS
     let attempts = 0;
     while (attempts < 3) {
       const candidate = (response as any).candidates?.[0];
       const finishReason = candidate?.finishReason;
 
-      if (finishReason === 'MAX_TOKENS') {
-        logger.warn(
-          `Gemini response truncated (MAX_TOKENS). Attempt ${attempts + 1}. Fetching continuation...`
-        );
-      } else {
-        try {
-          // Try to parse the current full text using jsonrepair
-          if (isValidJson(fullText)) {
-            // If parse succeeds, we are done!
-            return fullText;
-          }
-          throw new Error(i18n.t('services:api.errors.jsonValidationFailed'));
-        } catch (e) {
-          // Parse failed, likely truncated
-          logger.warn(
-            `JSON parse failed (attempt ${attempts + 1}). FinishReason: ${finishReason}. Assuming truncation. Fetching more...`,
-            { error: e, partialText: fullText.slice(-500) } // Log tail of text
-          );
+      // Not truncated - either valid or permanently broken
+      if (finishReason !== 'MAX_TOKENS') {
+        if (isValidJson(fullText)) {
+          return fullText;
         }
+        // JSON invalid but not truncated - fail immediately without retry
+        // This avoids wasting API calls on non-recoverable errors (HTML error pages, malformed responses, etc.)
+        logger.error(
+          'Invalid JSON with non-truncation finishReason. Failing without continuation.',
+          {
+            finishReason,
+            fullTextLength: fullText.length,
+            preview: fullText.substring(0, 500),
+          }
+        );
+        throw new Error(i18n.t('services:api.errors.parseFailed'));
       }
 
-      // Generate continuation
-      // We append the current text to the history (simulated) or just ask for "continue"
-      // But since we are in a single-turn or few-shot, we might need to append the response so far
-      // and ask to continue.
+      // MAX_TOKENS - response was truncated, attempt continuation
+      logger.warn(
+        `Gemini response truncated (MAX_TOKENS). Attempt ${attempts + 1}. Fetching continuation...`
+      );
 
+      // Generate continuation
       if (signal?.aborted) {
         throw new Error(i18n.t('services:api.network.cancelled'));
       }
