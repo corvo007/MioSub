@@ -1,11 +1,10 @@
 import { app } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { platform } from 'os';
 import { spawn, type ChildProcess } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import { t } from '../i18n.ts';
-import { escapeShellArg } from '../utils/shell.ts';
+import { buildSpawnArgs } from '../utils/shell.ts';
 
 export interface SubtitleItem {
   start: string;
@@ -228,15 +227,11 @@ export class LocalWhisperService {
       );
 
       return new Promise((resolve, reject) => {
-        // Escape binary path and args for shell mode on Windows (handles spaces in paths)
-        const escapedBinaryPath = escapeShellArg(binaryPath);
-        const escapedArgs = args.map(escapeShellArg);
-        const process = spawn(escapedBinaryPath, escapedArgs, {
+        // Build spawn arguments with UTF-8 code page support for Windows
+        const spawnConfig = buildSpawnArgs(binaryPath, args);
+        const process = spawn(spawnConfig.command, spawnConfig.args, {
           windowsHide: true,
-          // Windows-specific: use shell to handle Unicode paths correctly
-          // This fixes path encoding issues for non-ASCII characters (e.g., Chinese paths)
-          // Arguments are escaped above to prevent shell injection
-          ...(platform() === 'win32' && { shell: true }),
+          ...spawnConfig.options,
         });
         this.activeProcesses.set(jobId, process);
 
@@ -400,9 +395,9 @@ export class LocalWhisperService {
 
     try {
       const { spawnSync } = await import('child_process');
-      // Escape binary path for shell mode on Windows (handles spaces in paths)
-      const escapedPath = escapeShellArg(info.path);
-      const result = spawnSync(escapedPath, ['-h'], { shell: true, windowsHide: true });
+      // Build spawn arguments with UTF-8 code page support for Windows
+      const spawnConfig = buildSpawnArgs(info.path, ['-h']);
+      const result = spawnSync(spawnConfig.command, spawnConfig.args, { windowsHide: true });
       const output = (result.stdout?.toString() || '') + (result.stderr?.toString() || '');
 
       // console.log('[DEBUG] [LocalWhisper] getWhisperDetails - Binary path:', info.path);

@@ -12,7 +12,7 @@ import https from 'https';
 import { t } from '../i18n.ts';
 import { getBinaryPath } from '../utils/paths.ts';
 import { ExpectedError } from '../utils/expectedError.ts';
-import { escapeShellArg } from '../utils/shell.ts';
+import { buildSpawnArgs } from '../utils/shell.ts';
 
 export interface VideoInfo {
   id: string;
@@ -680,16 +680,13 @@ class YtDlpService {
 
   private execute(args: string[], timeoutMs: number = 60000, trackKey?: string): Promise<string> {
     return new Promise((resolve, reject) => {
-      // Force UTF-8 output
+      // Build spawn arguments with UTF-8 code page support for Windows
+      const spawnConfig = buildSpawnArgs(this.binaryPath, args);
       const options = {
         env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
-        // Windows-specific: use shell to handle Unicode paths correctly
-        ...(process.platform === 'win32' && { shell: true }),
+        ...spawnConfig.options,
       };
-      // Escape binary path and args for shell mode on Windows (handles spaces in paths, & in URLs)
-      const escapedBinaryPath = escapeShellArg(this.binaryPath);
-      const escapedArgs = args.map(escapeShellArg);
-      const proc = spawn(escapedBinaryPath, escapedArgs, options);
+      const proc = spawn(spawnConfig.command, spawnConfig.args, options);
 
       if (trackKey) {
         this.activeParseProcesses.set(trackKey, proc);
@@ -954,16 +951,13 @@ class YtDlpService {
     ];
 
     return new Promise((resolve, reject) => {
-      // Force UTF-8 output to fix mojibake on Windows
+      // Build spawn arguments with UTF-8 code page support for Windows
+      const spawnConfig = buildSpawnArgs(this.binaryPath, args);
       const options = {
         env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
-        // Windows-specific: use shell to handle Unicode paths correctly
-        ...(process.platform === 'win32' && { shell: true }),
+        ...spawnConfig.options,
       };
-      // Escape binary path and args for shell mode on Windows (handles spaces in paths, & in URLs)
-      const escapedBinaryPath = escapeShellArg(this.binaryPath);
-      const escapedArgs = args.map(escapeShellArg);
-      this.process = spawn(escapedBinaryPath, escapedArgs, options);
+      this.process = spawn(spawnConfig.command, spawnConfig.args, options);
       let outputPath = '';
       let fileCount = 0;
       let currentStage: 'video' | 'audio' | 'merging' = 'video';

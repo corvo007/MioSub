@@ -7,12 +7,11 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { platform } from 'os';
 import { spawn, type ChildProcess } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import { writeTempFile } from './fileUtils.ts';
 import { getBinaryPath } from '../utils/paths.ts';
-import { escapeShellArg } from '../utils/shell.ts';
+import { buildSpawnArgs } from '../utils/shell.ts';
 
 // ============================================================================
 // Type Definitions
@@ -139,14 +138,12 @@ export class CTCAlignerService {
       return await new Promise((resolve, reject) => {
         this.activeJobRejects.set(jobId, reject);
 
-        // Escape binary path and args for shell mode on Windows (handles spaces in paths)
-        const escapedBinaryPath = escapeShellArg(config.alignerPath);
-        const escapedArgs = args.map(escapeShellArg);
-        const proc = spawn(escapedBinaryPath, escapedArgs, {
+        // Build spawn arguments with UTF-8 code page support for Windows
+        const spawnConfig = buildSpawnArgs(config.alignerPath, args);
+        const proc = spawn(spawnConfig.command, spawnConfig.args, {
           stdio: ['ignore', 'pipe', 'pipe'], // Ignore stdin, capture stdout/stderr for logging
           cwd: path.dirname(config.alignerPath),
-          // Windows-specific: use shell to handle Unicode paths correctly
-          ...(platform() === 'win32' && { shell: true }),
+          ...spawnConfig.options,
         });
         this.activeProcesses.set(jobId, proc);
 
@@ -261,13 +258,11 @@ export class CTCAlignerService {
 
     return new Promise((resolve) => {
       try {
-        // Escape binary path and args for shell mode on Windows
-        const escapedBinaryPath = escapeShellArg(alignerPath);
-        const escapedArgs = ['-v'].map(escapeShellArg);
-        const proc = spawn(escapedBinaryPath, escapedArgs, {
+        // Build spawn arguments with UTF-8 code page support for Windows
+        const spawnConfig = buildSpawnArgs(alignerPath, ['-v']);
+        const proc = spawn(spawnConfig.command, spawnConfig.args, {
           windowsHide: true,
-          // Windows-specific: use shell to handle Unicode paths correctly
-          ...(platform() === 'win32' && { shell: true }),
+          ...spawnConfig.options,
         });
 
         let output = '';
