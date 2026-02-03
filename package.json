@@ -133,14 +133,14 @@
     "mac": {
       "target": [
         {
-          "target": "dmg",
+          "target": "zip",
           "arch": [
             "x64",
             "arm64"
           ]
         },
         {
-          "target": "zip",
+          "target": "dmg",
           "arch": [
             "x64",
             "arm64"
