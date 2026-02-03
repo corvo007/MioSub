@@ -228,9 +228,10 @@ export class LocalWhisperService {
       );
 
       return new Promise((resolve, reject) => {
-        // Escape args for shell mode on Windows (handles spaces in paths)
+        // Escape binary path and args for shell mode on Windows (handles spaces in paths)
+        const escapedBinaryPath = escapeShellArg(binaryPath);
         const escapedArgs = args.map(escapeShellArg);
-        const process = spawn(binaryPath, escapedArgs, {
+        const process = spawn(escapedBinaryPath, escapedArgs, {
           windowsHide: true,
           // Windows-specific: use shell to handle Unicode paths correctly
           // This fixes path encoding issues for non-ASCII characters (e.g., Chinese paths)
@@ -399,7 +400,9 @@ export class LocalWhisperService {
 
     try {
       const { spawnSync } = await import('child_process');
-      const result = spawnSync(`"${info.path}"`, ['-h'], { shell: true, windowsHide: true });
+      // Escape binary path for shell mode on Windows (handles spaces in paths)
+      const escapedPath = escapeShellArg(info.path);
+      const result = spawnSync(escapedPath, ['-h'], { shell: true, windowsHide: true });
       const output = (result.stdout?.toString() || '') + (result.stderr?.toString() || '');
 
       // console.log('[DEBUG] [LocalWhisper] getWhisperDetails - Binary path:', info.path);

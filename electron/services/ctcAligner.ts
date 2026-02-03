@@ -139,9 +139,10 @@ export class CTCAlignerService {
       return await new Promise((resolve, reject) => {
         this.activeJobRejects.set(jobId, reject);
 
-        // Escape args for shell mode on Windows (handles spaces in paths)
+        // Escape binary path and args for shell mode on Windows (handles spaces in paths)
+        const escapedBinaryPath = escapeShellArg(config.alignerPath);
         const escapedArgs = args.map(escapeShellArg);
-        const proc = spawn(config.alignerPath, escapedArgs, {
+        const proc = spawn(escapedBinaryPath, escapedArgs, {
           stdio: ['ignore', 'pipe', 'pipe'], // Ignore stdin, capture stdout/stderr for logging
           cwd: path.dirname(config.alignerPath),
           // Windows-specific: use shell to handle Unicode paths correctly
@@ -260,9 +261,10 @@ export class CTCAlignerService {
 
     return new Promise((resolve) => {
       try {
-        // Escape args for shell mode on Windows
+        // Escape binary path and args for shell mode on Windows
+        const escapedBinaryPath = escapeShellArg(alignerPath);
         const escapedArgs = ['-v'].map(escapeShellArg);
-        const proc = spawn(alignerPath, escapedArgs, {
+        const proc = spawn(escapedBinaryPath, escapedArgs, {
           windowsHide: true,
           // Windows-specific: use shell to handle Unicode paths correctly
           ...(platform() === 'win32' && { shell: true }),

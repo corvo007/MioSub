@@ -686,9 +686,10 @@ class YtDlpService {
         // Windows-specific: use shell to handle Unicode paths correctly
         ...(process.platform === 'win32' && { shell: true }),
       };
-      // Escape args for shell mode on Windows (handles & in URLs, spaces in paths)
+      // Escape binary path and args for shell mode on Windows (handles spaces in paths, & in URLs)
+      const escapedBinaryPath = escapeShellArg(this.binaryPath);
       const escapedArgs = args.map(escapeShellArg);
-      const proc = spawn(this.binaryPath, escapedArgs, options);
+      const proc = spawn(escapedBinaryPath, escapedArgs, options);
 
       if (trackKey) {
         this.activeParseProcesses.set(trackKey, proc);
@@ -959,9 +960,10 @@ class YtDlpService {
         // Windows-specific: use shell to handle Unicode paths correctly
         ...(process.platform === 'win32' && { shell: true }),
       };
-      // Escape args for shell mode on Windows (handles & in URLs, spaces in paths)
+      // Escape binary path and args for shell mode on Windows (handles spaces in paths, & in URLs)
+      const escapedBinaryPath = escapeShellArg(this.binaryPath);
       const escapedArgs = args.map(escapeShellArg);
-      this.process = spawn(this.binaryPath, escapedArgs, options);
+      this.process = spawn(escapedBinaryPath, escapedArgs, options);
       let outputPath = '';
       let fileCount = 0;
       let currentStage: 'video' | 'audio' | 'merging' = 'video';

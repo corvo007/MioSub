@@ -131,7 +131,22 @@
     ],
     "extraResources": [],
     "mac": {
-      "target": "dmg",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
       "artifactName": "MioSub-mac-${arch}.${ext}",
       "extraResources": [
         {
