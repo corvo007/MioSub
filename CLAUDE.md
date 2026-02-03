@@ -264,7 +264,19 @@ Single platform data may be incomplete due to:
 
 ### Sentry Issue Investigation Workflow
 
-Investigation records are maintained locally in `sentry-investigations/` (gitignored).
+Investigation records are maintained in a **separate git repository**:
+
+- **Local path**: `docs/sentry-investigations/` (gitignored from main repo)
+- **Remote**: `https://github.com/corvo007/sentry-investigations.git`
+
+**After creating/updating investigation files, always commit and push:**
+
+```bash
+cd docs/sentry-investigations
+git add -A
+git commit -m "investigate: MIOSUB-X [brief description]"
+git push
+```
 
 #### 1. Triage New Issues
 
