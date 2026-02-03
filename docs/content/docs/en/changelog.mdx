@@ -5,6 +5,14 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.7] - 2026-02-03
+
+### Fixes
+
+- **CTC Aligner**: Fixed language detection failure that caused alignment errors for CJK languages. The `eld` library now uses static imports for proper Vite bundling, with CJK character-based fallback detection for Japanese, Korean, and Chinese.
+- **Gemini API**: Fixed unnecessary API calls when JSON parsing fails. The truncation continuation logic now only triggers on explicit `MAX_TOKENS` finish reason, preventing wasted retries on malformed responses.
+- **macOS**: Fixed auto-update SHA512 checksum mismatch. The `latest-mac.yml` now correctly contains ZIP file hashes instead of DMG hashes.
+
 ## [3.0.6] - 2026-02-03
 
 ### Fixes
