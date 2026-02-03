@@ -56,6 +56,8 @@ export interface ChunkAnalytics {
   process_ms: number;
   /** Whether the failure was due to a user-actionable error (auth, quota, billing) */
   isUserActionable?: boolean;
+  /** Error message when status is 'failed' */
+  errorMessage?: string;
 
   /** Structured analytics for each processing step */
   steps: {

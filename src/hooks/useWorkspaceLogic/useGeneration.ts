@@ -341,14 +341,23 @@ export function useGeneration({
         const allFailuresUserActionable =
           failedChunks.length > 0 && failedChunks.every((c) => c.isUserActionable);
 
+        // Aggregate unique error messages from failed chunks
+        const uniqueErrors = [...new Set(failedChunks.map((c) => c.errorMessage).filter(Boolean))];
+        const aggregatedReason =
+          uniqueErrors.length > 0
+            ? uniqueErrors.join('; ')
+            : t('workspace:hooks.generation.errors.unknownReason');
+
         if (allFailuresUserActionable) {
           // Don't report to Sentry - root cause is user-actionable
           throw new UserActionableError(
-            t('workspace:hooks.generation.errors.noSubtitles'),
+            `${t('workspace:hooks.generation.errors.noSubtitles')} ${t('workspace:hooks.generation.errors.checkLogs')} (${aggregatedReason})`,
             'NO_SUBTITLES'
           );
         }
-        throw new Error(t('workspace:hooks.generation.errors.noSubtitles'));
+        throw new Error(
+          `${t('workspace:hooks.generation.errors.noSubtitles')} ${t('workspace:hooks.generation.errors.checkLogs')} (${aggregatedReason})`
+        );
       }
 
       setSubtitles(result);

@@ -91,7 +91,9 @@
         "fileRequired": "最初にメディアファイルをアップロードしてください。",
         "apiKeyMissing": "API キーが設定されていません。設定で追加してください。",
         "noSubtitles": "字幕が生成されませんでした。",
-        "targetLanguageRequired": "ターゲット言語を選択してください。"
+        "targetLanguageRequired": "ターゲット言語を選択してください。",
+        "unknownReason": "原因不明",
+        "checkLogs": "詳細はログをご確認ください。"
       },
       "status": {
         "success": "字幕の作成に成功しました！",

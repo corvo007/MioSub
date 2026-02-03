@@ -359,9 +359,11 @@ export class ChunkProcessor {
 
       logger.error(`Chunk ${index} failed`, e);
       const actionableInfo = getActionableErrorInfo(e);
-      const errorMsg = actionableInfo?.message || i18n.t('services:pipeline.status.failed');
+      const errorMsg =
+        actionableInfo?.message || e?.message || i18n.t('services:pipeline.status.failed');
       analytics.status = 'failed';
       analytics.process_ms = Date.now() - processStartTime;
+      analytics.errorMessage = errorMsg;
 
       // Track whether this failure was due to a user-actionable error
       // Use structured checks instead of string matching where possible

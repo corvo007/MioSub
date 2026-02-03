@@ -91,7 +91,9 @@
         "fileRequired": "请先上传媒体文件。",
         "apiKeyMissing": "API 密钥未配置，请在设置中添加。",
         "noSubtitles": "未生成任何字幕。",
-        "targetLanguageRequired": "请选择目标语言。"
+        "targetLanguageRequired": "请选择目标语言。",
+        "unknownReason": "未知原因",
+        "checkLogs": "详细错误信息请查看日志。"
       },
       "status": {
         "success": "字幕生成成功！",

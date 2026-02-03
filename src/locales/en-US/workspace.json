@@ -91,7 +91,9 @@
         "fileRequired": "Please upload a media file first.",
         "apiKeyMissing": "API key not configured, please add in settings.",
         "noSubtitles": "No subtitles generated.",
-        "targetLanguageRequired": "Please select a target language."
+        "targetLanguageRequired": "Please select a target language.",
+        "unknownReason": "Unknown reason",
+        "checkLogs": "Check logs for details."
       },
       "status": {
         "success": "Subtitle generation successful!",
