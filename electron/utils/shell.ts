@@ -36,14 +36,21 @@ export function escapeShellArgs(args: string[]): string[] {
 }
 
 /**
- * Build spawn arguments for Windows that correctly handle Unicode paths.
+ * Build spawn arguments that correctly handle Unicode paths.
  *
- * Windows cmd.exe uses the system ANSI code page (e.g., CP936 for Chinese) by default,
- * which corrupts UTF-8 encoded paths. This function prepends `chcp 65001` to switch
- * to UTF-8 code page before executing the command.
+ * On Windows, we spawn the binary directly without cmd.exe to avoid encoding issues.
+ * When using cmd.exe with `cmd /c "command"`, Node.js converts the command string
+ * to the system ANSI code page (e.g., CP936 for Chinese), which corrupts UTF-8 paths.
+ * Additionally, cmd.exe re-parses the command string, splitting arguments at spaces
+ * even when they're quoted.
  *
- * @param binaryPath - The path to the executable (will be escaped)
- * @param args - The arguments to pass (will be escaped)
+ * By spawning directly:
+ * 1. Arguments are passed as an array, preserving spaces within arguments
+ * 2. Node.js passes arguments as UTF-16 to the Windows CreateProcess API
+ * 3. The child process receives Unicode arguments correctly
+ *
+ * @param binaryPath - The path to the executable
+ * @param args - The arguments to pass
  * @returns Object with { command, args, options } ready for spawn()
  *
  * @example
@@ -56,28 +63,17 @@ export function buildSpawnArgs(
 ): {
   command: string;
   args: string[];
-  options: { shell?: boolean };
+  options: { shell?: boolean; windowsHide?: boolean };
 } {
-  if (process.platform === 'win32') {
-    // Escape binary path and args for shell mode
-    const escapedBinaryPath = escapeShellArg(binaryPath);
-    const escapedArgs = args.map(escapeShellArg);
-
-    // Build full command with chcp 65001 to force UTF-8 code page
-    // This fixes path encoding issues for non-ASCII characters (e.g., Chinese paths)
-    const fullCommand = `chcp 65001 >nul && ${escapedBinaryPath} ${escapedArgs.join(' ')}`;
-
-    return {
-      command: 'cmd',
-      args: ['/c', fullCommand],
-      options: {}, // shell: false is fine since we're explicitly calling cmd
-    };
-  }
-
-  // Non-Windows: use binary directly without shell
+  // Spawn binary directly on all platforms - no shell needed
+  // This ensures:
+  // 1. Arguments with spaces are preserved (no shell re-parsing)
+  // 2. Unicode paths work correctly (no code page conversion)
   return {
     command: binaryPath,
     args,
-    options: {},
+    options: {
+      windowsHide: true, // Hide console window on Windows
+    },
   };
 }
