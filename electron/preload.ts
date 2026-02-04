@@ -236,6 +236,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('update:status', handler);
       return () => ipcRenderer.removeListener('update:status', handler);
     },
+    // Binary updates
+    checkBinaries: () => ipcRenderer.invoke('update:check-binaries'),
+    downloadBinary: (name: string, downloadUrl: string) =>
+      ipcRenderer.invoke('update:download-binary', name, downloadUrl),
+    openBinaryRelease: (name: string) => ipcRenderer.invoke('update:open-binary-release', name),
+    onBinaryProgress: (callback: (data: { name: string; percent: number }) => void) => {
+      const handler = (_event: any, data: any) => callback(data);
+      ipcRenderer.on('update:binary-progress', handler);
+      return () => ipcRenderer.removeListener('update:binary-progress', handler);
+    },
   },
 
   // End-to-End Pipeline APIs

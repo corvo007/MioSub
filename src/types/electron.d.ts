@@ -499,6 +499,25 @@ export interface ElectronAPI {
         isPortable: boolean;
       }) => void
     ) => () => void;
+    // Binary updates
+    checkBinaries: () => Promise<{
+      success: boolean;
+      updates?: Array<{
+        name: 'aligner' | 'ytdlp';
+        current: string;
+        latest: string;
+        hasUpdate: boolean;
+        downloadUrl?: string;
+        releaseUrl?: string;
+      }>;
+      error?: string;
+    }>;
+    downloadBinary: (
+      name: 'aligner' | 'ytdlp',
+      downloadUrl: string
+    ) => Promise<{ success: boolean; error?: string }>;
+    openBinaryRelease: (name: 'aligner' | 'ytdlp') => Promise<{ success: boolean }>;
+    onBinaryProgress: (callback: (data: { name: string; percent: number }) => void) => () => void;
   };
 
   // End-to-End Pipeline APIs

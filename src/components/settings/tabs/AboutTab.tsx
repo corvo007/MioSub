@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Languages, Cpu, Info, Copy, ExternalLink, RefreshCw, Shield } from 'lucide-react';
+import {
+  Languages,
+  Cpu,
+  Info,
+  Copy,
+  ExternalLink,
+  RefreshCw,
+  Shield,
+  Download,
+} from 'lucide-react';
 import pkg from '../../../../package.json';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { cn } from '@/lib/cn';
@@ -25,11 +34,31 @@ type UpdateStatus = {
   isPortable: boolean;
 };
 
+type BinaryUpdateInfo = {
+  name: 'aligner' | 'ytdlp';
+  current: string;
+  latest: string;
+  hasUpdate: boolean;
+  downloadUrl?: string;
+  releaseUrl?: string;
+};
+
+type BinaryUpdateState = {
+  checking: boolean;
+  updates: BinaryUpdateInfo[];
+  downloading: { [key: string]: number }; // name -> progress
+};
+
 export const AboutTab: React.FC = () => {
   const { t } = useTranslation('settings');
   const [info, setInfo] = useState<any>(cachedAboutInfo);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [binaryUpdate, setBinaryUpdate] = useState<BinaryUpdateState>({
+    checking: false,
+    updates: [],
+    downloading: {},
+  });
 
   const loadAboutInfo = useCallback(async () => {
     if (window.electronAPI?.getAboutInfo) {
@@ -96,6 +125,78 @@ export const AboutTab: React.FC = () => {
     void window.electronAPI?.showItemInFolder(path);
   };
 
+  // Binary update handlers
+  const handleCheckBinaryUpdates = async () => {
+    if (!window.electronAPI?.update?.checkBinaries) return;
+    setBinaryUpdate((prev) => ({ ...prev, checking: true }));
+    try {
+      const result = await window.electronAPI.update.checkBinaries();
+      if (result.success && result.updates) {
+        setBinaryUpdate((prev) => ({ ...prev, updates: result.updates!, checking: false }));
+      } else {
+        setBinaryUpdate((prev) => ({ ...prev, checking: false }));
+      }
+    } catch (error) {
+      logger.error('[AboutTab] Failed to check binary updates', error);
+      setBinaryUpdate((prev) => ({ ...prev, checking: false }));
+    }
+  };
+
+  const handleDownloadBinary = async (name: 'aligner' | 'ytdlp', downloadUrl: string) => {
+    if (!window.electronAPI?.update?.downloadBinary) return;
+    setBinaryUpdate((prev) => ({
+      ...prev,
+      downloading: { ...prev.downloading, [name]: 0 },
+    }));
+    try {
+      const result = await window.electronAPI.update.downloadBinary(name, downloadUrl);
+      if (result.success) {
+        // Refresh info after successful update
+        void loadAboutInfo();
+        // Clear update status for this binary
+        setBinaryUpdate((prev) => ({
+          ...prev,
+          updates: prev.updates.map((u) => (u.name === name ? { ...u, hasUpdate: false } : u)),
+          downloading: Object.fromEntries(
+            Object.entries(prev.downloading).filter(([k]) => k !== name)
+          ),
+        }));
+      } else {
+        logger.error(`[AboutTab] Failed to download ${name}:`, result.error);
+        setBinaryUpdate((prev) => ({
+          ...prev,
+          downloading: Object.fromEntries(
+            Object.entries(prev.downloading).filter(([k]) => k !== name)
+          ),
+        }));
+      }
+    } catch (error) {
+      logger.error(`[AboutTab] Failed to download ${name}`, error);
+      setBinaryUpdate((prev) => ({
+        ...prev,
+        downloading: Object.fromEntries(
+          Object.entries(prev.downloading).filter(([k]) => k !== name)
+        ),
+      }));
+    }
+  };
+
+  const handleOpenBinaryRelease = (name: 'aligner' | 'ytdlp') => {
+    void window.electronAPI?.update?.openBinaryRelease(name);
+  };
+
+  // Listen for binary download progress
+  useEffect(() => {
+    if (!window.electronAPI?.update?.onBinaryProgress) return;
+    const unsubscribe = window.electronAPI.update.onBinaryProgress((data) => {
+      setBinaryUpdate((prev) => ({
+        ...prev,
+        downloading: { ...prev.downloading, [data.name]: data.percent },
+      }));
+    });
+    return () => unsubscribe?.();
+  }, []);
+
   return (
     <div className="space-y-6 animate-fade-in text-left">
       {/* App Branding */}
@@ -137,30 +238,90 @@ export const AboutTab: React.FC = () => {
 
       {/* Dependency Versions */}
       <div className="space-y-3">
-        <SectionHeader icon={<Cpu className="w-4 h-4" />}>
-          {t('about.dependencies', 'Dependencies')}
-        </SectionHeader>
+        <div className="flex items-center justify-between">
+          <SectionHeader icon={<Cpu className="w-4 h-4" />}>
+            {t('about.dependencies', 'Dependencies')}
+          </SectionHeader>
+          <button
+            onClick={handleCheckBinaryUpdates}
+            disabled={binaryUpdate.checking}
+            className="px-3 py-1.5 text-xs text-slate-600 hover:text-brand-purple border border-slate-200 hover:border-brand-purple/30 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
+          >
+            <RefreshCw className={cn('w-3.5 h-3.5', binaryUpdate.checking && 'animate-spin')} />
+            {t('about.checkBinaryUpdates', 'Check Updates')}
+          </button>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {[
-            { label: t('about.ffmpeg', 'FFmpeg'), value: info?.versions.ffmpeg },
-            { label: t('about.ffprobe', 'FFprobe'), value: info?.versions.ffprobe },
-            { label: t('about.ytdlp', 'yt-dlp'), value: info?.versions.ytdlp },
-            { label: t('about.qjs', 'QuickJS'), value: info?.versions.qjs },
-            { label: t('about.whisper', 'Whisper.cpp'), value: info?.versions.whisper },
-            { label: t('about.aligner', 'Aligner'), value: info?.versions.aligner },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="px-4 py-3 bg-white rounded-xl border border-slate-200 shadow-sm flex items-center gap-3"
-            >
-              <span className="text-sm text-slate-500 whitespace-nowrap shrink-0">
-                {item.label}
-              </span>
-              <span className="text-sm text-slate-900 text-right flex-1 truncate">
-                {item.value || '...'}
-              </span>
-            </div>
-          ))}
+            { label: t('about.ffmpeg', 'FFmpeg'), value: info?.versions.ffmpeg, key: 'ffmpeg' },
+            { label: t('about.ffprobe', 'FFprobe'), value: info?.versions.ffprobe, key: 'ffprobe' },
+            { label: t('about.ytdlp', 'yt-dlp'), value: info?.versions.ytdlp, key: 'ytdlp' },
+            { label: t('about.qjs', 'QuickJS'), value: info?.versions.qjs, key: 'qjs' },
+            {
+              label: t('about.whisper', 'Whisper.cpp'),
+              value: info?.versions.whisper,
+              key: 'whisper',
+            },
+            { label: t('about.aligner', 'Aligner'), value: info?.versions.aligner, key: 'aligner' },
+          ].map((item) => {
+            const updateInfo = binaryUpdate.updates.find((u) => u.name === item.key);
+            const isDownloading = item.key in binaryUpdate.downloading;
+            const downloadProgress = binaryUpdate.downloading[item.key];
+
+            return (
+              <div
+                key={item.label}
+                className={cn(
+                  'px-4 py-3 bg-white rounded-xl border shadow-sm flex items-center gap-3 transition-colors',
+                  updateInfo?.hasUpdate ? 'border-brand-purple/30' : 'border-slate-200'
+                )}
+              >
+                <span className="text-sm text-slate-500 whitespace-nowrap shrink-0">
+                  {item.label}
+                </span>
+                <span className="text-sm text-slate-900 flex-1 truncate">
+                  {item.value || '...'}
+                </span>
+                {/* Update indicator */}
+                {updateInfo?.hasUpdate && !isDownloading && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="text-xs text-brand-purple">{updateInfo.latest}</span>
+                    {updateInfo.downloadUrl ? (
+                      <button
+                        onClick={() =>
+                          handleDownloadBinary(updateInfo.name, updateInfo.downloadUrl!)
+                        }
+                        className="p-1 text-brand-purple hover:bg-brand-purple/10 rounded transition-colors"
+                        title={t('about.downloadUpdate', 'Download Update')}
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleOpenBinaryRelease(updateInfo.name)}
+                        className="p-1 text-brand-purple hover:bg-brand-purple/10 rounded transition-colors"
+                        title={t('about.viewRelease', 'View Release')}
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
+                {/* Download progress */}
+                {isDownloading && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="w-16 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-brand-purple transition-all"
+                        style={{ width: `${downloadProgress}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-slate-500">{Math.round(downloadProgress)}%</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
