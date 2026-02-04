@@ -5,6 +5,19 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.8] - 2026-02-04
+
+### Features
+
+- **Preflight Check**: Added configuration validation before generation starts. Validates API keys, Whisper model files (GGML/GGUF format), and CTC alignment model directories. Shows clear error messages with links to settings and documentation.
+- **Close Confirmation**: Added warning dialog when closing the app with active tasks (generation, download, compression, transcoding). Prevents accidental data loss.
+- **Audio Extraction**: Added support for cancelling audio extraction operations.
+
+### Fixes
+
+- **Windows**: Fixed Unicode path encoding issues once and for all. Replaced cmd.exe wrapper with direct binary spawning, ensuring Chinese/Japanese/Korean paths work correctly without code page conversion issues.
+- **Video Preview**: Fixed "ReadableStream is already closed" error when switching from live transcoding to static playback mode for MKV files.
+
 ## [3.0.7] - 2026-02-03
 
 ### Fixes
