@@ -8,8 +8,14 @@ import i18n from '@/i18n';
  */
 export const decodeAudio = async (
   file: File,
-  onProgress?: (progress: { stage: string; percent: number }) => void
+  onProgress?: (progress: { stage: string; percent: number }) => void,
+  signal?: AbortSignal
 ): Promise<AudioBuffer> => {
+  // Check if already aborted
+  if (signal?.aborted) {
+    throw new DOMException('Audio decoding aborted', 'AbortError');
+  }
+
   // Priority: file.path (from native dialog) > webUtils.getPathForFile > undefined
   const filePath = isElectron()
     ? (file as any).path || window.electronAPI.getFilePath(file) || undefined
@@ -26,8 +32,12 @@ export const decodeAudio = async (
   if (isElectron() && filePath) {
     try {
       logger.info('Starting audio decoding using FFmpeg...');
-      return await extractWithFFmpeg(file, onProgress);
+      return await extractWithFFmpeg(file, onProgress, signal);
     } catch (err: any) {
+      // Re-throw abort errors without fallback
+      if (err.name === 'AbortError') {
+        throw err;
+      }
       logger.warn('FFmpeg failed, using Web Audio API fallback:', err.message);
       // 继续使用下面的 Web Audio API 降级方案
     }
@@ -73,12 +83,21 @@ export const decodeAudio = async (
 export async function decodeAudioWithRetry(
   file: File,
   retries = 3,
-  onProgress?: (progress: { stage: string; percent: number }) => void
+  onProgress?: (progress: { stage: string; percent: number }) => void,
+  signal?: AbortSignal
 ): Promise<AudioBuffer> {
   for (let i = 0; i < retries; i++) {
+    // Check abort before each retry
+    if (signal?.aborted) {
+      throw new DOMException('Audio decoding aborted', 'AbortError');
+    }
     try {
-      return await decodeAudio(file, onProgress);
+      return await decodeAudio(file, onProgress, signal);
     } catch (e: any) {
+      // Re-throw abort errors without retry
+      if (e.name === 'AbortError') {
+        throw e;
+      }
       if (i === retries - 1) {
         logger.error('Audio decode failed after retries', e);
         throw new Error(i18n.t('services:audio.errors.decodeRetryFailed'));

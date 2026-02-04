@@ -9,8 +9,14 @@ import type { AudioExtractionOptions, AudioExtractionProgress } from '@/types/el
  */
 export async function extractAudioWithFFmpeg(
   file: File,
-  onProgress?: (progress: { stage: string; percent: number }) => void
+  onProgress?: (progress: { stage: string; percent: number }) => void,
+  signal?: AbortSignal
 ): Promise<AudioBuffer> {
+  // Check if already aborted
+  if (signal?.aborted) {
+    throw new DOMException('Audio extraction aborted', 'AbortError');
+  }
+
   if (!isElectron()) {
     throw new Error(i18n.t('services:audio.errors.ffmpegElectronOnly'));
   }
@@ -23,6 +29,12 @@ export async function extractAudioWithFFmpeg(
 
   let extractedAudioPath: string | undefined;
   let cleanupListener: (() => void) | undefined;
+
+  // Set up abort handler
+  const abortHandler = () => {
+    window.electronAPI.cancelAudioExtraction();
+  };
+  signal?.addEventListener('abort', abortHandler);
 
   try {
     // 1. Get Audio Info
@@ -98,6 +110,9 @@ export async function extractAudioWithFFmpeg(
       await ctx.close();
     }
   } finally {
+    // Remove abort handler
+    signal?.removeEventListener('abort', abortHandler);
+
     // Clean up listener
     if (cleanupListener) {
       cleanupListener();
@@ -123,7 +138,8 @@ export async function extractAudioWithFFmpeg(
  */
 export async function smartDecodeAudio(
   file: File,
-  onProgress?: (progress: { stage: string; percent: number }) => void
+  onProgress?: (progress: { stage: string; percent: number }) => void,
+  signal?: AbortSignal
 ): Promise<AudioBuffer> {
   // Priority: file.path (from native dialog) > webUtils.getPathForFile > undefined
   const filePath = isElectron()
@@ -139,8 +155,12 @@ export async function smartDecodeAudio(
   try {
     // 优先尝试 FFmpeg
     logger.info('Attempting FFmpeg extraction...');
-    return await extractAudioWithFFmpeg(file, onProgress);
+    return await extractAudioWithFFmpeg(file, onProgress, signal);
   } catch (err: any) {
+    // Re-throw abort errors without fallback
+    if (err.name === 'AbortError') {
+      throw err;
+    }
     logger.warn('FFmpeg extraction failed, falling back to Web Audio API', {
       error: err.message,
       code: err.code,

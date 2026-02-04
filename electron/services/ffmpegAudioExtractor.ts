@@ -34,6 +34,13 @@ export const getFFprobePath = () => getBinaryPath('ffprobe');
 // Track active audio extraction commands for cleanup on app quit
 const activeAudioCommands: Set<ReturnType<typeof ffmpeg>> = new Set();
 
+// Track current audio extraction for cancellation support
+let currentAudioCommand: {
+  command: ReturnType<typeof ffmpeg>;
+  outputPath: string;
+} | null = null;
+let isAudioExtractionCancelled = false;
+
 /**
  * Kill all active audio extraction processes.
  * Call this when the app is quitting to prevent orphaned processes.
@@ -47,6 +54,36 @@ export function killAllAudioExtractions(): void {
     }
   }
   activeAudioCommands.clear();
+}
+
+/**
+ * Cancel the current audio extraction operation.
+ * Returns true if cancellation was successful, false if no extraction was running.
+ */
+export function cancelAudioExtraction(): boolean {
+  if (currentAudioCommand) {
+    try {
+      isAudioExtractionCancelled = true;
+      currentAudioCommand.command.kill('SIGKILL');
+      const outputPath = currentAudioCommand.outputPath;
+      // Delay cleanup to allow process to release file handle
+      setTimeout(() => {
+        if (fs.existsSync(outputPath)) {
+          try {
+            fs.unlinkSync(outputPath);
+          } catch (_e) {
+            // Ignore cleanup errors
+          }
+        }
+      }, 500);
+      activeAudioCommands.delete(currentAudioCommand.command);
+      currentAudioCommand = null;
+      return true;
+    } catch (_e) {
+      return false;
+    }
+  }
+  return false;
 }
 
 export interface AudioExtractionOptions {
@@ -114,6 +151,9 @@ export async function extractAudioFromVideo(
   const outputPath = path.join(tempDir, outputFileName);
 
   return new Promise((resolve, reject) => {
+    // Reset cancellation flag at start
+    isAudioExtractionCancelled = false;
+
     let command = ffmpeg(videoPath)
       .outputOptions([
         `-ar ${sampleRate}`, // 采样率
@@ -166,12 +206,19 @@ export async function extractAudioFromVideo(
     // 监听完成
     command.on('end', () => {
       activeAudioCommands.delete(command);
+      currentAudioCommand = null;
       resolve(outputPath);
     });
 
     // 监听错误
     command.on('error', (err) => {
       activeAudioCommands.delete(command);
+      currentAudioCommand = null;
+      // Check if this was a cancellation
+      if (isAudioExtractionCancelled) {
+        reject(new Error('Audio extraction cancelled'));
+        return;
+      }
       // 清理可能生成的临时文件
       if (fs.existsSync(outputPath)) {
         fs.unlinkSync(outputPath);
@@ -184,6 +231,8 @@ export async function extractAudioFromVideo(
 
     // Track this command for cleanup on app quit
     activeAudioCommands.add(command);
+    // Track as current command for cancellation
+    currentAudioCommand = { command, outputPath };
   });
 }
 
@@ -255,6 +304,9 @@ export async function extractAudioSegment(
   const outputPath = path.join(tempDir, outputFileName);
 
   return new Promise((resolve, reject) => {
+    // Reset cancellation flag at start
+    isAudioExtractionCancelled = false;
+
     // Use -ss before -i for fast seeking (input seeking)
     let command = ffmpeg(videoPath)
       .inputOptions([`-ss ${startTime}`]) // Seek to start time before reading input
@@ -310,12 +362,19 @@ export async function extractAudioSegment(
     // Listen for completion
     command.on('end', () => {
       activeAudioCommands.delete(command);
+      currentAudioCommand = null;
       resolve(outputPath);
     });
 
     // Listen for errors
     command.on('error', (err) => {
       activeAudioCommands.delete(command);
+      currentAudioCommand = null;
+      // Check if this was a cancellation
+      if (isAudioExtractionCancelled) {
+        reject(new Error('Audio extraction cancelled'));
+        return;
+      }
       // Clean up temp file if it was created
       if (fs.existsSync(outputPath)) {
         fs.unlinkSync(outputPath);
@@ -328,6 +387,8 @@ export async function extractAudioSegment(
 
     // Track this command for cleanup on app quit
     activeAudioCommands.add(command);
+    // Track as current command for cancellation
+    currentAudioCommand = { command, outputPath };
   });
 }
 
