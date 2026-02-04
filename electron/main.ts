@@ -2105,7 +2105,9 @@ app.on('window-all-closed', () => {
 });
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
+  // Guard: screen module requires app to be ready
+  // activate can fire before ready on macOS when user clicks dock icon during startup
+  if (app.isReady() && BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
 });
