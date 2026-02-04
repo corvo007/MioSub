@@ -12,6 +12,15 @@
       "unknownFile": "未知文件"
     }
   },
+  "closeConfirm": {
+    "title": "关闭应用程序？",
+    "message": "任务仍在运行中，现在关闭将取消这些任务。",
+    "activeTasks": "正在进行的任务",
+    "warning": "关闭可能导致数据丢失或处理不完整。",
+    "keepRunning": "继续运行",
+    "closeAnyway": "仍然关闭",
+    "andMore": "以及其他 {{count}} 个任务..."
+  },
   "errorBoundary": {
     "title": "出错了",
     "description": "应用程序遇到意外错误。我们已记录此问题。",

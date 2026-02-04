@@ -23,5 +23,8 @@
   "urlPlaceholder": "YouTube / Bilibili 動画リンクを貼り付け...",
   "parse": "解析",
   "parsing": "解析中",
-  "qualityLabel": "画質選択"
+  "qualityLabel": "画質選択",
+  "task": {
+    "downloading": "ダウンロード中"
+  }
 }

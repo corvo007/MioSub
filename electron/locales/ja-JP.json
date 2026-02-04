@@ -92,6 +92,24 @@
     "modelReadError": "モデルファイルを読み取れません",
     "binaryNotFound": "Whisper 実行ファイルが見つかりません。設定のパスを確認するか、ソフトウェアが正しくインストールされていることを確認してください。"
   },
+  "preflight": {
+    "geminiKeyMissing": "Gemini API Key が設定されていません。翻訳と校正ができません",
+    "openaiKeyMissing": "OpenAI API Key が設定されていません。オンライン Whisper 文字起こしができません",
+    "whisperPathEmpty": "ローカル Whisper が有効ですが、モデルパスが設定されていません",
+    "whisperModelNotExist": "Whisper モデルファイルが存在しません。移動または削除された可能性があります",
+    "whisperModelInvalidFormat": "Whisper モデル形式が無効です（.bin 形式が必要）",
+    "whisperModelTooSmall": "Whisper モデルファイルが小さすぎます（無効なファイルの可能性）",
+    "whisperModelIncompatibleFormat": "Whisper モデル形式が互換性がありません（GGML/GGUF 形式が必要）",
+    "whisperModelReadError": "Whisper モデルファイルを読み取れません",
+    "whisperBinaryNotExist": "カスタム Whisper 実行ファイルが存在しません",
+    "ctcPathEmpty": "CTC アライメントが有効ですが、モデルパスが設定されていません",
+    "ctcModelDirNotExist": "CTC アライメントモデルディレクトリが存在しません。移動または削除された可能性があります",
+    "ctcModelPathNotDir": "CTC アライメントモデルパスはディレクトリではありません",
+    "ctcModelFilesMissing": "CTC アライメントモデルディレクトリにファイルがありません：{{files}}、完全なモデルを再ダウンロードするか、モデルディレクトリのパスを確認してください",
+    "ctcModelInvalidOnnx": "CTC アライメントモデルは有効な ONNX 形式ではありません。再ダウンロードしてください",
+    "ctcModelReadError": "CTC アライメントモデルファイルを読み取れません",
+    "ctcAlignerNotExist": "カスタムアライナー実行ファイルが存在しません"
+  },
   "endToEnd": {
     "preparingDownload": "ダウンロード準備中...",
     "parsingUrl": "動画リンクを解析中...",

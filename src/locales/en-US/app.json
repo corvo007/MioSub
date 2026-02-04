@@ -12,6 +12,15 @@
       "unknownFile": "Unknown file"
     }
   },
+  "closeConfirm": {
+    "title": "Close Application?",
+    "message": "Tasks are still running. Closing now will cancel these tasks.",
+    "activeTasks": "Active tasks",
+    "warning": "Closing may result in data loss or incomplete processing.",
+    "keepRunning": "Keep Running",
+    "closeAnyway": "Close Anyway",
+    "andMore": "and {{count}} more..."
+  },
   "errorBoundary": {
     "title": "Something went wrong",
     "description": "The application encountered an unexpected error. This issue has been logged.",

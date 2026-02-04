@@ -47,5 +47,8 @@
     "tempSubtitleFailed": "无法创建临时字幕文件",
     "subtitleGenFailed": "字幕生成失败",
     "compressFailed": "压制失败"
+  },
+  "task": {
+    "compressing": "正在压制视频"
   }
 }

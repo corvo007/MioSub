@@ -74,6 +74,8 @@
         "instructionModel": "仅支持 ",
         "instructionModelLink": "whisper.cpp 官方模型",
         "instructionModelSuffix": "，不支持 Faster-whisper 模型。",
+        "instructionDocs": "详细配置教程请参阅",
+        "instructionDocsLink": "官方文档",
         "selectError": "模型选择失败: {{error}}",
         "selectErrorGeneric": "选择模型失败"
       }
@@ -154,7 +156,7 @@
         "ctc": "CTC (准确度最高)"
       },
       "ctcConfig": "CTC 对齐器配置",
-      "ctcConfigDesc": "配置外部 CTC 对齐工具和模型的路径。",
+      "ctcConfigDesc": "配置 CTC 对齐模型的路径。",
       "alignerPath": "对齐器可执行文件",
       "alignerPathPlaceholder": "选择 align.exe...",
       "modelPath": "模型目录",
@@ -164,7 +166,7 @@
       "selectErrorGeneric": "选择失败",
       "instructions": "设置说明：",
       "instructionAligner": "从<a href=\"https://github.com/corvo007/Gemini-Subtitle-Pro/releases\" target=\"_blank\" class=\"text-indigo-400 hover:text-indigo-300 underline\">项目发布页面</a>下载 align.exe",
-      "instructionModel": "下载 <a href=\"https://huggingface.co/MahmoudAshraf/mms-300m-1130-forced-aligner\" target=\"_blank\" class=\"text-indigo-400 hover:text-indigo-300 underline\">MMS 模型</a>（~1.2GB）并解压到文件夹（<a href=\"https://github.com/corvo007/Gemini-Subtitle-Pro/releases\" target=\"_blank\" class=\"text-indigo-400 hover:text-indigo-300 underline\">Releases</a> 也有提供）"
+      "instructionModel": "需要另外下载模型才能使用，详见<a href=\"https://www.miosub.app/docs/guide/alignment\" target=\"_blank\" class=\"text-indigo-400 hover:text-indigo-300 underline\">官方文档</a>"
     }
   },
   "debug": {

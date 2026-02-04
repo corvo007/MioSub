@@ -12,6 +12,15 @@
       "unknownFile": "不明なファイル"
     }
   },
+  "closeConfirm": {
+    "title": "アプリを閉じますか？",
+    "message": "タスクがまだ実行中です。今閉じるとこれらのタスクがキャンセルされます。",
+    "activeTasks": "実行中のタスク",
+    "warning": "閉じるとデータが失われたり、処理が不完全になる可能性があります。",
+    "keepRunning": "実行を続ける",
+    "closeAnyway": "閉じる",
+    "andMore": "他 {{count}} 件..."
+  },
   "errorBoundary": {
     "title": "エラーが発生しました",
     "description": "アプリケーションで予期しないエラーが発生しました。この問題は記録されました。",

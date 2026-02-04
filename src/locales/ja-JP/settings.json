@@ -74,6 +74,9 @@
         "instructionModel": "サポート対象は ",
         "instructionModelLink": "whisper.cpp 公式モデル",
         "instructionModelSuffix": " のみです。Faster-whisper モデルはサポートされていません。",
+        "instructionDocs": "詳細な設定ガイドは",
+        "instructionDocsLink": "公式ドキュメント",
+        "instructionDocsSuffix": "をご覧ください。",
         "selectError": "モデルの選択に失敗しました: {{error}}",
         "selectErrorGeneric": "モデルの選択に失敗しました"
       }
@@ -154,7 +157,7 @@
         "ctc": "CTC (最高精度)"
       },
       "ctcConfig": "CTC アライナー設定",
-      "ctcConfigDesc": "外部 CTC アライメントツールとモデルのパスを設定してください。",
+      "ctcConfigDesc": "CTC アライメントモデルのパスを設定してください。",
       "alignerPath": "アライナー実行ファイル",
       "alignerPathPlaceholder": "align.exe を選択...",
       "modelPath": "モデルフォルダ",
@@ -164,7 +167,7 @@
       "selectErrorGeneric": "選択に失敗しました",
       "instructions": "セットアップ：",
       "instructionAligner": "リリースページから align.exe をダウンロード",
-      "instructionModel": "MMS モデル（約1.2GB）をダウンロードして展開"
+      "instructionModel": "別途モデルのダウンロードが必要です。詳細は<a href=\"https://www.miosub.app/docs/guide/alignment\" target=\"_blank\" class=\"text-indigo-400 hover:text-indigo-300 underline\">公式ドキュメント</a>をご覧ください。"
     }
   },
   "debug": {

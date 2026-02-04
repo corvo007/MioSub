@@ -152,6 +152,19 @@ export const LocalWhisperSettings: React.FC<LocalWhisperSettingsProps> = ({
             </a>
             {t('services.transcription.localWhisperSettings.instructionModelSuffix')}
           </li>
+          <li>
+            {t('services.transcription.localWhisperSettings.instructionDocs')}
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                void window.electronAPI?.openExternal('https://www.miosub.app/docs/guide/whisper');
+              }}
+              className="text-blue-500 underline hover:text-blue-600 cursor-pointer ml-1"
+            >
+              {t('services.transcription.localWhisperSettings.instructionDocsLink')}
+            </a>
+          </li>
         </ul>
       </div>
     </div>

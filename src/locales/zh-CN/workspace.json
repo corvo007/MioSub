@@ -150,5 +150,16 @@
     "unableToLoadFile": "无法加载文件: {{error}}",
     "audioOnly": "仅音频模式"
   },
+  "preflight": {
+    "title": "配置检查失败",
+    "description": "在开始生成前，请先修复以下配置问题：",
+    "goToSettings": "前往设置",
+    "openSettings": "打开设置",
+    "close": "关闭",
+    "seeDoc": "查看文档"
+  },
+  "task": {
+    "generating": "正在生成字幕"
+  },
   "unableToLoadFile": "无法加载文件: {{error}}"
 }

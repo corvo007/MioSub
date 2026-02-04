@@ -150,5 +150,16 @@
     "unableToLoadFile": "Unable to load file: {{error}}",
     "audioOnly": "Audio Only Mode"
   },
+  "preflight": {
+    "title": "Configuration Check Failed",
+    "description": "Please fix the following configuration issues before starting:",
+    "goToSettings": "Go to Settings",
+    "openSettings": "Open Settings",
+    "close": "Close",
+    "seeDoc": "See Documentation"
+  },
+  "task": {
+    "generating": "Generating subtitles"
+  },
   "unableToLoadFile": "Unable to load file: {{error}}"
 }

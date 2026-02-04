@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type SpeakerUIProfile } from '@/types/speaker';
 import { type CompressionOptions, type CompressionProgress } from '@/types/compression';
@@ -66,6 +66,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
   const [showDownloadedVideoPrompt, setShowDownloadedVideoPrompt] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const taskIdRef = useRef<string | null>(null);
 
   // Update elapsed time every second during compression
 
@@ -193,6 +194,14 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
 
     setIsCompressing(true);
     setCompressionStartTime(Date.now());
+
+    // Register task for close confirmation
+    const taskId = `compression-${Date.now()}`;
+    taskIdRef.current = taskId;
+    window.electronAPI?.task
+      ?.register(taskId, 'compression', `${t('task.compressing')}: ${file.name}`)
+      .catch(console.error);
+
     try {
       let finalSubtitlePath = undefined;
 
@@ -247,8 +256,18 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
       } finally {
         cleanup();
       }
+      // Unregister task on success
+      if (taskIdRef.current) {
+        window.electronAPI?.task?.unregister(taskIdRef.current).catch(console.error);
+        taskIdRef.current = null;
+      }
       setShowSuccessModal(true);
     } catch (e: any) {
+      // Unregister task on error/cancel
+      if (taskIdRef.current) {
+        window.electronAPI?.task?.unregister(taskIdRef.current).catch(console.error);
+        taskIdRef.current = null;
+      }
       // Don't show error for user-initiated cancellation
       // Check error name first (structured), then fallback to message check
       const isCancellation = e.name === 'CancellationError' || e.message?.includes('CANCELLED');

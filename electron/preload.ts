@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('extract-audio-ffmpeg', videoPath, options),
   extractAudioSegment: (videoPath: string, options: any) =>
     ipcRenderer.invoke('extract-audio-segment', videoPath, options),
+  cancelAudioExtraction: () => ipcRenderer.invoke('cancel-audio-extraction'),
   readExtractedAudio: (audioPath: string) => ipcRenderer.invoke('read-extracted-audio', audioPath),
   cleanupTempAudio: (audioPath: string) => ipcRenderer.invoke('cleanup-temp-audio', audioPath),
   getAudioInfo: (videoPath: string) => ipcRenderer.invoke('get-audio-info', videoPath),
@@ -77,6 +78,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   alignment: {
     ctc: (data: any) => ipcRenderer.invoke('alignment:ctc', data),
     ctcAbort: () => ipcRenderer.invoke('alignment:ctc-abort'),
+  },
+
+  // Preflight Check API
+  preflight: {
+    check: (settings: ElectronAPI['preflight']['check'] extends (arg: infer A) => any ? A : any) =>
+      ipcRenderer.invoke('preflight:check', settings),
   },
 
   // Open external link
@@ -188,11 +195,34 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.invoke('analytics:track', signal, payload, eventType),
   },
 
+  // Binary Info
+  binaries: {
+    getInfo: () => ipcRenderer.invoke('binaries:getInfo'),
+  },
+
   // Generation Task Lifecycle (for tracking active tasks on app quit)
   generation: {
     register: (taskId: string, type: 'end_to_end' | 'workspace', metadata?: Record<string, any>) =>
       ipcRenderer.invoke('generation:register', taskId, type, metadata),
     unregister: (taskId: string) => ipcRenderer.invoke('generation:unregister', taskId),
+  },
+
+  // Task Lifecycle (for close confirmation dialog)
+  task: {
+    register: (taskId: string, type: string, description: string, metadata?: Record<string, any>) =>
+      ipcRenderer.invoke('task:register', taskId, type, description, metadata),
+    unregister: (taskId: string) => ipcRenderer.invoke('task:unregister', taskId),
+  },
+
+  // App Lifecycle (for close confirmation)
+  app: {
+    forceClose: () => ipcRenderer.invoke('app:forceClose'),
+    onCloseRequested: (callback: (tasks: Array<{ type: string; description: string }>) => void) => {
+      const handler = (_event: any, tasks: Array<{ type: string; description: string }>) =>
+        callback(tasks);
+      ipcRenderer.on('app:closeRequested', handler);
+      return () => ipcRenderer.removeListener('app:closeRequested', handler);
+    },
   },
 
   // Update APIs

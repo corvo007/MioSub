@@ -26,6 +26,7 @@ import { StepResult } from '@/components/endToEnd/wizard/steps/StepResult';
 import { PageHeader, HeaderButton } from '@/components/layout/PageHeader';
 import { HelpButton } from '@/components/layout/HelpButton';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { PreflightErrorModal } from '@/components/modals/PreflightErrorModal';
 import { useAppStore } from '@/store/useAppStore';
 
 interface EndToEndWizardProps {
@@ -40,9 +41,12 @@ export function EndToEndWizard({ settings, onComplete, onCancel }: EndToEndWizar
   const setShowLogs = useAppStore((s) => s.setShowLogs);
   const setShowGlossaryManager = useAppStore((s) => s.setShowGlossaryManager);
   const setShowSettings = useAppStore((s) => s.setShowSettings);
+  const setSettingsTab = useAppStore((s) => s.setSettingsTab);
 
   const {
     state,
+    preflightErrors,
+    clearPreflightErrors,
     goNext,
     goBack,
     updateConfig,
@@ -231,6 +235,20 @@ export function EndToEndWizard({ settings, onComplete, onCancel }: EndToEndWizar
           </footer>
         )}
       </div>
+
+      {/* Preflight Error Modal */}
+      <PreflightErrorModal
+        isOpen={preflightErrors.length > 0}
+        onClose={clearPreflightErrors}
+        errors={preflightErrors}
+        onOpenSettings={(tab) => {
+          clearPreflightErrors();
+          if (tab) {
+            setSettingsTab(tab);
+          }
+          setShowSettings(true);
+        }}
+      />
     </div>
   );
 }

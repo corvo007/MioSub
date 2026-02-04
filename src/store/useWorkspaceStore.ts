@@ -54,6 +54,15 @@ interface WorkspaceState {
   // Speaker state
   speakerProfiles: SpeakerUIProfile[];
 
+  // Preflight state
+  preflightErrors: {
+    code: string;
+    message: string;
+    field?: string;
+    tab?: 'services' | 'enhance';
+  }[];
+  showPreflightModal: boolean;
+
   // Logic Actions (Bridge)
   actions: WorkspacePageActions;
 }
@@ -84,6 +93,12 @@ interface WorkspaceActions {
 
   // Speaker setters
   setSpeakerProfiles: (profiles: SpeakerUIProfile[]) => void;
+
+  // Preflight setters
+  setPreflightErrors: (
+    errors: { code: string; message: string; field?: string; tab?: 'services' | 'enhance' }[]
+  ) => void;
+  setShowPreflightModal: (show: boolean) => void;
 
   // Compound actions
   // Compound actions
@@ -152,6 +167,8 @@ const initialState: WorkspaceState = {
   isLoadingFile: false,
   isLoadingSubtitle: false,
   speakerProfiles: [],
+  preflightErrors: [],
+  showPreflightModal: false,
   actions: {
     handleFileChange: () => {},
     handleFileSelectNative: () => {},
@@ -216,6 +233,10 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>()(
 
     // Speaker setters
     setSpeakerProfiles: (speakerProfiles) => set({ speakerProfiles }),
+
+    // Preflight setters
+    setPreflightErrors: (preflightErrors) => set({ preflightErrors }),
+    setShowPreflightModal: (showPreflightModal) => set({ showPreflightModal }),
 
     // Compound actions
     resetWorkspace: () =>

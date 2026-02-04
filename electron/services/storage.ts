@@ -1,6 +1,7 @@
 import path from 'path';
 import fs from 'fs';
-import { getStorageDir } from '../utils/paths.ts';
+import * as Sentry from '@sentry/electron/main';
+import { getStorageDir, isPortableMode } from '../utils/paths.ts';
 
 const SETTINGS_FILE = 'gemini-subtitle-pro-settings.json';
 const HISTORY_FILE = 'gemini-subtitle-pro-history.json';
@@ -14,34 +15,92 @@ export interface WorkspaceHistoryItem {
   savedAt: string;
 }
 
+export interface SaveResult {
+  success: boolean;
+  error?: string;
+  errorCode?: 'write_failed' | 'verify_failed' | 'parse_failed' | 'dir_not_writable';
+}
+
 export class StorageService {
   private settingsPath: string;
   private historyPath: string;
   private snapshotsPath: string;
+  private storageDir: string;
 
   constructor() {
-    const storageDir = getStorageDir();
-    if (!fs.existsSync(storageDir)) {
+    this.storageDir = getStorageDir();
+    if (!fs.existsSync(this.storageDir)) {
       try {
-        fs.mkdirSync(storageDir, { recursive: true });
+        fs.mkdirSync(this.storageDir, { recursive: true });
       } catch (error) {
         console.error('Failed to create storage directory:', error);
+        Sentry.captureException(error, {
+          tags: { action: 'create_storage_dir' },
+          extra: { storageDir: this.storageDir, isPortable: isPortableMode() },
+        });
       }
     }
 
-    this.settingsPath = path.join(storageDir, SETTINGS_FILE);
-    this.historyPath = path.join(storageDir, HISTORY_FILE);
-    this.snapshotsPath = path.join(storageDir, SNAPSHOTS_FILE);
+    this.settingsPath = path.join(this.storageDir, SETTINGS_FILE);
+    this.historyPath = path.join(this.storageDir, HISTORY_FILE);
+    this.snapshotsPath = path.join(this.storageDir, SNAPSHOTS_FILE);
   }
 
-  // Settings methods
-  async saveSettings(data: any): Promise<boolean> {
+  // Settings methods - with verification and Sentry reporting
+  async saveSettings(data: any): Promise<SaveResult> {
     try {
-      await fs.promises.writeFile(this.settingsPath, JSON.stringify(data, null, 2), 'utf-8');
-      return true;
-    } catch (error) {
+      const jsonString = JSON.stringify(data, null, 2);
+
+      // Write to file
+      await fs.promises.writeFile(this.settingsPath, jsonString, 'utf-8');
+
+      // Verify write by reading back and parsing
+      const verifyData = await fs.promises.readFile(this.settingsPath, 'utf-8');
+      const parsed = JSON.parse(verifyData);
+
+      // Quick sanity check - ensure critical fields match
+      if (
+        data.whisperModelPath !== undefined &&
+        parsed.whisperModelPath !== data.whisperModelPath
+      ) {
+        const error = new Error('Settings verification failed: whisperModelPath mismatch');
+        Sentry.captureException(error, {
+          tags: { action: 'save_settings', errorCode: 'verify_failed' },
+          extra: {
+            storageDir: this.storageDir,
+            isPortable: isPortableMode(),
+            expected: data.whisperModelPath,
+            actual: parsed.whisperModelPath,
+          },
+        });
+        return {
+          success: false,
+          error: 'Settings verification failed',
+          errorCode: 'verify_failed',
+        };
+      }
+
+      return { success: true };
+    } catch (error: any) {
       console.error('Failed to save settings:', error);
-      return false;
+
+      // Report to Sentry with context
+      Sentry.captureException(error, {
+        tags: { action: 'save_settings', errorCode: 'write_failed' },
+        extra: {
+          storageDir: this.storageDir,
+          settingsPath: this.settingsPath,
+          isPortable: isPortableMode(),
+          errorMessage: error.message,
+          errorCode: error.code,
+        },
+      });
+
+      return {
+        success: false,
+        error: error.message || 'Failed to save settings',
+        errorCode: 'write_failed',
+      };
     }
   }
 
@@ -52,10 +111,45 @@ export class StorageService {
       }
       const data = await fs.promises.readFile(this.settingsPath, 'utf-8');
       return JSON.parse(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to read settings:', error);
+
+      // Report to Sentry - this is a critical failure
+      Sentry.captureException(error, {
+        tags: { action: 'read_settings', errorCode: 'parse_failed' },
+        extra: {
+          storageDir: this.storageDir,
+          settingsPath: this.settingsPath,
+          isPortable: isPortableMode(),
+          errorMessage: error.message,
+        },
+      });
+
       return null;
     }
+  }
+
+  /**
+   * Check if the storage directory is writable
+   * Useful for detecting portable mode issues early
+   */
+  isStorageWritable(): boolean {
+    const testFile = path.join(this.storageDir, `.write-test-${Date.now()}`);
+    try {
+      fs.writeFileSync(testFile, 'test');
+      fs.unlinkSync(testFile);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  getStorageInfo(): { path: string; isPortable: boolean; isWritable: boolean } {
+    return {
+      path: this.storageDir,
+      isPortable: isPortableMode(),
+      isWritable: this.isStorageWritable(),
+    };
   }
 
   // History methods

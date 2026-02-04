@@ -47,5 +47,8 @@
     "tempSubtitleFailed": "Failed to create temporary subtitle file",
     "subtitleGenFailed": "Subtitle generation failed",
     "compressFailed": "Compression failed"
+  },
+  "task": {
+    "compressing": "Compressing video"
   }
 }

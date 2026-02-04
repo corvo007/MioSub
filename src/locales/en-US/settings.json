@@ -74,6 +74,8 @@
         "instructionModel": "Only supports ",
         "instructionModelLink": "whisper.cpp official models",
         "instructionModelSuffix": ", Faster-whisper models are not supported.",
+        "instructionDocs": "For detailed setup guide, see the ",
+        "instructionDocsLink": "official documentation",
         "selectError": "Model selection failed: {{error}}",
         "selectErrorGeneric": "Failed to select model"
       }
@@ -154,7 +156,7 @@
         "ctc": "CTC (Highest Accuracy)"
       },
       "ctcConfig": "CTC Aligner Configuration",
-      "ctcConfigDesc": "Configure paths for the external CTC alignment tool and model.",
+      "ctcConfigDesc": "Configure the path for CTC alignment model.",
       "alignerPath": "Aligner Executable",
       "alignerPathPlaceholder": "Select align.exe...",
       "modelPath": "Model Directory",
@@ -164,7 +166,7 @@
       "selectErrorGeneric": "Selection failed",
       "instructions": "Setup Instructions:",
       "instructionAligner": "Download <a href=\"https://github.com/corvo007/Gemini-Subtitle-Pro/releases\" target=\"_blank\" class=\"text-indigo-400 hover:text-indigo-300 underline\">align.exe</a> from the project releases page",
-      "instructionModel": "Download the <a href=\"https://huggingface.co/MahmoudAshraf/mms-300m-1130-forced-aligner\" target=\"_blank\" class=\"text-indigo-400 hover:text-indigo-300 underline\">MMS model</a> (~1.2GB) and extract to a folder (also available in <a href=\"https://github.com/corvo007/Gemini-Subtitle-Pro/releases\" target=\"_blank\" class=\"text-indigo-400 hover:text-indigo-300 underline\">Releases</a>)"
+      "instructionModel": "Requires downloading the model separately. See <a href=\"https://www.miosub.app/docs/guide/alignment\" target=\"_blank\" class=\"text-indigo-400 hover:text-indigo-300 underline\">documentation</a> for details."
     }
   },
   "debug": {

@@ -24,5 +24,8 @@
   "urlPlaceholder": "Paste YouTube / Bilibili video link...",
   "parse": "Parse",
   "parsing": "Parsing",
-  "qualityLabel": "Quality Selection"
+  "qualityLabel": "Quality Selection",
+  "task": {
+    "downloading": "Downloading"
+  }
 }

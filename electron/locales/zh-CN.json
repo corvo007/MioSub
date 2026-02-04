@@ -93,6 +93,24 @@
     "modelReadError": "无法读取模型文件",
     "binaryNotFound": "未检测到 Whisper 运行程序。请检查设置中的路径，或确保软件安装完整。"
   },
+  "preflight": {
+    "geminiKeyMissing": "未设置 Gemini API Key，无法进行翻译和润色",
+    "openaiKeyMissing": "未设置 OpenAI API Key，无法使用在线 Whisper 转录",
+    "whisperPathEmpty": "已开启本地 Whisper，但未设置模型路径",
+    "whisperModelNotExist": "Whisper 模型文件不存在，可能已被移动或删除",
+    "whisperModelInvalidFormat": "Whisper 模型格式错误 (需 .bin 格式)",
+    "whisperModelTooSmall": "Whisper 模型文件过小 (可能是无效文件)",
+    "whisperModelIncompatibleFormat": "Whisper 模型格式不兼容 (需 GGML/GGUF 格式)",
+    "whisperModelReadError": "无法读取 Whisper 模型文件",
+    "whisperBinaryNotExist": "自定义 Whisper 可执行文件不存在",
+    "ctcPathEmpty": "已开启 CTC 对齐，但未设置模型路径",
+    "ctcModelDirNotExist": "CTC 对齐模型目录不存在，可能已被移动或删除",
+    "ctcModelPathNotDir": "CTC 对齐模型路径不是目录",
+    "ctcModelFilesMissing": "CTC 对齐模型目录缺少文件：{{files}}，请重新下载完整模型或检查模型目录是否正确",
+    "ctcModelInvalidOnnx": "CTC 对齐模型不是有效的 ONNX 格式，请重新下载",
+    "ctcModelReadError": "无法读取 CTC 对齐模型文件",
+    "ctcAlignerNotExist": "自定义对齐器可执行文件不存在"
+  },
   "endToEnd": {
     "preparingDownload": "正在准备下载...",
     "parsingUrl": "正在解析视频链接...",

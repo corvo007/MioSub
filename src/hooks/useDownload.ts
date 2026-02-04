@@ -1,7 +1,7 @@
 /**
  * useDownload Hook - Video Download State Management
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { VideoInfo, DownloadProgress, DownloadStatus, DownloadError } from '@/types/download';
 import {
@@ -51,6 +51,7 @@ export function useDownload(): UseDownloadReturn {
   const [thumbnailPath, setThumbnailPath] = useState<string | null>(null);
   const [currentUrl, setCurrentUrl] = useState<string>('');
   const [lastFormatId, setLastFormatId] = useState<string>('');
+  const taskIdRef = useRef<string | null>(null);
 
   // Initialize default output directory
   useEffect(() => {
@@ -70,6 +71,16 @@ export function useDownload(): UseDownloadReturn {
     }
     const unsubscribe = onDownloadProgress(setProgress);
     return unsubscribe;
+  }, []);
+
+  // Cleanup task on unmount
+  useEffect(() => {
+    return () => {
+      if (taskIdRef.current && window.electronAPI?.task?.unregister) {
+        window.electronAPI.task.unregister(taskIdRef.current).catch(console.error);
+        taskIdRef.current = null;
+      }
+    };
   }, []);
 
   const parse = useCallback(async (url: string) => {
@@ -103,12 +114,34 @@ export function useDownload(): UseDownloadReturn {
       setErrorInfo(null);
       setProgress(null);
       setLastFormatId(formatId);
+
+      // Register task for close confirmation
+      const taskId = `download-${Date.now()}`;
+      taskIdRef.current = taskId;
+      const title = videoInfo?.title || t('download:task.downloading');
+      window.electronAPI?.task
+        ?.register(taskId, 'download', `${t('download:task.downloading')}: ${title}`)
+        .catch(console.error);
+
       try {
         const path = await startDownload({ url: currentUrl, formatId, outputDir });
+
+        // Unregister task on completion
+        if (taskIdRef.current) {
+          window.electronAPI?.task?.unregister(taskIdRef.current).catch(console.error);
+          taskIdRef.current = null;
+        }
+
         setOutputPath(path);
         setStatus('completed');
         return path;
       } catch (err: any) {
+        // Unregister task on error
+        if (taskIdRef.current) {
+          window.electronAPI?.task?.unregister(taskIdRef.current).catch(console.error);
+          taskIdRef.current = null;
+        }
+
         const errInfo = err.errorInfo as DownloadError | undefined;
         const errorMessage = errInfo?.message || err.message;
         logger.error(`[Download] Download failed: ${errorMessage}`, { err, errInfo });
@@ -118,7 +151,7 @@ export function useDownload(): UseDownloadReturn {
         return undefined;
       }
     },
-    [currentUrl, outputDir]
+    [currentUrl, outputDir, videoInfo, t]
   );
 
   const downloadThumbnail = useCallback(async (): Promise<string | undefined> => {
@@ -144,6 +177,12 @@ export function useDownload(): UseDownloadReturn {
   }, [videoInfo, outputDir, t, addToast]);
 
   const cancel = useCallback(async () => {
+    // Unregister task on cancel
+    if (taskIdRef.current) {
+      window.electronAPI?.task?.unregister(taskIdRef.current).catch(console.error);
+      taskIdRef.current = null;
+    }
+
     await cancelDownload();
     setStatus('idle');
     setProgress(null);

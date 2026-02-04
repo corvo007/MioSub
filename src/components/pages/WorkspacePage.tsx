@@ -9,6 +9,7 @@ import { GenerationStatus } from '@/types/api';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
 import { HistoryModal } from '@/components/layout/HistoryModal';
+import { PreflightErrorModal } from '@/components/modals/PreflightErrorModal';
 
 import { SubtitleEditor } from '@/components/editor/SubtitleEditor';
 import { VideoPlayerPreview } from '@/components/editor/VideoPlayerPreview';
@@ -18,6 +19,8 @@ import { timeToSeconds } from '@/services/subtitle/time';
 import { isVideoFile, isAudioFile } from '@/services/utils/file';
 import { cn } from '@/lib/cn';
 import { useWorkspaceController } from '@/hooks/useWorkspaceLogic/useWorkspaceController';
+import { useWorkspaceStore } from '@/store/useWorkspaceStore';
+import { useAppStore } from '@/store/useAppStore';
 
 interface WorkspacePageProps {
   activeTab: 'new' | 'import';
@@ -280,6 +283,35 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         onRestoreSnapshot={onRestoreSnapshot}
         onDeleteSnapshot={onDeleteSnapshot}
       />
+
+      {/* Preflight Error Modal */}
+      <PreflightErrorModalContainer />
     </div>
+  );
+};
+
+/**
+ * Container component for PreflightErrorModal
+ * Reads state from store and handles settings navigation
+ */
+const PreflightErrorModalContainer: React.FC = () => {
+  const { preflightErrors, showPreflightModal, setShowPreflightModal } = useWorkspaceStore();
+  const { setShowSettings, setSettingsTab } = useAppStore();
+
+  const handleOpenSettings = (tab?: 'services' | 'enhance') => {
+    setShowPreflightModal(false);
+    if (tab) {
+      setSettingsTab(tab);
+    }
+    setShowSettings(true);
+  };
+
+  return (
+    <PreflightErrorModal
+      isOpen={showPreflightModal}
+      onClose={() => setShowPreflightModal(false)}
+      errors={preflightErrors}
+      onOpenSettings={handleOpenSettings}
+    />
   );
 };

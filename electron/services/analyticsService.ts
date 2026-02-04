@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import os from 'os';
 import { storageService } from './storage.ts';
 import { isPortableMode } from '../utils/paths.ts';
+import { systemInfoService } from './systemInfoService.ts';
 
 const ANALYTICS_FILE = 'gemini-subtitle-pro-analytics.json';
 
@@ -93,6 +94,12 @@ class AnalyticsService {
         console.error('[Analytics] Failed to load initial settings:', e);
       }
 
+      // Collect Binary Info for Sentry context and analytics
+      const systemInfo = await systemInfoService.getInfo();
+
+      // Set Sentry Context with binary versions
+      Sentry.setContext('binaries', systemInfoService.getForSentry(systemInfo));
+
       // Track App Launch
       // Collect Full Device Info (including Hardware)
       const deviceInfo = await this.getDeviceInfo();
@@ -133,6 +140,7 @@ class AnalyticsService {
         'app_launched',
         {
           ...deviceInfo,
+          ...systemInfoService.getForAnalytics(systemInfo),
           zoom_level: cachedZoomLevel,
         },
         'system'

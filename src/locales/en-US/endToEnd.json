@@ -223,5 +223,8 @@
   },
   "status": {
     "initializing": "Initializing..."
+  },
+  "task": {
+    "processing": "Processing"
   }
 }

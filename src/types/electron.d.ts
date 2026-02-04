@@ -135,6 +135,7 @@ export interface ElectronAPI {
     audioPath?: string;
     error?: string;
   }>;
+  cancelAudioExtraction: () => Promise<boolean>;
   readExtractedAudio: (audioPath: string) => Promise<ArrayBuffer>;
   cleanupTempAudio: (audioPath: string) => Promise<void>;
   getAudioInfo: (videoPath: string) => Promise<{
@@ -176,6 +177,34 @@ export interface ElectronAPI {
       error?: string;
     }>;
     ctcAbort: () => Promise<{ success: boolean }>;
+  };
+
+  // Preflight Check API
+  preflight: {
+    check: (settings: {
+      geminiKey?: string;
+      openaiKey?: string;
+      useLocalWhisper?: boolean;
+      whisperModelPath?: string;
+      localWhisperBinaryPath?: string;
+      alignmentMode?: 'ctc' | 'none';
+      alignmentModelPath?: string;
+      alignerPath?: string;
+    }) => Promise<{
+      passed: boolean;
+      errors: {
+        code: string;
+        message: string;
+        field?: string;
+        tab?: 'services' | 'enhance';
+        docUrl?: string;
+      }[];
+      warnings: {
+        code: string;
+        message: string;
+        field?: string;
+      }[];
+    }>;
   };
 
   // Tokenizer API
@@ -354,6 +383,52 @@ export interface ElectronAPI {
     ) => Promise<{ success: boolean }>;
   };
 
+  // Binary Info (returns SystemInfo from systemInfoService)
+  binaries: {
+    getInfo: () => Promise<{
+      hash: string;
+      appName: string;
+      version: string;
+      isPackaged: boolean;
+      commitHash: string;
+      versions: {
+        ffmpeg: string;
+        ffprobe: string;
+        ytdlp: string;
+        qjs: string;
+        whisper: string;
+        aligner: string;
+        whisperDetails: {
+          path: string;
+          source: 'Custom' | 'Bundled' | 'Portable' | 'Dev' | 'unknown';
+          version: string;
+          gpuSupport: boolean;
+        };
+      };
+      gpu: {
+        available: boolean;
+        encoders?: {
+          h264_nvenc: boolean;
+          hevc_nvenc: boolean;
+          h264_qsv: boolean;
+          hevc_qsv: boolean;
+          h264_amf: boolean;
+          hevc_amf: boolean;
+        };
+        preferredH264?: string;
+        preferredH265?: string;
+      };
+      paths: {
+        appPath: string;
+        userDataPath: string;
+        logPath: string;
+        exePath: string;
+        whisperPath: string;
+        alignerPath: string;
+      };
+    } | null>;
+  };
+
   // Generation Task Lifecycle (for tracking active tasks on app quit)
   generation: {
     register: (
@@ -362,6 +437,25 @@ export interface ElectronAPI {
       metadata?: Record<string, any>
     ) => Promise<{ success: boolean }>;
     unregister: (taskId: string) => Promise<{ success: boolean }>;
+  };
+
+  // Task Lifecycle (for close confirmation dialog)
+  task: {
+    register: (
+      taskId: string,
+      type: string,
+      description: string,
+      metadata?: Record<string, any>
+    ) => Promise<{ success: boolean }>;
+    unregister: (taskId: string) => Promise<{ success: boolean }>;
+  };
+
+  // App Lifecycle (for close confirmation)
+  app: {
+    forceClose: () => Promise<{ success: boolean }>;
+    onCloseRequested: (
+      callback: (tasks: Array<{ type: string; description: string }>) => void
+    ) => () => void;
   };
 
   // Update APIs

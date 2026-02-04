@@ -235,15 +235,26 @@ export const initializeSettings = async (): Promise<void> => {
 // Subscribe to settings changes and persist
 // Debounce the save operation to prevent excessive I/O
 const saveSettings = debounce(async (settings: AppSettings) => {
-  const { isSettingsLoaded } = useAppStore.getState();
+  const { isSettingsLoaded, addToast } = useAppStore.getState();
   if (!isSettingsLoaded) return;
 
   // Save to Electron storage
   if (window.electronAPI?.storage) {
     try {
-      await window.electronAPI.storage.setSettings(settings);
+      const result = await window.electronAPI.storage.setSettings(settings);
+      // Check if save failed (new SaveResult format)
+      if (result && typeof result === 'object' && 'success' in result && !result.success) {
+        logger.error('Settings save failed:', result.error);
+        // Show toast to user
+        addToast(
+          result.error || 'Failed to save settings',
+          'error',
+          8000 // Longer duration for important error
+        );
+      }
     } catch (e) {
       logger.error('Failed to save settings to Electron storage', e);
+      addToast('Failed to save settings', 'error', 8000);
     }
   } else {
     // Fallback to localStorage

@@ -150,5 +150,8 @@
     "unableToLoadFile": "ファイルを読み込めません: {{error}}",
     "audioOnly": "音声のみモード"
   },
+  "task": {
+    "generating": "字幕を生成中"
+  },
   "unableToLoadFile": "ファイルを読み込めません: {{error}}"
 }

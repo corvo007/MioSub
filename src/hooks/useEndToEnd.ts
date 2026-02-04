@@ -12,10 +12,12 @@ import type {
   WizardState,
   WizardStep,
 } from '@/types/endToEnd';
+import type { PreflightError } from '@/types/electron';
 import type { VideoInfo } from '@electron/services/ytdlp';
 import type { AppSettings } from '@/types/settings';
 import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 import { logger } from '@/services/utils/logger';
+import { ENV } from '@/config';
 
 // Re-export types for convenience
 export type { EndToEndConfig, PipelineProgress, PipelineResult, WizardStep };
@@ -23,6 +25,10 @@ export type { EndToEndConfig, PipelineProgress, PipelineResult, WizardStep };
 interface UseEndToEndReturn {
   // State
   state: WizardState;
+
+  // Preflight errors
+  preflightErrors: PreflightError[];
+  clearPreflightErrors: () => void;
 
   // Navigation
   setStep: (step: WizardStep) => void;
@@ -75,9 +81,13 @@ export function useEndToEnd(): UseEndToEndReturn {
     isExecuting: false,
   });
 
+  // Preflight errors state
+  const [preflightErrors, setPreflightErrors] = useState<PreflightError[]>([]);
+
   // Refs for cleanup
   const progressUnsubscribeRef = useRef<(() => void) | null>(null);
   const parsingUrlRef = useRef<string | null>(null);
+  const taskIdRef = useRef<string | null>(null);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -88,6 +98,11 @@ export function useEndToEnd(): UseEndToEndReturn {
       // Cancel pending parse on unmount
       if (parsingUrlRef.current && window.electronAPI?.download?.cancelParse) {
         window.electronAPI.download.cancelParse(parsingUrlRef.current).catch(console.error);
+      }
+      // Unregister task on unmount
+      if (taskIdRef.current && window.electronAPI?.task?.unregister) {
+        window.electronAPI.task.unregister(taskIdRef.current).catch(console.error);
+        taskIdRef.current = null;
       }
     };
   }, []);
@@ -157,6 +172,7 @@ export function useEndToEnd(): UseEndToEndReturn {
       result: undefined,
       parseError: undefined,
     });
+    setPreflightErrors([]);
   }, []);
 
   // URL Parsing
@@ -257,6 +273,26 @@ export function useEndToEnd(): UseEndToEndReturn {
         throw new Error(t('errors.selectOutputDir'));
       }
 
+      // Run preflight check before starting pipeline
+      if (window.electronAPI?.preflight && globalSettings) {
+        const preflight = await window.electronAPI.preflight.check({
+          geminiKey: globalSettings.geminiKey || ENV.GEMINI_API_KEY,
+          openaiKey: globalSettings.openaiKey || ENV.OPENAI_API_KEY,
+          useLocalWhisper: globalSettings.useLocalWhisper,
+          whisperModelPath: globalSettings.whisperModelPath,
+          localWhisperBinaryPath: globalSettings.localWhisperBinaryPath,
+          alignmentMode: globalSettings.alignmentMode,
+          alignmentModelPath: globalSettings.alignmentModelPath,
+          alignerPath: globalSettings.alignerPath,
+        });
+
+        if (!preflight.passed) {
+          // Set preflight errors for modal display
+          setPreflightErrors(preflight.errors as PreflightError[]);
+          return null;
+        }
+      }
+
       setState((prev) => ({
         ...prev,
         isExecuting: true,
@@ -268,6 +304,14 @@ export function useEndToEnd(): UseEndToEndReturn {
           message: t('status.initializing'),
         },
       }));
+
+      // Register task for close confirmation
+      const taskId = `e2e-${Date.now()}`;
+      taskIdRef.current = taskId;
+      const videoTitle = state.videoInfo?.title || config.url;
+      window.electronAPI?.task
+        ?.register(taskId, 'end_to_end', `${t('task.processing')}: ${videoTitle}`)
+        .catch(console.error);
 
       try {
         // Merge global settings into config to ensure user preferences are respected
@@ -291,6 +335,12 @@ export function useEndToEnd(): UseEndToEndReturn {
 
         const result = await window.electronAPI.endToEnd.start(mergedConfig);
 
+        // Unregister task on completion
+        if (taskIdRef.current) {
+          window.electronAPI?.task?.unregister(taskIdRef.current).catch(console.error);
+          taskIdRef.current = null;
+        }
+
         setState((prev) => ({
           ...prev,
           isExecuting: false,
@@ -300,6 +350,12 @@ export function useEndToEnd(): UseEndToEndReturn {
 
         return result as PipelineResult;
       } catch (error: any) {
+        // Unregister task on error
+        if (taskIdRef.current) {
+          window.electronAPI?.task?.unregister(taskIdRef.current).catch(console.error);
+          taskIdRef.current = null;
+        }
+
         const errorMessage = error.message || t('errors.executionFailed');
         logger.error(`[EndToEnd] Pipeline execution failed: ${errorMessage}`, error);
 
@@ -326,6 +382,12 @@ export function useEndToEnd(): UseEndToEndReturn {
 
   const abortPipeline = useCallback(() => {
     if (!isElectron || !window.electronAPI?.endToEnd?.abort) return;
+
+    // Unregister task on abort
+    if (taskIdRef.current) {
+      window.electronAPI?.task?.unregister(taskIdRef.current).catch(console.error);
+      taskIdRef.current = null;
+    }
 
     void window.electronAPI.endToEnd.abort();
     setState((prev) => ({
@@ -361,12 +423,19 @@ export function useEndToEnd(): UseEndToEndReturn {
   // Check if current state allows retry
   const canRetry = state.result && !state.result.success && state.result.errorDetails?.retryable;
 
+  // Clear preflight errors
+  const clearPreflightErrors = useCallback(() => {
+    setPreflightErrors([]);
+  }, []);
+
   // 防抖版本 - 防止快速重复点击
   const debouncedParseUrl = useDebouncedCallback(parseUrl);
   const debouncedStartPipeline = useDebouncedCallback(startPipeline);
 
   return {
     state,
+    preflightErrors,
+    clearPreflightErrors,
     setStep,
     goNext,
     goBack,

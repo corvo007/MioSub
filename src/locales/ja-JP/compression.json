@@ -47,5 +47,8 @@
     "tempSubtitleFailed": "一時字幕ファイルを作成できません",
     "subtitleGenFailed": "字幕の作成に失敗しました",
     "compressFailed": "エンコードに失敗しました"
+  },
+  "task": {
+    "compressing": "動画をエンコード中"
   }
 }

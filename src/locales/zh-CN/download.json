@@ -24,5 +24,8 @@
   "urlPlaceholder": "粘贴 YouTube / Bilibili 视频链接...",
   "parse": "解析",
   "parsing": "解析中",
-  "qualityLabel": "画质选择"
+  "qualityLabel": "画质选择",
+  "task": {
+    "downloading": "正在下载"
+  }
 }

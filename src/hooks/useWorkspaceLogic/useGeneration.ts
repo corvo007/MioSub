@@ -69,12 +69,35 @@ export function useGeneration({
       setStartTime,
       speakerProfiles,
       setSpeakerProfiles,
+      setPreflightErrors,
+      setShowPreflightModal,
     } = useWorkspaceStore.getState();
 
     if (!file) {
       setError(t('workspace:hooks.generation.errors.fileRequired'));
       return;
     }
+
+    // Run preflight check (Electron only)
+    if (window.electronAPI?.preflight) {
+      const preflight = await window.electronAPI.preflight.check({
+        geminiKey: settings.geminiKey || ENV.GEMINI_API_KEY,
+        openaiKey: settings.openaiKey || ENV.OPENAI_API_KEY,
+        useLocalWhisper: settings.useLocalWhisper,
+        whisperModelPath: settings.whisperModelPath,
+        localWhisperBinaryPath: settings.localWhisperBinaryPath,
+        alignmentMode: settings.alignmentMode,
+        alignmentModelPath: settings.alignmentModelPath,
+        alignerPath: settings.alignerPath,
+      });
+
+      if (!preflight.passed) {
+        setPreflightErrors(preflight.errors);
+        setShowPreflightModal(true);
+        return;
+      }
+    }
+
     const hasGemini = !!(settings.geminiKey || ENV.GEMINI_API_KEY);
     const hasOpenAI = !!(settings.openaiKey || ENV.OPENAI_API_KEY);
     const hasLocalWhisper = !!settings.useLocalWhisper;
@@ -186,6 +209,11 @@ export function useGeneration({
       void window.electronAPI.generation.register(taskId, 'workspace');
     }
 
+    // Register task for close confirmation dialog
+    window.electronAPI?.task
+      ?.register(taskId, 'generation', `${t('workspace:task.generating')}: ${file.name}`)
+      .catch(console.error);
+
     // Create new AbortController
     abortControllerRef.current = new AbortController();
     const signal = abortControllerRef.current.signal;
@@ -223,11 +251,15 @@ export function useGeneration({
               status: 'processing',
               message: t('services:pipeline.status.decoding'),
             });
-            const buffer = await decodeAudioWithRetry(file);
+            const buffer = await decodeAudioWithRetry(file, 3, undefined, signal);
             audioCacheRef.current = { file, buffer };
             audioSource = buffer;
           }
-        } catch (e) {
+        } catch (e: any) {
+          // Re-throw abort errors for proper cancellation handling
+          if (e.name === 'AbortError') {
+            throw e;
+          }
           logger.error('Failed to decode audio in handleGenerate', e);
           throw new Error(t('services:pipeline.errors.decodeFailed'));
         }
@@ -395,6 +427,8 @@ export function useGeneration({
       if (window.electronAPI?.generation) {
         void window.electronAPI.generation.unregister(`workspace_${startAt}`);
       }
+      // Unregister task for close confirmation
+      window.electronAPI?.task?.unregister(`workspace_${startAt}`).catch(console.error);
 
       addToast(t('workspace:hooks.generation.status.success'), 'success');
     } catch (err: unknown) {
@@ -448,6 +482,8 @@ export function useGeneration({
         if (window.electronAPI?.generation) {
           void window.electronAPI.generation.unregister(`workspace_${startAt}`);
         }
+        // Unregister task for close confirmation
+        window.electronAPI?.task?.unregister(`workspace_${startAt}`).catch(console.error);
       } else {
         setStatus(GenerationStatus.ERROR);
         setError(error.message);
@@ -471,6 +507,8 @@ export function useGeneration({
         if (window.electronAPI?.generation) {
           void window.electronAPI.generation.unregister(`workspace_${startAt}`);
         }
+        // Unregister task for close confirmation
+        window.electronAPI?.task?.unregister(`workspace_${startAt}`).catch(console.error);
 
         // Sentry: Report error with context ONLY if not expected
         if (

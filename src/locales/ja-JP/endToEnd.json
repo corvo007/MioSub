@@ -223,5 +223,8 @@
   },
   "status": {
     "initializing": "初期化中..."
+  },
+  "task": {
+    "processing": "処理中"
   }
 }

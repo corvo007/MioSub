@@ -36,6 +36,7 @@ export function useVideoPreview(): UseVideoPreviewReturn {
   const objectUrlRef = useRef<string | null>(null);
   const progressListenerCleanupRef = useRef<(() => void) | null>(null);
   const currentTranscodingFileRef = useRef<string | null>(null);
+  const taskIdRef = useRef<string | null>(null);
 
   // Clean up old Object URL and cancel active transcoding
   const cleanupUrl = useCallback(() => {
@@ -46,6 +47,11 @@ export function useVideoPreview(): UseVideoPreviewReturn {
     if (progressListenerCleanupRef.current) {
       progressListenerCleanupRef.current();
       progressListenerCleanupRef.current = null;
+    }
+    // Unregister task on cleanup
+    if (taskIdRef.current) {
+      window.electronAPI?.task?.unregister(taskIdRef.current).catch(console.error);
+      taskIdRef.current = null;
     }
     // Cancel any active transcoding task in backend
     if (currentTranscodingFileRef.current) {
@@ -106,6 +112,13 @@ export function useVideoPreview(): UseVideoPreviewReturn {
         setIsTranscoding(true);
         setTranscodeProgress(0);
 
+        // Register task for close confirmation
+        const taskId = `transcode-${Date.now()}`;
+        taskIdRef.current = taskId;
+        window.electronAPI?.task
+          ?.register(taskId, 'transcode', 'Transcoding video for preview')
+          .catch(console.error);
+
         // Track listeners registered in this call for cleanup
         const cleanupFns: Array<() => void> = [];
 
@@ -158,6 +171,12 @@ export function useVideoPreview(): UseVideoPreviewReturn {
           });
           currentTranscodingFileRef.current = null; // Finished successfully
 
+          // Unregister task on completion
+          if (taskIdRef.current) {
+            window.electronAPI?.task?.unregister(taskIdRef.current).catch(console.error);
+            taskIdRef.current = null;
+          }
+
           // Fallback: if start event didn't fire or we missed it, set src here
           // Also set the full video duration from the result
           if (result?.outputPath) {
@@ -177,6 +196,11 @@ export function useVideoPreview(): UseVideoPreviewReturn {
           // Clean up listeners on error
           cleanupFns.forEach((fn) => fn());
           progressListenerCleanupRef.current = null;
+          // Unregister task on error
+          if (taskIdRef.current) {
+            window.electronAPI?.task?.unregister(taskIdRef.current).catch(console.error);
+            taskIdRef.current = null;
+          }
           logger.error('[VideoPreview] Transcoding failed', error);
           throw error;
         } finally {

@@ -10,6 +10,7 @@ import {
   GlossaryConfirmationModal,
   SimpleConfirmationModal,
   SpeakerManagerModal,
+  CloseConfirmModal,
 } from '@/components/modals';
 import { ToastContainer, ProgressOverlay } from '@/components/ui';
 
@@ -92,6 +93,23 @@ export default function App() {
       void window.electronAPI.analytics.track('page_view', { name: view }, 'page_view');
     }
   }, [view]);
+
+  // Close Confirmation Modal State
+  const [closeConfirm, setCloseConfirm] = useState<{
+    isOpen: boolean;
+    tasks: Array<{ type: string; description: string }>;
+  }>({
+    isOpen: false,
+    tasks: [],
+  });
+
+  // Listen for close requests from main process
+  useEffect(() => {
+    const cleanup = window.electronAPI?.app?.onCloseRequested((tasks) => {
+      setCloseConfirm({ isOpen: true, tasks });
+    });
+    return () => cleanup?.();
+  }, []);
 
   // Confirmation Modal State
   const [confirmation, setConfirmation] = useState<{
@@ -310,6 +328,15 @@ export default function App() {
         title={confirmation.title}
         message={confirmation.message}
         type={confirmation.type}
+      />
+      <CloseConfirmModal
+        isOpen={closeConfirm.isOpen}
+        tasks={closeConfirm.tasks}
+        onKeepRunning={() => setCloseConfirm({ isOpen: false, tasks: [] })}
+        onCloseAnyway={() => {
+          setCloseConfirm({ isOpen: false, tasks: [] });
+          window.electronAPI?.app?.forceClose();
+        }}
       />
     </>
   );

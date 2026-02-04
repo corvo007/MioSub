@@ -57,13 +57,14 @@ if (SENTRY_DSN) {
 
 import squirrelStartup from 'electron-squirrel-startup';
 import fs from 'fs';
-import { getBinaryPath, getFileHash, getLogDir, getStorageDir } from './utils/paths.ts';
+import { getLogDir } from './utils/paths.ts';
 import {
   extractAudioFromVideo,
   extractAudioSegment,
   readAudioBuffer,
   cleanupTempAudio,
   getAudioInfo,
+  cancelAudioExtraction,
 } from './services/ffmpegAudioExtractor.ts';
 import type {
   AudioExtractionOptions,
@@ -82,6 +83,7 @@ class TailingReader extends Readable {
   private pollingInterval: number = 200;
   private idleTime: number = 0;
   private maxIdleTime: number = 30000; // 30s timeout
+  private pollingTimeout: NodeJS.Timeout | null = null; // Track timeout for cancellation
 
   constructor(filePath: string, start: number, end?: number) {
     super();
@@ -105,6 +107,9 @@ class TailingReader extends Readable {
     fs.read(this.fd, buffer, 0, buffer.length, this.position, (err, bytesRead) => {
       if (err) return this.destroy(err);
 
+      // Check if stream was destroyed while waiting for read
+      if (this.destroyed) return;
+
       if (bytesRead > 0) {
         this.idleTime = 0;
         this.position += bytesRead;
@@ -115,13 +120,20 @@ class TailingReader extends Readable {
         if (this.idleTime > this.maxIdleTime) {
           this.push(null); // Timeout (transcoding probably failed or finished long ago)
         } else {
-          setTimeout(() => this._read(size), this.pollingInterval);
+          // Save timeout reference for cancellation in _destroy
+          this.pollingTimeout = setTimeout(() => this._read(size), this.pollingInterval);
         }
       }
     });
   }
 
   _destroy(err: Error | null, callback: (error?: Error | null) => void) {
+    // Cancel pending polling timeout to prevent "ReadableStream is already closed" error
+    if (this.pollingTimeout) {
+      clearTimeout(this.pollingTimeout);
+      this.pollingTimeout = null;
+    }
+
     if (this.fd !== null) {
       fs.close(this.fd, (closeErr) => {
         callback(err || closeErr);
@@ -165,13 +177,31 @@ import { ctcAlignerService } from './services/ctcAligner.ts';
 import { writeTempFile } from './services/fileUtils.ts';
 import { analyticsService } from './services/analyticsService.ts';
 import { initUpdateService } from './services/updateService.ts';
+import { systemInfoService } from './services/systemInfoService.ts';
+import { runPreflightCheck, type PreflightSettings } from './services/preflightCheck.ts';
 
 const videoCompressorService = new VideoCompressorService();
 
 // ============================================================================
-// Active Generation Task Tracking
+// Active Task Tracking (for close confirmation and analytics)
 // ============================================================================
-// Track active generation tasks to send cancellation events on app quit
+// Task types that trigger close confirmation dialog
+type TaskType = 'generation' | 'download' | 'transcode' | 'compression' | 'end_to_end';
+
+interface ActiveTask {
+  type: TaskType;
+  description: string;
+  startTime: number;
+  metadata?: Record<string, any>;
+}
+
+// Unified task registry for close confirmation
+const activeTasks = new Map<string, ActiveTask>();
+
+// Flag to allow force close (user confirmed via custom modal)
+let forceClose = false;
+
+// Legacy: Track active generation tasks for analytics on app quit
 interface ActiveGenerationTask {
   type: 'end_to_end' | 'workspace';
   startTime: number;
@@ -199,6 +229,33 @@ ipcMain.handle('generation:unregister', (_event, taskId: string) => {
   return { success: true };
 });
 
+// IPC Handler: Register active task (for close confirmation)
+ipcMain.handle(
+  'task:register',
+  (_event, taskId: string, type: TaskType, description: string, metadata?: Record<string, any>) => {
+    console.log('[Main] Task registered:', taskId, type, description);
+    activeTasks.set(taskId, { type, description, startTime: Date.now(), metadata });
+    return { success: true };
+  }
+);
+
+// IPC Handler: Unregister active task (completed/failed/cancelled)
+ipcMain.handle('task:unregister', (_event, taskId: string) => {
+  console.log('[Main] Task unregistered:', taskId);
+  activeTasks.delete(taskId);
+  return { success: true };
+});
+
+// IPC Handler: Force close (user confirmed via custom modal)
+ipcMain.handle('app:forceClose', () => {
+  console.log('[Main] Force close requested by user');
+  forceClose = true;
+  if (mainWindow) {
+    mainWindow.close();
+  }
+  return { success: true };
+});
+
 // IPC Handler: Analytics Track
 ipcMain.handle(
   'analytics:track',
@@ -208,6 +265,16 @@ ipcMain.handle(
     return { success: true };
   }
 );
+
+// IPC Handler: Get Binary Info
+ipcMain.handle('binaries:getInfo', async () => {
+  try {
+    return await systemInfoService.getInfo();
+  } catch (error: any) {
+    console.error('[Main] Failed to get binary info:', error);
+    return null;
+  }
+});
 
 // IPC Handler: Transcribe Local
 ipcMain.handle(
@@ -321,6 +388,12 @@ ipcMain.handle('alignment:ctc-abort', async () => {
   console.log('[DEBUG] [Main] Aborting CTC alignment');
   ctcAlignerService.abort();
   return { success: true };
+});
+
+// IPC Handler: Preflight Check
+ipcMain.handle('preflight:check', async (_event, settings: PreflightSettings) => {
+  console.log('[DEBUG] [Main] Running preflight check');
+  return runPreflightCheck(settings);
 });
 
 // IPC Handler: Change Language
@@ -749,6 +822,11 @@ ipcMain.handle(
   }
 );
 
+// IPC Handler: 取消音频提取
+ipcMain.handle('cancel-audio-extraction', () => {
+  return cancelAudioExtraction();
+});
+
 // IPC Handler: 读取提取的音频文件
 ipcMain.handle('read-extracted-audio', async (_event, audioPath: string) => {
   try {
@@ -850,11 +928,17 @@ ipcMain.handle('storage-set', async (_event, data: any) => {
     if (data?.language) {
       analyticsService.setAppLanguage(data.language);
     }
-    return await storageService.saveSettings(data);
+
+    // Note: No need to invalidate cache here - systemInfoService uses hash-based
+    // caching that automatically detects file changes (like HTTP 304)
+
+    // saveSettings now returns SaveResult { success, error?, errorCode? }
+    const result = await storageService.saveSettings(data);
+    return result;
   } catch (error: any) {
     console.error('[Main] Failed to save settings:', error);
     Sentry.captureException(error, { tags: { action: 'storage-set' } });
-    throw error; // Let renderer handle this critical failure
+    return { success: false, error: error.message, errorCode: 'write_failed' };
   }
 });
 
@@ -913,7 +997,8 @@ ipcMain.handle('read-local-file', async (event, filePath) => {
     if (!path.isAbsolute(normalizedPath)) {
       throw new Error(t('error.invalidPath'));
     }
-    if (normalizedPath.includes('..')) {
+    // Check for '..' as a path segment (not just substring, to allow '...' in filenames)
+    if (normalizedPath.split(/[/\\]/).includes('..')) {
       throw new Error(t('error.relativePathNotAllowed'));
     }
 
@@ -1045,6 +1130,9 @@ ipcMain.handle(
       const resolution =
         options.width && options.height ? `${options.width}x${options.height}` : 'original';
 
+      // Get cached system info for ffmpeg version
+      const systemInfo = systemInfoService.getCached();
+
       void analyticsService.track('compression_started', {
         encoder: options.encoder,
         crf: options.crf,
@@ -1053,6 +1141,7 @@ ipcMain.handle(
         subtitle_burned: !!options.subtitlePath,
         video_source: options.videoSource || 'unknown',
         subtitle_source: options.subtitleSource || 'unknown',
+        ffmpeg_version: systemInfo?.versions.ffmpeg || 'unknown',
       });
 
       const result = await videoCompressorService.compress(
@@ -1271,11 +1360,16 @@ ipcMain.handle(
     try {
       console.log(`[DEBUG] [Main] Starting download: ${url}, format: ${formatId}`);
 
+      // Get cached system info for yt-dlp version
+      const systemInfo = systemInfoService.getCached();
+
       // Analytics: Start
       try {
         void analyticsService.track('download_started', {
           url_domain: new URL(url).hostname,
           format: formatId,
+          ytdlp_version: systemInfo?.versions.ytdlp || 'unknown',
+          qjs_version: systemInfo?.versions.qjs || 'unknown',
         });
       } catch (e) {
         /* ignore URL parse err */
@@ -1435,11 +1529,19 @@ ipcMain.handle('end-to-end:start', async (event, config: EndToEndConfig) => {
   try {
     console.log(`[DEBUG] [Main] Starting end-to-end pipeline: ${config.url}`);
 
+    // Get cached system info for version reporting
+    const systemInfo = systemInfoService.getCached();
+
     // Track Pipeline Start
     void analyticsService.track('pipeline_started', {
       url_domain: new URL(config.url).hostname,
       model: config.useLocalWhisper ? config.whisperModel : 'api',
       target_language: config.targetLanguage,
+      whisper_version: systemInfo?.versions.whisperDetails.version || 'unknown',
+      whisper_source: systemInfo?.versions.whisperDetails.source || 'unknown',
+      ffmpeg_version: systemInfo?.versions.ffmpeg || 'unknown',
+      ytdlp_version: systemInfo?.versions.ytdlp || 'unknown',
+      aligner_version: systemInfo?.versions.aligner || 'unknown',
     });
 
     // Get the main window from the event sender
@@ -1610,6 +1712,35 @@ const createWindow = () => {
     // }, 500);
   });
 
+  // Close confirmation for active tasks
+  mainWindow.on('close', (event) => {
+    console.log(
+      '[Main] Window close event, active tasks:',
+      activeTasks.size,
+      'forceClose:',
+      forceClose
+    );
+
+    // If force close is set (user confirmed via custom modal), allow close
+    if (forceClose) {
+      forceClose = false; // Reset for next time
+      return;
+    }
+
+    // If there are active tasks, prevent close and notify renderer
+    if (activeTasks.size > 0) {
+      event.preventDefault();
+
+      // Send task list to renderer for custom modal
+      const tasks = Array.from(activeTasks.values()).map((task) => ({
+        type: task.type,
+        description: task.description,
+      }));
+
+      mainWindow.webContents.send('app:closeRequested', tasks);
+    }
+  });
+
   // Initialize update service
   initUpdateService(mainWindow);
 };
@@ -1678,7 +1809,7 @@ app.on('ready', async () => {
   // Initialize Analytics with version info (non-blocking)
   void (async () => {
     try {
-      const config = await getSystemConfigHash();
+      const config = await systemInfoService.getConfigHash();
       const versionStr = `${config.pkg.version} (${config.commitHash})`;
       await analyticsService.initialize(versionStr);
     } catch (error) {
@@ -1694,10 +1825,8 @@ app.on('ready', async () => {
   // Print startup system info and cache it
   void (async () => {
     try {
-      const info = await getSystemInfo();
-      // Cache the info at startup so About tab can use it immediately
-      lastAboutInfo = info;
-      lastAboutConfigHash = info.hash;
+      const info = await systemInfoService.getInfo();
+      // Cache is now managed internally by systemInfoService
 
       console.log('========================================');
       console.log('  MioSub - System Info');
@@ -1942,167 +2071,11 @@ app.on('web-contents-created', (_event, contents) => {
   });
 });
 
-// About info cache
-let lastAboutInfo: any = null;
-let lastAboutConfigHash: string | null = null;
-let cachedCommitHash: string | null = null;
-
-/**
- * Calculate system configuration hash based on settings, environment AND file mtimes.
- * This ensures updates to binaries (even in-place) are detected.
- */
-async function getSystemConfigHash() {
-  const pkgPath = path.join(__dirname, '../package.json');
-  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-
-  // Read settings
-  const settings = await storageService.readSettings();
-  const customWhisperPath = settings?.debug?.whisperPath;
-  const customAlignerPath = settings?.enhance?.alignment?.alignerPath;
-
-  // Resolve ACTUAL binary paths to detect auto-discovery or in-place updates
-  const whisperInfo = localWhisperService.getBinaryPathWithSource(customWhisperPath);
-
-  // For FFmpeg/FFprobe, check custom path or fallback to bundled path
-  // This ensures that if auto-updater updates the bundled binary, we detect it
-  const ffmpegPath = settings?.debug?.ffmpegPath || getBinaryPath('ffmpeg');
-  const ffprobePath = settings?.debug?.ffprobePath || getBinaryPath('ffprobe');
-  const ytDlpPath = getBinaryPath('yt-dlp');
-  const qjsPath = getBinaryPath('qjs');
-  const alignerPath = customAlignerPath || getBinaryPath('cpp-ort-aligner');
-
-  // Check mtime for both (whether custom or bundled)
-  const ffmpegHash = getFileHash(ffmpegPath);
-  const ffprobeHash = getFileHash(ffprobePath);
-  const ytDlpHash = getFileHash(ytDlpPath);
-  const qjsHash = getFileHash(qjsPath);
-  const whisperHash = getFileHash(whisperInfo.path);
-  const alignerHash = getFileHash(alignerPath);
-
-  // Get commit hash (cached)
-  if (!cachedCommitHash) {
-    // Check if injected via build process
-    if (app.isPackaged && process.env.COMMIT_HASH) {
-      cachedCommitHash = process.env.COMMIT_HASH;
-    } else {
-      const { execSync } = await import('child_process');
-      try {
-        cachedCommitHash = execSync('git rev-parse --short HEAD', {
-          encoding: 'utf-8',
-          windowsHide: true,
-        }).trim();
-      } catch {
-        cachedCommitHash = 'N/A';
-      }
-    }
-  }
-
-  // Create hash
-  const hash = [
-    `v:${pkg.version}`,
-    `c:${cachedCommitHash}`,
-    `w:${whisperHash}`, // Now includes path + mtime
-    `ff:${ffmpegHash}`, // Now includes path + mtime (if custom)
-    `fp:${ffprobeHash}`,
-    `yd:${ytDlpHash}`,
-    `qj:${qjsHash}`,
-    `al:${alignerHash}`,
-    `p:${process.env.PORTABLE_EXECUTABLE_DIR || 'none'}`,
-  ].join('|');
-
-  return {
-    hash,
-    settings,
-    pkg,
-    commitHash: cachedCommitHash,
-    customWhisperPath,
-    customAlignerPath,
-  };
-}
-
-/**
- * Get system information (versions, GPU status, paths)
- * Uses pre-calculated config to avoid redundant settings reads
- */
-async function getSystemInfo(preConfig?: any) {
-  const config = preConfig || (await getSystemConfigHash());
-  const { exec } = await import('child_process');
-  const { promisify } = await import('util');
-  const execAsync = promisify(exec);
-
-  // Get dependency versions
-  // These are the "heavy" operations
-  const ytDlpInfo = await ytDlpService.getVersions();
-  const whisperDetails = await localWhisperService.getWhisperDetails(config.customWhisperPath);
-  const whisperVersionStr = `${whisperDetails.version} (${whisperDetails.source}${whisperDetails.gpuSupport ? ' + GPU' : ''})`;
-
-  const alignerVersionRaw = await ctcAlignerService.getVersion(config.customAlignerPath);
-  let alignerVersion = alignerVersionRaw;
-  if (
-    alignerVersionRaw &&
-    alignerVersionRaw !== 'Not found' &&
-    alignerVersionRaw !== 'Error' &&
-    alignerVersionRaw !== 'Unknown'
-  ) {
-    alignerVersion = `v${alignerVersionRaw}`;
-  }
-
-  // Get FFmpeg/FFprobe versions (async to avoid blocking main thread)
-  let ffmpegVersion = 'unknown';
-  let ffprobeVersion = 'unknown';
-  try {
-    const ffmpegPath = getBinaryPath('ffmpeg');
-    const ffprobePath = getBinaryPath('ffprobe');
-
-    // Run both version checks in parallel
-    const [ffmpegResult, ffprobeResult] = await Promise.all([
-      execAsync(`"${ffmpegPath}" -version`, { windowsHide: true }).catch(() => ({ stdout: '' })),
-      execAsync(`"${ffprobePath}" -version`, { windowsHide: true }).catch(() => ({ stdout: '' })),
-    ]);
-
-    const ffmpegMatch = ffmpegResult.stdout.match(/ffmpeg version (.*?) Copyright/);
-    if (ffmpegMatch) ffmpegVersion = ffmpegMatch[1].trim();
-
-    const ffprobeMatch = ffprobeResult.stdout.match(/ffprobe version (.*?) Copyright/);
-    if (ffprobeMatch) ffprobeVersion = ffprobeMatch[1].trim();
-  } catch {
-    // FFmpeg not found
-  }
-
-  const hwAccelInfo = await videoCompressorService.getHardwareAccelInfo();
-
-  return {
-    hash: config.hash,
-    appName: config.pkg.productName || config.pkg.name,
-    version: config.pkg.version,
-    isPackaged: app.isPackaged,
-    commitHash: config.commitHash,
-    versions: {
-      ffmpeg: ffmpegVersion,
-      ffprobe: ffprobeVersion,
-      ytdlp: ytDlpInfo.ytdlp,
-      qjs: ytDlpInfo.qjs,
-      whisper: whisperVersionStr,
-      aligner: alignerVersion,
-      whisperDetails,
-    },
-    gpu: hwAccelInfo,
-    paths: {
-      appPath: app.getAppPath(),
-      userDataPath: getStorageDir(),
-      logPath: getLogDir(),
-      exePath: app.getPath('exe'),
-      whisperPath: whisperDetails.path,
-      alignerPath: config.customAlignerPath || getBinaryPath('cpp-ort-aligner'),
-    },
-  };
-}
-
 // IPC Handler: Get About Information
 ipcMain.handle('util:get-about-info', async (_event, lastHash?: string) => {
   try {
-    // 1. Calculate current config hash (Previous implementation checks this too late)
-    const config = await getSystemConfigHash();
+    // 1. Calculate current config hash
+    const config = await systemInfoService.getConfigHash();
 
     // 2. Client cache check: If client has same hash, return notModified
     if (lastHash && lastHash === config.hash) {
@@ -2110,17 +2083,13 @@ ipcMain.handle('util:get-about-info', async (_event, lastHash?: string) => {
     }
 
     // 3. Server cache check: If our cache matches current config, return it
-    // This fixes the "loading" issue when client has no cache (first load) but server does (startup)
-    if (lastAboutInfo && lastAboutConfigHash === config.hash) {
-      return lastAboutInfo;
+    const cached = systemInfoService.getCached();
+    if (cached && cached.hash === config.hash) {
+      return cached;
     }
 
     // 4. Cache miss: Fetch fresh info
-    const info = await getSystemInfo(config);
-
-    // Update cache
-    lastAboutInfo = info;
-    lastAboutConfigHash = info.hash;
+    const info = await systemInfoService.getInfo(config);
 
     return info;
   } catch (error: any) {
