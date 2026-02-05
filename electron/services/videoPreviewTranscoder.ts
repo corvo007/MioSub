@@ -76,7 +76,7 @@ export function cancelTranscode(filePath: string): boolean {
  */
 // Keep only one implementation of killAllTranscodes
 export function killAllTranscodes(): void {
-  for (const [filePath, active] of activeCommands.entries()) {
+  for (const [_filePath, active] of activeCommands.entries()) {
     try {
       active.command.kill('SIGKILL');
 
@@ -364,23 +364,29 @@ export async function transcodeForPreview(
 
     if (hasVideoStream) {
       // Video transcoding logic
-      command
-        .videoCodec(encoder)
-        .audioCodec('aac')
-        .audioBitrate('75k') // Balanced bitrate for preview
-        .outputOptions([
-          // 720p scaling + Force 8-bit pixel format (CRITICAL for NVENC compatibility)
-          '-vf',
-          'scale=-2:720,format=yuv420p',
-          // Force keyframe interval for seeking (1 second)
-          '-g',
-          '30',
-          '-keyint_min',
-          '30',
-          // Fragmented MP4 for progressive playback
-          '-movflags',
-          'frag_keyframe+empty_moov+default_base_moof',
-        ]);
+      command.videoCodec(encoder).outputOptions([
+        // 720p scaling + Force 8-bit pixel format (CRITICAL for NVENC compatibility)
+        '-vf',
+        'scale=-2:720,format=yuv420p',
+        // Force keyframe interval for seeking (1 second)
+        '-g',
+        '30',
+        '-keyint_min',
+        '30',
+        // Fragmented MP4 for progressive playback
+        // frag_duration ensures both audio and video are fragmented at 1-second intervals
+        // This prevents Chromium from loading entire audio track into memory
+        '-movflags',
+        'frag_keyframe+empty_moov+default_base_moof',
+        '-frag_duration',
+        '1000000', // 1 second in microseconds
+      ]);
+
+      // Audio settings optimized for streaming:
+      // - Force 48kHz sample rate to avoid Chromium resampling (which loads entire track)
+      // - AAC codec for broad compatibility
+      // - Low bitrate for preview (75k is sufficient for speech/music preview)
+      command.audioCodec('aac').audioBitrate('75k').audioFrequency(48000); // Force 48kHz to avoid Chromium resampling
     } else {
       // Audio-only transcoding logic (just convert to AAC/M4A compatible container)
       log('Audio-only input detected, skipping video encoding...');
@@ -388,10 +394,13 @@ export async function transcodeForPreview(
         .noVideo()
         .audioCodec('aac')
         .audioBitrate('128k') // Higher quality for audio-only
+        .audioFrequency(48000) // Force 48kHz to avoid Chromium resampling
         .outputOptions([
           // Fragmented MP4 for consistency with player and progressive loading
           '-movflags',
           'frag_keyframe+empty_moov+default_base_moof',
+          '-frag_duration',
+          '1000000', // 1 second fragments for streaming
         ]);
     }
 
@@ -536,8 +545,6 @@ async function transcodeWithCpu(
     const command = ffmpeg(inputPath)
       .output(outputPath)
       .videoCodec('libx264')
-      .audioCodec('aac')
-      .audioBitrate('128k')
       .outputOptions([
         '-vf',
         'scale=-2:720,format=yuv420p',
@@ -549,9 +556,16 @@ async function transcodeWithCpu(
         '30',
         '-keyint_min',
         '30',
+        // Fragmented MP4 with 1-second fragments for streaming
         '-movflags',
         'frag_keyframe+empty_moov+default_base_moof',
-      ]);
+        '-frag_duration',
+        '1000000',
+      ])
+      // Audio settings optimized for streaming
+      .audioCodec('aac')
+      .audioBitrate('128k')
+      .audioFrequency(48000); // Force 48kHz to avoid Chromium resampling
 
     command
       .on('start', (cmdLine) => {

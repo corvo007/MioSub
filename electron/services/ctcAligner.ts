@@ -293,7 +293,7 @@ export class CTCAlignerService {
             resolve('Timeout');
           }
         }, 3000);
-      } catch (e) {
+      } catch {
         resolve('Error');
       }
     });
