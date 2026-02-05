@@ -73,7 +73,7 @@ export const PreflightErrorModal: React.FC<PreflightErrorModalProps> = ({
                         className="inline-flex items-center gap-0.5 text-brand-purple hover:text-brand-purple/80 underline underline-offset-2"
                         onClick={(e) => {
                           e.stopPropagation();
-                          window.electronAPI?.openExternal?.(error.docUrl!);
+                          void window.electronAPI?.openExternal?.(error.docUrl!);
                           e.preventDefault();
                         }}
                       >

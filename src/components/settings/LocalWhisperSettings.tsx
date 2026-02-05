@@ -61,7 +61,7 @@ export const LocalWhisperSettings: React.FC<LocalWhisperSettingsProps> = ({
           'error'
         );
       }
-    } catch (error: any) {
+    } catch {
       addToast(t('services.transcription.localWhisperSettings.selectErrorGeneric'), 'error');
     }
   });

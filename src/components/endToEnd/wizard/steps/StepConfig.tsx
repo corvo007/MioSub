@@ -113,8 +113,8 @@ export function StepConfig({
           {videoInfo?.formats?.length > 0 ? (
             <QualitySelector
               formats={videoInfo.formats}
-              selectedFormat={config.downloadFormat || videoInfo.formats[0]?.formatId}
-              onSelect={(formatId) => onConfigChange({ downloadFormat: formatId })}
+              selectedFormat={config.downloadFormat || videoInfo.formats[0]?.quality}
+              onSelect={(quality) => onConfigChange({ downloadFormat: quality })}
               className="mb-4"
             />
           ) : (

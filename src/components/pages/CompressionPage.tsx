@@ -14,6 +14,7 @@ import { ResolutionSelector } from '@/components/compression/ResolutionSelector'
 import { EncoderSelector } from '@/components/compression/EncoderSelector';
 import { useHardwareAcceleration } from '@/hooks/useHardwareAcceleration';
 import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
+import { useProgressSmoothing } from '@/hooks/useProgressSmoothing';
 import { NumberInput } from '@/components/ui/NumberInput';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { DirectorySelector } from '@/components/ui/DirectorySelector';
@@ -58,7 +59,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
   const [subtitleMode, setSubtitleMode] = useState<'none' | 'file' | 'workspace'>('none');
   const [subtitlePath, setSubtitlePath] = useState('');
   const [outputPath, setOutputPath] = useState('');
-  const [progress, setProgress] = useState<CompressionProgress | null>(null);
+  const [rawProgress, setRawProgress] = useState<CompressionProgress | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
   const [compressionStartTime, setCompressionStartTime] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState('00:00');
@@ -67,6 +68,13 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const taskIdRef = useRef<string | null>(null);
+
+  // Apply progress smoothing with FPS/Kbps averaging
+  const { smoothed: progress, reset: resetProgress } = useProgressSmoothing(rawProgress, {
+    interpolationSpeed: 0.08,
+    smoothedFields: ['currentFps', 'currentKbps'],
+    smoothingWindow: 5,
+  });
 
   // Update elapsed time every second during compression
 
@@ -244,7 +252,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
       const subtitleSource =
         subtitleMode === 'none' ? 'none' : subtitleMode === 'workspace' ? 'workspace' : 'external';
 
-      const cleanup = window.electronAPI.compression.onProgress((p) => setProgress(p));
+      const cleanup = window.electronAPI.compression.onProgress((p) => setRawProgress(p));
       try {
         await window.electronAPI.compression.compress(inputPath, outputPath, {
           ...options,
@@ -277,7 +285,8 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
     } finally {
       setIsCompressing(false);
       setCompressionStartTime(null);
-      setProgress(null);
+      setRawProgress(null);
+      resetProgress();
     }
   });
 

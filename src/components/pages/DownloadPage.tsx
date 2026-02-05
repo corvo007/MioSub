@@ -63,7 +63,7 @@ export function DownloadPage({ onDownloadComplete, onGoBack }: DownloadPageProps
   // Auto-select first format when video info is available
   React.useEffect(() => {
     if (videoInfo?.formats?.length && !selectedFormat) {
-      setSelectedFormat(videoInfo.formats[0].formatId);
+      setSelectedFormat(videoInfo.formats[0].quality);
     }
   }, [videoInfo, selectedFormat]);
 

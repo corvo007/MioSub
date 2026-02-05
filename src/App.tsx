@@ -335,7 +335,7 @@ export default function App() {
         onKeepRunning={() => setCloseConfirm({ isOpen: false, tasks: [] })}
         onCloseAnyway={() => {
           setCloseConfirm({ isOpen: false, tasks: [] });
-          window.electronAPI?.app?.forceClose();
+          void window.electronAPI?.app?.forceClose();
         }}
       />
     </>

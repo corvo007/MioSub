@@ -41,7 +41,7 @@ export const HelpButton: React.FC = () => {
       // Non-Chinese users: directly open docs
       const docsUrl = 'https://miosub.app/en/docs';
       if (window.electronAPI?.openExternal) {
-        window.electronAPI.openExternal(docsUrl);
+        void window.electronAPI.openExternal(docsUrl);
       } else {
         window.open(docsUrl, '_blank');
       }
@@ -51,7 +51,7 @@ export const HelpButton: React.FC = () => {
   const handleOpenDocs = () => {
     const docsUrl = 'https://miosub.app/docs';
     if (window.electronAPI?.openExternal) {
-      window.electronAPI.openExternal(docsUrl);
+      void window.electronAPI.openExternal(docsUrl);
     } else {
       window.open(docsUrl, '_blank');
     }
@@ -70,6 +70,7 @@ export const HelpButton: React.FC = () => {
       textArea.value = qqGroupNumber;
       document.body.appendChild(textArea);
       textArea.select();
+      // eslint-disable-next-line @typescript-eslint/no-deprecated
       document.execCommand('copy');
       document.body.removeChild(textArea);
       setCopied(true);
