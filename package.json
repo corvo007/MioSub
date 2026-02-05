@@ -99,6 +99,7 @@
     "fumadocs-mdx": "^14.2.5",
     "fumadocs-ui": "^16.4.7",
     "husky": "^9.1.7",
+    "js-yaml": "^4.1.1",
     "lint-staged": "^16.2.7",
     "mermaid": "^11.12.2",
     "next": "^16.1.3",
