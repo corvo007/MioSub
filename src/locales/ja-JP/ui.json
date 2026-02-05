@@ -91,8 +91,8 @@
   },
   "download": {
     "preparing": "ダウンロード準備中...",
-    "downloadingVideo": "動画をダウンロード中 (1/2)...",
-    "downloadingAudio": "音声をダウンロード中 (2/2)...",
+    "downloadingVideo": "動画をダウンロード中...",
+    "downloadingAudio": "音声をダウンロード中...",
     "merging": "ファイルをマージ中...",
     "downloading": "ダウンロード中...",
     "cancel": "キャンセル",

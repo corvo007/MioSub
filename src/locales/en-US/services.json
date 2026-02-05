@@ -146,6 +146,7 @@
       "ffmpegFilePathRequired": "File path is required for FFmpeg operations",
       "getAudioInfoFailed": "Failed to retrieve audio information",
       "ffmpegExtractionFailed": "Audio extraction failed",
+      "ffmpegRequiredForLargeFile": "FFmpeg is required for large files. Please ensure FFmpeg is properly installed.",
       "webAudioNotSupported": "Web Audio API is not supported in this browser",
       "unsupportedAudioFormat": "Unsupported audio format",
       "unsupportedBrowserEncoding": "Browser encoding not supported",

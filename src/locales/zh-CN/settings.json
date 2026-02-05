@@ -254,6 +254,9 @@
     "qjs": "QuickJS 版本",
     "whisper": "Whisper.cpp 版本",
     "aligner": "Aligner 版本",
+    "checkBinaryUpdates": "检查更新",
+    "downloadUpdate": "下载更新",
+    "viewRelease": "查看发布",
     "gpu": "硬件加速 (GPU)",
     "gpuSupported": "支持 ({{preferredH264}}/{{preferredH265}})",
     "gpuUnsupported": "不支持 (仅软件执行)",
@@ -276,7 +279,10 @@
       "checkNow": "检测更新",
       "download": "下载更新",
       "restart": "立即重启更新",
-      "goToDownload": "前往下载"
+      "goToDownload": "前往下载",
+      "componentUpdate": "组件更新",
+      "updatingComponents": "更新组件 {{progress}}%",
+      "retryUpdate": "重试更新"
     },
     "privacy": {
       "title": "数据与隐私",

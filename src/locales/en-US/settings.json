@@ -243,6 +243,10 @@
   },
   "about": {
     "dependencies": "Dependencies",
+    "checkBinaryUpdates": "Check Updates",
+    "downloadUpdate": "Download Update",
+    "viewRelease": "View Release",
+    "aligner": "Aligner Version",
     "ffmpeg": "FFmpeg Version",
     "ffprobe": "FFprobe Version",
     "ytdlp": "yt-dlp Version",
@@ -270,7 +274,10 @@
       "checkNow": "Check for Updates",
       "download": "Download Update",
       "restart": "Restart to Update",
-      "goToDownload": "Go to Download"
+      "goToDownload": "Go to Download",
+      "componentUpdate": "Component Update",
+      "updatingComponents": "Updating {{progress}}%",
+      "retryUpdate": "Retry Update"
     },
     "privacy": {
       "title": "Data & Privacy",

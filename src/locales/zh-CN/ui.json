@@ -95,8 +95,8 @@
   },
   "download": {
     "preparing": "准备下载中...",
-    "downloadingVideo": "正在下载视频 (1/2)...",
-    "downloadingAudio": "正在下载音频 (2/2)...",
+    "downloadingVideo": "正在下载视频...",
+    "downloadingAudio": "正在下载音频...",
     "merging": "正在合并文件...",
     "downloading": "下载中...",
     "cancel": "取消",

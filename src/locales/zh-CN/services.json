@@ -146,6 +146,7 @@
       "ffmpegFilePathRequired": "FFmpeg 操作需要文件路径",
       "getAudioInfoFailed": "获取音频信息失败",
       "ffmpegExtractionFailed": "音频提取失败",
+      "ffmpegRequiredForLargeFile": "大文件需要 FFmpeg 支持，请确保 FFmpeg 已正确安装。",
       "webAudioNotSupported": "当前浏览器不支持 Web Audio API",
       "unsupportedAudioFormat": "不支持的音频格式",
       "unsupportedBrowserEncoding": "浏览器不支持该编码",
