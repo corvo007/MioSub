@@ -10,6 +10,7 @@ export interface VideoInfo {
   uploader: string;
   platform: 'youtube' | 'bilibili';
   formats: VideoFormat[];
+  language?: string; // Original language code (e.g., 'en-US', 'zh-CN')
   // Bilibili specific
   partNumber?: number; // 分P视频的当前P数
   totalParts?: number; // 分P视频的总P数
@@ -28,6 +29,8 @@ export interface DownloadOptions {
   url: string;
   formatId: string;
   outputDir: string;
+  taskId?: string;
+  taskDescription?: string;
 }
 
 export interface DownloadProgress {

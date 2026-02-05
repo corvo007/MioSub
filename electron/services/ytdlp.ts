@@ -22,6 +22,7 @@ export interface VideoInfo {
   uploader: string;
   platform: 'youtube' | 'bilibili';
   formats: VideoFormat[];
+  language?: string; // Original language code (e.g., 'en-US', 'zh-CN')
   // Bilibili specific
   partNumber?: number; // 分P视频的当前P数
   totalParts?: number; // 分P视频的总P数
@@ -878,6 +879,7 @@ class YtDlpService {
       uploader: data.uploader || data.channel || '',
       platform,
       formats,
+      language: data.language || undefined,
       partNumber,
       totalParts,
     };
@@ -917,24 +919,51 @@ class YtDlpService {
     );
 
     // Map friendly format names to yt-dlp selectors
+    // For YouTube, use bv* (video-only) to avoid m3u8 formats that bundle dubbed audio
+    // m3u8 formats like 301-0, 301-1 etc. contain video+audio with different languages
+    // We need video-only formats so we can separately select the original audio track
     let formatSelector = formatId;
+    const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+
     if (formatId === 'best') {
-      formatSelector = 'bestvideo';
+      formatSelector = isYouTube ? 'bv*' : 'bestvideo';
     } else if (formatId === '1080p') {
-      formatSelector = 'bestvideo[height<=1080]';
+      formatSelector = isYouTube ? 'bv*[height<=1080]' : 'bestvideo[height<=1080]';
     } else if (formatId === '720p') {
-      formatSelector = 'bestvideo[height<=720]';
+      formatSelector = isYouTube ? 'bv*[height<=720]' : 'bestvideo[height<=720]';
     } else if (formatId === '480p') {
-      formatSelector = 'bestvideo[height<=480]';
+      formatSelector = isYouTube ? 'bv*[height<=480]' : 'bestvideo[height<=480]';
+    } else {
+      // Handle any quality string in format "XXXp" (e.g., "2160p", "1440p", "360p")
+      const heightMatch = formatId.match(/^(\d+)p$/);
+      if (heightMatch) {
+        const height = heightMatch[1];
+        formatSelector = isYouTube ? `bv*[height<=${height}]` : `bestvideo[height<=${height}]`;
+      }
+      // If not a quality string, formatSelector remains as formatId (raw format ID)
     }
 
-    // Detect if URL is YouTube to apply YouTube-specific workarounds
-    const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+    // For YouTube, prefer original audio track over dubbed/translated tracks
+    // YouTube's multi-audio feature often includes AI-dubbed tracks that yt-dlp
+    // may select as "bestaudio" due to higher bitrate.
+    // Strategy: Use format_note*=original to select the original audio track.
+    // This is more reliable than language-based selection for mixed-language videos.
+    // See: https://github.com/yt-dlp/yt-dlp/issues/9498
+    //
+    // Format string structure for YouTube:
+    //   video+original_audio / video+any_audio / best
+    // This ensures we always get video, with original audio preferred.
+    let formatString: string;
+    if (isYouTube) {
+      formatString = `${formatSelector}+bestaudio[format_note*=original]/${formatSelector}+bestaudio/best`;
+    } else {
+      formatString = `${formatSelector}+bestaudio/best`;
+    }
 
     const args = [
       ...baseArgs,
       '-f',
-      `${formatSelector}+bestaudio/best`,
+      formatString,
       '-o',
       outputTemplate,
       '--merge-output-format',
@@ -949,6 +978,9 @@ class YtDlpService {
       ...(isYouTube ? ['--extractor-args', 'youtube:player_client=default,-tv'] : []),
       url,
     ];
+
+    // Log the full command for debugging
+    console.log(`[DEBUG] [Download] 执行命令: yt-dlp ${args.join(' ')}`);
 
     return new Promise((resolve, reject) => {
       // Build spawn arguments with UTF-8 code page support for Windows
@@ -1002,9 +1034,11 @@ class YtDlpService {
           });
         }
 
-        // Parse progress: [download]  45.2% of 100.00MiB at 12.50MiB/s ETA 00:05
+        // Parse progress - supports two formats:
+        // Format 1: [download]  45.2% of 100.00MiB at 12.50MiB/s ETA 00:05
+        // Format 2: [download]   5.8% of ~ 128.64MiB at    3.49MiB/s ETA 00:45 (frag 4/86)
         const progressMatch = line.match(
-          /\[download\]\s+([\d.]+)%\s+of\s+([\d.]+\w+)\s+at\s+([\d.]+\w+\/s)\s+ETA\s+([\d:]+)/
+          /\[download\]\s+([\d.]+)%\s+of\s+~?\s*([\d.]+\w+)\s+at\s+([\d.]+\w+\/s)\s+ETA\s+([\d:]+)/
         );
         if (progressMatch) {
           onProgress({

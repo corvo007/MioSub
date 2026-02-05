@@ -38,12 +38,12 @@ export function QualitySelector({
       <div className="flex flex-wrap gap-2 md:gap-3">
         {formats.map((format) => (
           <button
-            key={format.formatId}
+            key={format.quality}
             type="button"
-            onClick={() => !disabled && onSelect(format.formatId)}
+            onClick={() => !disabled && onSelect(format.quality)}
             className={cn(
               'px-4 py-2 rounded-lg text-sm transition-all border shadow-sm',
-              selectedFormat === format.formatId
+              selectedFormat === format.quality
                 ? 'bg-brand-purple/10 border-brand-purple text-brand-purple font-semibold shadow-brand-purple/10'
                 : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300',
               disabled && 'opacity-50 cursor-not-allowed'
