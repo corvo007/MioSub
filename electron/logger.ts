@@ -18,6 +18,7 @@ class MainLogger {
   private logFile: string | null = null;
   private isReady = false;
   private queue: string[] = [];
+  private isProcessing = false; // Recursion guard for Sentry instrumentation
 
   constructor() {
     this.hookConsole();
@@ -124,73 +125,82 @@ class MainLogger {
   }
 
   private processLog(level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR', args: any[]) {
-    const { cleanMessage, fullMessage, data } = this.parseArgs(args);
+    // Recursion guard: Sentry's prepareStackTraceCallback can trigger console.error
+    // when we access Error.stack, causing infinite recursion
+    if (this.isProcessing) return;
+    this.isProcessing = true;
 
-    // Filter [Level] prefixes from the clean message for UI
-    let uiMessage = cleanMessage;
-    let finalLevel = level;
+    try {
+      const { cleanMessage, fullMessage, data } = this.parseArgs(args);
 
-    if (uiMessage.startsWith('[DEBUG]')) {
-      finalLevel = 'DEBUG';
-      uiMessage = uiMessage.substring(7).trim();
-    } else if (uiMessage.startsWith('[INFO]')) {
-      finalLevel = 'INFO';
-      uiMessage = uiMessage.substring(6).trim();
-    } else if (uiMessage.startsWith('[WARN]')) {
-      finalLevel = 'WARN';
-      uiMessage = uiMessage.substring(6).trim();
-    } else if (uiMessage.startsWith('[ERROR]')) {
-      finalLevel = 'ERROR';
-      uiMessage = uiMessage.substring(7).trim();
-    }
+      // Filter [Level] prefixes from the clean message for UI
+      let uiMessage = cleanMessage;
+      let finalLevel = level;
 
-    const now = new Date();
-    // Manual formatting to match local time preference: YYYY-MM-DD HH:mm:ss.SSS
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
-
-    // Check timezone offset handling if strictly needed, but local system time is usually desired for desktop apps
-    const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
-
-    // 1. Structured Entry for UI
-    const logEntry: LogEntry = {
-      timestamp: timestamp,
-      level: finalLevel,
-      message: uiMessage,
-      data,
-    };
-
-    // 2. String Entry for File
-    // Ensure no double spacing by trimming the message part.
-    const fullLogLine = `[${timestamp}] [${finalLevel}] ${fullMessage.trimEnd()}`;
-
-    // Add to memory buffer
-    this.logs.push(logEntry);
-    if (this.logs.length > this.maxLogs) {
-      this.logs.shift();
-    }
-
-    // Send to windows (Structured!)
-    BrowserWindow.getAllWindows().forEach((win) => {
-      if (!win.isDestroyed() && !win.webContents.isDestroyed()) {
-        win.webContents.send('new-log', logEntry);
+      if (uiMessage.startsWith('[DEBUG]')) {
+        finalLevel = 'DEBUG';
+        uiMessage = uiMessage.substring(7).trim();
+      } else if (uiMessage.startsWith('[INFO]')) {
+        finalLevel = 'INFO';
+        uiMessage = uiMessage.substring(6).trim();
+      } else if (uiMessage.startsWith('[WARN]')) {
+        finalLevel = 'WARN';
+        uiMessage = uiMessage.substring(6).trim();
+      } else if (uiMessage.startsWith('[ERROR]')) {
+        finalLevel = 'ERROR';
+        uiMessage = uiMessage.substring(7).trim();
       }
-    });
 
-    // Write to file (String!)
-    if (this.isReady && this.logFile) {
-      try {
-        fs.appendFileSync(this.logFile, fullLogLine + os.EOL);
-      } catch (_err) {
-        // Ignore write errors
+      const now = new Date();
+      // Manual formatting to match local time preference: YYYY-MM-DD HH:mm:ss.SSS
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
+
+      // Check timezone offset handling if strictly needed, but local system time is usually desired for desktop apps
+      const timestamp = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}.${milliseconds}`;
+
+      // 1. Structured Entry for UI
+      const logEntry: LogEntry = {
+        timestamp: timestamp,
+        level: finalLevel,
+        message: uiMessage,
+        data,
+      };
+
+      // 2. String Entry for File
+      // Ensure no double spacing by trimming the message part.
+      const fullLogLine = `[${timestamp}] [${finalLevel}] ${fullMessage.trimEnd()}`;
+
+      // Add to memory buffer
+      this.logs.push(logEntry);
+      if (this.logs.length > this.maxLogs) {
+        this.logs.shift();
       }
-    } else {
-      this.queue.push(fullLogLine);
+
+      // Send to windows (Structured!)
+      BrowserWindow.getAllWindows().forEach((win) => {
+        if (!win.isDestroyed() && !win.webContents.isDestroyed()) {
+          win.webContents.send('new-log', logEntry);
+        }
+      });
+
+      // Write to file (String!)
+      if (this.isReady && this.logFile) {
+        try {
+          fs.appendFileSync(this.logFile, fullLogLine + os.EOL);
+        } catch (_err) {
+          // Ignore write errors
+        }
+      } else {
+        this.queue.push(fullLogLine);
+      }
+    } finally {
+      this.isProcessing = false;
     }
   }
 
