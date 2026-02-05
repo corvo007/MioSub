@@ -105,15 +105,24 @@ function getPreviewTempDir(): string {
 }
 
 /**
- * Generate a cache key based on file path and modification time
+ * Cache version - increment when transcoding parameters change.
+ * This ensures old cache files are invalidated after updates.
+ * v2: Added 48kHz audio + 1s frag_duration for streaming optimization (MIOSUB-1H fix)
+ */
+const CACHE_VERSION = 2;
+
+/**
+ * Generate a cache key based on file path, modification time, and cache version.
+ * Including app version ensures cache invalidation after updates that change
+ * transcoding parameters (e.g., audio sample rate, fragment duration).
  */
 function getCacheKey(filePath: string): string {
   try {
     const stats = fs.statSync(filePath);
-    const data = `${filePath}|${stats.mtimeMs}|${stats.size}`;
+    const data = `v${CACHE_VERSION}|${filePath}|${stats.mtimeMs}|${stats.size}`;
     return crypto.createHash('md5').update(data).digest('hex');
   } catch {
-    return crypto.createHash('md5').update(filePath).digest('hex');
+    return crypto.createHash('md5').update(`v${CACHE_VERSION}|${filePath}`).digest('hex');
   }
 }
 
