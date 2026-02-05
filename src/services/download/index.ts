@@ -48,11 +48,11 @@ export async function downloadThumbnail(options: ThumbnailDownloadOptions): Prom
   return result.thumbnailPath;
 }
 
-export async function cancelDownload(): Promise<void> {
+export async function cancelDownload(taskId?: string): Promise<void> {
   if (!window.electronAPI?.download) {
     throw new Error('Download API not available');
   }
-  await window.electronAPI.download.cancel();
+  await window.electronAPI.download.cancel(taskId);
 }
 
 export async function selectOutputDir(): Promise<string | null> {

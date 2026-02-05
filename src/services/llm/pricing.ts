@@ -125,7 +125,7 @@ export const calculateDetailedCost = (usage: {
     isHighContext && pricing.cacheTextHighContext
       ? pricing.cacheTextHighContext
       : pricing.cacheText || 0;
-  const cacheAudioRate =
+  const _cacheAudioRate =
     isHighContext && pricing.cacheAudioHighContext
       ? pricing.cacheAudioHighContext
       : pricing.cacheAudio || 0;

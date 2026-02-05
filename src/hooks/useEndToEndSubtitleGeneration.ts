@@ -262,12 +262,6 @@ export function useEndToEndSubtitleGeneration({
           );
         }
 
-        // Register active generation task for app quit tracking
-        const taskId = `e2e_${startTime}`;
-        if (window.electronAPI?.generation) {
-          void window.electronAPI.generation.register(taskId, 'end_to_end');
-        }
-
         // Guard: Very short audio (less than 1 second)
         if (audioBuffer.duration < 1) {
           logger.error('[EndToEnd] Audio too short', { duration: audioBuffer.duration });
@@ -287,6 +281,13 @@ export function useEndToEndSubtitleGeneration({
         // Check abort before expensive operation
         if (signal.aborted) {
           return { success: false, error: t('errors.cancelled'), errorCode: 'CANCELLED' };
+        }
+
+        // Register active generation task for app quit tracking
+        // NOTE: Must be after all early-return guards to ensure unregister is always called
+        const taskId = `e2e_${startTime}`;
+        if (window.electronAPI?.generation) {
+          void window.electronAPI.generation.register(taskId, 'end_to_end');
         }
 
         // Send progress update and collect analytics from all chunks

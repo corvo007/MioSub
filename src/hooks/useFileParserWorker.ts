@@ -38,7 +38,7 @@ export const useFileParserWorker = () => {
           reject(new Error(`Worker error: ${e.message || 'Unknown worker error'}`));
         };
 
-        const handleMessageError = (e: MessageEvent) => {
+        const handleMessageError = (_e: MessageEvent) => {
           cleanup();
           reject(new Error('Worker message deserialization failed'));
         };

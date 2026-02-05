@@ -111,7 +111,7 @@ const toastTimers = new Map<string, NodeJS.Timeout>();
 // ============================================================================
 
 export const useAppStore = create<AppState>()(
-  subscribeWithSelector((set, get) => ({
+  subscribeWithSelector((set, _get) => ({
     // ========================================================================
     // UI State
     // ========================================================================

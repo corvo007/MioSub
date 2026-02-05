@@ -385,7 +385,7 @@ export async function generateContentWithRetry<T = any>(
           return value;
         };
 
-        const sanitizedPrompt = sanitizeValue(params.contents);
+        const _sanitizedPrompt = sanitizeValue(params.contents);
 
         /*logger.debug('Gemini API Interaction', {
           request: {
