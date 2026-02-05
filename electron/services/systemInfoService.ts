@@ -11,16 +11,12 @@
 import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { getBinaryPath, getFileHash, getLogDir, getStorageDir } from '../utils/paths.ts';
 import { storageService } from './storage.ts';
 import { localWhisperService } from './localWhisper.ts';
 import { ctcAlignerService } from './ctcAligner.ts';
 import { ytDlpService } from './ytdlp.ts';
 import { getCompressorInstance } from './videoCompressor.ts';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // ============================================================================
 // Types
@@ -94,7 +90,11 @@ class SystemInfoService {
    * This ensures updates to binaries (even in-place) are detected.
    */
   async getConfigHash(): Promise<SystemConfig> {
-    const pkgPath = path.join(__dirname, '../../package.json');
+    // In dev: app.getAppPath() returns 'electron/', need to go up one level
+    // In packaged: app.getAppPath() returns 'app.asar', package.json is inside
+    const pkgPath = app.isPackaged
+      ? path.join(app.getAppPath(), 'package.json')
+      : path.join(app.getAppPath(), '..', 'package.json');
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
     // Read settings
