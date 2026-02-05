@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { logger } from '@/services/utils/logger';
 import type { VideoPlayerPreviewRef } from '@/components/editor/VideoPlayerPreview';
+import { useProgressSmoothing } from '@/hooks/useProgressSmoothing';
 
 const SUPPORTED_FORMATS = ['mp4', 'webm', 'm4v', 'mp3', 'wav', 'flac', 'ogg', 'm4a', 'aac'];
 
@@ -27,10 +28,22 @@ export function useVideoPreview(): UseVideoPreviewReturn {
   const [videoSrc, setVideoSrc] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [isTranscoding, setIsTranscoding] = useState(false);
-  const [transcodeProgress, setTranscodeProgress] = useState(0);
-  const [transcodedDuration, setTranscodedDuration] = useState<number | undefined>(undefined);
+  const [rawTranscodeProgress, setRawTranscodeProgress] = useState<{
+    percent: number;
+    transcodedDuration?: number;
+  } | null>(null);
   const [fullVideoDuration, setFullVideoDuration] = useState<number | undefined>(undefined);
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Apply progress smoothing
+  const { smoothed: smoothedProgress, reset: resetProgress } = useProgressSmoothing(
+    rawTranscodeProgress,
+    { interpolationSpeed: 0.08 }
+  );
+
+  // Derive smoothed values
+  const transcodeProgress = smoothedProgress?.percent ?? 0;
+  const transcodedDuration = smoothedProgress?.transcodedDuration;
 
   const playerRef = useRef<VideoPlayerPreviewRef>(null);
   const objectUrlRef = useRef<string | null>(null);
@@ -79,7 +92,8 @@ export function useVideoPreview(): UseVideoPreviewReturn {
       // Clean up any existing listeners and URLs first
       cleanupUrl();
       setCurrentTime(0);
-      setTranscodedDuration(undefined);
+      setRawTranscodeProgress(null);
+      resetProgress();
 
       let filePath: string;
 
@@ -106,11 +120,11 @@ export function useVideoPreview(): UseVideoPreviewReturn {
         // Directly supported format - use local-video:// protocol
         setLocalVideoSrc(filePath, true); // Use static mode for direct files
         setIsTranscoding(false);
-        setTranscodeProgress(100);
+        setRawTranscodeProgress({ percent: 100 });
       } else {
         // Needs transcoding
         setIsTranscoding(true);
-        setTranscodeProgress(0);
+        setRawTranscodeProgress({ percent: 0 });
 
         // Register task for close confirmation
         const taskId = `transcode-${Date.now()}`;
@@ -133,10 +147,10 @@ export function useVideoPreview(): UseVideoPreviewReturn {
           if (window.electronAPI.onTranscodeProgress) {
             const cleanup = window.electronAPI.onTranscodeProgress(
               (data: { percent: number; transcodedDuration?: number }) => {
-                setTranscodeProgress(data.percent);
-                if (data.transcodedDuration !== undefined) {
-                  setTranscodedDuration(data.transcodedDuration);
-                }
+                setRawTranscodeProgress({
+                  percent: data.percent,
+                  transcodedDuration: data.transcodedDuration,
+                });
               }
             );
             cleanupFns.push(cleanup);
@@ -191,7 +205,8 @@ export function useVideoPreview(): UseVideoPreviewReturn {
           if (result?.duration) {
             setFullVideoDuration(result.duration);
           }
-          setTranscodedDuration(undefined);
+          setRawTranscodeProgress(null);
+          resetProgress();
         } catch (error) {
           // Clean up listeners on error
           cleanupFns.forEach((fn) => fn());
@@ -208,7 +223,7 @@ export function useVideoPreview(): UseVideoPreviewReturn {
         }
       }
     },
-    [cleanupUrl] // Removed videoSrc from dependency to prevent infinite loop
+    [cleanupUrl, resetProgress] // Removed videoSrc from dependency to prevent infinite loop
   );
 
   const seekTo = useCallback((seconds: number) => {
@@ -224,9 +239,9 @@ export function useVideoPreview(): UseVideoPreviewReturn {
     setVideoSrc(null);
     setCurrentTime(0);
     setIsTranscoding(false);
-    setTranscodeProgress(0);
-    setTranscodedDuration(undefined);
-  }, [cleanupUrl]);
+    setRawTranscodeProgress(null);
+    resetProgress();
+  }, [cleanupUrl, resetProgress]);
 
   // Cleanup on unmount
   useEffect(() => {

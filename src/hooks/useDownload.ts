@@ -15,6 +15,7 @@ import {
 } from '@/services/download';
 import { logger } from '@/services/utils/logger';
 import { useAppStore } from '@/store/useAppStore';
+import { useProgressSmoothing } from '@/hooks/useProgressSmoothing';
 
 interface UseDownloadReturn {
   // State
@@ -43,7 +44,7 @@ export function useDownload(): UseDownloadReturn {
   const addToast = useAppStore((s) => s.addToast);
   const [status, setStatus] = useState<DownloadStatus>('idle');
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
-  const [progress, setProgress] = useState<DownloadProgress | null>(null);
+  const [rawProgress, setRawProgress] = useState<DownloadProgress | null>(null);
   const [outputDir, setOutputDir] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [errorInfo, setErrorInfo] = useState<DownloadError | null>(null);
@@ -52,6 +53,12 @@ export function useDownload(): UseDownloadReturn {
   const [currentUrl, setCurrentUrl] = useState<string>('');
   const [lastFormatId, setLastFormatId] = useState<string>('');
   const taskIdRef = useRef<string | null>(null);
+
+  // Apply progress smoothing with stage-based reset
+  const { smoothed: progress, reset: resetProgress } = useProgressSmoothing(rawProgress, {
+    interpolationSpeed: 0.1,
+    resetOnFieldChange: 'stage',
+  });
 
   // Initialize default output directory
   useEffect(() => {
@@ -69,7 +76,7 @@ export function useDownload(): UseDownloadReturn {
     if (!window.electronAPI?.download) {
       return () => {};
     }
-    const unsubscribe = onDownloadProgress(setProgress);
+    const unsubscribe = onDownloadProgress(setRawProgress);
     return unsubscribe;
   }, []);
 
@@ -112,35 +119,35 @@ export function useDownload(): UseDownloadReturn {
       setStatus('downloading');
       setError(null);
       setErrorInfo(null);
-      setProgress(null);
+      setRawProgress(null);
+      resetProgress();
       setLastFormatId(formatId);
 
-      // Register task for close confirmation
+      // Generate task ID and description for main process task tracking
       const taskId = `download-${Date.now()}`;
       taskIdRef.current = taskId;
       const title = videoInfo?.title || t('download:task.downloading');
-      window.electronAPI?.task
-        ?.register(taskId, 'download', `${t('download:task.downloading')}: ${title}`)
-        .catch(console.error);
+      const taskDescription = `${t('download:task.downloading')}: ${title}`;
 
       try {
-        const path = await startDownload({ url: currentUrl, formatId, outputDir });
+        // Pass taskId and taskDescription to main process for reliable task tracking
+        const path = await startDownload({
+          url: currentUrl,
+          formatId,
+          outputDir,
+          taskId,
+          taskDescription,
+        });
 
-        // Unregister task on completion
-        if (taskIdRef.current) {
-          window.electronAPI?.task?.unregister(taskIdRef.current).catch(console.error);
-          taskIdRef.current = null;
-        }
+        // Task is unregistered in main process, just clear local ref
+        taskIdRef.current = null;
 
         setOutputPath(path);
         setStatus('completed');
         return path;
       } catch (err: any) {
-        // Unregister task on error
-        if (taskIdRef.current) {
-          window.electronAPI?.task?.unregister(taskIdRef.current).catch(console.error);
-          taskIdRef.current = null;
-        }
+        // Task is unregistered in main process on error, just clear local ref
+        taskIdRef.current = null;
 
         const errInfo = err.errorInfo as DownloadError | undefined;
         const errorMessage = errInfo?.message || err.message;
@@ -151,7 +158,7 @@ export function useDownload(): UseDownloadReturn {
         return undefined;
       }
     },
-    [currentUrl, outputDir, videoInfo, t]
+    [currentUrl, outputDir, videoInfo, t, resetProgress]
   );
 
   const downloadThumbnail = useCallback(async (): Promise<string | undefined> => {
@@ -177,16 +184,15 @@ export function useDownload(): UseDownloadReturn {
   }, [videoInfo, outputDir, t, addToast]);
 
   const cancel = useCallback(async () => {
-    // Unregister task on cancel
-    if (taskIdRef.current) {
-      window.electronAPI?.task?.unregister(taskIdRef.current).catch(console.error);
-      taskIdRef.current = null;
-    }
+    // Pass taskId to main process for reliable task unregistration
+    const currentTaskId = taskIdRef.current;
+    taskIdRef.current = null;
 
-    await cancelDownload();
+    await cancelDownload(currentTaskId || undefined);
     setStatus('idle');
-    setProgress(null);
-  }, []);
+    setRawProgress(null);
+    resetProgress();
+  }, [resetProgress]);
 
   const selectDir = useCallback(async () => {
     const dir = await selectOutputDir();
@@ -196,14 +202,15 @@ export function useDownload(): UseDownloadReturn {
   const reset = useCallback(() => {
     setStatus('idle');
     setVideoInfo(null);
-    setProgress(null);
+    setRawProgress(null);
+    resetProgress();
     setError(null);
     setErrorInfo(null);
     setOutputPath(null);
     setThumbnailPath(null);
     setCurrentUrl('');
     setLastFormatId('');
-  }, []);
+  }, [resetProgress]);
 
   // Retry function - only retries if error is retryable
   const retry = useCallback(async () => {
