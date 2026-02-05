@@ -4,9 +4,31 @@ import { type BrowserWindow, ipcMain, shell } from 'electron';
 import { isPortableMode, getBinaryPath } from '../utils/paths.ts';
 import https from 'https';
 import fs from 'fs';
+import path from 'path';
+import { spawn } from 'child_process';
 import pkg from '../../package.json' with { type: 'json' };
 
 const { autoUpdater } = electronUpdater;
+
+// Configure electron-updater logger to filter out verbose DEBUG logs
+// This prevents massive blockmap JSON arrays from flooding the log file
+// (blockmap logs can be thousands of lines with start/end ranges for each block)
+autoUpdater.logger = {
+  info: (message: string) => console.log(`[electron-updater] ${message}`),
+  warn: (message: string) => console.warn(`[electron-updater] ${message}`),
+  error: (message: string) => console.error(`[electron-updater] ${message}`),
+  debug: (message: string) => {
+    // Filter out verbose blockmap-related logs
+    // These logs contain huge JSON arrays with block ranges like {"start":0,"end":1234}
+    if (
+      typeof message === 'string' &&
+      (message.includes('"start"') || message.includes('"end"') || message.length > 500)
+    ) {
+      return; // Skip verbose blockmap operation logs
+    }
+    console.debug(`[electron-updater] ${message}`);
+  },
+};
 
 export type UpdateStatus =
   | 'idle'
@@ -39,7 +61,7 @@ const REQUEST_TIMEOUT_MS = 15000; // 15 seconds timeout for GitHub API
 
 // Binary update configuration
 const BINARY_REPOS = {
-  aligner: { owner: 'Corvo007', repo: 'cpp-ort-aligner' },
+  aligner: { owner: 'Corvo007', repo: 'cpp-ctc-aligner' },
   ytdlp: { owner: 'yt-dlp', repo: 'yt-dlp' },
 } as const;
 
@@ -105,7 +127,10 @@ export function initUpdateService(window: BrowserWindow) {
 }
 
 function sendUpdateStatus() {
-  mainWindow?.webContents.send('update:status', {
+  if (!mainWindow || mainWindow.isDestroyed() || mainWindow.webContents.isDestroyed()) {
+    return;
+  }
+  mainWindow.webContents.send('update:status', {
     status: updateState.status,
     version: updateState.info?.version || null,
     error: updateState.error,
@@ -183,7 +208,10 @@ function registerIpcHandlers() {
     async (_event, name: BinaryName, downloadUrl: string) => {
       try {
         const result = await downloadBinaryUpdate(name, downloadUrl, (percent) => {
-          mainWindow?.webContents.send('update:binary-progress', { name, percent });
+          if (!mainWindow || mainWindow.isDestroyed() || mainWindow.webContents.isDestroyed()) {
+            return;
+          }
+          mainWindow.webContents.send('update:binary-progress', { name, percent });
         });
         return result;
       } catch (err: any) {
@@ -371,16 +399,46 @@ export async function checkBinaryUpdate(name: BinaryName): Promise<BinaryUpdateI
   const tagName = release.data.tag_name || '';
   result.releaseUrl = release.data.html_url;
 
+  const platform = process.platform; // 'win32' | 'darwin' | 'linux'
+  const arch = process.arch; // 'x64' | 'arm64' | 'ia32'
+
   if (name === 'aligner') {
     // Aligner: tag is "v0.1.2" or "0.1.2"
     result.latest = tagName.replace(/^v/, '');
     const currentParsed = parseAlignerVersion(current);
     result.hasUpdate = compareVersions(result.latest, currentParsed) > 0;
 
-    // Find Windows binary asset
-    const asset = release.data.assets?.find(
-      (a: any) => a.name.includes('windows') && a.name.endsWith('.exe')
-    );
+    // Find platform and arch specific binary asset
+    // Naming: cpp-ort-aligner-{platform}-{arch}.{zip|tar.gz}
+    // Exclude -symbols files
+    const asset = release.data.assets?.find((a: any) => {
+      const assetName = a.name.toLowerCase();
+      // Skip symbol files
+      if (assetName.includes('-symbols')) return false;
+
+      if (platform === 'win32') {
+        // Windows: .zip format
+        if (arch === 'arm64' && assetName.includes('windows-arm64') && assetName.endsWith('.zip')) {
+          return true;
+        }
+        // Default to x64 for Windows
+        return assetName.includes('windows-x64') && assetName.endsWith('.zip');
+      } else if (platform === 'darwin') {
+        // macOS: universal2 .tar.gz (supports both x64 and arm64)
+        return assetName.includes('macos-universal2') && assetName.endsWith('.tar.gz');
+      } else if (platform === 'linux') {
+        // Linux: .tar.gz format
+        if (
+          arch === 'arm64' &&
+          assetName.includes('linux-arm64') &&
+          assetName.endsWith('.tar.gz')
+        ) {
+          return true;
+        }
+        return assetName.includes('linux-x64') && assetName.endsWith('.tar.gz');
+      }
+      return false;
+    });
     if (asset) {
       result.downloadUrl = asset.browser_download_url;
     }
@@ -390,8 +448,26 @@ export async function checkBinaryUpdate(name: BinaryName): Promise<BinaryUpdateI
     const currentParsed = parseYtdlpVersion(current);
     result.hasUpdate = compareYtdlpVersions(result.latest, currentParsed) > 0;
 
-    // Find Windows binary asset
-    const asset = release.data.assets?.find((a: any) => a.name === 'yt-dlp.exe');
+    // Find platform-specific binary asset
+    // yt-dlp naming: yt-dlp.exe (Windows), yt-dlp_macos (macOS universal), yt-dlp_linux (Linux)
+    // Note: yt-dlp provides universal binaries for macOS that work on both Intel and Apple Silicon
+    const asset = release.data.assets?.find((a: any) => {
+      const assetName = a.name;
+      if (platform === 'win32') {
+        // Windows: yt-dlp.exe or yt-dlp_win.exe
+        return assetName === 'yt-dlp.exe' || assetName === 'yt-dlp_win.exe';
+      } else if (platform === 'darwin') {
+        // macOS: yt-dlp_macos (universal binary)
+        return assetName === 'yt-dlp_macos';
+      } else if (platform === 'linux') {
+        // Linux: yt-dlp_linux or yt-dlp_linux_aarch64 for arm64
+        if (arch === 'arm64') {
+          return assetName === 'yt-dlp_linux_aarch64';
+        }
+        return assetName === 'yt-dlp_linux';
+      }
+      return false;
+    });
     if (asset) {
       result.downloadUrl = asset.browser_download_url;
     }
@@ -410,110 +486,290 @@ export async function downloadBinaryUpdate(
   downloadUrl: string,
   onProgress?: (percent: number) => void
 ): Promise<{ success: boolean; error?: string }> {
-  return new Promise((resolve) => {
-    const binaryPath = getBinaryPath(name === 'aligner' ? 'cpp-ort-aligner' : 'yt-dlp');
-    const tempPath = `${binaryPath}.tmp`;
-    const backupPath = `${binaryPath}.bak`;
+  // Security: Validate download URL is from GitHub
+  try {
+    const urlObj = new URL(downloadUrl);
+    const allowedHosts = ['github.com', 'objects.githubusercontent.com'];
+    if (!allowedHosts.some((host) => urlObj.hostname.endsWith(host))) {
+      return { success: false, error: 'Invalid download URL: must be from GitHub' };
+    }
+  } catch {
+    return { success: false, error: 'Invalid download URL format' };
+  }
 
-    console.log(`[UpdateService] Downloading ${name} from ${downloadUrl}`);
-    console.log(`[UpdateService] Target path: ${binaryPath}`);
+  const binaryName = name === 'aligner' ? 'cpp-ort-aligner' : 'yt-dlp';
+  const binaryPath = getBinaryPath(binaryName);
+  const resourceDir = path.dirname(binaryPath);
+  const isArchive = downloadUrl.endsWith('.zip') || downloadUrl.endsWith('.tar.gz');
+  const archiveExt = downloadUrl.endsWith('.zip') ? '.zip' : '.tar.gz';
+  const tempArchivePath = path.join(resourceDir, `${binaryName}-update${archiveExt}`);
+  const tempExtractDir = path.join(resourceDir, `${binaryName}-update-temp`);
+  const backupPath = `${binaryPath}.bak`;
 
-    // Follow redirects for GitHub releases
-    const download = (url: string, redirectCount = 0) => {
-      if (redirectCount > 5) {
-        resolve({ success: false, error: 'Too many redirects' });
-        return;
-      }
+  console.log(`[UpdateService] Downloading ${name} from ${downloadUrl}`);
+  console.log(`[UpdateService] Target path: ${binaryPath}`);
+  console.log(`[UpdateService] Is archive: ${isArchive}`);
 
-      const urlObj = new URL(url);
-      const options = {
-        hostname: urlObj.hostname,
-        path: urlObj.pathname + urlObj.search,
-        headers: { 'User-Agent': 'MioSub-Updater' },
-        timeout: 60000, // 60s for download
-      };
+  // Helper to clean up temp files
+  const cleanup = () => {
+    try {
+      if (fs.existsSync(tempArchivePath)) fs.unlinkSync(tempArchivePath);
+      if (fs.existsSync(tempExtractDir)) fs.rmSync(tempExtractDir, { recursive: true });
+    } catch (e) {
+      console.warn('[UpdateService] Cleanup failed:', e);
+    }
+  };
 
-      const req = https
-        .get(options, (res) => {
-          // Handle redirects
-          if (res.statusCode === 301 || res.statusCode === 302) {
-            const location = res.headers.location;
-            if (location) {
-              download(location, redirectCount + 1);
+  // Download file
+  const downloadFile = (targetPath: string): Promise<{ success: boolean; error?: string }> => {
+    return new Promise((resolve) => {
+      const download = (url: string, redirectCount = 0) => {
+        if (redirectCount > 5) {
+          resolve({ success: false, error: 'Too many redirects' });
+          return;
+        }
+
+        const urlObj = new URL(url);
+        const options = {
+          hostname: urlObj.hostname,
+          path: urlObj.pathname + urlObj.search,
+          headers: { 'User-Agent': 'MioSub-Updater' },
+          timeout: 120000, // 2 min for download
+        };
+
+        const req = https
+          .get(options, (res) => {
+            if (res.statusCode === 301 || res.statusCode === 302) {
+              const location = res.headers.location;
+              if (location) {
+                download(location, redirectCount + 1);
+                return;
+              }
+            }
+
+            if (res.statusCode !== 200) {
+              resolve({ success: false, error: `HTTP ${res.statusCode}` });
               return;
             }
-          }
 
-          if (res.statusCode !== 200) {
-            resolve({ success: false, error: `HTTP ${res.statusCode}` });
-            return;
-          }
+            const totalSize = parseInt(res.headers['content-length'] || '0', 10);
+            let downloadedSize = 0;
 
-          const totalSize = parseInt(res.headers['content-length'] || '0', 10);
-          let downloadedSize = 0;
+            const fileStream = fs.createWriteStream(targetPath);
 
-          const fileStream = fs.createWriteStream(tempPath);
-
-          res.on('data', (chunk) => {
-            downloadedSize += chunk.length;
-            if (totalSize > 0 && onProgress) {
-              onProgress((downloadedSize / totalSize) * 100);
-            }
-          });
-
-          res.pipe(fileStream);
-
-          fileStream.on('finish', () => {
-            fileStream.close();
-
-            try {
-              // Backup existing file
-              if (fs.existsSync(binaryPath)) {
-                if (fs.existsSync(backupPath)) {
-                  fs.unlinkSync(backupPath);
-                }
-                fs.renameSync(binaryPath, backupPath);
+            res.on('data', (chunk) => {
+              downloadedSize += chunk.length;
+              if (totalSize > 0 && onProgress) {
+                // Reserve last 10% for extraction
+                onProgress((downloadedSize / totalSize) * (isArchive ? 90 : 100));
               }
+            });
 
-              // Move temp to target
-              fs.renameSync(tempPath, binaryPath);
+            res.pipe(fileStream);
 
-              // Clean up backup on success
-              if (fs.existsSync(backupPath)) {
-                fs.unlinkSync(backupPath);
-              }
-
-              console.log(`[UpdateService] Successfully updated ${name}`);
-              resolve({ success: true });
-            } catch (err: any) {
-              // Restore backup on failure
-              if (fs.existsSync(backupPath) && !fs.existsSync(binaryPath)) {
-                fs.renameSync(backupPath, binaryPath);
-              }
+            // Handle response errors during pipe
+            res.on('error', (err) => {
+              fileStream.destroy();
               resolve({ success: false, error: err.message });
-            }
-          });
+            });
 
-          fileStream.on('error', (err) => {
-            fs.unlink(tempPath, () => {});
-            resolve({ success: false, error: err.message });
+            fileStream.on('finish', () => {
+              fileStream.close();
+              resolve({ success: true });
+            });
+
+            fileStream.on('error', (err) => {
+              fileStream.destroy();
+              fs.unlink(targetPath, () => {}); // Clean up partial file
+              resolve({ success: false, error: err.message });
+            });
+          })
+          .on('error', (err) => resolve({ success: false, error: err.message }))
+          .on('timeout', () => {
+            req.destroy();
+            resolve({ success: false, error: 'Download timeout' });
           });
-        })
-        .on('error', (err) => {
-          resolve({ success: false, error: err.message });
-        })
-        .on('timeout', () => {
-          req.destroy();
-          resolve({ success: false, error: 'Download timeout' });
+      };
+
+      download(downloadUrl);
+    });
+  };
+
+  // Extract archive
+  const extractArchive = async (): Promise<{ success: boolean; error?: string }> => {
+    // Create temp extract directory
+    if (fs.existsSync(tempExtractDir)) {
+      fs.rmSync(tempExtractDir, { recursive: true });
+    }
+    fs.mkdirSync(tempExtractDir, { recursive: true });
+
+    if (archiveExt === '.zip') {
+      // Use PowerShell on Windows, unzip on Unix
+      return new Promise((resolve) => {
+        const cmd =
+          process.platform === 'win32'
+            ? spawn('powershell', [
+                '-NoProfile',
+                '-Command',
+                `Expand-Archive -Path "${tempArchivePath}" -DestinationPath "${tempExtractDir}" -Force`,
+              ])
+            : spawn('unzip', ['-o', tempArchivePath, '-d', tempExtractDir]);
+
+        cmd.on('close', (code) => {
+          if (code === 0) {
+            resolve({ success: true });
+          } else {
+            resolve({ success: false, error: `Unzip failed with code ${code}` });
+          }
         });
-    };
+        cmd.on('error', (err) => resolve({ success: false, error: err.message }));
+      });
+    } else {
+      // .tar.gz - use tar command
+      return new Promise((resolve) => {
+        const cmd = spawn('tar', ['-xzf', tempArchivePath, '-C', tempExtractDir]);
 
-    download(downloadUrl);
-  });
+        cmd.on('close', (code) => {
+          if (code === 0) {
+            resolve({ success: true });
+          } else {
+            resolve({ success: false, error: `Tar extract failed with code ${code}` });
+          }
+        });
+        cmd.on('error', (err) => resolve({ success: false, error: err.message }));
+      });
+    }
+  };
+
+  // Find and move binary from extracted files
+  const installBinary = (): { success: boolean; error?: string } => {
+    try {
+      // Find the binary in extracted directory (may be in subdirectory)
+      const findBinary = (dir: string): string | null => {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isDirectory()) {
+            const found = findBinary(fullPath);
+            if (found) return found;
+          } else if (entry.isFile()) {
+            // Match binary name (with or without .exe)
+            const baseName = entry.name.replace(/\.exe$/i, '');
+            if (baseName === binaryName) {
+              return fullPath;
+            }
+          }
+        }
+        return null;
+      };
+
+      const extractedBinary = findBinary(tempExtractDir);
+      if (!extractedBinary) {
+        return { success: false, error: `Binary ${binaryName} not found in archive` };
+      }
+
+      // Backup existing file
+      if (fs.existsSync(binaryPath)) {
+        if (fs.existsSync(backupPath)) {
+          fs.unlinkSync(backupPath);
+        }
+        fs.renameSync(binaryPath, backupPath);
+      }
+
+      // Move extracted binary to target
+      fs.copyFileSync(extractedBinary, binaryPath);
+
+      // Set executable permission on Unix-like systems
+      if (process.platform !== 'win32') {
+        fs.chmodSync(binaryPath, 0o755);
+      }
+
+      // Clean up backup
+      if (fs.existsSync(backupPath)) {
+        fs.unlinkSync(backupPath);
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      // Restore backup on failure
+      if (fs.existsSync(backupPath) && !fs.existsSync(binaryPath)) {
+        fs.renameSync(backupPath, binaryPath);
+      }
+      return { success: false, error: err.message };
+    }
+  };
+
+  try {
+    // Step 1: Download
+    const targetPath = isArchive ? tempArchivePath : `${binaryPath}.tmp`;
+    const downloadResult = await downloadFile(targetPath);
+    if (!downloadResult.success) {
+      cleanup();
+      return downloadResult;
+    }
+
+    if (isArchive) {
+      // Step 2: Extract
+      onProgress?.(92);
+      const extractResult = await extractArchive();
+      if (!extractResult.success) {
+        cleanup();
+        return extractResult;
+      }
+
+      // Step 3: Install
+      onProgress?.(96);
+      const installResult = installBinary();
+      cleanup();
+
+      if (installResult.success) {
+        onProgress?.(100);
+        console.log(`[UpdateService] Successfully updated ${name}`);
+      }
+      return installResult;
+    } else {
+      // Direct binary (yt-dlp)
+      try {
+        // Backup existing file
+        if (fs.existsSync(binaryPath)) {
+          if (fs.existsSync(backupPath)) {
+            fs.unlinkSync(backupPath);
+          }
+          fs.renameSync(binaryPath, backupPath);
+        }
+
+        // Move temp to target
+        fs.renameSync(targetPath, binaryPath);
+
+        // Set executable permission on Unix-like systems
+        if (process.platform !== 'win32') {
+          fs.chmodSync(binaryPath, 0o755);
+        }
+
+        // Clean up backup
+        if (fs.existsSync(backupPath)) {
+          fs.unlinkSync(backupPath);
+        }
+
+        onProgress?.(100);
+        console.log(`[UpdateService] Successfully updated ${name}`);
+        return { success: true };
+      } catch (err: any) {
+        // Restore backup on failure
+        if (fs.existsSync(backupPath) && !fs.existsSync(binaryPath)) {
+          fs.renameSync(backupPath, binaryPath);
+        }
+        return { success: false, error: err.message };
+      }
+    }
+  } catch (err: any) {
+    cleanup();
+    return { success: false, error: err.message };
+  }
 }
 
 export function openBinaryReleaseUrl(name: BinaryName): void {
   const repo = BINARY_REPOS[name];
   const url = `https://github.com/${repo.owner}/${repo.repo}/releases/latest`;
-  shell.openExternal(url);
+  void shell.openExternal(url);
 }
