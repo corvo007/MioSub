@@ -1,7 +1,7 @@
 import { type SpeakerProfile } from '@/services/generation/extractors/speakerProfile';
 import { type PipelineContext } from '@/types/pipeline';
 import { MockFactory } from '@/services/generation/debug/mockFactory';
-import { intelligentAudioSampling } from '@/services/audio/sampler';
+import { intelligentAudioSampling, longVideoAudioSampling } from '@/services/audio/sampler';
 import { extractSpeakerProfiles } from '@/services/generation/extractors/speakerProfile';
 import { getActionableErrorInfo } from '@/services/llm/providers/gemini';
 import { logger } from '@/services/utils/logger';
@@ -11,10 +11,16 @@ import i18n from '@/i18n';
 export class SpeakerAnalyzer {
   static async analyze(
     context: PipelineContext,
-    audioBuffer: AudioBuffer,
-    vadSegments: { start: number; end: number }[] | undefined
+    audioBuffer: AudioBuffer | null,
+    vadSegments: { start: number; end: number }[] | undefined,
+    options?: {
+      isLongVideo?: boolean;
+      videoPath?: string;
+      totalDuration?: number;
+    }
   ): Promise<SpeakerProfile[]> {
     const { settings, onProgress, signal, ai, trackUsage, isDebug } = context;
+    const { isLongVideo, videoPath, totalDuration } = options || {};
 
     logger.info('Starting parallel speaker profile extraction...');
     onProgress?.({
@@ -30,14 +36,30 @@ export class SpeakerAnalyzer {
         return MockFactory.getMockSpeakerProfiles();
       }
 
-      // 1. Intelligent Sampling (returns blob and duration)
-      const { blob: sampledAudioBlob, duration } = await intelligentAudioSampling(
-        audioBuffer,
-        480, // 8 minutes for comprehensive speaker coverage
-        8,
-        signal,
-        vadSegments // Pass cached VAD segments to avoid re-running VAD
-      );
+      // 1. Audio Sampling (different strategies for long vs standard videos)
+      let sampledAudioBlob: Blob;
+      let duration: number;
+
+      if (isLongVideo && videoPath && totalDuration) {
+        // Long video mode: use fixed-interval sampling with FFmpeg
+        logger.info('Using long video sampling strategy (fixed intervals)');
+        const result = await longVideoAudioSampling(videoPath, totalDuration, signal);
+        sampledAudioBlob = result.blob;
+        duration = result.duration;
+      } else if (audioBuffer) {
+        // Standard mode: use intelligent sampling with in-memory buffer
+        const result = await intelligentAudioSampling(
+          audioBuffer,
+          480, // 8 minutes for comprehensive speaker coverage
+          8,
+          signal,
+          vadSegments // Pass cached VAD segments to avoid re-running VAD
+        );
+        sampledAudioBlob = result.blob;
+        duration = result.duration;
+      } else {
+        throw new Error('No audio source available for speaker analysis');
+      }
 
       // 2. Extract Profiles
       const profileSet = await extractSpeakerProfiles(

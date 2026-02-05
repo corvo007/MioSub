@@ -65,3 +65,57 @@ export async function extractSegmentAsBlob(
 export function isLongVideo(duration: number): boolean {
   return duration > LONG_VIDEO_THRESHOLD;
 }
+
+export interface SegmentRange {
+  startTime: number; // Start time in seconds
+  duration: number; // Duration in seconds
+}
+
+/**
+ * Extract multiple audio segments and concatenate them into a single Blob.
+ * Uses FFmpeg's concat filter via Electron IPC for efficient single-pass extraction.
+ *
+ * @param videoPath - Path to the video file
+ * @param segments - Array of segments to extract (startTime, duration)
+ * @returns WAV audio blob containing all segments concatenated
+ */
+export async function extractMultipleSegmentsAsBlob(
+  videoPath: string,
+  segments: SegmentRange[]
+): Promise<Blob> {
+  // Check if we're in Electron environment
+  if (!window.electronAPI?.extractMultipleAudioSegments) {
+    throw new Error('extractMultipleSegmentsAsBlob is only available in Electron environment');
+  }
+
+  if (segments.length === 0) {
+    throw new Error('No segments provided for extraction');
+  }
+
+  const totalDuration = segments.reduce((sum, s) => sum + s.duration, 0);
+  logger.debug(
+    `Extracting ${segments.length} audio segments (total: ${totalDuration.toFixed(1)}s)`
+  );
+
+  // 1. Call IPC to extract and concatenate segments
+  const result = await window.electronAPI.extractMultipleAudioSegments(videoPath, segments, {
+    format: 'wav',
+    sampleRate: 16000,
+    channels: 1,
+  });
+
+  if (!result.success || !result.audioPath) {
+    throw new Error(result.error || 'Failed to extract audio segments');
+  }
+
+  // 2. Read the extracted audio file
+  const arrayBuffer = await window.electronAPI.readExtractedAudio(result.audioPath);
+
+  // 3. Clean up temporary file
+  await window.electronAPI.cleanupTempAudio(result.audioPath);
+
+  logger.debug(`Segments extracted successfully: ${arrayBuffer.byteLength} bytes`);
+
+  // 4. Return as Blob
+  return new Blob([arrayBuffer], { type: 'audio/wav' });
+}

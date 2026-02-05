@@ -36,7 +36,7 @@ export class WaitForDepsStep extends BaseStep<WaitForDepsInput, WaitForDepsOutpu
 
   protected async execute(input: WaitForDepsInput, ctx: StepContext): Promise<WaitForDepsOutput> {
     const { deps, pipelineContext } = ctx;
-    const { signal, onProgress, settings } = pipelineContext;
+    const { signal, onProgress, settings: _settings } = pipelineContext;
     const { glossaryState, speakerProfilePromise } = deps;
 
     // Wait for glossary

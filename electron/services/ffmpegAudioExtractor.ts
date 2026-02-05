@@ -423,3 +423,149 @@ export async function getAudioInfo(videoPath: string): Promise<{
     });
   });
 }
+
+export interface AudioSegmentRange {
+  startTime: number; // Start time in seconds
+  duration: number; // Duration in seconds
+}
+
+/**
+ * Extract multiple audio segments and concatenate them into a single file.
+ * Uses FFmpeg's concat filter for efficient single-pass extraction.
+ *
+ * @param videoPath - Path to the video file
+ * @param segments - Array of segments to extract (startTime, duration)
+ * @param options - Audio extraction options
+ * @returns Path to the concatenated audio file
+ */
+export async function extractMultipleAudioSegments(
+  videoPath: string,
+  segments: AudioSegmentRange[],
+  options: AudioExtractionOptions = {},
+  onLog?: (message: string) => void
+): Promise<string> {
+  if (segments.length === 0) {
+    throw new Error('No segments provided for extraction');
+  }
+
+  // For single segment, use the simpler function
+  if (segments.length === 1) {
+    return extractAudioSegment(videoPath, {
+      ...options,
+      startTime: segments[0].startTime,
+      duration: segments[0].duration,
+    });
+  }
+
+  const { format = 'wav', sampleRate = 16000, channels = 1 } = options;
+
+  // Create temp output file path
+  const tempDir = os.tmpdir();
+  const outputFileName = `audio_concat_${Date.now()}.${format}`;
+  const outputPath = path.join(tempDir, outputFileName);
+
+  return new Promise((resolve, reject) => {
+    isAudioExtractionCancelled = false;
+
+    // Build FFmpeg command with multiple inputs
+    // Each segment becomes a separate input with -ss and -t
+    const inputArgs: string[] = [];
+    const filterInputs: string[] = [];
+
+    segments.forEach((seg, i) => {
+      inputArgs.push(`-ss ${seg.startTime}`, `-t ${seg.duration}`, '-i', videoPath);
+      filterInputs.push(`[${i}:a]`);
+    });
+
+    // Build concat filter
+    const concatFilter = `${filterInputs.join('')}concat=n=${segments.length}:v=0:a=1[out]`;
+
+    if (onLog) {
+      onLog(`[DEBUG] Extracting ${segments.length} segments from ${videoPath}`);
+      onLog(`[DEBUG] Concat filter: ${concatFilter}`);
+    }
+
+    // Use spawn directly for complex filter graphs
+    const { spawn } = require('child_process');
+    const ffmpegBin = getFFmpegPath();
+
+    const args = [
+      ...inputArgs,
+      '-filter_complex',
+      concatFilter,
+      '-map',
+      '[out]',
+      '-ar',
+      String(sampleRate),
+      '-ac',
+      String(channels),
+      '-y', // Overwrite output
+      outputPath,
+    ];
+
+    if (onLog) {
+      onLog(`[DEBUG] FFmpeg command: ${ffmpegBin} ${args.join(' ')}`);
+    }
+
+    const proc = spawn(ffmpegBin, args);
+
+    // Create a wrapper to track this process for cleanup/cancellation
+    const procWrapper = {
+      kill: (signal: string) => {
+        try {
+          proc.kill(signal);
+        } catch (_e) {
+          // Ignore if process already exited
+        }
+      },
+    } as ReturnType<typeof ffmpeg>;
+    activeAudioCommands.add(procWrapper);
+    currentAudioCommand = { command: procWrapper, outputPath };
+
+    proc.stderr.on('data', (data: Buffer) => {
+      const line = data.toString();
+      if (onLog) {
+        const lowerLine = line.toLowerCase();
+        if (
+          lowerLine.includes('error') ||
+          lowerLine.includes('failed') ||
+          lowerLine.includes('fatal')
+        ) {
+          onLog(`[WARN] [FFmpeg] ${line}`);
+        }
+      }
+    });
+
+    proc.on('close', (code: number) => {
+      activeAudioCommands.delete(procWrapper);
+      currentAudioCommand = null;
+
+      if (isAudioExtractionCancelled) {
+        if (fs.existsSync(outputPath)) {
+          fs.unlinkSync(outputPath);
+        }
+        reject(new Error('Audio extraction cancelled'));
+        return;
+      }
+
+      if (code === 0) {
+        resolve(outputPath);
+      } else {
+        if (fs.existsSync(outputPath)) {
+          fs.unlinkSync(outputPath);
+        }
+        reject(new Error(`FFmpeg concat extraction failed with code ${code}`));
+      }
+    });
+
+    proc.on('error', (err: Error) => {
+      activeAudioCommands.delete(procWrapper);
+      currentAudioCommand = null;
+
+      if (fs.existsSync(outputPath)) {
+        fs.unlinkSync(outputPath);
+      }
+      reject(new Error(`FFmpeg spawn error: ${err.message}`));
+    });
+  });
+}

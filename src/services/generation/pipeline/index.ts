@@ -169,50 +169,70 @@ export const generateSubtitles = async (
     logger.info('⚠️ [MOCK] Glossary Extraction ENABLED. Using MockFactory.');
     glossaryPromise = MockFactory.getMockGlossary(0);
   } else if (settings.enableAutoGlossary !== false) {
-    const sampleMinutes = settings.glossarySampleMinutes || 'all';
-    glossaryChunks = selectChunksByDuration(chunksParams, sampleMinutes, chunkDuration);
+    // Check if we have a valid audio source (either audioBuffer or videoPath for long video mode)
+    const hasAudioSource = audioBuffer || (isLongVideoMode && longVideoPath);
 
-    logger.info(
-      `Initiating parallel glossary extraction on ${glossaryChunks.length} chunks (Limit: ${sampleMinutes} min)`
-    );
+    if (!hasAudioSource) {
+      logger.info('Skipping glossary extraction: No audio source available');
+      onProgress?.({
+        id: 'glossary',
+        total: 1,
+        status: 'completed',
+        message: i18n.t('services:pipeline.status.extractingGlossaryComplete'),
+      });
+      glossaryPromise = Promise.resolve([]);
+    } else {
+      const sampleMinutes = settings.glossarySampleMinutes || 'all';
+      glossaryChunks = selectChunksByDuration(chunksParams, sampleMinutes, chunkDuration);
 
-    // Use Pro concurrency setting for glossary (Gemini 3 Pro)
-    const glossaryConcurrency = settings.concurrencyPro || 2;
+      logger.info(
+        `Initiating parallel glossary extraction on ${glossaryChunks.length} chunks (Limit: ${sampleMinutes} min)${isLongVideoMode ? ' [Long Video Mode]' : ''}`
+      );
 
-    onProgress?.({
-      id: 'glossary',
-      total: glossaryChunks.length,
-      status: 'processing',
-      message: i18n.t('services:pipeline.status.extractingGlossaryInit', {
+      // Use Pro concurrency setting for glossary (Gemini 3 Pro)
+      // Use lower concurrency for long video mode to avoid FFmpeg overload
+      const glossaryConcurrency = isLongVideoMode
+        ? Math.min(settings.concurrencyPro || 2, 2)
+        : settings.concurrencyPro || 2;
+
+      onProgress?.({
+        id: 'glossary',
         total: glossaryChunks.length,
-      }),
-    });
+        status: 'processing',
+        message: i18n.t('services:pipeline.status.extractingGlossaryInit', {
+          total: glossaryChunks.length,
+        }),
+      });
 
-    glossaryPromise = extractGlossaryFromAudio(
-      ai,
-      audioBuffer,
-      glossaryChunks,
-      settings.genre,
-      glossaryConcurrency,
-      (completed, total) => {
-        onProgress?.({
-          id: 'glossary',
-          total: total,
-          status: completed === total ? 'completed' : 'processing',
-          message:
-            completed === total
-              ? i18n.t('services:pipeline.status.extractingGlossaryComplete')
-              : i18n.t('services:pipeline.status.extractingGlossary', {
-                  current: completed,
-                  total,
-                }),
-        });
-      },
-      signal,
-      trackUsage,
-      (settings.requestTimeout || 600) * 1000, // Custom timeout in milliseconds
-      settings.targetLanguage
-    );
+      glossaryPromise = extractGlossaryFromAudio(
+        ai,
+        audioBuffer,
+        glossaryChunks,
+        settings.genre,
+        glossaryConcurrency,
+        (completed, total) => {
+          onProgress?.({
+            id: 'glossary',
+            total: total,
+            status: completed === total ? 'completed' : 'processing',
+            message:
+              completed === total
+                ? i18n.t('services:pipeline.status.extractingGlossaryComplete')
+                : i18n.t('services:pipeline.status.extractingGlossary', {
+                    current: completed,
+                    total,
+                  }),
+          });
+        },
+        signal,
+        trackUsage,
+        (settings.requestTimeout || 600) * 1000, // Custom timeout in milliseconds
+        settings.targetLanguage,
+        // Long video mode parameters
+        isLongVideoMode,
+        longVideoPath
+      );
+    }
   }
 
   // --- GLOSSARY HANDLING ---
@@ -242,15 +262,28 @@ export const generateSubtitles = async (
     logger.info('⚠️ [MOCK] Speaker Profile Analysis ENABLED. Using MockFactory.');
     speakerProfilePromise = MockFactory.getMockSpeakerProfiles();
   } else if (settings.enableDiarization && settings.enableSpeakerPreAnalysis) {
-    logger.info('Starting parallel speaker profile extraction...');
-    onProgress?.({
-      id: 'diarization',
-      total: 1,
-      status: 'processing',
-      message: i18n.t('services:pipeline.status.analyzingSpeakers'),
-    });
-
-    speakerProfilePromise = SpeakerAnalyzer.analyze(context, audioBuffer, vadSegments);
+    // Long video mode: use fixed-interval sampling with FFmpeg
+    if (isLongVideoMode && longVideoPath) {
+      logger.info('Starting speaker profile extraction (long video mode)...');
+      speakerProfilePromise = SpeakerAnalyzer.analyze(context, null, vadSegments, {
+        isLongVideo: true,
+        videoPath: longVideoPath,
+        totalDuration: duration,
+      });
+    } else if (audioBuffer) {
+      // Standard mode: use intelligent sampling with in-memory buffer
+      speakerProfilePromise = SpeakerAnalyzer.analyze(context, audioBuffer, vadSegments);
+    } else {
+      // No audio source available
+      logger.info('Skipping speaker profile extraction: No audio source available');
+      onProgress?.({
+        id: 'diarization',
+        total: 1,
+        status: 'completed',
+        message: i18n.t('services:pipeline.status.speakersIdentified', { count: 0 }),
+      });
+      speakerProfilePromise = Promise.resolve([]);
+    }
   }
 
   // DEBUG: Save Speaker Profile Artifact

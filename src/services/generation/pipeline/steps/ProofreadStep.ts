@@ -13,8 +13,7 @@ import { type PipelineContext, type SpeakerProfile } from '@/types/pipeline';
 import { type SubtitleItem } from '@/types/subtitle';
 import { type StepResult, type StepName } from '../core/types';
 import { type StageKey } from '../core/BaseStep';
-import { sliceAudioBuffer } from '@/services/audio/processor';
-import { extractSegmentAsBlob } from '@/services/audio/segmentExtractor';
+import { getAudioSegment } from '@/services/audio/audioSourceHelper';
 import { blobToBase64 } from '@/services/audio/converter';
 import { timeToSeconds } from '@/services/subtitle/time';
 import { toBatchPayloads } from '@/services/subtitle/payloads';
@@ -211,25 +210,14 @@ export class ProofreadStep {
         const audioDuration = totalVideoDuration || (audioBuffer?.duration ?? 0);
         const audioEnd = Math.min(audioDuration, endSec + 5);
 
-        let blob: Blob;
-        if (isLongVideo && videoPath) {
-          // Long video mode: extract segment on-demand via FFmpeg
-          logger.debug(
-            `[Batch ${batchLabel}] Using on-demand segment extraction for proofread (long video mode)`
-          );
-          blob = await extractSegmentAsBlob(videoPath, audioOffset, audioEnd - audioOffset);
-        } else if (audioBuffer) {
-          // Standard mode: slice from in-memory AudioBuffer
-          blob = await sliceAudioBuffer(audioBuffer, audioOffset, audioEnd);
-        } else {
-          // No audio source available, skip audio context
-          blob = null as unknown as Blob;
-        }
-
-        if (blob) {
-          base64Audio = await blobToBase64(blob);
-        }
-      } catch (e) {
+        const blob = await getAudioSegment(
+          { audioBuffer, videoPath, isLongVideo },
+          audioOffset,
+          audioEnd,
+          'proofread'
+        );
+        base64Audio = await blobToBase64(blob);
+      } catch {
         logger.warn(`Audio slice failed for ${batchLabel}, falling back to text-only.`);
       }
     }

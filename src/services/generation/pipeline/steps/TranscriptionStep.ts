@@ -5,8 +5,7 @@
 import { BaseStep } from '@/services/generation/pipeline/core/BaseStep';
 import { type StepContext, type StepName } from '@/services/generation/pipeline/core/types';
 import { type SubtitleItem } from '@/types/subtitle';
-import { sliceAudioBuffer } from '@/services/audio/processor';
-import { extractSegmentAsBlob } from '@/services/audio/segmentExtractor';
+import { getAudioSegment } from '@/services/audio/audioSourceHelper';
 import { transcribeAudio } from '@/services/transcribe/openai/transcribe';
 import { cleanNonSpeechAnnotations } from '@/services/subtitle/parser';
 import { ArtifactSaver } from '@/services/generation/debug/artifactSaver';
@@ -52,18 +51,12 @@ export class TranscriptionStep extends BaseStep<TranscriptionInput, SubtitleItem
 
     logger.debug(`[Chunk ${chunk.index}] Starting transcription...`);
 
-    let wavBlob: Blob;
-
-    if (isLongVideo && videoPath) {
-      // Long video mode: extract segment on-demand via FFmpeg
-      logger.debug(`[Chunk ${chunk.index}] Using on-demand segment extraction (long video mode)`);
-      wavBlob = await extractSegmentAsBlob(videoPath, chunk.start, chunk.end - chunk.start);
-    } else if (audioBuffer) {
-      // Standard mode: slice from in-memory AudioBuffer
-      wavBlob = await sliceAudioBuffer(audioBuffer, chunk.start, chunk.end);
-    } else {
-      throw new Error('No audio source available for transcription');
-    }
+    const wavBlob = await getAudioSegment(
+      { audioBuffer, videoPath, isLongVideo },
+      chunk.start,
+      chunk.end,
+      'transcription'
+    );
 
     const rawSegments = await transcribeAudio(
       wavBlob,

@@ -4,6 +4,10 @@ import {
   extractBufferSlice,
   audioBufferToWav,
 } from '@/services/audio/processor';
+import {
+  extractMultipleSegmentsAsBlob,
+  type SegmentRange,
+} from '@/services/audio/segmentExtractor';
 import { logger } from '@/services/utils/logger';
 import { SmartSegmenter } from '@/services/audio/segmenter';
 
@@ -224,7 +228,7 @@ function mergeAdjacentSegments(segments: AudioSample[]): AudioSample[] {
 function selectRepresentativeSamples(
   segments: AudioSample[],
   totalDuration: number,
-  count: number // Kept for signature compatibility, but logic is now specific
+  _count: number // Kept for signature compatibility, but logic is now specific
 ): AudioSample[] {
   const selected: AudioSample[] = [];
 
@@ -334,4 +338,67 @@ function selectRepresentativeSamples(
   }, [] as AudioSample[]);
 
   return uniqueSelected.sort((a, b) => a.startTime - b.startTime);
+}
+
+/**
+ * Fixed-interval audio sampling for long videos (>2h).
+ * Uses on-demand FFmpeg extraction instead of in-memory processing.
+ *
+ * Sampling strategy:
+ * - First 30 seconds (intro)
+ * - Every 30 minutes: 30 seconds
+ * - Last 30 seconds before end (outro)
+ *
+ * @param videoPath Path to the video file
+ * @param totalDuration Total video duration in seconds
+ * @param signal Optional AbortSignal for cancellation
+ * @returns Object containing the merged audio blob and its duration
+ */
+export async function longVideoAudioSampling(
+  videoPath: string,
+  totalDuration: number,
+  signal?: AbortSignal
+): Promise<{ blob: Blob; duration: number }> {
+  logger.info(`Starting long video audio sampling (duration: ${totalDuration}s)`);
+
+  if (signal?.aborted) {
+    throw new Error('Operation cancelled');
+  }
+
+  const sampleDuration = 30; // 30 seconds per sample
+  const intervalMinutes = 30; // Sample every 30 minutes
+  const intervalSeconds = intervalMinutes * 60;
+
+  // Calculate sampling points
+  const segments: SegmentRange[] = [];
+
+  // 1. First segment (intro)
+  segments.push({ startTime: 0, duration: sampleDuration });
+
+  // 2. Middle segments (every 30 minutes)
+  for (let t = intervalSeconds; t < totalDuration - sampleDuration; t += intervalSeconds) {
+    segments.push({ startTime: t, duration: sampleDuration });
+  }
+
+  // 3. Last segment (outro) - ensure it doesn't overlap with previous
+  const outroStart = Math.max(
+    totalDuration - sampleDuration,
+    segments[segments.length - 1].startTime + sampleDuration
+  );
+  if (outroStart + sampleDuration <= totalDuration) {
+    segments.push({ startTime: outroStart, duration: sampleDuration });
+  }
+
+  const totalSampleDuration = segments.reduce((sum, s) => sum + s.duration, 0);
+  logger.info(`Long video sampling: ${segments.length} segments, total ${totalSampleDuration}s`);
+  logger.debug(`Sampling points: ${segments.map((s) => `${s.startTime}s`).join(', ')}`);
+
+  if (signal?.aborted) {
+    throw new Error('Operation cancelled');
+  }
+
+  // Extract all segments in one FFmpeg call
+  const blob = await extractMultipleSegmentsAsBlob(videoPath, segments);
+
+  return { blob, duration: totalSampleDuration };
 }

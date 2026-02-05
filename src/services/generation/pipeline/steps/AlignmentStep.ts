@@ -5,8 +5,7 @@
 import { BaseStep } from '@/services/generation/pipeline/core/BaseStep';
 import { type StepContext, type StepName } from '@/services/generation/pipeline/core/types';
 import { type SubtitleItem } from '@/types/subtitle';
-import { sliceAudioBuffer } from '@/services/audio/processor';
-import { extractSegmentAsBlob } from '@/services/audio/segmentExtractor';
+import { getAudioSegment } from '@/services/audio/audioSourceHelper';
 import { createAligner } from '@/services/alignment';
 import { iso639_1To3, detectLanguage } from '@/services/utils/language';
 import { CONFIDENCE_THRESHOLD, requiresRomanization } from '@/services/alignment/utils';
@@ -105,23 +104,15 @@ export class AlignmentStep extends BaseStep<AlignmentInput, SubtitleItem[]> {
         if (ctx.base64Audio) {
           // Use cached base64 audio from refinement step
           audioDataForTemp = ctx.base64Audio;
-        } else if (isLongVideo && videoPath) {
-          // Long video mode: extract segment on-demand via FFmpeg
-          logger.debug(
-            `[Chunk ${chunk.index}] Using on-demand segment extraction for alignment (long video mode)`
-          );
-          const wavBlob = await extractSegmentAsBlob(
-            videoPath,
-            chunk.start,
-            chunk.end - chunk.start
-          );
-          audioDataForTemp = await wavBlob.arrayBuffer();
-        } else if (audioBuffer) {
-          // Standard mode: slice from in-memory AudioBuffer
-          const wavBlob = await sliceAudioBuffer(audioBuffer, chunk.start, chunk.end);
-          audioDataForTemp = await wavBlob.arrayBuffer();
         } else {
-          throw new Error('No audio source available for alignment');
+          // No cache, extract audio segment
+          const wavBlob = await getAudioSegment(
+            { audioBuffer, videoPath, isLongVideo },
+            chunk.start,
+            chunk.end,
+            'alignment'
+          );
+          audioDataForTemp = await wavBlob.arrayBuffer();
         }
 
         const result = await window.electronAPI.writeTempAudioFile(audioDataForTemp, 'wav');

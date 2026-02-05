@@ -6,7 +6,7 @@ import {
 } from '@/types/glossary';
 import { type TokenUsage } from '@/types/api';
 import { blobToBase64 } from '@/services/audio/converter';
-import { sliceAudioBuffer } from '@/services/audio/processor';
+import { getAudioSegment } from '@/services/audio/audioSourceHelper';
 import { mapInParallel } from '@/services/utils/concurrency';
 import { logger } from '@/services/utils/logger';
 import { GLOSSARY_SCHEMA } from '@/services/llm/schemas';
@@ -20,7 +20,7 @@ import { STEP_MODELS, buildStepConfig } from '@/config';
 
 export const extractGlossaryFromAudio = async (
   ai: GoogleGenAI,
-  audioBuffer: AudioBuffer,
+  audioBuffer: AudioBuffer | null,
   chunks: { index: number; start: number; end: number }[],
   genre: string,
   concurrency: number,
@@ -28,9 +28,14 @@ export const extractGlossaryFromAudio = async (
   signal?: AbortSignal,
   onUsage?: (usage: TokenUsage) => void,
   timeoutMs?: number, // Custom timeout in milliseconds
-  targetLanguage?: string
+  targetLanguage?: string,
+  // Long video mode parameters
+  isLongVideo?: boolean,
+  videoPath?: string
 ): Promise<GlossaryExtractionResult[]> => {
-  logger.info(`Starting glossary extraction on ${chunks.length} chunks...`);
+  logger.info(
+    `Starting glossary extraction on ${chunks.length} chunks...${isLongVideo ? ' (long video mode)' : ''}`
+  );
 
   // Track failed chunks for aggregated retry
   const failedChunks: { index: number; start: number; end: number }[] = [];
@@ -44,7 +49,12 @@ export const extractGlossaryFromAudio = async (
     const { index, start, end } = chunk;
 
     try {
-      const wavBlob = await sliceAudioBuffer(audioBuffer, start, end);
+      const wavBlob = await getAudioSegment(
+        { audioBuffer, videoPath, isLongVideo },
+        start,
+        end,
+        'glossary extraction'
+      );
       const base64Audio = await blobToBase64(wavBlob);
       const prompt = GLOSSARY_EXTRACTION_PROMPT(genre, targetLanguage);
 
@@ -120,7 +130,7 @@ export const extractGlossaryFromAudio = async (
         completed++;
         onProgress?.(completed, chunks.length);
         return result;
-      } catch (e) {
+      } catch {
         // Record failed chunk for aggregated retry
         failedChunks.push(chunk);
         // Do NOT increment completed here, so UI doesn't show 100% yet
