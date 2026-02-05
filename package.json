@@ -13,7 +13,8 @@
     "download:binaries": "node scripts/download-binaries.mjs",
     "download:binaries:force": "node scripts/download-binaries.mjs --force",
     "dev": "vite",
-    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "build": "yarn typecheck && vite build",
     "docs:dev": "cd docs && npx fumadocs-mdx && next dev -p 3001",
     "docs:build": "cd docs && npx fumadocs-mdx && next build",
     "i18n:extract": "node scripts/extract-chinese.mjs",
@@ -23,9 +24,10 @@
     "docs:analytics": "npx tsx scripts/extract-analytics.ts",
     "preview": "vite preview",
     "electron:dev": "concurrently -k \"cross-env BROWSER=none yarn dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron -r ts-node/register electron/main.ts\"",
-    "electron:build": "yarn build:main && vite build && electron-builder",
+    "electron:build": "yarn typecheck && yarn build:main:only && vite build && electron-builder",
     "build:debug": "cross-env DEBUG_BUILD=true yarn electron:build",
-    "build:main": "vite build -c vite.config.electron.ts",
+    "build:main": "yarn typecheck && vite build -c vite.config.electron.ts",
+    "build:main:only": "vite build -c vite.config.electron.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\" \"electron/**/*.ts\"",
     "lint": "eslint src electron --fix",
     "prepare": "husky"
@@ -131,6 +133,9 @@
     ],
     "extraResources": [],
     "mac": {
+      "identity": null,
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
       "target": [
         {
           "target": "zip",
