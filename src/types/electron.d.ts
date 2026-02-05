@@ -2,6 +2,19 @@ import { type AppSettings } from '@/types/settings';
 import { type WorkspaceHistory } from '@/types/history';
 import { type SubtitleSnapshot } from '@/types/subtitle';
 
+export interface PreflightError {
+  code: string;
+  message: string;
+  field?: string;
+  tab?: 'services' | 'enhance';
+  docUrl?: string;
+}
+
+export interface SaveResult {
+  success: boolean;
+  error?: string;
+}
+
 export interface AudioExtractionOptions {
   format?: 'wav' | 'mp3' | 'flac';
   sampleRate?: number;
@@ -11,6 +24,11 @@ export interface AudioExtractionOptions {
 }
 
 export interface AudioSegmentOptions extends AudioExtractionOptions {
+  startTime: number; // Start time in seconds
+  duration: number; // Duration in seconds
+}
+
+export interface AudioSegmentRange {
   startTime: number; // Start time in seconds
   duration: number; // Duration in seconds
 }
@@ -135,6 +153,15 @@ export interface ElectronAPI {
     audioPath?: string;
     error?: string;
   }>;
+  extractMultipleAudioSegments: (
+    videoPath: string,
+    segments: AudioSegmentRange[],
+    options?: AudioExtractionOptions
+  ) => Promise<{
+    success: boolean;
+    audioPath?: string;
+    error?: string;
+  }>;
   cancelAudioExtraction: () => Promise<boolean>;
   readExtractedAudio: (audioPath: string) => Promise<ArrayBuffer>;
   cleanupTempAudio: (audioPath: string) => Promise<void>;
@@ -149,7 +176,7 @@ export interface ElectronAPI {
   // Storage
   storage: {
     getSettings: () => Promise<Partial<AppSettings>>;
-    setSettings: (settings: Partial<AppSettings>) => Promise<void>;
+    setSettings: (settings: Partial<AppSettings>) => Promise<SaveResult | void>;
   };
 
   // Video Preview Cache
@@ -226,6 +253,7 @@ export interface ElectronAPI {
         duration: number;
         uploader: string;
         platform: 'youtube' | 'bilibili';
+        language?: string;
         formats: {
           formatId: string;
           quality: string;
@@ -244,7 +272,13 @@ export interface ElectronAPI {
       };
     }>;
     cancelParse: (url: string) => Promise<{ success: boolean }>;
-    start: (options: { url: string; formatId: string; outputDir: string }) => Promise<{
+    start: (options: {
+      url: string;
+      formatId: string;
+      outputDir: string;
+      taskId?: string;
+      taskDescription?: string;
+    }) => Promise<{
       success: boolean;
       outputPath?: string;
       error?: string;
@@ -255,7 +289,7 @@ export interface ElectronAPI {
         retryable: boolean;
       };
     }>;
-    cancel: () => Promise<{ success: boolean }>;
+    cancel: (taskId?: string) => Promise<{ success: boolean }>;
     selectDir: () => Promise<{ success: boolean; path?: string; canceled?: boolean }>;
     getDefaultDir: () => Promise<{ success: boolean; path: string }>;
     downloadThumbnail: (options: {

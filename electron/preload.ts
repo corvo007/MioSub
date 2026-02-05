@@ -39,6 +39,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('extract-audio-ffmpeg', videoPath, options),
   extractAudioSegment: (videoPath: string, options: any) =>
     ipcRenderer.invoke('extract-audio-segment', videoPath, options),
+  extractMultipleAudioSegments: (videoPath: string, segments: any[], options?: any) =>
+    ipcRenderer.invoke('extract-multiple-audio-segments', videoPath, segments, options),
   cancelAudioExtraction: () => ipcRenderer.invoke('cancel-audio-extraction'),
   readExtractedAudio: (audioPath: string) => ipcRenderer.invoke('read-extracted-audio', audioPath),
   cleanupTempAudio: (audioPath: string) => ipcRenderer.invoke('cleanup-temp-audio', audioPath),
@@ -82,8 +84,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Preflight Check API
   preflight: {
-    check: (settings: ElectronAPI['preflight']['check'] extends (arg: infer A) => any ? A : any) =>
-      ipcRenderer.invoke('preflight:check', settings),
+    check: (settings: {
+      geminiKey?: string;
+      openaiKey?: string;
+      useLocalWhisper?: boolean;
+      whisperModelPath?: string;
+      localWhisperBinaryPath?: string;
+      alignmentMode?: 'ctc' | 'none';
+      alignmentModelPath?: string;
+      alignerPath?: string;
+    }) => ipcRenderer.invoke('preflight:check', settings),
   },
 
   // Open external link
@@ -93,9 +103,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   download: {
     parse: (url: string) => ipcRenderer.invoke('download:parse', url),
     cancelParse: (url: string) => ipcRenderer.invoke('download:cancel-parse', url),
-    start: (options: { url: string; formatId: string; outputDir: string }) =>
-      ipcRenderer.invoke('download:start', options),
-    cancel: () => ipcRenderer.invoke('download:cancel'),
+    start: (options: {
+      url: string;
+      formatId: string;
+      outputDir: string;
+      taskId?: string;
+      taskDescription?: string;
+    }) => ipcRenderer.invoke('download:start', options),
+    cancel: (taskId?: string) => ipcRenderer.invoke('download:cancel', taskId),
     selectDir: () => ipcRenderer.invoke('download:select-dir'),
     getDefaultDir: () => ipcRenderer.invoke('download:default-dir'),
     downloadThumbnail: (options: {

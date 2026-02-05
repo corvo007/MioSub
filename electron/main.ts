@@ -61,6 +61,7 @@ import { getLogDir } from './utils/paths.ts';
 import {
   extractAudioFromVideo,
   extractAudioSegment,
+  extractMultipleAudioSegments,
   readAudioBuffer,
   cleanupTempAudio,
   getAudioInfo,
@@ -70,6 +71,7 @@ import type {
   AudioExtractionOptions,
   AudioExtractionProgress,
   AudioSegmentOptions,
+  AudioSegmentRange,
 } from './services/ffmpegAudioExtractor.ts';
 import { storageService } from './services/storage.ts';
 import { Readable } from 'stream';
@@ -250,8 +252,9 @@ ipcMain.handle('task:unregister', (_event, taskId: string) => {
 ipcMain.handle('app:forceClose', () => {
   console.log('[Main] Force close requested by user');
   forceClose = true;
-  if (mainWindow) {
-    mainWindow.close();
+  const win = BrowserWindow.getFocusedWindow() || BrowserWindow.getAllWindows()[0];
+  if (win) {
+    win.close();
   }
   return { success: true };
 });
@@ -913,6 +916,44 @@ ipcMain.handle(
   }
 );
 
+// IPC Handler: Extract Multiple Audio Segments (for speaker analysis in long video mode)
+ipcMain.handle(
+  'extract-multiple-audio-segments',
+  async (
+    _event,
+    videoPath: string,
+    segments: AudioSegmentRange[],
+    options: AudioExtractionOptions
+  ) => {
+    try {
+      const audioPath = await extractMultipleAudioSegments(
+        videoPath,
+        segments,
+        options,
+        (logMessage: string) => {
+          // Capture FFmpeg logs
+          if (logMessage.startsWith('[DEBUG]')) {
+            console.log(`[DEBUG] [FFmpeg MultiSegment] ${logMessage.replace('[DEBUG] ', '')}`);
+          } else {
+            console.log(`[DEBUG] [FFmpeg MultiSegment] ${logMessage}`);
+          }
+        }
+      );
+      return { success: true, audioPath };
+    } catch (error: any) {
+      console.error('[Main] Failed to extract multiple audio segments:', error);
+      if (
+        !error.message?.includes('cancelled') &&
+        !error.message?.includes('SIGKILL') &&
+        !error.message?.includes('killed')
+      ) {
+        Sentry.captureException(error, { tags: { action: 'extract-multiple-audio-segments' } });
+      }
+      return { success: false, error: error.message };
+    }
+  }
+);
+
 // IPC Handler: Storage
 ipcMain.handle('storage-get', async () => {
   try {
@@ -1355,8 +1396,30 @@ ipcMain.handle(
   'download:start',
   async (
     event,
-    { url, formatId, outputDir }: { url: string; formatId: string; outputDir: string }
+    {
+      url,
+      formatId,
+      outputDir,
+      taskId,
+      taskDescription,
+    }: {
+      url: string;
+      formatId: string;
+      outputDir: string;
+      taskId?: string;
+      taskDescription?: string;
+    }
   ) => {
+    // Register task in main process if taskId provided
+    if (taskId && taskDescription) {
+      console.log('[Main] Task registered:', taskId, 'download', taskDescription);
+      activeTasks.set(taskId, {
+        type: 'download',
+        description: taskDescription,
+        startTime: Date.now(),
+      });
+    }
+
     try {
       console.log(`[DEBUG] [Main] Starting download: ${url}, format: ${formatId}`);
 
@@ -1371,7 +1434,7 @@ ipcMain.handle(
           ytdlp_version: systemInfo?.versions.ytdlp || 'unknown',
           qjs_version: systemInfo?.versions.qjs || 'unknown',
         });
-      } catch (e) {
+      } catch {
         /* ignore URL parse err */
       }
 
@@ -1384,9 +1447,21 @@ ipcMain.handle(
       // Analytics: Success
       void analyticsService.track('download_completed', { success: true });
 
+      // Unregister task in main process
+      if (taskId) {
+        console.log('[Main] Task unregistered:', taskId);
+        activeTasks.delete(taskId);
+      }
+
       return { success: true, outputPath };
     } catch (error: any) {
       console.error('[Main] Download failed:', error);
+
+      // Unregister task in main process on error
+      if (taskId) {
+        console.log('[Main] Task unregistered:', taskId);
+        activeTasks.delete(taskId);
+      }
 
       // Analytics: Fail
       void analyticsService.track('download_failed', { error: error.message });
@@ -1402,9 +1477,16 @@ ipcMain.handle(
 );
 
 // IPC Handler: Video Download - Cancel
-ipcMain.handle('download:cancel', async () => {
+ipcMain.handle('download:cancel', async (_event, taskId?: string) => {
   console.log('[DEBUG] [Main] Cancelling download');
   ytDlpService.abort();
+
+  // Unregister task in main process on cancel
+  if (taskId) {
+    console.log('[Main] Task unregistered:', taskId);
+    activeTasks.delete(taskId);
+  }
+
   return { success: true };
 });
 
