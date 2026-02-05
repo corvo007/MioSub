@@ -32,7 +32,7 @@ export async function extractAudioWithFFmpeg(
 
   // Set up abort handler
   const abortHandler = () => {
-    window.electronAPI.cancelAudioExtraction();
+    void window.electronAPI.cancelAudioExtraction();
   };
   signal?.addEventListener('abort', abortHandler);
 
@@ -64,7 +64,7 @@ export async function extractAudioWithFFmpeg(
     let ffmpegPath: string | undefined;
     try {
       const settings = await window.electronAPI.storage.getSettings();
-      ffmpegPath = await resolveBinaryPath(settings?.debug?.ffmpegPath, 'ffmpeg.exe', 'FFmpeg');
+      ffmpegPath = await resolveBinaryPath(settings?.debug?.ffmpegPath, 'ffmpeg', 'FFmpeg');
       logger.debug('Resolved FFmpeg path:', ffmpegPath);
     } catch (e: any) {
       logger.warn('Failed to resolve FFmpeg path, relying on default', {

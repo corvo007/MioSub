@@ -3,6 +3,10 @@ import { isElectron } from '@/services/utils/env';
 import { smartDecodeAudio as extractWithFFmpeg } from './ffmpegExtractor';
 import i18n from '@/i18n';
 
+// 500MB threshold - files larger than this should not use Web Audio API fallback
+// Web Audio API loads entire file into memory, causing OOM for large files
+const WEB_AUDIO_MAX_FILE_SIZE = 500 * 1024 * 1024;
+
 /**
  * Decode audio file to AudioBuffer
  */
@@ -37,6 +41,21 @@ export const decodeAudio = async (
       // Re-throw abort errors without fallback
       if (err.name === 'AbortError') {
         throw err;
+      }
+      // For large files, don't fall back to Web Audio API - it will cause OOM
+      // Web Audio API loads entire file into memory via decodeAudioData()
+      if (file.size > WEB_AUDIO_MAX_FILE_SIZE) {
+        logger.error('FFmpeg failed for large file, not falling back to Web Audio API', {
+          error: err.message,
+          fileSize: file.size,
+          threshold: WEB_AUDIO_MAX_FILE_SIZE,
+        });
+        throw new Error(
+          i18n.t('services:audio.errors.ffmpegRequiredForLargeFile', {
+            defaultValue:
+              'FFmpeg is required for large files. Please ensure FFmpeg is properly installed.',
+          })
+        );
       }
       logger.warn('FFmpeg failed, using Web Audio API fallback:', err.message);
       // 继续使用下面的 Web Audio API 降级方案
