@@ -5,6 +5,29 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.9] - 2026-02-05
+
+### Features
+
+- **Binary Updates**: Added in-app update support for aligner and yt-dlp binaries. The header now shows update notifications when new versions are available, with one-click download and installation.
+- **Progress Smoothing**: Added smooth progress bar animations with exponential easing interpolation for download and video preview operations.
+
+### Fixes
+
+- **Long Video Mode**: Comprehensive fix for videos longer than 2 hours. Speaker analysis and glossary extraction now work correctly using fixed-interval FFmpeg sampling instead of accessing null audio buffer.
+- **YouTube Download**: Fixed issue where AI-dubbed audio tracks were downloaded instead of original audio. Now prefers original audio track using `format_note*=original` selector.
+- **macOS**: Added ad-hoc code signing for bundled binaries (ffmpeg, whisper, aligner, yt-dlp), fixing installation issues on Apple Silicon Macs.
+- **Electron**: Fixed logger stack overflow caused by Sentry instrumentation triggering infinite recursion when accessing Error.stack.
+- **Electron**: Fixed "Object has been destroyed" crash in update service by adding isDestroyed() checks before sending IPC messages.
+- **Electron**: Fixed mainWindow undefined error in forceClose handler by using BrowserWindow.getFocusedWindow() fallback.
+- **Electron**: Fixed package.json path resolution in packaged app by using app.getAppPath() instead of __dirname.
+- **Video Preview**: Optimized audio streaming to prevent Chromium OOM crashes by adding 1-second fragment duration and forcing 48kHz sample rate.
+- **Audio Decoder**: Added 500MB threshold to prevent Web Audio API fallback for large files that would cause OOM.
+
+### Chore
+
+- Added typecheck script that runs before builds to catch type errors early.
+
 ## [3.0.8] - 2026-02-04
 
 ### Features

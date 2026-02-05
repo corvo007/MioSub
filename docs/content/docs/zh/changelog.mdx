@@ -5,6 +5,29 @@ description: "MioSub 的所有重要更新记录"
 
 本文件记录了项目的所有重要更改。
 
+## [3.0.9] - 2026-02-05
+
+### 新功能
+
+- **二进制更新**：新增对齐器和 yt-dlp 的应用内更新支持。当有新版本可用时，标题栏会显示更新通知，支持一键下载安装。
+- **进度平滑**：为下载和视频预览操作添加平滑的进度条动画，使用指数缓动插值。
+
+### 修复
+
+- **长视频模式**：全面修复超过 2 小时视频的处理问题。说话人分析和术语表提取现在使用固定间隔的 FFmpeg 采样，而非访问空的音频缓冲区。
+- **YouTube 下载**：修复下载 AI 配音音轨而非原始音轨的问题。现在使用 `format_note*=original` 选择器优先选择原始音轨。
+- **macOS**：为打包的二进制文件（ffmpeg、whisper、aligner、yt-dlp）添加临时代码签名，修复 Apple Silicon Mac 上的安装问题。
+- **Electron**：修复 Sentry 检测触发 Error.stack 访问导致的日志记录器栈溢出。
+- **Electron**：修复更新服务中的"Object has been destroyed"崩溃，在发送 IPC 消息前添加 isDestroyed() 检查。
+- **Electron**：修复 forceClose 处理器中的 mainWindow undefined 错误，使用 BrowserWindow.getFocusedWindow() 作为回退。
+- **Electron**：修复打包应用中 package.json 路径解析问题，使用 app.getAppPath() 替代 __dirname。
+- **视频预览**：优化音频流以防止 Chromium OOM 崩溃，添加 1 秒片段时长并强制使用 48kHz 采样率。
+- **音频解码器**：添加 500MB 阈值，防止大文件回退到会导致 OOM 的 Web Audio API。
+
+### 杂项
+
+- 添加 typecheck 脚本，在构建前运行以尽早捕获类型错误。
+
 ## [3.0.8] - 2026-02-04
 
 ### 新功能
