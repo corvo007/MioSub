@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { logger, type LogEntry } from '@/services/utils/logger';
 import { useAppStore } from '@/store/useAppStore';
 
@@ -34,11 +34,7 @@ export function useLogs() {
   }, [addToast]);
 
   // 2. Backend Logs Subscription
-  const initRef = React.useRef(false);
   useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
-
     let unsubscribeBackend: (() => void) | undefined;
 
     const initBackendLogs = async () => {

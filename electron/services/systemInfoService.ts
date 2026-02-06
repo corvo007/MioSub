@@ -99,7 +99,7 @@ class SystemInfoService {
 
     // Read settings
     const settings = await storageService.readSettings();
-    const customWhisperPath = settings?.debug?.whisperPath;
+    const customWhisperPath = settings?.localWhisperBinaryPath;
     const customAlignerPath = settings?.enhance?.alignment?.alignerPath;
 
     // Resolve ACTUAL binary paths to detect auto-discovery or in-place updates
@@ -137,11 +137,12 @@ class SystemInfoService {
       }
     }
 
-    // Create hash
+    // Create hash (include custom paths so path changes invalidate cache)
     const hash = [
       `v:${pkg.version}`,
       `c:${this.cachedCommitHash}`,
       `w:${whisperHash}`,
+      `wp:${customWhisperPath || 'default'}`,
       `ff:${ffmpegHash}`,
       `fp:${ffprobeHash}`,
       `yd:${ytDlpHash}`,
