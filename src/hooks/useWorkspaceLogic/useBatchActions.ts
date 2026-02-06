@@ -145,6 +145,9 @@ export function useBatchActions({
       try {
         let refined: SubtitleItem[];
 
+        // Get video path for long video support
+        const videoPath = file ? window.electronAPI?.getFilePath?.(file) : undefined;
+
         if (mode === 'regenerate') {
           // Use the new regenerate operation for full pipeline re-run
           // Note: speakerProfiles is undefined because regenerate extracts fresh profiles
@@ -159,12 +162,12 @@ export function useBatchActions({
             undefined,
             settings.glossary,
             handleProgress,
-            signal
+            signal,
+            videoPath,
+            duration || undefined
           );
         } else {
           // Use existing proofread operation
-          // Get video path for long video support
-          const videoPath = file ? window.electronAPI?.getFilePath?.(file) : undefined;
           refined = await runProofreadOperation(
             file,
             subtitles,

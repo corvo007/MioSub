@@ -10,6 +10,7 @@ import { autoConfirmGlossaryTerms } from '@/services/glossary/autoConfirm';
 import { generateSubtitles } from '@/services/generation/pipeline';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
 import { decodeAudioWithRetry } from '@/services/audio/decoder';
+import { isLongVideo } from '@/services/audio/segmentExtractor';
 import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 import { ENV } from '@/config';
 import * as Sentry from '@sentry/electron/renderer';
@@ -234,13 +235,36 @@ export function useGeneration({
       let audioSource: AudioBuffer | File;
       const isMockMode = !!settings.debug?.mockStage;
 
-      if (isMockMode) {
+      // Check for long video mode BEFORE decoding to avoid OOM
+      // Long videos (>2h) should skip eager decoding and let preprocessor handle on-demand extraction
+      let isLongVideoMode = false;
+      const videoPath = (file as any).path || window.electronAPI?.getFilePath?.(file);
+
+      if (!isMockMode && videoPath && window.electronAPI?.getAudioInfo) {
+        try {
+          const infoResult = await window.electronAPI.getAudioInfo(videoPath);
+          if (infoResult.success && infoResult.info) {
+            isLongVideoMode = isLongVideo(infoResult.info.duration);
+            if (isLongVideoMode) {
+              logger.info(
+                `Long video detected (${infoResult.info.duration}s). Skipping eager decode, using on-demand extraction.`
+              );
+            }
+          }
+        } catch (e) {
+          logger.warn('Failed to check video duration for long video mode', e);
+        }
+      }
+
+      if (isMockMode || isLongVideoMode) {
         audioSource = file;
-        logger.info(
-          'Debug/Mock mode detected: Skipping eager audio decoding in workspace. Delegating to pipeline.'
-        );
+        if (isMockMode) {
+          logger.info(
+            'Debug/Mock mode detected: Skipping eager audio decoding in workspace. Delegating to pipeline.'
+          );
+        }
       } else {
-        // Normal mode: Decode eagerley to support caching and retry without re-decoding
+        // Normal mode: Decode eagerly to support caching and retry without re-decoding
         try {
           if (audioCacheRef.current && audioCacheRef.current.file === file) {
             audioSource = audioCacheRef.current.buffer;

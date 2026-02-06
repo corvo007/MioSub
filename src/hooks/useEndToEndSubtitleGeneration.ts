@@ -9,6 +9,7 @@ import { generateSubtitles } from '@/services/generation/pipeline';
 import { type ChunkAnalytics } from '@/types/api';
 import { generateAssContent, generateSrtContent } from '@/services/subtitle/generator';
 import { decodeAudioWithRetry } from '@/services/audio/decoder';
+import { isLongVideo, LONG_VIDEO_THRESHOLD } from '@/services/audio/segmentExtractor';
 import { autoConfirmGlossaryTerms } from '@/services/glossary/autoConfirm';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
 import { logger } from '@/services/utils/logger';
@@ -164,24 +165,61 @@ export function useEndToEndSubtitleGeneration({
           return { success: false, error: t('errors.fileCorrupt'), errorCode: 'CORRUPT_FILE' };
         }
 
-        // Decode audio with error handling
-        let audioBuffer: AudioBuffer;
-        const audioFileName = audioFile.name; // Capture name before clearing file
-        try {
-          audioBuffer = await decodeAudioWithRetry(audioFile);
-          logger.info('[EndToEnd] Audio decoded', { duration: audioBuffer.duration });
+        // Check video duration BEFORE decoding to enable long video mode
+        // This prevents OOM when decoding very long videos (>2h)
+        let videoDuration: number | null = null;
+        let isLongVideoMode = false;
+        const audioFileName = audioFile.name;
 
-          // Release reference to the original file buffer to allow GC to reclaim memory
-          // The audioFile (~500MB+ for large files) is no longer needed after decoding
-          (audioFile as any) = null;
-        } catch (decodeError: any) {
-          logger.error('[EndToEnd] Failed to decode audio', decodeError);
-          return {
-            success: false,
-            error: t('errors.decodeError', { error: decodeError.message }),
-            errorCode: 'DECODE_ERROR',
-          };
+        if (window.electronAPI?.getAudioInfo) {
+          try {
+            const infoResult = await window.electronAPI.getAudioInfo(audioPath);
+            if (infoResult.success && infoResult.info) {
+              videoDuration = infoResult.info.duration;
+              isLongVideoMode = isLongVideo(videoDuration);
+
+              if (isLongVideoMode) {
+                logger.info('[EndToEnd] Long video detected, using on-demand extraction mode', {
+                  duration: videoDuration,
+                  threshold: LONG_VIDEO_THRESHOLD,
+                });
+              }
+            }
+          } catch (e) {
+            logger.warn('[EndToEnd] Failed to get audio info for long video detection', e);
+          }
         }
+
+        // Decode audio with error handling (skip for long videos)
+        let audioBuffer: AudioBuffer | null = null;
+        let audioSource: File | AudioBuffer;
+
+        if (isLongVideoMode && videoDuration !== null) {
+          // Long video mode: skip decoding, use File directly
+          // preprocessor.ts will handle on-demand extraction
+          logger.info('[EndToEnd] Skipping audio decode for long video mode');
+          audioSource = audioFile;
+        } else {
+          // Standard mode: decode audio into memory
+          try {
+            audioBuffer = await decodeAudioWithRetry(audioFile);
+            audioSource = audioBuffer;
+            logger.info('[EndToEnd] Audio decoded', { duration: audioBuffer.duration });
+
+            // Release reference to the original file buffer to allow GC to reclaim memory
+            (audioFile as any) = null;
+          } catch (decodeError: any) {
+            logger.error('[EndToEnd] Failed to decode audio', decodeError);
+            return {
+              success: false,
+              error: t('errors.decodeError', { error: decodeError.message }),
+              errorCode: 'DECODE_ERROR',
+            };
+          }
+        }
+
+        // Get duration from either audioBuffer or videoDuration
+        const duration = audioBuffer?.duration ?? videoDuration ?? 0;
 
         // Analytics: End-to-End Generation Started
         // We do this after decoding to get accurate duration
@@ -191,7 +229,8 @@ export function useEndToEndSubtitleGeneration({
             {
               // File info
               file_ext: audioPath.split('.').pop() || 'unknown',
-              video_duration: audioBuffer.duration,
+              video_duration: duration,
+              is_long_video_mode: isLongVideoMode,
 
               // Core settings
               genre: currentSettings.genre,
@@ -263,19 +302,9 @@ export function useEndToEndSubtitleGeneration({
         }
 
         // Guard: Very short audio (less than 1 second)
-        if (audioBuffer.duration < 1) {
-          logger.error('[EndToEnd] Audio too short', { duration: audioBuffer.duration });
+        if (duration < 1) {
+          logger.error('[EndToEnd] Audio too short', { duration });
           return { success: false, error: t('errors.audioTooShort'), errorCode: 'AUDIO_TOO_SHORT' };
-        }
-
-        // Guard: Very long audio (more than 6 hours)
-        if (audioBuffer.duration > 6 * 60 * 60) {
-          logger.error('[EndToEnd] Audio too long', { duration: audioBuffer.duration });
-          return {
-            success: false,
-            error: t('errors.audioTooLong'),
-            errorCode: 'AUDIO_TOO_LONG',
-          };
         }
 
         // Check abort before expensive operation
@@ -350,8 +379,8 @@ export function useEndToEndSubtitleGeneration({
 
         // Generate subtitles
         const { subtitles, speakerProfiles, chunkAnalytics } = await generateSubtitles(
-          audioBuffer,
-          audioBuffer.duration,
+          audioSource,
+          duration,
           mergedSettings,
           sendProgress,
           undefined, // No intermediate result callback needed
@@ -374,7 +403,9 @@ export function useEndToEndSubtitleGeneration({
           },
           signal,
           // Video info for artifact metadata
-          { filename: audioFileName, duration: audioBuffer.duration }
+          { filename: audioFileName, duration },
+          [], // existingProfiles
+          isLongVideoMode ? audioPath : undefined // videoPath for long video mode
         );
 
         // Capture chunk analytics from result (should be same as accumulated but sorted)

@@ -13,7 +13,9 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { app } from 'electron';
+import * as Sentry from '@sentry/electron/main';
 import { VideoCompressorService } from './videoCompressor.ts';
+import { analyticsService } from './analyticsService.ts';
 
 // Supported formats that don't need transcoding
 const SUPPORTED_FORMATS = ['mp4', 'webm', 'm4v'];
@@ -325,11 +327,25 @@ export async function transcodeForPreview(
     throw new Error(`Input file does not exist: ${filePath}`);
   }
 
+  // Get file stats for analytics
+  const fileStats = fs.statSync(filePath);
+  const fileSizeMb = fileStats.size / (1024 * 1024);
+  const fileExtension = path.extname(filePath).toLowerCase().slice(1);
+
   // Check cache first
   const cachedPath = getCachedPreviewPath(filePath);
   if (cachedPath) {
     log(`Cache hit: ${cachedPath}`);
     const duration = await getVideoDuration(filePath);
+
+    // Track cache hit
+    void analyticsService.track('preview_transcode_started', {
+      file_extension: fileExtension,
+      file_size_mb: Math.round(fileSizeMb * 10) / 10,
+      duration_seconds: Math.round(duration),
+      is_cache_hit: true,
+    });
+
     // Notify start immediately since we have the file
     onStart?.(cachedPath, duration);
     onProgress?.(100, duration);
@@ -367,6 +383,18 @@ export async function transcodeForPreview(
   });
 
   log(`Has video stream: ${hasVideoStream}`);
+
+  // Track transcode start
+  const transcodeStartTime = Date.now();
+  void analyticsService.track('preview_transcode_started', {
+    file_extension: fileExtension,
+    file_size_mb: Math.round(fileSizeMb * 10) / 10,
+    duration_seconds: Math.round(duration),
+    encoder,
+    is_gpu_encoder: isGpuEncoder,
+    has_video_stream: hasVideoStream,
+    is_cache_hit: false,
+  });
 
   return new Promise((resolve, reject) => {
     let command = ffmpeg(filePath).output(outputPath);
@@ -506,6 +534,28 @@ export async function transcodeForPreview(
       .on('end', () => {
         activeCommands.delete(filePath);
         log(`Transcode completed: ${outputPath}`);
+
+        // Track transcode completion
+        const transcodeDurationMs = Date.now() - transcodeStartTime;
+        const outputStats = fs.existsSync(outputPath) ? fs.statSync(outputPath) : null;
+        const outputSizeMb = outputStats ? outputStats.size / (1024 * 1024) : 0;
+
+        void analyticsService.track('preview_transcode_completed', {
+          file_extension: fileExtension,
+          file_size_mb: Math.round(fileSizeMb * 10) / 10,
+          duration_seconds: Math.round(duration),
+          encoder,
+          is_gpu_encoder: isGpuEncoder,
+          has_video_stream: hasVideoStream,
+          transcode_duration_ms: transcodeDurationMs,
+          speed_ratio:
+            duration > 0 ? Math.round((duration / (transcodeDurationMs / 1000)) * 10) / 10 : 0,
+          output_size_mb: Math.round(outputSizeMb * 10) / 10,
+          compression_ratio:
+            fileSizeMb > 0 ? Math.round((outputSizeMb / fileSizeMb) * 100) / 100 : 0,
+          used_cpu_fallback: false,
+        });
+
         resolve({ outputPath, duration });
       })
       .on('error', (err, stdout, stderr) => {
@@ -525,10 +575,48 @@ export async function transcodeForPreview(
         // If GPU encoding failed, try CPU fallback
         if (isGpuEncoder) {
           log('GPU encoding failed, falling back to CPU (libx264)...');
-          transcodeWithCpu(filePath, outputPath, duration, onProgress, onStart, log)
+          transcodeWithCpu(
+            filePath,
+            outputPath,
+            duration,
+            onProgress,
+            onStart,
+            log,
+            transcodeStartTime,
+            fileExtension,
+            fileSizeMb,
+            hasVideoStream
+          )
             .then((result) => resolve(result))
             .catch((cpuErr) => reject(cpuErr));
         } else {
+          // Track transcode failure (no CPU fallback available)
+          const transcodeDurationMs = Date.now() - transcodeStartTime;
+          void analyticsService.track('preview_transcode_failed', {
+            file_extension: fileExtension,
+            file_size_mb: Math.round(fileSizeMb * 10) / 10,
+            duration_seconds: Math.round(duration),
+            encoder,
+            is_gpu_encoder: isGpuEncoder,
+            has_video_stream: hasVideoStream,
+            transcode_duration_ms: transcodeDurationMs,
+            error_message: err.message,
+            error_stage: 'gpu_encode',
+            failed_after_cpu_fallback: false,
+          });
+
+          // Report to Sentry
+          Sentry.captureException(err, {
+            tags: { action: 'preview-transcode' },
+            extra: {
+              file_extension: fileExtension,
+              file_size_mb: fileSizeMb,
+              duration_seconds: duration,
+              encoder,
+              stderr: stderr?.slice(-2000), // Last 2000 chars of stderr
+            },
+          });
+
           reject(err);
         }
       })
@@ -548,7 +636,11 @@ async function transcodeWithCpu(
   duration: number,
   onProgress?: (percent: number, transcodedDuration?: number) => void,
   onStart?: (outputPath: string, duration: number) => void,
-  log?: (message: string) => void
+  log?: (message: string) => void,
+  transcodeStartTime?: number,
+  fileExtension?: string,
+  fileSizeMb?: number,
+  hasVideoStream?: boolean
 ): Promise<TranscodeForPreviewResult> {
   return new Promise((resolve, reject) => {
     const command = ffmpeg(inputPath)
@@ -608,6 +700,30 @@ async function transcodeWithCpu(
       .on('end', () => {
         activeCommands.delete(inputPath);
         log?.('CPU transcode completed');
+
+        // Track CPU fallback completion
+        if (transcodeStartTime && fileExtension && fileSizeMb !== undefined) {
+          const transcodeDurationMs = Date.now() - transcodeStartTime;
+          const outputStats = fs.existsSync(outputPath) ? fs.statSync(outputPath) : null;
+          const outputSizeMb = outputStats ? outputStats.size / (1024 * 1024) : 0;
+
+          void analyticsService.track('preview_transcode_completed', {
+            file_extension: fileExtension,
+            file_size_mb: Math.round(fileSizeMb * 10) / 10,
+            duration_seconds: Math.round(duration),
+            encoder: 'libx264',
+            is_gpu_encoder: false,
+            has_video_stream: hasVideoStream ?? true,
+            transcode_duration_ms: transcodeDurationMs,
+            speed_ratio:
+              duration > 0 ? Math.round((duration / (transcodeDurationMs / 1000)) * 10) / 10 : 0,
+            output_size_mb: Math.round(outputSizeMb * 10) / 10,
+            compression_ratio:
+              fileSizeMb > 0 ? Math.round((outputSizeMb / fileSizeMb) * 100) / 100 : 0,
+            used_cpu_fallback: true,
+          });
+        }
+
         resolve({ outputPath, duration });
       })
       .on('error', (err) => {
@@ -622,6 +738,36 @@ async function transcodeWithCpu(
         }
 
         log?.(`CPU transcode error: ${err.message}`);
+
+        // Track CPU fallback failure
+        if (transcodeStartTime && fileExtension && fileSizeMb !== undefined) {
+          const transcodeDurationMs = Date.now() - transcodeStartTime;
+
+          void analyticsService.track('preview_transcode_failed', {
+            file_extension: fileExtension,
+            file_size_mb: Math.round(fileSizeMb * 10) / 10,
+            duration_seconds: Math.round(duration),
+            encoder: 'libx264',
+            is_gpu_encoder: false,
+            has_video_stream: hasVideoStream ?? true,
+            transcode_duration_ms: transcodeDurationMs,
+            error_message: err.message,
+            error_stage: 'cpu_fallback',
+            failed_after_cpu_fallback: true,
+          });
+
+          // Report to Sentry
+          Sentry.captureException(err, {
+            tags: { action: 'preview-transcode-cpu-fallback' },
+            extra: {
+              file_extension: fileExtension,
+              file_size_mb: fileSizeMb,
+              duration_seconds: duration,
+              encoder: 'libx264',
+            },
+          });
+        }
+
         reject(err);
       })
       .run();

@@ -22,6 +22,7 @@ import {
 } from '@/services/generation/pipeline/pipelineCore';
 import { mapInParallel } from '@/services/utils/concurrency';
 import { decodeAudio } from '@/services/audio/decoder';
+import { isLongVideo, LONG_VIDEO_THRESHOLD } from '@/services/audio/segmentExtractor';
 import { timeToSeconds, formatTime } from '@/services/subtitle/time';
 import { logger } from '@/services/utils/logger';
 import { GlossaryState } from '@/services/generation/extractors/glossaryState';
@@ -153,7 +154,9 @@ export async function runRegenerateOperation(
   speakerProfiles?: SpeakerProfile[],
   glossary?: GlossaryItem[],
   onProgress?: (update: ChunkStatus) => void,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  videoPath?: string, // Optional video path for long video on-demand extraction
+  totalVideoDuration?: number // Optional total video duration (for long video detection)
 ): Promise<SubtitleItem[]> {
   const batchSize = settings.proofreadBatchSize || 20;
 
@@ -173,28 +176,47 @@ export async function runRegenerateOperation(
   const chunks = createChunksForRange(timeRange, chunkDuration);
   logger.info(`[Regenerate] Created ${chunks.length} chunks`);
 
-  // Decode audio
-  onProgress?.({
-    id: 'init',
-    total: chunks.length,
-    status: 'processing',
-    message: i18n.t('services:pipeline.status.loadingAudio'),
-  });
+  // Check for long video mode
+  const isLongVideoMode = !!(videoPath && totalVideoDuration && isLongVideo(totalVideoDuration));
 
-  let audioBuffer: AudioBuffer;
-  try {
-    audioBuffer = await decodeAudio(file);
+  // Decode audio (skip for long videos)
+  let audioBuffer: AudioBuffer | null = null;
 
-    // Update init status to completed
+  if (isLongVideoMode) {
+    // Long video mode: skip audio decoding, use on-demand extraction
+    logger.info(
+      `[Regenerate] Long video detected (${formatTime(totalVideoDuration!)} > ${formatTime(LONG_VIDEO_THRESHOLD)}). Using on-demand segment extraction.`
+    );
     onProgress?.({
       id: 'init',
       total: chunks.length,
       status: 'completed',
-      message: i18n.t('services:pipeline.status.audioLoaded'),
+      message: i18n.t('services:pipeline.status.longVideoMode', {
+        duration: formatTime(totalVideoDuration!),
+      }),
     });
-  } catch (e) {
-    logger.error('Failed to decode audio for regeneration', e);
-    throw new Error(i18n.t('services:pipeline.errors.decodeFailed'));
+  } else {
+    onProgress?.({
+      id: 'init',
+      total: chunks.length,
+      status: 'processing',
+      message: i18n.t('services:pipeline.status.loadingAudio'),
+    });
+
+    try {
+      audioBuffer = await decodeAudio(file);
+
+      // Update init status to completed
+      onProgress?.({
+        id: 'init',
+        total: chunks.length,
+        status: 'completed',
+        message: i18n.t('services:pipeline.status.audioLoaded'),
+      });
+    } catch (e) {
+      logger.error('Failed to decode audio for regeneration', e);
+      throw new Error(i18n.t('services:pipeline.errors.decodeFailed'));
+    }
   }
 
   // Build settings with user hints injected
@@ -243,7 +265,8 @@ export async function runRegenerateOperation(
     refinementSemaphore: semaphores.refinement,
     alignmentSemaphore: semaphores.alignment,
     audioBuffer,
-    isLongVideo: false, // Regeneration always uses in-memory AudioBuffer
+    videoPath: isLongVideoMode ? videoPath : undefined,
+    isLongVideo: isLongVideoMode,
     chunkDuration,
     totalChunks: chunks.length,
   };
