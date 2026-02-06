@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import { spawn, type ChildProcess } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import { t } from '../i18n.ts';
-import { buildSpawnArgs } from '../utils/shell.ts';
+import { buildSpawnArgs, ensureAsciiSafePath, getAsciiSafeTempPath } from '../utils/shell.ts';
 
 export interface SubtitleItem {
   start: string;
@@ -158,12 +158,14 @@ export class LocalWhisperService {
       throw new Error(validation.error);
     }
 
-    const tempDir = app.getPath('temp');
     const jobId = uuidv4();
-    const inputPath = path.join(tempDir, `whisper_input_${jobId}.wav`);
+    const inputPath = getAsciiSafeTempPath(`whisper_input_${jobId}.wav`);
 
     // Write buffer to file
     await fs.promises.writeFile(inputPath, Buffer.from(audioBuffer));
+
+    // Track ASCII-safe symlink cleanups (must be outside try for catch block access)
+    const cleanups: (() => Promise<void>)[] = [];
 
     try {
       // Priority-based binary path resolution: Custom -> Portable -> Bundled -> Dev
@@ -178,17 +180,16 @@ export class LocalWhisperService {
         onLog(`[DEBUG] [LocalWhisper] Using Binary Path: ${binaryPath}`);
       }
 
+      // Workaround: many whisper.cpp builds use C runtime main(argc, argv) which
+      // converts UTF-16 to system ANSI code page, then assume UTF-8 internally.
+      // This corrupts non-ASCII paths. Create ASCII-safe symlinks as a workaround.
+      const safeModel = await ensureAsciiSafePath(modelPath);
+      cleanups.push(safeModel.cleanup);
+
       // Construct arguments
-      // -m model
-      // -f input file
-      // -oj output json
-      // -l language
-      // -t threads
-      // -bs beam size (optimized to 2 for 2.35x speed boost, <1% quality loss)
-      // --split-on-word (split at word boundaries for better readability)
       const args = [
         '-m',
-        modelPath,
+        safeModel.safePath,
         '-f',
         inputPath,
         '-oj', // Output JSON
@@ -209,7 +210,9 @@ export class LocalWhisperService {
       // Add VAD arguments if model exists
       const vadModelPath = this.getVadModelPath();
       if (vadModelPath) {
-        args.push('--vad-model', vadModelPath);
+        const safeVad = await ensureAsciiSafePath(vadModelPath);
+        cleanups.push(safeVad.cleanup);
+        args.push('--vad-model', safeVad.safePath);
         args.push('-vt', '0.50'); // VAD threshold (default 0.50)
         args.push('-vo', '0.10'); // VAD samples overlap (default 0.10)
         if (onLog)
@@ -364,6 +367,7 @@ export class LocalWhisperService {
             try {
               if (fs.existsSync(inputPath)) await fs.promises.unlink(inputPath);
               if (fs.existsSync(outputPath)) await fs.promises.unlink(outputPath);
+              for (const cleanup of cleanups) await cleanup();
             } catch (e) {
               console.error('Failed to cleanup temp files:', e);
             }
@@ -378,6 +382,7 @@ export class LocalWhisperService {
     } catch (error) {
       // Ensure cleanup if spawn fails
       if (fs.existsSync(inputPath)) await fs.promises.unlink(inputPath);
+      for (const cleanup of cleanups) await cleanup();
       throw error;
     }
   }
@@ -395,18 +400,33 @@ export class LocalWhisperService {
 
     try {
       const { spawnSync } = await import('child_process');
-      // Build spawn arguments with UTF-8 code page support for Windows
+
+      // Try --version first (supported in our custom builds v1.8.4+)
+      const versionConfig = buildSpawnArgs(info.path, ['--version']);
+      const versionResult = spawnSync(versionConfig.command, versionConfig.args, {
+        windowsHide: true,
+        timeout: 5000,
+      });
+      const versionOutput =
+        (versionResult.stdout?.toString() || '') + (versionResult.stderr?.toString() || '');
+      const versionMatch =
+        versionOutput.match(/whisper\.cpp (v\d+\.\d+\.\d+)/i) ||
+        versionOutput.match(/(v\d+\.\d+\.\d+)/i);
+      if (versionMatch) {
+        details.version = versionMatch[1];
+      }
+
+      // Use -h for GPU detection (and fallback version detection)
       const spawnConfig = buildSpawnArgs(info.path, ['-h']);
       const result = spawnSync(spawnConfig.command, spawnConfig.args, { windowsHide: true });
       const output = (result.stdout?.toString() || '') + (result.stderr?.toString() || '');
 
-      // console.log('[DEBUG] [LocalWhisper] getWhisperDetails - Binary path:', info.path);
-      // console.log('[DEBUG] [LocalWhisper] getWhisperDetails - Output length:', output.length);
-
-      // Detect version (usually v1.7.x)
-      const versionMatch =
-        output.match(/whisper\.cpp (v\d+\.\d+\.\d+)/i) || output.match(/(v\d+\.\d+\.\d+)/i);
-      details.version = versionMatch ? versionMatch[1] : 'v1.7.4';
+      // Fallback version detection from -h output (older builds without --version)
+      if (!versionMatch) {
+        const helpVersionMatch =
+          output.match(/whisper\.cpp (v\d+\.\d+\.\d+)/i) || output.match(/(v\d+\.\d+\.\d+)/i);
+        details.version = helpVersionMatch ? helpVersionMatch[1] : 'unknown';
+      }
 
       // Detect GPU support
       // Search for specific GPU acceleration library names in build info

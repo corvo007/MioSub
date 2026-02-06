@@ -102,7 +102,7 @@ export const BINARIES = {
 
   whisper: {
     'win32-x64': {
-      url: 'https://github.com/ggml-org/whisper.cpp/releases/download/v1.8.3/whisper-bin-x64.zip',
+      url: 'https://github.com/corvo007/whisper.cpp/releases/latest/download/whisper-windows-x86_64.zip',
       type: 'zip',
       extract: [
         { from: 'whisper-cli.exe', to: 'whisper-cli.exe' },
@@ -110,26 +110,25 @@ export const BINARIES = {
         { from: 'ggml.dll', to: 'ggml.dll' },
         { from: 'ggml-base.dll', to: 'ggml-base.dll' },
         { from: 'ggml-cpu.dll', to: 'ggml-cpu.dll' },
-        { from: 'SDL2.dll', to: 'SDL2.dll' },
       ],
     },
     'linux-x64': {
-      url: 'https://github.com/corvo007/whisper.cpp/releases/download/v1.8.3-custom/whisper-v1.8.3-linux-x86_64.tar.gz',
+      url: 'https://github.com/corvo007/whisper.cpp/releases/latest/download/whisper-linux-x86_64.tar.gz',
       type: 'tar.gz',
       extract: [{ from: 'whisper-cli', to: 'whisper-cli' }],
     },
     'linux-arm64': {
-      url: 'https://github.com/corvo007/whisper.cpp/releases/download/v1.8.3-custom/whisper-v1.8.3-linux-arm64.tar.gz',
+      url: 'https://github.com/corvo007/whisper.cpp/releases/latest/download/whisper-linux-arm64.tar.gz',
       type: 'tar.gz',
       extract: [{ from: 'whisper-cli', to: 'whisper-cli' }],
     },
     'darwin-x64': {
-      url: 'https://github.com/corvo007/whisper.cpp/releases/download/v1.8.3-custom/whisper-v1.8.3-macos-x86_64.tar.gz',
+      url: 'https://github.com/corvo007/whisper.cpp/releases/latest/download/whisper-macos-x86_64.tar.gz',
       type: 'tar.gz',
       extract: [{ from: 'whisper-cli', to: 'whisper-cli' }],
     },
     'darwin-arm64': {
-      url: 'https://github.com/corvo007/whisper.cpp/releases/download/v1.8.3-custom/whisper-v1.8.3-macos-arm64.tar.gz',
+      url: 'https://github.com/corvo007/whisper.cpp/releases/latest/download/whisper-macos-arm64.tar.gz',
       type: 'tar.gz',
       extract: [{ from: 'whisper-cli', to: 'whisper-cli' }],
     },
@@ -186,7 +185,6 @@ export const EXPECTED_FILES = {
     'ggml.dll',
     'ggml-base.dll',
     'ggml-cpu.dll',
-    'SDL2.dll',
     'cpp-ort-aligner.exe',
     'onnxruntime.dll',
   ],
