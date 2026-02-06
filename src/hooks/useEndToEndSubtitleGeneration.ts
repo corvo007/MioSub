@@ -298,6 +298,17 @@ export function useEndToEndSubtitleGeneration({
           // Collect analytics when present (completed, error, or cancelled chunks)
           if (update.analytics) {
             accumulatedChunkAnalytics.push(update.analytics);
+            // Sync progress to main process for app quit tracking
+            if (window.electronAPI?.generation?.updateProgress) {
+              const completedChunks = accumulatedChunkAnalytics.filter(
+                (a) => a.status === 'success' || a.status === 'failed'
+              ).length;
+              void window.electronAPI.generation.updateProgress(taskId, {
+                completedChunks,
+                totalChunks: update.total,
+                chunkAnalytics: accumulatedChunkAnalytics,
+              });
+            }
           }
         };
 
@@ -509,6 +520,7 @@ export function useEndToEndSubtitleGeneration({
               error: error.message || 'Unknown error',
               stage: 'generation', // We are in the generation phase here
               error_code: errorCode,
+              duration_ms: Date.now() - startTime,
               chunk_durations: accumulatedChunkAnalytics, // Include partial chunk stats
             },
             'interaction'

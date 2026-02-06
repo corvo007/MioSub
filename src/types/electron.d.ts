@@ -471,6 +471,15 @@ export interface ElectronAPI {
       metadata?: Record<string, any>
     ) => Promise<{ success: boolean }>;
     unregister: (taskId: string) => Promise<{ success: boolean }>;
+    updateProgress: (
+      taskId: string,
+      progress: {
+        completedChunks: number;
+        totalChunks: number;
+        partialCount?: number;
+        chunkAnalytics?: any[];
+      }
+    ) => Promise<{ success: boolean }>;
   };
 
   // Task Lifecycle (for close confirmation dialog)

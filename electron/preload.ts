@@ -220,6 +220,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     register: (taskId: string, type: 'end_to_end' | 'workspace', metadata?: Record<string, any>) =>
       ipcRenderer.invoke('generation:register', taskId, type, metadata),
     unregister: (taskId: string) => ipcRenderer.invoke('generation:unregister', taskId),
+    updateProgress: (
+      taskId: string,
+      progress: {
+        completedChunks: number;
+        totalChunks: number;
+        partialCount?: number;
+        chunkAnalytics?: any[];
+      }
+    ) => ipcRenderer.invoke('generation:updateProgress', taskId, progress),
   },
 
   // Task Lifecycle (for close confirmation dialog)

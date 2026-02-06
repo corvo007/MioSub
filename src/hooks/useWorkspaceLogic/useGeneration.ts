@@ -271,6 +271,19 @@ export function useGeneration({
         // Collect analytics when present (completed, error, or cancelled chunks)
         if (update.analytics) {
           chunkAnalytics.push(update.analytics);
+          // Sync progress to main process for app quit tracking
+          if (window.electronAPI?.generation?.updateProgress) {
+            const completedChunks = chunkAnalytics.filter(
+              (a) => a.status === 'success' || a.status === 'failed'
+            ).length;
+            const currentSubtitles = useWorkspaceStore.getState().subtitles;
+            void window.electronAPI.generation.updateProgress(taskId, {
+              completedChunks,
+              totalChunks: update.total,
+              partialCount: currentSubtitles.length,
+              chunkAnalytics,
+            });
+          }
         }
       };
 

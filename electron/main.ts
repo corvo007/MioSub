@@ -204,10 +204,18 @@ const activeTasks = new Map<string, ActiveTask>();
 let forceClose = false;
 
 // Legacy: Track active generation tasks for analytics on app quit
+interface GenerationProgress {
+  completedChunks: number;
+  totalChunks: number;
+  partialCount?: number;
+  chunkAnalytics?: any[];
+}
+
 interface ActiveGenerationTask {
   type: 'end_to_end' | 'workspace';
   startTime: number;
   metadata?: Record<string, any>;
+  progress?: GenerationProgress;
 }
 
 const activeGenerationTasks = new Map<string, ActiveGenerationTask>();
@@ -230,6 +238,18 @@ ipcMain.handle('generation:unregister', (_event, taskId: string) => {
   activeGenerationTasks.delete(taskId);
   return { success: true };
 });
+
+// IPC Handler: Update generation progress (for app quit analytics)
+ipcMain.handle(
+  'generation:updateProgress',
+  (_event, taskId: string, progress: GenerationProgress) => {
+    const task = activeGenerationTasks.get(taskId);
+    if (task) {
+      task.progress = progress;
+    }
+    return { success: true };
+  }
+);
 
 // IPC Handler: Register active task (for close confirmation)
 ipcMain.handle(
@@ -2224,6 +2244,11 @@ app.on('will-quit', (event) => {
           {
             duration_ms: Date.now() - task.startTime,
             reason: 'app_closed',
+            // Include progress info if available
+            ...(task.progress && {
+              partial_count: task.progress.partialCount,
+              chunk_durations: task.progress.chunkAnalytics,
+            }),
             ...task.metadata,
           },
           'interaction'
