@@ -166,10 +166,36 @@ export function useFileOperations({
   );
 
   // Handlers - Web file input (non-native)
+  // NOTE: In Electron, native dialog (handleFileSelectNative) should be used instead.
+  // This handler is for Web builds or fallback scenarios.
   const handleFileChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>, _activeTab: 'new' | 'import') => {
       if (e.target.files && e.target.files[0]) {
-        const selectedFile = e.target.files[0];
+        let selectedFile: File = e.target.files[0];
+
+        // Log when this path is triggered in Electron (unexpected)
+        if (window.electronAPI?.isElectron) {
+          logger.warn('[FileOps] handleFileChange triggered in Electron - expected native dialog', {
+            fileName: selectedFile.name,
+            fileSize: selectedFile.size,
+          });
+        }
+
+        // In Electron, attach path property for FFmpeg and long video detection
+        // webUtils.getPathForFile works for files from <input type="file">
+        if (window.electronAPI?.getFilePath) {
+          const filePath = window.electronAPI.getFilePath(selectedFile);
+          if (filePath) {
+            Object.defineProperty(selectedFile, 'path', {
+              value: filePath,
+              writable: false,
+              enumerable: false,
+              configurable: true, // Allow re-definition if needed
+            });
+            logger.debug('Attached path to web-selected file', { filePath });
+          }
+        }
+
         const state = useWorkspaceStore.getState();
 
         // Check if confirmation is needed BEFORE processing

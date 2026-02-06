@@ -292,13 +292,16 @@ git push
 ```
 1. Get full details: get_issue_details(issueId)
 2. Analyze patterns: get_issue_tag_values(issueId, "user"), etc.
-3. Check for related issues (same user, same trace_id)
-4. Review docs/analytics-events.md for relevant tracking fields
+3. ⚠️ VERSION CHECK: Before analyzing ANY code path, verify it existed
+   at the crash version using: git show <release-tag>:<file>
+   NEVER reason about HEAD code for older version crashes.
+4. Check for related issues (same user, same trace_id)
+5. Review docs/analytics-events.md for relevant tracking fields
    - Check if user actions before error were tracked
    - Look for related events (e.g., generation_started before generation_failed)
    - Use Amplitude/Mixpanel to query these events for the affected user
-5. Cross-reference with Amplitude/Mixpanel
-6. Document in issue file:
+6. Cross-reference with Amplitude/Mixpanel
+7. Document in issue file:
    - Initial hypothesis
    - Investigation steps
    - Intermediate conclusions
@@ -333,6 +336,12 @@ git push
    - Why did you check this data source?
    - What alternatives were considered?
    - Why were they ruled out?
+
+4. **ALWAYS verify code at crash version before reasoning about code paths**
+   - Use `git show <release-tag>:<file>` to see actual code at the crash version
+   - NEVER analyze HEAD code and assume it existed in older versions
+   - When a log is "missing", first check: did the code producing that log exist at the crash version?
+   - This prevents wasting hours investigating false hypotheses based on code that wasn't deployed yet
 
 #### 3. After Fix Applied
 

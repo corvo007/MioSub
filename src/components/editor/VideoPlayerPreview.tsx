@@ -709,7 +709,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
             <span className="text-sm">{t('videoPreview.expand')}</span>
             {isTranscoding && (
               <span className="ml-auto text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                {t('videoPreview.transcoding')} {transcodeProgress}%
+                {t('videoPreview.transcoding')} {transcodeProgress?.toFixed(1)}%
               </span>
             )}
           </button>
@@ -734,7 +734,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
               <div className="flex items-center gap-2">
                 {isTranscoding && (
                   <span className="text-xs text-amber-600 animate-pulse font-medium">
-                    {t('videoPreview.transcoding')} {transcodeProgress}%
+                    {t('videoPreview.transcoding')} {transcodeProgress?.toFixed(1)}%
                   </span>
                 )}
                 {/* Helper Float Button in Header too */}

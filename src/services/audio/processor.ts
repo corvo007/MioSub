@@ -119,6 +119,120 @@ export function extractBufferSlice(buffer: AudioBuffer, start: number, end: numb
 }
 
 /**
+ * Parse WAV file ArrayBuffer directly into AudioBuffer.
+ * This bypasses decodeAudioData() which has memory limits for large files.
+ * Supports standard PCM WAV files (16-bit, mono/stereo).
+ *
+ * @param arrayBuffer WAV file data
+ * @returns AudioBuffer with the decoded audio
+ * @throws Error if WAV format is invalid or unsupported
+ */
+export function parseWavToAudioBuffer(arrayBuffer: ArrayBuffer): AudioBuffer {
+  const view = new DataView(arrayBuffer);
+
+  // Validate RIFF header
+  const riff = String.fromCharCode(
+    view.getUint8(0),
+    view.getUint8(1),
+    view.getUint8(2),
+    view.getUint8(3)
+  );
+  if (riff !== 'RIFF') {
+    throw new Error('Invalid WAV file: missing RIFF header');
+  }
+
+  const wave = String.fromCharCode(
+    view.getUint8(8),
+    view.getUint8(9),
+    view.getUint8(10),
+    view.getUint8(11)
+  );
+  if (wave !== 'WAVE') {
+    throw new Error('Invalid WAV file: missing WAVE format');
+  }
+
+  // Find fmt chunk
+  let offset = 12;
+  let fmtFound = false;
+  let audioFormat = 0;
+  let numChannels = 0;
+  let sampleRate = 0;
+  let bitsPerSample = 0;
+
+  while (offset < arrayBuffer.byteLength - 8) {
+    const chunkId = String.fromCharCode(
+      view.getUint8(offset),
+      view.getUint8(offset + 1),
+      view.getUint8(offset + 2),
+      view.getUint8(offset + 3)
+    );
+    const chunkSize = view.getUint32(offset + 4, true);
+
+    if (chunkId === 'fmt ') {
+      audioFormat = view.getUint16(offset + 8, true);
+      numChannels = view.getUint16(offset + 10, true);
+      sampleRate = view.getUint32(offset + 12, true);
+      bitsPerSample = view.getUint16(offset + 22, true);
+      fmtFound = true;
+    }
+
+    if (chunkId === 'data') {
+      if (!fmtFound) {
+        throw new Error('Invalid WAV file: data chunk before fmt chunk');
+      }
+
+      // Only support PCM format (1) or IEEE float (3)
+      if (audioFormat !== 1 && audioFormat !== 3) {
+        throw new Error(
+          `Unsupported WAV format: ${audioFormat} (only PCM and IEEE float supported)`
+        );
+      }
+
+      const dataOffset = offset + 8;
+      const dataSize = chunkSize;
+      const bytesPerSample = bitsPerSample / 8;
+      const numSamples = Math.floor(dataSize / (numChannels * bytesPerSample));
+
+      // Create AudioBuffer
+      const ctx = getAudioContext(sampleRate);
+      const audioBuffer = ctx.createBuffer(numChannels, numSamples, sampleRate);
+
+      // Parse samples based on format
+      if (audioFormat === 1 && bitsPerSample === 16) {
+        // 16-bit PCM
+        for (let channel = 0; channel < numChannels; channel++) {
+          const channelData = audioBuffer.getChannelData(channel);
+          for (let i = 0; i < numSamples; i++) {
+            const sampleOffset = dataOffset + (i * numChannels + channel) * 2;
+            const sample = view.getInt16(sampleOffset, true);
+            channelData[i] = sample / 32768; // Normalize to [-1, 1]
+          }
+        }
+      } else if (audioFormat === 3 && bitsPerSample === 32) {
+        // 32-bit IEEE float
+        for (let channel = 0; channel < numChannels; channel++) {
+          const channelData = audioBuffer.getChannelData(channel);
+          for (let i = 0; i < numSamples; i++) {
+            const sampleOffset = dataOffset + (i * numChannels + channel) * 4;
+            channelData[i] = view.getFloat32(sampleOffset, true);
+          }
+        }
+      } else {
+        throw new Error(`Unsupported WAV bit depth: ${bitsPerSample}-bit (format: ${audioFormat})`);
+      }
+
+      return audioBuffer;
+    }
+
+    offset += 8 + chunkSize;
+    // Align to even byte boundary
+    if (chunkSize % 2 !== 0) offset++;
+  }
+
+  throw new Error('Invalid WAV file: no data chunk found');
+}
+
+/**
  * Merges multiple AudioBuffers into a single AudioBuffer.
  * Assumes all buffers have the same number of channels.
  * Resamples if necessary to match the target sample rate.

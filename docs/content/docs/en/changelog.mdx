@@ -5,6 +5,13 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.11] - 2026-02-06
+
+### Fixes
+
+- **Long Video Mode**: Fixed all entry points to check video duration before decoding audio. Previously, end-to-end generation and batch regenerate would decode entire audio into memory before checking duration, causing OOM crashes for videos longer than 2 hours.
+- **Long Video Mode**: Removed the 6-hour video duration limit. With on-demand FFmpeg extraction now fully functional for videos over 2 hours, there's no longer a need for artificial duration restrictions.
+
 ## [3.0.10] - 2026-02-06
 
 ### Fixes

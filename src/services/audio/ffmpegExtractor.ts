@@ -2,6 +2,7 @@ import { isElectron } from '@/services/utils/env';
 import { logger } from '@/services/utils/logger';
 import i18n from '@/i18n';
 import { resolveBinaryPath } from '@/services/utils/binary';
+import { parseWavToAudioBuffer } from '@/services/audio/processor';
 import type { AudioExtractionOptions, AudioExtractionProgress } from '@/types/electron';
 
 /**
@@ -95,19 +96,30 @@ export async function extractAudioWithFFmpeg(
     }
     const arrayBuffer = await window.electronAPI.readExtractedAudio(extractedAudioPath);
 
-    // Decode ArrayBuffer
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) {
-      throw new Error(i18n.t('services:audio.errors.webAudioNotSupported'));
-    }
-    const ctx = new AudioContext();
+    // Parse WAV directly instead of using decodeAudioData()
+    // decodeAudioData() has memory limits and crashes on large files (>1GB)
+    // parseWavToAudioBuffer() reads PCM data directly, avoiding OOM
     try {
-      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-      logger.info('Audio decoded successfully');
+      const audioBuffer = parseWavToAudioBuffer(arrayBuffer);
+      logger.info('Audio decoded successfully (direct WAV parsing)');
       return audioBuffer;
-    } finally {
-      // Vital: Close AudioContext to release hardware resources
-      await ctx.close();
+    } catch (parseError: any) {
+      logger.warn('Direct WAV parsing failed, falling back to decodeAudioData', {
+        error: parseError.message,
+      });
+      // Fallback to decodeAudioData for non-standard WAV formats
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContext) {
+        throw new Error(i18n.t('services:audio.errors.webAudioNotSupported'));
+      }
+      const ctx = new AudioContext();
+      try {
+        const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+        logger.info('Audio decoded successfully (decodeAudioData fallback)');
+        return audioBuffer;
+      } finally {
+        await ctx.close();
+      }
     }
   } finally {
     // Remove abort handler
