@@ -5,6 +5,16 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.12] - 2026-02-06
+
+### Fixes
+
+- **Local Whisper**: Added ASCII-safe path workaround for non-ASCII model paths on Windows. Creates temporary symlinks so third-party whisper binaries can handle Chinese/CJK paths without crashes.
+- **Local Whisper**: Fixed version detection silently falling back to hardcoded v1.7.4. Now tries `--version` first, then `-h` output, then reports `unknown`.
+- **Local Whisper**: Updated bundled whisper binary to v1.8.4 with upstream path encoding fix (`MultiByteToWideChar` instead of broken `codecvt_utf8`).
+- **Settings**: Fixed whisper binary path reading from wrong settings key.
+- **Electron**: Fixed backend log subscription not re-initializing after React StrictMode cleanup.
+
 ## [3.0.11] - 2026-02-06
 
 ### Fixes

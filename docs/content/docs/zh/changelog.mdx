@@ -5,6 +5,16 @@ description: "MioSub 的所有重要更新记录"
 
 本文件记录了项目的所有重要更改。
 
+## [3.0.12] - 2026-02-06
+
+### 修复
+
+- **本地 Whisper**：为 Windows 上的非 ASCII 模型路径添加 ASCII 安全路径解决方案。创建临时符号链接，使第三方 whisper 二进制文件能正确处理中文/CJK 路径，避免崩溃。
+- **本地 Whisper**：修复版本检测静默回退到硬编码 v1.7.4 的问题。现在优先尝试 `--version`，然后解析 `-h` 输出，最后报告 `unknown`。
+- **本地 Whisper**：更新内置 whisper 二进制到 v1.8.4，包含上游路径编码修复（使用 `MultiByteToWideChar` 替代有缺陷的 `codecvt_utf8`）。
+- **设置**：修复 whisper 二进制路径读取了错误的设置键。
+- **Electron**：修复后端日志订阅在 React StrictMode 清理后无法重新初始化的问题。
+
 ## [3.0.11] - 2026-02-06
 
 ### 修复
