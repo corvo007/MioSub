@@ -473,7 +473,7 @@ export async function extractMultipleAudioSegments(
     const filterInputs: string[] = [];
 
     segments.forEach((seg, i) => {
-      inputArgs.push(`-ss ${seg.startTime}`, `-t ${seg.duration}`, '-i', videoPath);
+      inputArgs.push('-ss', String(seg.startTime), '-t', String(seg.duration), '-i', videoPath);
       filterInputs.push(`[${i}:a]`);
     });
 
