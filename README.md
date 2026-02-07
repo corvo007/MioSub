@@ -12,6 +12,7 @@
     <a href="https://demo.miosub.app">🚀 在线体验</a> ·
     <a href="https://github.com/corvo007/Gemini-Subtitle-Pro/releases">📥 下载</a> ·
     <a href="https://github.com/corvo007/Gemini-Subtitle-Pro/issues">🐛 反馈问题</a> ·
+    <a href="https://qm.qq.com/cgi-bin/qm/qr?k=qBoSXr8a668tJm80UbPcyvpey8mwfQ2H&jump_from=webapi&authKey=6fQajPs64A/yue/dKEMfZTxBQ8+SBuPugOTA6tC+3CuHW1NyNZFRwomo75sF1zUR">💬 QQ 群</a> ·
     <a href="./docs/README_en.md">🌐 English</a>
   </p>
 
@@ -145,6 +146,7 @@ yarn electron:build
 
 - [反馈问题](https://github.com/corvo007/Gemini-Subtitle-Pro/issues) — 我们会认真对待每一个 issue
 - [提交 PR](https://github.com/corvo007/Gemini-Subtitle-Pro/pulls) — 欢迎贡献代码
+- 加入 [QQ 群（1082480420）](https://qm.qq.com/cgi-bin/qm/qr?k=qBoSXr8a668tJm80UbPcyvpey8mwfQ2H&jump_from=webapi&authKey=6fQajPs64A/yue/dKEMfZTxBQ8+SBuPugOTA6tC+3CuHW1NyNZFRwomo75sF1zUR) — 交流使用心得、获取最新动态、反馈问题、提出功能建议
 - 觉得好用？给个 Star 让更多人发现这个项目
 
 ---
