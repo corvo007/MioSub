@@ -5,12 +5,13 @@ import { validateGlossaryItem } from '@/services/glossary/validator';
 /**
  * Create a new empty glossary
  */
-export function createGlossary(name: string): Glossary {
+export function createGlossary(name: string, targetLanguage?: string): Glossary {
   const now = new Date().toISOString();
   return {
     id: crypto.randomUUID(),
     name: name.trim() || 'Untitled Glossary',
     terms: [],
+    targetLanguage,
     createdAt: now,
     updatedAt: now,
   };
@@ -55,6 +56,7 @@ export function importGlossary(jsonContent: string): Glossary {
       id: crypto.randomUUID(), // Always generate new ID on import to avoid conflicts
       name: parsed.name,
       terms: validItems,
+      targetLanguage: parsed.targetLanguage,
       createdAt: parsed.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

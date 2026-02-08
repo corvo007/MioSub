@@ -30,10 +30,7 @@ function isSearchEnabled(step: StepName): boolean {
  * Returns sub-items to be appended under the translation quality rule
  * NOTE: Glossary terms have absolute priority - search is only for terms NOT in glossary
  */
-function getSearchEnhancedTranslationPrompt(
-  step: StepName,
-  targetLanguage: string = 'Simplified Chinese'
-): string {
+function getSearchEnhancedTranslationPrompt(step: StepName, targetLanguage: string): string {
   const languageName = toLanguageName(targetLanguage);
   if (!isSearchEnabled(step)) return '';
   return `
@@ -47,10 +44,7 @@ function getSearchEnhancedTranslationPrompt(
  * Returns sub-items to be appended under the translation quality rule
  * NOTE: Glossary terms have absolute priority - search is only for terms NOT in glossary
  */
-function getSearchEnhancedProofreadPrompt(
-  step: StepName,
-  targetLanguage: string = 'Simplified Chinese'
-): string {
+function getSearchEnhancedProofreadPrompt(step: StepName, targetLanguage: string): string {
   const languageName = toLanguageName(targetLanguage);
   if (!isSearchEnabled(step)) return '';
   return `
@@ -164,7 +158,7 @@ export const getSystemInstructionWithDiarization = (
   speakerProfiles?: SpeakerProfile[],
   minSpeakers?: number,
   maxSpeakers?: number,
-  targetLanguage: string = 'Simplified Chinese'
+  targetLanguage?: string
 ): string => {
   // For non-refinement modes or disabled diarization, delegate to original function
   if (mode !== 'refinement' || !enableDiarization) {
@@ -338,8 +332,10 @@ export const getSystemInstruction = (
   mode: 'refinement' | 'translation' | 'proofread' = 'translation',
   glossary?: GlossaryItem[],
   speakerProfiles?: SpeakerProfile[],
-  targetLanguage: string = 'Simplified Chinese'
+  targetLanguage?: string
 ): string => {
+  // Normalize locale codes (e.g. 'zh-CN', 'en') to readable names (e.g. 'Simplified Chinese', 'English')
+  targetLanguage = toLanguageName(targetLanguage || 'en');
   // Use helper function to format glossary
   const glossaryText = formatGlossaryForPrompt(glossary, mode);
 
@@ -419,7 +415,7 @@ export const getSystemInstruction = (
     → **TIMESTAMPS**: Do not modify timestamps.
 
     [P1 - TRANSLATION QUALITY]
-    → **FLUENCY**: Translate into natural, written Chinese, not "translationese".
+    → **FLUENCY**: Translate into natural, written ${targetLanguage}, not "translationese".
     → **CONTEXT AWARENESS**: Use the provided genre context to determine tone and style.
     → **COMPLETENESS**: Ensure every meaningful part of the original text is represented.
     → **NO HALLUCINATIONS**: Do not invent information not present in the source.
@@ -486,8 +482,8 @@ ${speakerProfiles
 - technical vocabulary → preserve domain terms
 
 Example:
-Speaker (casual): "すごい！" → "太棒了！"
-Speaker (formal): "すごいですね" → "真是令人印象深刻。"
+Speaker (casual): "Amazing!" → casual ${targetLanguage} equivalent
+Speaker (formal): "That is quite impressive." → formal ${targetLanguage} equivalent
 `
         : ''
     }`;
@@ -552,10 +548,9 @@ Speaker (formal): "すごいですね" → "真是令人印象深刻。"
     }`;
 };
 
-export const GLOSSARY_EXTRACTION_PROMPT = (
-  genre: string,
-  targetLanguage: string = 'Simplified Chinese'
-) => `
+export const GLOSSARY_EXTRACTION_PROMPT = (genre: string, targetLanguage: string) => {
+  targetLanguage = toLanguageName(targetLanguage);
+  return `
 TERMINOLOGY EXTRACTION TASK
 Genre Context: ${genre}
 
@@ -615,6 +610,7 @@ FINAL VERIFICATION:
 ✓ Only included terms that need consistent translation
 ✓ Notes added where helpful for consistency
 `;
+};
 
 export const getSpeakerProfileExtractionPrompt = (
   genre: string,
@@ -760,8 +756,10 @@ export const getSpeakerProfileExtractionPrompt = (
 export const getTranslationBatchPrompt = (
   batchLength: number,
   payload: any[],
-  targetLanguage: string = 'Simplified Chinese'
-): string => `
+  targetLanguage: string
+): string => {
+  targetLanguage = toLanguageName(targetLanguage);
+  return `
     TRANSLATION BATCH TASK
     
     TASK: Translate ${batchLength} subtitle segments to ${targetLanguage}.
@@ -800,6 +798,7 @@ export const getTranslationBatchPrompt = (
     Input JSON:
     ${JSON.stringify(payload)}
     `;
+};
 
 /**
  * Parameters for proofread prompt
@@ -809,14 +808,14 @@ export interface ProofreadPromptParams {
   payload: any[];
   glossaryContext: string;
   specificInstruction: string;
-  targetLanguage?: string;
+  targetLanguage: string;
 }
 
 /**
  * Generate proofread prompt
  */
 export const getProofreadPrompt = (params: ProofreadPromptParams): string => {
-  const targetLanguage = params.targetLanguage || 'Simplified Chinese';
+  const targetLanguage = toLanguageName(params.targetLanguage);
   return `
     TRANSLATION QUALITY IMPROVEMENT TASK
     Total video duration: ${params.totalVideoDuration ? formatTime(params.totalVideoDuration) : 'Unknown'}

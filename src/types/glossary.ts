@@ -9,6 +9,7 @@ export interface Glossary {
   id: string; // UUID
   name: string; // User-defined name
   terms: GlossaryItem[]; // Terms list
+  targetLanguage?: string; // Locale code (e.g., 'zh-TW', 'ja', 'en')
   createdAt: string; // ISO timestamp
   updatedAt: string; // ISO timestamp
 }

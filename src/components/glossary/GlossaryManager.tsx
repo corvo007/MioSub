@@ -26,10 +26,14 @@ import {
 } from '@/components/modals/GlossaryImportDialog';
 import { cn } from '@/lib/cn';
 import { logger } from '@/services/utils/logger';
+import { toLocalizedLanguageName } from '@/services/utils/language';
+import { detectGlossaryLanguage } from '@/services/utils/language';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 interface GlossaryManagerProps {
   glossaries: Glossary[];
   activeGlossaryId: string | null;
+  targetLanguage?: string;
   onUpdateGlossaries: (glossaries: Glossary[]) => void;
   onSetActiveGlossary: (id: string) => void;
   onClose: () => void;
@@ -38,11 +42,36 @@ interface GlossaryManagerProps {
 export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
   glossaries,
   activeGlossaryId,
+  targetLanguage,
   onUpdateGlossaries,
   onSetActiveGlossary,
   onClose,
 }) => {
-  const { t } = useTranslation('editor');
+  const { t, i18n } = useTranslation('editor');
+
+  const glossaryLanguageOptions = useMemo(() => {
+    const codes = [
+      'zh-CN',
+      'zh-TW',
+      'en',
+      'ja',
+      'ko',
+      'es',
+      'fr',
+      'de',
+      'ru',
+      'pt',
+      'it',
+      'vi',
+      'th',
+      'id',
+    ];
+    return codes.map((code) => ({
+      value: code,
+      label: toLocalizedLanguageName(code, i18n.language),
+    }));
+  }, [i18n.language]);
+
   const [selectedGlossaryId, setSelectedGlossaryId] = useState<string | null>(activeGlossaryId);
   const [editingNameId, setEditingNameId] = useState<string | null>(null);
   const [editNameValue, setEditNameValue] = useState('');
@@ -90,7 +119,8 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
 
   const handleAddGlossary = () => {
     const newGlossary = createGlossary(
-      t('glossary.newGlossaryName', { num: glossaries.length + 1 })
+      t('glossary.newGlossaryName', { num: glossaries.length + 1 }),
+      targetLanguage
     );
     onUpdateGlossaries([...glossaries, newGlossary]);
     setSelectedGlossaryId(newGlossary.id);
@@ -120,9 +150,26 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
 
   const handleUpdateTerms = (newItems: GlossaryItem[]) => {
     if (!selectedGlossaryId) return;
+    const current = glossaries.find((g) => g.id === selectedGlossaryId);
+    const wasEmpty = current && current.terms.length === 0;
+
+    const updated = glossaries.map((g) => {
+      if (g.id !== selectedGlossaryId) return g;
+      const patch: Partial<Glossary> = { terms: newItems, updatedAt: new Date().toISOString() };
+      // Auto-detect language when empty glossary gets first terms
+      if (wasEmpty && newItems.length > 0 && !g.targetLanguage) {
+        patch.targetLanguage = detectGlossaryLanguage({ ...g, terms: newItems });
+      }
+      return { ...g, ...patch };
+    });
+    onUpdateGlossaries(updated);
+  };
+
+  const handleLanguageChange = (lang: string) => {
+    if (!selectedGlossaryId) return;
     const updated = glossaries.map((g) =>
       g.id === selectedGlossaryId
-        ? { ...g, terms: newItems, updatedAt: new Date().toISOString() }
+        ? { ...g, targetLanguage: lang, updatedAt: new Date().toISOString() }
         : g
     );
     onUpdateGlossaries(updated);
@@ -193,7 +240,7 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
 
     if (mode === 'create') {
       const name = newName || `Imported Glossary`;
-      const newGlossary = createGlossary(name);
+      const newGlossary = createGlossary(name, targetLanguage);
       newGlossary.terms = items;
       onUpdateGlossaries([...glossaries, newGlossary]);
       setSelectedGlossaryId(newGlossary.id);
@@ -315,11 +362,16 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                   )}
                   <div
                     className={cn(
-                      'text-[10px] mt-0.5 transition-colors',
+                      'text-[10px] mt-0.5 transition-colors flex items-center gap-1.5',
                       selectedGlossaryId === glossary.id ? 'text-brand-purple/70' : 'text-slate-400'
                     )}
                   >
                     {t('glossary.termCount', { count: glossary.terms.length })}
+                    {glossary.targetLanguage && (
+                      <span className="px-1 py-px rounded bg-slate-100 text-slate-500 border border-slate-200 text-[9px] font-medium">
+                        {toLocalizedLanguageName(glossary.targetLanguage, i18n.language)}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -388,11 +440,19 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                       </span>
                     )}
                   </h2>
-                  <p className="text-slate-500 text-sm mt-1 font-medium">
-                    {t('glossary.lastUpdated')}:{' '}
-                    <span className="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
-                      {new Date(selectedGlossary.updatedAt).toLocaleDateString()}
+                  <p className="text-slate-500 text-sm mt-1 font-medium flex items-center gap-2">
+                    <span>
+                      {t('glossary.lastUpdated')}:{' '}
+                      <span className="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
+                        {new Date(selectedGlossary.updatedAt).toLocaleDateString()}
+                      </span>
                     </span>
+                    <CustomSelect
+                      value={selectedGlossary.targetLanguage || ''}
+                      onChange={handleLanguageChange}
+                      options={glossaryLanguageOptions}
+                      className="w-32 text-xs"
+                    />
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">

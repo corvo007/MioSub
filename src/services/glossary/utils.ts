@@ -1,5 +1,5 @@
 import { type AppSettings } from '@/types/settings';
-import { type GlossaryItem } from '@/types/glossary';
+import { type Glossary, type GlossaryItem } from '@/types/glossary';
 
 /**
  * Get terms from the active glossary
@@ -21,12 +21,13 @@ export function getActiveGlossaryTerms(settings: AppSettings): GlossaryItem[] {
 }
 
 /**
- * Get the active glossary object
+ * Get the active glossary object.
+ * targetLanguage is populated at app startup via migrateAllGlossaries.
  */
-export function getActiveGlossary(settings: AppSettings) {
+export function getActiveGlossary(settings: AppSettings): Glossary | null {
   if (!settings.glossaries || !settings.activeGlossaryId) {
     return null;
   }
 
-  return settings.glossaries.find((g) => g.id === settings.activeGlossaryId) || null;
+  return settings.glossaries.find((g) => g.id === settings.activeGlossaryId) ?? null;
 }

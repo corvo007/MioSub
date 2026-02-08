@@ -9,6 +9,7 @@ import { logger } from './logger';
 // Use static import to ensure ngrams data is bundled at build time
 // (dynamic import via 'eld' fails in production because Vite can't bundle dynamic paths)
 import eld from 'eld/medium';
+import { type Glossary } from '@/types/glossary';
 
 // ============================================================================
 // ISO 639-1 to ISO 639-3 Mapping (2-letter to 3-letter)
@@ -190,6 +191,30 @@ export async function detectLanguage(text: string): Promise<string> {
   return fallbackLang;
 }
 
+/**
+ * Detect the language of a glossary's translations using ELD.
+ * Synchronous — concatenates all translation fields and runs detection.
+ *
+ * @param glossary - Glossary to detect language for
+ * @returns BCP 47 locale code (e.g., 'zh-CN', 'ja', 'en')
+ */
+export function detectGlossaryLanguage(glossary: Glossary): string {
+  const text = glossary.terms.map((t) => t.translation).join(' ');
+  if (!text.trim()) return 'en';
+
+  try {
+    const result = eld.detect(text);
+    if (result.language) {
+      return toLocaleCode(result.language);
+    }
+  } catch (e: any) {
+    logger.warn(`detectGlossaryLanguage: eld failed: ${e.message}`);
+  }
+
+  // Fallback to character-based detection
+  return toLocaleCode(detectLanguageFallback(text));
+}
+
 // ============================================================================
 // Language Classification
 // ============================================================================
@@ -264,6 +289,9 @@ const ISO_639_3_TO_NAME: Record<string, string> = {
   pol: 'Polish',
   nld: 'Dutch',
   swe: 'Swedish',
+  // BCP 47 locale codes
+  'zh-cn': 'Simplified Chinese',
+  'zh-tw': 'Traditional Chinese',
   // ISO 639-1 codes for convenience
   zh: 'Simplified Chinese',
   en: 'English',
@@ -308,4 +336,26 @@ export function toLanguageName(code: string): string {
   }
 
   return ISO_639_3_TO_NAME[lowerCode] || 'English';
+}
+
+/**
+ * Return a language name localized to the current UI locale.
+ * e.g. toLocalizedLanguageName('zh-CN', 'zh-CN') → '简体中文'
+ *      toLocalizedLanguageName('zh-CN', 'en')    → 'Simplified Chinese'
+ */
+const SCRIPT_CODE_MAP: Record<string, string> = {
+  'zh-cn': 'zh-Hans',
+  'zh-tw': 'zh-Hant',
+  'zh-hk': 'zh-Hant',
+};
+
+export function toLocalizedLanguageName(code: string, uiLocale?: string): string {
+  const displayCode = SCRIPT_CODE_MAP[code.toLowerCase()] || code;
+  try {
+    const name = new Intl.DisplayNames([uiLocale || 'en'], { type: 'language' }).of(displayCode);
+    if (name) return name;
+  } catch {
+    // Intl not available or invalid code — fall through
+  }
+  return toLanguageName(code);
 }

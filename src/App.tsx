@@ -216,6 +216,7 @@ export default function App() {
         <GlossaryManager
           glossaries={settings.glossaries || []}
           activeGlossaryId={settings.activeGlossaryId || null}
+          targetLanguage={settings.targetLanguage}
           onUpdateGlossaries={(updated) => updateSetting('glossaries', updated)}
           onSetActiveGlossary={(id) => updateSetting('activeGlossaryId', id)}
           onClose={() => setShowGlossaryManager(false)}

@@ -10,6 +10,7 @@ import type { AppSettings } from '@/types/settings';
 import type { ToastMessage } from '@/components/ui';
 import { logger } from '@/services/utils/logger';
 import { debounce } from '@/services/utils/time';
+import { migrateAllGlossaries } from '@/services/glossary/migrate';
 
 // ============================================================================
 // Types
@@ -225,6 +226,19 @@ export const initializeSettings = async (): Promise<void> => {
     if (!newSettings.glossaries) {
       newSettings.glossaries = [];
     }
+
+    // Migrate legacy glossaries that lack targetLanguage
+    if (newSettings.glossaries.length > 0) {
+      const { glossaries: migrated, changed } = migrateAllGlossaries(
+        newSettings.glossaries,
+        newSettings.targetLanguage
+      );
+      if (changed) {
+        newSettings.glossaries = migrated;
+        logger.info(`Migrated ${migrated.length} glossaries with targetLanguage`);
+      }
+    }
+
     setSettings(newSettings);
   }
 

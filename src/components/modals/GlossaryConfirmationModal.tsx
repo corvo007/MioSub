@@ -58,7 +58,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
   const handleCreateNewGlossary = () => {
     if (!newGlossaryName.trim()) return;
 
-    const newGlossary = createGlossary(newGlossaryName.trim());
+    const newGlossary = createGlossary(newGlossaryName.trim(), settings.targetLanguage);
     const updatedGlossaries = [...(settings.glossaries || []), newGlossary];
     onUpdateSetting('glossaries', updatedGlossaries);
 

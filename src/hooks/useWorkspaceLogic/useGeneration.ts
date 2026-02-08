@@ -8,7 +8,8 @@ import { logger } from '@/services/utils/logger';
 import { UserActionableError } from '@/services/utils/errors';
 import { autoConfirmGlossaryTerms } from '@/services/glossary/autoConfirm';
 import { generateSubtitles } from '@/services/generation/pipeline';
-import { getActiveGlossaryTerms } from '@/services/glossary/utils';
+import { getActiveGlossaryTerms, getActiveGlossary } from '@/services/glossary/utils';
+import { toLocalizedLanguageName } from '@/services/utils/language';
 import { decodeAudioWithRetry } from '@/services/audio/decoder';
 import { isLongVideo } from '@/services/audio/segmentExtractor';
 import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
@@ -51,7 +52,7 @@ export function useGeneration({
   snapshotsValues,
   setShowSettings,
 }: UseGenerationProps): UseGenerationReturn {
-  const { t } = useTranslation(['workspace', 'services']);
+  const { t, i18n } = useTranslation(['workspace', 'services']);
 
   const handleGenerate = useCallback(async () => {
     // Read fresh state/settings
@@ -72,6 +73,7 @@ export function useGeneration({
       setSpeakerProfiles,
       setPreflightErrors,
       setShowPreflightModal,
+      setPreflightContinueCallback,
     } = useWorkspaceStore.getState();
 
     if (!file) {
@@ -97,6 +99,29 @@ export function useGeneration({
         setShowPreflightModal(true);
         return;
       }
+    }
+
+    // Glossary language mismatch check (blocking)
+    const activeGlossary = getActiveGlossary(settings);
+    if (
+      activeGlossary?.targetLanguage &&
+      settings.targetLanguage &&
+      activeGlossary.targetLanguage !== settings.targetLanguage
+    ) {
+      const glossaryLang = toLocalizedLanguageName(activeGlossary.targetLanguage, i18n.language);
+      const targetLang = toLocalizedLanguageName(settings.targetLanguage, i18n.language);
+      setPreflightErrors([
+        {
+          code: 'glossary_language_mismatch',
+          message: t('workspace:preflight.glossaryMismatch', {
+            glossaryName: activeGlossary.name,
+            glossaryLang,
+            targetLang,
+          }),
+        },
+      ]);
+      setShowPreflightModal(true);
+      return;
     }
 
     const hasGemini = !!(settings.geminiKey || ENV.GEMINI_API_KEY);
@@ -285,7 +310,9 @@ export function useGeneration({
             throw e;
           }
           logger.error('Failed to decode audio in handleGenerate', e);
-          throw new Error(t('services:pipeline.errors.decodeFailed'));
+          const err = new Error(`${t('services:pipeline.errors.decodeFailed')}: ${e.message || e}`);
+          err.cause = e;
+          throw err;
         }
       }
 
