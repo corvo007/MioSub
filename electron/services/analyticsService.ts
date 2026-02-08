@@ -29,6 +29,7 @@ class AnalyticsService {
   private firstLaunchAt: string | null = null;
   private cachedAppLanguage: string = 'auto';
   private cachedHardwareInfo: Record<string, any> | null = null;
+  private profileSet = false;
   private recentEvents: Map<string, number> = new Map(); // For debounce: eventKey -> timestamp
   private readonly DEBOUNCE_MS = 1000; // 1 second debounce window
 
@@ -134,6 +135,7 @@ class AnalyticsService {
           $device: deviceInfo.device_model,
           ...deviceInfo,
         });
+        this.profileSet = true;
       }
 
       await this.track(
@@ -229,6 +231,19 @@ class AnalyticsService {
 
       if (this.userId) {
         const deviceInfo = await this.getDeviceInfo();
+
+        // Fallback: set user profile if trackAppLaunch() failed before people.set
+        if (!this.profileSet && this.mixpanel) {
+          this.mixpanel.people.set(this.userId, {
+            $name: `User ${this.userId.substring(0, 6)}`,
+            $created: this.firstLaunchAt || new Date().toISOString(),
+            $os: deviceInfo.os_name,
+            $os_version: deviceInfo.os_version,
+            $device: deviceInfo.device_model,
+            ...deviceInfo,
+          });
+          this.profileSet = true;
+        }
 
         // Unified event data for both platforms
         const eventData = {
@@ -349,7 +364,19 @@ class AnalyticsService {
   }
 
   setAppLanguage(lang: string) {
+    if (lang === this.cachedAppLanguage) return;
     this.cachedAppLanguage = lang;
+
+    // Re-send user properties so analytics platforms get the resolved language
+    // instead of the initial 'auto' default
+    if (this.amplitudeInitialized && this.userId) {
+      const identifyEvent = new Amplitude.Identify();
+      identifyEvent.set('app_language', lang);
+      Amplitude.identify(identifyEvent, { user_id: this.userId });
+    }
+    if (this.mixpanel && this.userId) {
+      this.mixpanel.people.set(this.userId, { app_language: lang });
+    }
   }
 
   /**
