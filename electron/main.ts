@@ -35,14 +35,54 @@ if (SENTRY_DSN) {
     release: process.env.APP_VERSION || app.getVersion(),
     environment: app.isPackaged ? 'production' : 'development',
     beforeSend(event, hint) {
-      const originalException = hint.originalException;
+      const err = hint.originalException;
+      if (!err) return event;
+
+      const isErrorLike = err instanceof Error || typeof err === 'object';
+      if (!isErrorLike) return event;
+
+      // ExpectedError filter (existing)
+      if ((err as any).isExpected === true) return null;
+
+      // Inline filtering (not shared with renderer's isTransientError) because:
+      // 1. Main process cannot import renderer modules
+      // 2. Main process has unique categories (auto-updater, object destroyed)
+      const msg = ((err as any).message || '').toLowerCase();
+      const name = (err as any).name || '';
+
+      // Category 1: Cancellation (structured checks only)
+      if (name === 'AbortError') return null;
+
+      // Category 2: Transient network errors
+      const code = ((err as any).code || '').toUpperCase();
       if (
-        originalException &&
-        (originalException instanceof Error || typeof originalException === 'object') &&
-        (originalException as any).isExpected === true
-      ) {
+        code === 'ECONNRESET' ||
+        code === 'ETIMEDOUT' ||
+        code === 'ENOTFOUND' ||
+        code === 'ECONNREFUSED' ||
+        msg.includes('failed to fetch') ||
+        msg.includes('socket hang up') ||
+        msg.includes('network error')
+      )
         return null;
-      }
+
+      // Category 1: Server transient (500/503/504)
+      if (
+        msg.includes('[500') ||
+        msg.includes('[503') ||
+        msg.includes('[504') ||
+        msg.includes('internal server error') ||
+        msg.includes('service unavailable') ||
+        msg.includes('deadline exceeded')
+      )
+        return null;
+
+      // Auto-updater errors (not actionable by user)
+      if (msg.includes('net::err_') || msg.includes('updater')) return null;
+
+      // Electron lifecycle (window destroyed during async operation)
+      if (msg.includes('object has been destroyed')) return null;
+
       return event;
     },
   });
@@ -369,7 +409,7 @@ ipcMain.handle(
       console.error('[Main] Local transcription failed:', error);
 
       // Analytics: Transcription Failed (skip if cancelled)
-      if (!error.message?.includes('cancelled') && !error.message?.includes('aborted')) {
+      if (!(error as any).isExpected) {
         Sentry.captureException(error, { tags: { action: 'transcribe-local' } });
         void analyticsService.track(
           'transcription_failed',
@@ -399,7 +439,7 @@ ipcMain.handle('alignment:ctc', async (_event, data: any) => {
     return await ctcAlignerService.align(data);
   } catch (error: any) {
     console.error('[Main] CTC alignment failed:', error);
-    if (!error.message?.includes('cancelled')) {
+    if (!(error as any).isExpected) {
       Sentry.captureException(error, { tags: { action: 'alignment-ctc' } });
     }
     return { success: false, error: error.message };
@@ -833,11 +873,7 @@ ipcMain.handle(
       return { success: true, audioPath };
     } catch (error: any) {
       console.error('[Main] FFmpeg audio extraction failed:', error);
-      if (
-        !error.message?.includes('cancelled') &&
-        !error.message?.includes('SIGKILL') &&
-        !error.message?.includes('killed')
-      ) {
+      if (!(error as any).isExpected) {
         Sentry.captureException(error, { tags: { action: 'extract-audio-ffmpeg' } });
       }
       return { success: false, error: error.message };
@@ -924,11 +960,7 @@ ipcMain.handle(
       return { success: true, audioPath };
     } catch (error: any) {
       console.error('[Main] FFmpeg segment extraction failed:', error);
-      if (
-        !error.message?.includes('cancelled') &&
-        !error.message?.includes('SIGKILL') &&
-        !error.message?.includes('killed')
-      ) {
+      if (!(error as any).isExpected) {
         Sentry.captureException(error, { tags: { action: 'extract-audio-segment' } });
       }
       return { success: false, error: error.message };
@@ -962,11 +994,7 @@ ipcMain.handle(
       return { success: true, audioPath };
     } catch (error: any) {
       console.error('[Main] Failed to extract multiple audio segments:', error);
-      if (
-        !error.message?.includes('cancelled') &&
-        !error.message?.includes('SIGKILL') &&
-        !error.message?.includes('killed')
-      ) {
+      if (!(error as any).isExpected) {
         Sentry.captureException(error, { tags: { action: 'extract-multiple-audio-segments' } });
       }
       return { success: false, error: error.message };
@@ -1335,7 +1363,9 @@ ipcMain.handle('video-preview:transcode', async (event, options: { filePath: str
     return { success: true, ...result };
   } catch (error: any) {
     console.error('[Main] Preview transcode failed:', error);
-    Sentry.captureException(error);
+    if (!(error as any).isExpected) {
+      Sentry.captureException(error);
+    }
     return { success: false, error: error.message };
   }
 });

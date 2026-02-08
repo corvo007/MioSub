@@ -5,6 +5,7 @@ import fs from 'fs';
 import { app } from 'electron';
 
 import { getBinaryPath } from '../utils/paths.ts';
+import { ExpectedError } from '../utils/expectedError.ts';
 
 const checkBinaryExistence = (name: string, pathStr: string) => {
   if (!app.isPackaged && !fs.existsSync(pathStr)) {
@@ -216,7 +217,7 @@ export async function extractAudioFromVideo(
       currentAudioCommand = null;
       // Check if this was a cancellation
       if (isAudioExtractionCancelled) {
-        reject(new Error('Audio extraction cancelled'));
+        reject(new ExpectedError('Audio extraction cancelled'));
         return;
       }
       // 清理可能生成的临时文件
@@ -372,7 +373,7 @@ export async function extractAudioSegment(
       currentAudioCommand = null;
       // Check if this was a cancellation
       if (isAudioExtractionCancelled) {
-        reject(new Error('Audio extraction cancelled'));
+        reject(new ExpectedError('Audio extraction cancelled'));
         return;
       }
       // Clean up temp file if it was created
@@ -544,7 +545,7 @@ export async function extractMultipleAudioSegments(
         if (fs.existsSync(outputPath)) {
           fs.unlinkSync(outputPath);
         }
-        reject(new Error('Audio extraction cancelled'));
+        reject(new ExpectedError('Audio extraction cancelled'));
         return;
       }
 

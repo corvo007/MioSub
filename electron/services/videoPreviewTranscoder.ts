@@ -16,6 +16,7 @@ import { app } from 'electron';
 import * as Sentry from '@sentry/electron/main';
 import { VideoCompressorService } from './videoCompressor.ts';
 import { analyticsService } from './analyticsService.ts';
+import { ExpectedError } from '../utils/expectedError.ts';
 
 // Supported formats that don't need transcoding
 const SUPPORTED_FORMATS = ['mp4', 'webm', 'm4v'];
@@ -565,7 +566,7 @@ export async function transcodeForPreview(
         if (cancelledPaths.has(filePath)) {
           cancelledPaths.delete(filePath);
           log(`Transcode cancelled by user`);
-          reject(new Error('Transcode cancelled by user'));
+          reject(new ExpectedError('Transcode cancelled by user'));
           return;
         }
 
@@ -733,7 +734,7 @@ async function transcodeWithCpu(
         if (cancelledPaths.has(inputPath)) {
           cancelledPaths.delete(inputPath);
           log?.(`CPU transcode cancelled by user`);
-          reject(new Error('Transcode cancelled by user'));
+          reject(new ExpectedError('Transcode cancelled by user'));
           return;
         }
 

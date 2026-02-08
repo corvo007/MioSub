@@ -12,6 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { writeTempFile } from './fileUtils.ts';
 import { getBinaryPath } from '../utils/paths.ts';
 import { buildSpawnArgs } from '../utils/shell.ts';
+import { ExpectedError } from '../utils/expectedError.ts';
 
 // ============================================================================
 // Type Definitions
@@ -234,7 +235,7 @@ export class CTCAlignerService {
 
     // Reject all promises
     for (const reject of this.activeJobRejects.values()) {
-      reject(new Error('Alignment cancelled by user'));
+      reject(new ExpectedError('Alignment cancelled by user'));
     }
     this.activeJobRejects.clear();
 

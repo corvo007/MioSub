@@ -5,6 +5,7 @@ import { spawn, type ChildProcess } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import { t } from '../i18n.ts';
 import { buildSpawnArgs, ensureAsciiSafePath, getAsciiSafeTempPath } from '../utils/shell.ts';
+import { ExpectedError } from '../utils/expectedError.ts';
 
 export interface SubtitleItem {
   start: string;
@@ -102,6 +103,7 @@ export class LocalWhisperService {
   }
 
   private activeProcesses: Map<string, ChildProcess> = new Map();
+  private isCancelled = false;
 
   validateModel(filePath: string): { valid: boolean; error?: string } {
     try {
@@ -137,6 +139,7 @@ export class LocalWhisperService {
   }
 
   abort() {
+    this.isCancelled = true;
     this.activeProcesses.forEach((process, id) => {
       console.log(`[DEBUG] [LocalWhisper] Aborting process ${id}`);
       process.kill();
@@ -152,6 +155,9 @@ export class LocalWhisperService {
     onLog?: (message: string) => void,
     customBinaryPath?: string
   ): Promise<TranscribeResult> {
+    // Reset cancellation flag at start of new transcription
+    this.isCancelled = false;
+
     // Validate model first
     const validation = this.validateModel(modelPath);
     if (!validation.valid) {
@@ -285,10 +291,16 @@ export class LocalWhisperService {
           this.activeProcesses.delete(jobId); // Remove from active map
 
           if (code === null) {
-            // Process was killed by signal (likely cancelled)
-            const errorMsg = `Process killed with signal ${signal}`;
-            console.log(`[LocalWhisper] ${errorMsg}`);
-            reject(new Error(`Process cancelled (signal: ${signal})`));
+            // Process was killed by signal
+            if (this.isCancelled) {
+              // User-initiated cancellation → expected, don't report to Sentry
+              console.log(`[LocalWhisper] Process cancelled by user (signal: ${signal})`);
+              reject(new ExpectedError(`Process cancelled (signal: ${signal})`));
+            } else {
+              // OS-level kill (SIGABRT, OOM, etc.) → unexpected, report to Sentry
+              console.error(`[LocalWhisper] Process killed by OS (signal: ${signal})`);
+              reject(new Error(`Process killed by OS (signal: ${signal})`));
+            }
             return;
           }
 
@@ -410,10 +422,10 @@ export class LocalWhisperService {
       const versionOutput =
         (versionResult.stdout?.toString() || '') + (versionResult.stderr?.toString() || '');
       const versionMatch =
-        versionOutput.match(/whisper\.cpp (v\d+\.\d+\.\d+)/i) ||
-        versionOutput.match(/(v\d+\.\d+\.\d+)/i);
+        versionOutput.match(/whisper\.cpp v?(\d+\.\d+\.\d+)/i) ||
+        versionOutput.match(/v?(\d+\.\d+\.\d+)/i);
       if (versionMatch) {
-        details.version = versionMatch[1];
+        details.version = `v${versionMatch[1]}`;
       }
 
       // Use -h for GPU detection (and fallback version detection)
@@ -424,8 +436,8 @@ export class LocalWhisperService {
       // Fallback version detection from -h output (older builds without --version)
       if (!versionMatch) {
         const helpVersionMatch =
-          output.match(/whisper\.cpp (v\d+\.\d+\.\d+)/i) || output.match(/(v\d+\.\d+\.\d+)/i);
-        details.version = helpVersionMatch ? helpVersionMatch[1] : 'unknown';
+          output.match(/whisper\.cpp v?(\d+\.\d+\.\d+)/i) || output.match(/v?(\d+\.\d+\.\d+)/i);
+        details.version = helpVersionMatch ? `v${helpVersionMatch[1]}` : 'unknown';
       }
 
       // Detect GPU support

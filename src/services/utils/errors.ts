@@ -38,3 +38,51 @@ export class UserActionableError extends Error {
     this.code = code;
   }
 }
+
+/**
+ * Detects transient errors that should NOT be reported to Sentry.
+ * Covers: user cancellation, network failures, server errors (500/503/504),
+ * process kills, and HTML error pages from API proxies.
+ */
+export function isTransientError(error: any): boolean {
+  if (!error) return false;
+
+  // ExpectedError (cancellation, user-initiated kills)
+  if ((error as any).isExpected === true) return true;
+
+  // Cancellation (structured check)
+  const name = error.name || '';
+  if (name === 'AbortError' || name === 'StepCancelledError') return true;
+
+  const msg = (error.message || '').toLowerCase();
+
+  // Network / fetch errors
+  const errorCode = ((error as any).code || '').toUpperCase();
+  if (
+    errorCode === 'ECONNRESET' ||
+    errorCode === 'ETIMEDOUT' ||
+    errorCode === 'ENOTFOUND' ||
+    errorCode === 'ECONNREFUSED' ||
+    msg.includes('failed to fetch') ||
+    msg.includes('networkerror') ||
+    msg.includes('network error') ||
+    msg.includes('socket hang up')
+  )
+    return true;
+
+  // Server transient errors (Gemini 500/503/504)
+  if (
+    msg.includes('[500') ||
+    msg.includes('[503') ||
+    msg.includes('[504') ||
+    msg.includes('internal server error') ||
+    msg.includes('service unavailable') ||
+    msg.includes('deadline exceeded')
+  )
+    return true;
+
+  // HTML error page instead of JSON (API proxy/CDN errors)
+  if (msg.includes('<!doctype') || msg.includes('<html')) return true;
+
+  return false;
+}
