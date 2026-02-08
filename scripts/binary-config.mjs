@@ -106,10 +106,6 @@ export const BINARIES = {
       type: 'zip',
       extract: [
         { from: 'whisper-cli.exe', to: 'whisper-cli.exe' },
-        { from: 'whisper.dll', to: 'whisper.dll' },
-        { from: 'ggml.dll', to: 'ggml.dll' },
-        { from: 'ggml-base.dll', to: 'ggml-base.dll' },
-        { from: 'ggml-cpu.dll', to: 'ggml-cpu.dll' },
       ],
     },
     'linux-x64': {

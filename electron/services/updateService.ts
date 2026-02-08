@@ -63,6 +63,7 @@ const REQUEST_TIMEOUT_MS = 15000; // 15 seconds timeout for GitHub API
 const BINARY_REPOS = {
   aligner: { owner: 'Corvo007', repo: 'cpp-ctc-aligner' },
   ytdlp: { owner: 'yt-dlp', repo: 'yt-dlp' },
+  whisper: { owner: 'Corvo007', repo: 'whisper.cpp' },
 } as const;
 
 type BinaryName = keyof typeof BINARY_REPOS;
@@ -352,6 +353,11 @@ async function getCurrentBinaryVersion(name: BinaryName): Promise<string> {
       const { ytDlpService } = await import('./ytdlp.ts');
       const versions = await ytDlpService.getVersions();
       return versions.ytdlp;
+    } else if (name === 'whisper') {
+      const { localWhisperService } = await import('./localWhisper.ts');
+      const details = await localWhisperService.getWhisperDetails();
+      if (details.source === 'Custom') return 'custom';
+      return details.version.replace(/^v/, '');
     }
   } catch (err) {
     console.error(`[UpdateService] Failed to get ${name} version:`, err);
@@ -382,6 +388,11 @@ function compareYtdlpVersions(a: string, b: string): number {
 export async function checkBinaryUpdate(name: BinaryName): Promise<BinaryUpdateInfo> {
   const repo = BINARY_REPOS[name];
   const current = await getCurrentBinaryVersion(name);
+
+  // Skip update check for custom (third-party) binaries
+  if (current === 'custom') {
+    return { name, current: 'custom', latest: '', hasUpdate: false };
+  }
 
   const result: BinaryUpdateInfo = {
     name,
@@ -471,13 +482,48 @@ export async function checkBinaryUpdate(name: BinaryName): Promise<BinaryUpdateI
     if (asset) {
       result.downloadUrl = asset.browser_download_url;
     }
+  } else if (name === 'whisper') {
+    // whisper.cpp: tag is "v1.8.5-custom"
+    const latestVersion = tagName.replace(/^v/, '').replace(/-custom$/, '');
+    result.latest = latestVersion;
+
+    if (current === 'unknown') {
+      // Can't detect version → always update
+      result.hasUpdate = true;
+    } else {
+      result.hasUpdate = compareVersions(latestVersion, current) > 0;
+    }
+
+    // Asset naming: whisper-windows-x86_64.zip, whisper-macos-arm64.tar.gz, etc.
+    const asset = release.data.assets?.find((a: any) => {
+      const n = a.name.toLowerCase();
+      if (platform === 'win32') {
+        return n.includes('windows') && n.includes('x86_64') && n.endsWith('.zip');
+      } else if (platform === 'darwin') {
+        if (arch === 'arm64')
+          return n.includes('macos') && n.includes('arm64') && n.endsWith('.tar.gz');
+        return n.includes('macos') && n.includes('x86_64') && n.endsWith('.tar.gz');
+      } else if (platform === 'linux') {
+        if (arch === 'arm64')
+          return n.includes('linux') && n.includes('arm64') && n.endsWith('.tar.gz');
+        return n.includes('linux') && n.includes('x86_64') && n.endsWith('.tar.gz');
+      }
+      return false;
+    });
+    if (asset) {
+      result.downloadUrl = asset.browser_download_url;
+    }
   }
 
   return result;
 }
 
 export async function checkAllBinaryUpdates(): Promise<BinaryUpdateInfo[]> {
-  const results = await Promise.all([checkBinaryUpdate('aligner'), checkBinaryUpdate('ytdlp')]);
+  const results = await Promise.all([
+    checkBinaryUpdate('aligner'),
+    checkBinaryUpdate('ytdlp'),
+    checkBinaryUpdate('whisper'),
+  ]);
   return results;
 }
 
@@ -497,7 +543,12 @@ export async function downloadBinaryUpdate(
     return { success: false, error: 'Invalid download URL format' };
   }
 
-  const binaryName = name === 'aligner' ? 'cpp-ort-aligner' : 'yt-dlp';
+  const binaryNameMap: Record<BinaryName, string> = {
+    aligner: 'cpp-ort-aligner',
+    ytdlp: 'yt-dlp',
+    whisper: 'whisper-cli',
+  };
+  const binaryName = binaryNameMap[name];
   const binaryPath = getBinaryPath(binaryName);
   const resourceDir = path.dirname(binaryPath);
   const isArchive = downloadUrl.endsWith('.zip') || downloadUrl.endsWith('.tar.gz');

@@ -35,7 +35,7 @@ type UpdateStatus = {
 };
 
 type BinaryUpdateInfo = {
-  name: 'aligner' | 'ytdlp';
+  name: 'aligner' | 'ytdlp' | 'whisper';
   current: string;
   latest: string;
   hasUpdate: boolean;
@@ -142,7 +142,10 @@ export const AboutTab: React.FC = () => {
     }
   };
 
-  const handleDownloadBinary = async (name: 'aligner' | 'ytdlp', downloadUrl: string) => {
+  const handleDownloadBinary = async (
+    name: 'aligner' | 'ytdlp' | 'whisper',
+    downloadUrl: string
+  ) => {
     if (!window.electronAPI?.update?.downloadBinary) return;
     setBinaryUpdate((prev) => ({
       ...prev,
@@ -181,7 +184,7 @@ export const AboutTab: React.FC = () => {
     }
   };
 
-  const handleOpenBinaryRelease = (name: 'aligner' | 'ytdlp') => {
+  const handleOpenBinaryRelease = (name: 'aligner' | 'ytdlp' | 'whisper') => {
     void window.electronAPI?.update?.openBinaryRelease(name);
   };
 

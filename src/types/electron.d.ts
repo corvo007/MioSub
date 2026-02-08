@@ -546,7 +546,7 @@ export interface ElectronAPI {
     checkBinaries: () => Promise<{
       success: boolean;
       updates?: Array<{
-        name: 'aligner' | 'ytdlp';
+        name: 'aligner' | 'ytdlp' | 'whisper';
         current: string;
         latest: string;
         hasUpdate: boolean;
@@ -556,10 +556,10 @@ export interface ElectronAPI {
       error?: string;
     }>;
     downloadBinary: (
-      name: 'aligner' | 'ytdlp',
+      name: 'aligner' | 'ytdlp' | 'whisper',
       downloadUrl: string
     ) => Promise<{ success: boolean; error?: string }>;
-    openBinaryRelease: (name: 'aligner' | 'ytdlp') => Promise<{ success: boolean }>;
+    openBinaryRelease: (name: 'aligner' | 'ytdlp' | 'whisper') => Promise<{ success: boolean }>;
     onBinaryProgress: (callback: (data: { name: string; percent: number }) => void) => () => void;
   };
 
