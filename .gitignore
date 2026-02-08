@@ -101,3 +101,7 @@ scripts/extract-analytics.ts
 
 # Sentry investigations (separate repo)
 docs/sentry-investigations/
+
+.agents
+.agent/skills
+demo-video
