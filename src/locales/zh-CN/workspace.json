@@ -156,7 +156,9 @@
     "goToSettings": "前往设置",
     "openSettings": "打开设置",
     "close": "关闭",
-    "seeDoc": "查看文档"
+    "seeDoc": "查看文档",
+    "continueAnyway": "仍然继续",
+    "glossaryMismatch": "当前术语表「{{glossaryName}}」包含{{glossaryLang}}翻译，但目标语言为{{targetLang}}。请选择对应语言的术语表，或取消选择术语表以重新生成。"
   },
   "task": {
     "generating": "正在生成字幕"

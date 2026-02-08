@@ -156,7 +156,9 @@
     "goToSettings": "Go to Settings",
     "openSettings": "Open Settings",
     "close": "Close",
-    "seeDoc": "See Documentation"
+    "seeDoc": "See Documentation",
+    "continueAnyway": "Continue Anyway",
+    "glossaryMismatch": "Active glossary \"{{glossaryName}}\" contains {{glossaryLang}} translations, but target language is {{targetLang}}. Please select a glossary matching the target language, or deselect the glossary to regenerate."
   },
   "task": {
     "generating": "Generating subtitles"

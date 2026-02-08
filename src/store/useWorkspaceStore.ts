@@ -60,8 +60,10 @@ interface WorkspaceState {
     message: string;
     field?: string;
     tab?: 'services' | 'enhance';
+    severity?: 'error' | 'warning';
   }[];
   showPreflightModal: boolean;
+  preflightContinueCallback: (() => void) | null;
 
   // Logic Actions (Bridge)
   actions: WorkspacePageActions;
@@ -96,9 +98,16 @@ interface WorkspaceActions {
 
   // Preflight setters
   setPreflightErrors: (
-    errors: { code: string; message: string; field?: string; tab?: 'services' | 'enhance' }[]
+    errors: {
+      code: string;
+      message: string;
+      field?: string;
+      tab?: 'services' | 'enhance';
+      severity?: 'error' | 'warning';
+    }[]
   ) => void;
   setShowPreflightModal: (show: boolean) => void;
+  setPreflightContinueCallback: (cb: (() => void) | null) => void;
 
   // Compound actions
   // Compound actions
@@ -169,6 +178,7 @@ const initialState: WorkspaceState = {
   speakerProfiles: [],
   preflightErrors: [],
   showPreflightModal: false,
+  preflightContinueCallback: null,
   actions: {
     handleFileChange: () => {},
     handleFileSelectNative: () => {},
@@ -237,6 +247,7 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>()(
     // Preflight setters
     setPreflightErrors: (preflightErrors) => set({ preflightErrors }),
     setShowPreflightModal: (showPreflightModal) => set({ showPreflightModal }),
+    setPreflightContinueCallback: (preflightContinueCallback) => set({ preflightContinueCallback }),
 
     // Compound actions
     resetWorkspace: () =>

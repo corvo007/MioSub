@@ -295,11 +295,18 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
  * Reads state from store and handles settings navigation
  */
 const PreflightErrorModalContainer: React.FC = () => {
-  const { preflightErrors, showPreflightModal, setShowPreflightModal } = useWorkspaceStore();
+  const {
+    preflightErrors,
+    showPreflightModal,
+    setShowPreflightModal,
+    preflightContinueCallback,
+    setPreflightContinueCallback,
+  } = useWorkspaceStore();
   const { setShowSettings, setSettingsTab } = useAppStore();
 
   const handleOpenSettings = (tab?: 'services' | 'enhance') => {
     setShowPreflightModal(false);
+    setPreflightContinueCallback(null);
     if (tab) {
       setSettingsTab(tab);
     }
@@ -309,9 +316,13 @@ const PreflightErrorModalContainer: React.FC = () => {
   return (
     <PreflightErrorModal
       isOpen={showPreflightModal}
-      onClose={() => setShowPreflightModal(false)}
+      onClose={() => {
+        setShowPreflightModal(false);
+        setPreflightContinueCallback(null);
+      }}
       errors={preflightErrors}
       onOpenSettings={handleOpenSettings}
+      onContinue={preflightContinueCallback || undefined}
     />
   );
 };
