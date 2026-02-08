@@ -200,6 +200,11 @@ export const transcribeWithWhisper = async (
       });
       lastError = e;
 
+      // Don't retry if user cancelled - abort errors won't resolve by retrying
+      if (signal?.aborted) {
+        throw new Error(i18n.t('services:pipeline.errors.cancelled'));
+      }
+
       // Don't retry for authentication/permission errors - they won't resolve
       const actionableInfo = getActionableWhisperError(e);
       if (actionableInfo && (e.status === 401 || e.status === 403)) {
