@@ -5,6 +5,24 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.13] - 2026-02-08
+
+### Features
+
+- **Preflight Check**: Added warning severity level with "Continue Anyway" button. Glossary language mismatches now show as amber warnings instead of blocking errors.
+- **Glossary**: Added target language field to glossaries with auto-detection via ELD. Glossary manager now shows a language badge and dropdown selector per glossary.
+- **Settings**: Added clear button for custom whisper binary path to easily reset to bundled default.
+- **Binary Updates**: Added whisper-cli to in-app binary update system alongside aligner and yt-dlp.
+
+### Fixes
+
+- **Translation**: Fixed hardcoded "Simplified Chinese" defaults in 7 prompt functions that caused non-Chinese target languages to still produce Chinese output.
+- **Glossary**: Added blocking preflight check when active glossary language does not match target language, preventing wrong-language terms from being injected into prompts.
+- **Local Whisper**: Rebuilt whisper.cpp as statically linked binary, fixing macOS crash caused by missing `libwhisper.dylib`.
+- **Local Whisper**: Fixed retry loop continuing after user cancellation. Aborted requests now fail fast instead of retrying.
+- **FFmpeg**: Fixed spawn args not split for concat extraction, causing long video (>2h) speaker analysis to fail with exit code 2880417800.
+- **UI**: Fixed long toast messages breaking layout by adding max width and text truncation.
+
 ## [3.0.12] - 2026-02-06
 
 ### Fixes
