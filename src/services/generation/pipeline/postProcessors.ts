@@ -19,7 +19,10 @@ import { validateContentIntegrity } from '@/services/subtitle/contentValidator';
 import { type PostProcessOutput, type PostCheckResult } from '@/services/subtitle/postCheck';
 import { getTranslationBatchPrompt } from '@/services/llm/prompts';
 import { generateContentWithRetry, formatGeminiError } from '@/services/llm/providers/gemini';
-import { TRANSLATION_SCHEMA, TRANSLATION_WITH_DIARIZATION_SCHEMA } from '@/services/llm/schemas';
+import {
+  createTranslationSchema,
+  createTranslationWithDiarizationSchema,
+} from '@/services/llm/schemas';
 import {
   STEP_MODELS,
   buildStepConfig,
@@ -201,8 +204,8 @@ export function createTranslationPostProcessor(
             contents: { parts: [{ text: retryPrompt }] },
             config: {
               responseSchema: useDiarization
-                ? TRANSLATION_WITH_DIARIZATION_SCHEMA
-                : TRANSLATION_SCHEMA,
+                ? createTranslationWithDiarizationSchema(targetLanguage)
+                : createTranslationSchema(targetLanguage),
               ...buildStepConfig('translation'),
             },
           },

@@ -204,7 +204,7 @@ export function EndToEndWizard({ settings, onComplete, onCancel }: EndToEndWizar
 
         {/* Footer Navigation - 仅在配置页显示，输入页解析成功后自动跳转 */}
         {state.currentStep === 'config' && (
-          <footer className="py-4 border-t border-slate-200/60 shrink-0 bg-white/50">
+          <footer className="py-5 border-t border-purple-200/30 shrink-0 backdrop-blur-sm">
             <div className="max-w-3xl mx-auto flex justify-between px-6">
               <button
                 onClick={currentStepIndex > 0 ? goBack : onCancel}

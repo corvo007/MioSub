@@ -1,4 +1,5 @@
 import { Type, HarmCategory, HarmBlockThreshold } from '@google/genai';
+import { toLanguageName } from '@/services/utils/language';
 
 export const PROOFREAD_BATCH_SIZE = 20; // Default fallback
 
@@ -29,34 +30,40 @@ export const REFINEMENT_WITH_DIARIZATION_SCHEMA = {
   },
 };
 
-export const TRANSLATION_SCHEMA = {
+export const createTranslationSchema = (targetLanguage?: string) => ({
   type: Type.ARRAY,
   items: {
     type: Type.OBJECT,
     properties: {
       id: { type: Type.STRING },
       text_original: { type: Type.STRING },
-      text_translated: { type: Type.STRING, description: 'Simplified Chinese translation' },
+      text_translated: {
+        type: Type.STRING,
+        description: `${toLanguageName(targetLanguage || 'zh-CN')} translation`,
+      },
     },
     required: ['id', 'text_original', 'text_translated'],
   },
-};
+});
 
-export const TRANSLATION_WITH_DIARIZATION_SCHEMA = {
+export const createTranslationWithDiarizationSchema = (targetLanguage?: string) => ({
   type: Type.ARRAY,
   items: {
     type: Type.OBJECT,
     properties: {
       id: { type: Type.STRING },
       text_original: { type: Type.STRING },
-      text_translated: { type: Type.STRING, description: 'Simplified Chinese translation' },
+      text_translated: {
+        type: Type.STRING,
+        description: `${toLanguageName(targetLanguage || 'zh-CN')} translation`,
+      },
       speaker: { type: Type.STRING, description: 'Speaker identifier' },
     },
     required: ['id', 'text_original', 'text_translated', 'speaker'],
   },
-};
+});
 
-export const BATCH_SCHEMA = {
+export const createBatchSchema = (targetLanguage?: string) => ({
   type: Type.ARRAY,
   items: {
     type: Type.OBJECT,
@@ -65,13 +72,16 @@ export const BATCH_SCHEMA = {
       start: { type: Type.STRING, description: 'HH:MM:SS,mmm' },
       end: { type: Type.STRING, description: 'HH:MM:SS,mmm' },
       text_original: { type: Type.STRING },
-      text_translated: { type: Type.STRING, description: 'Simplified Chinese translation' },
+      text_translated: {
+        type: Type.STRING,
+        description: `${toLanguageName(targetLanguage || 'zh-CN')} translation`,
+      },
     },
     required: ['id', 'start', 'end', 'text_original', 'text_translated'],
   },
-};
+});
 
-export const BATCH_WITH_DIARIZATION_SCHEMA = {
+export const createBatchWithDiarizationSchema = (targetLanguage?: string) => ({
   type: Type.ARRAY,
   items: {
     type: Type.OBJECT,
@@ -80,7 +90,10 @@ export const BATCH_WITH_DIARIZATION_SCHEMA = {
       start: { type: Type.STRING, description: 'HH:MM:SS,mmm' },
       end: { type: Type.STRING, description: 'HH:MM:SS,mmm' },
       text_original: { type: Type.STRING },
-      text_translated: { type: Type.STRING, description: 'Simplified Chinese translation' },
+      text_translated: {
+        type: Type.STRING,
+        description: `${toLanguageName(targetLanguage || 'zh-CN')} translation`,
+      },
       speaker: {
         type: Type.STRING,
         description: "Speaker identifier (e.g., 'Speaker 1', 'Speaker 2').",
@@ -88,20 +101,23 @@ export const BATCH_WITH_DIARIZATION_SCHEMA = {
     },
     required: ['id', 'start', 'end', 'text_original', 'text_translated', 'speaker'],
   },
-};
+});
 
-export const GLOSSARY_SCHEMA = {
+export const createGlossarySchema = (targetLanguage?: string) => ({
   type: Type.ARRAY,
   items: {
     type: Type.OBJECT,
     properties: {
       term: { type: Type.STRING, description: 'Original term from the audio' },
-      translation: { type: Type.STRING, description: 'Simplified Chinese translation' },
+      translation: {
+        type: Type.STRING,
+        description: `${toLanguageName(targetLanguage || 'zh-CN')} translation`,
+      },
       notes: { type: Type.STRING, description: 'Optional notes for pronunciation or context' },
     },
     required: ['term', 'translation'],
   },
-};
+});
 
 export const SAFETY_SETTINGS = [
   { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },

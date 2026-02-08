@@ -16,7 +16,10 @@ import {
   formatGeminiError,
   getActionableErrorInfo,
 } from '@/services/llm/providers/gemini';
-import { TRANSLATION_SCHEMA, TRANSLATION_WITH_DIARIZATION_SCHEMA } from '@/services/llm/schemas';
+import {
+  createTranslationSchema,
+  createTranslationWithDiarizationSchema,
+} from '@/services/llm/schemas';
 import { STEP_MODELS, buildStepConfig } from '@/config';
 import { withPostCheck } from '@/services/subtitle/postCheck';
 import * as Sentry from '@sentry/electron/renderer';
@@ -63,8 +66,8 @@ export async function processTranslationBatch(
             contents: { parts: [{ text: prompt }] },
             config: {
               responseSchema: useDiarization
-                ? TRANSLATION_WITH_DIARIZATION_SCHEMA
-                : TRANSLATION_SCHEMA,
+                ? createTranslationWithDiarizationSchema(targetLanguage)
+                : createTranslationSchema(targetLanguage),
               systemInstruction: systemInstruction,
               ...buildStepConfig('translation'),
             },

@@ -233,8 +233,8 @@ export function useEndToEndSubtitleGeneration({
               is_long_video_mode: isLongVideoMode,
 
               // Core settings
-              genre: currentSettings.genre,
-              target_language: currentSettings.targetLanguage,
+              genre: config.genre ?? currentSettings.genre,
+              target_language: config.targetLanguage ?? currentSettings.targetLanguage,
               output_mode: config.outputMode || 'bilingual',
 
               // Transcription
@@ -358,6 +358,7 @@ export function useEndToEndSubtitleGeneration({
           ...currentSettings,
           // Apply any config overrides from the wizard
           genre: config.genre ?? currentSettings.genre,
+          targetLanguage: config.targetLanguage ?? currentSettings.targetLanguage,
           enableAutoGlossary: config.enableGlossary ?? currentSettings.enableAutoGlossary,
           enableDiarization: config.enableDiarization ?? currentSettings.enableDiarization,
           enableSpeakerPreAnalysis:

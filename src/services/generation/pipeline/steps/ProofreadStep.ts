@@ -22,7 +22,7 @@ import { reconcile } from '@/services/subtitle/reconciler';
 import { adjustTimestampOffset } from '../resultTransformers';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
 import { getProofreadPrompt } from '@/services/llm/prompts';
-import { BATCH_SCHEMA, BATCH_WITH_DIARIZATION_SCHEMA } from '@/services/llm/schemas';
+import { createBatchSchema, createBatchWithDiarizationSchema } from '@/services/llm/schemas';
 import { generateContentWithLongOutput } from '@/services/llm/providers/gemini';
 import { STEP_MODELS, buildStepConfig } from '@/config';
 import { UserActionableError } from '@/services/utils/errors';
@@ -288,7 +288,9 @@ export class ProofreadStep {
       model,
       systemInstruction,
       parts,
-      settings.enableDiarization ? BATCH_WITH_DIARIZATION_SCHEMA : BATCH_SCHEMA,
+      settings.enableDiarization
+        ? createBatchWithDiarizationSchema(settings.targetLanguage)
+        : createBatchSchema(settings.targetLanguage),
       stepConfig,
       signal,
       trackUsage,

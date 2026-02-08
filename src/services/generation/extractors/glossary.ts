@@ -9,7 +9,7 @@ import { blobToBase64 } from '@/services/audio/converter';
 import { getAudioSegment } from '@/services/audio/audioSourceHelper';
 import { mapInParallel } from '@/services/utils/concurrency';
 import { logger } from '@/services/utils/logger';
-import { GLOSSARY_SCHEMA } from '@/services/llm/schemas';
+import { createGlossarySchema } from '@/services/llm/schemas';
 import {
   generateContentWithRetry,
   isRetryableError,
@@ -66,7 +66,7 @@ export const extractGlossaryFromAudio = async (
             parts: [{ inlineData: { mimeType: 'audio/wav', data: base64Audio } }, { text: prompt }],
           },
           config: {
-            responseSchema: GLOSSARY_SCHEMA,
+            responseSchema: createGlossarySchema(targetLanguage),
             ...buildStepConfig('glossaryExtraction'),
           },
         },
