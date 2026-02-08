@@ -67,6 +67,7 @@
         "binaryPathTitle": "Whisper-cli.exe 路径（可选）",
         "binaryPathDesc": "手动指定 Whisper 可执行文件路径，覆盖自动检测。<br>如需使用 <strong>GPU 加速</strong>，请指定支持 GPU 的 whisper-cli.exe 版本。",
         "binaryPathPlaceholder": "选择 whisper-cli.exe...",
+        "clearBinaryPath": "清空（使用内置）",
         "browseButton": "📁 浏览",
         "instructionsTitle": "💡 说明：",
         "instructionGgml": "需要 <strong>GGML 格式</strong> 的 .bin 模型文件",

@@ -67,6 +67,7 @@
         "binaryPathTitle": "Whisper-cli.exe Path (Optional)",
         "binaryPathDesc": "Manually specify the Whisper executable path, overriding auto-detection.<br>To use <strong>GPU acceleration</strong>, please specify a GPU-enabled version of whisper-cli.exe.",
         "binaryPathPlaceholder": "Select whisper-cli.exe...",
+        "clearBinaryPath": "Clear (use bundled)",
         "browseButton": "📁 Browse",
         "instructionsTitle": "💡 Instructions:",
         "instructionGgml": "Requires a .bin model file in <strong>GGML format</strong>",

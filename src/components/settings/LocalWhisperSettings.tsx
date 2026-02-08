@@ -113,6 +113,18 @@ export const LocalWhisperSettings: React.FC<LocalWhisperSettingsProps> = ({
           readOnly
           className="flex-1 px-3 py-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-700 placeholder-slate-400 focus:outline-none focus:border-brand-purple focus:ring-1 focus:ring-brand-purple shadow-sm transition-all"
         />
+        {localWhisperBinaryPath && (
+          <button
+            onClick={() => onBinaryPathChange('')}
+            className="px-3 py-2 text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-200 rounded-lg transition-colors"
+            title={t(
+              'services.transcription.localWhisperSettings.clearBinaryPath',
+              'Clear (use bundled)'
+            )}
+          >
+            ✕
+          </button>
+        )}
         <button
           onClick={handleSelectBinary}
           className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 rounded-lg transition-colors shadow-sm font-medium"
