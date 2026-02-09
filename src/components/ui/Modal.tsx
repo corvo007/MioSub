@@ -12,6 +12,10 @@ interface ModalProps {
   zIndex?: number;
   showCloseButton?: boolean;
   contentClassName?: string;
+  /** Whether pressing Escape closes the modal (default: true) */
+  closeOnEscape?: boolean;
+  /** Whether clicking the backdrop closes the modal (default: true) */
+  closeOnBackdropClick?: boolean;
 }
 
 const maxWidthClasses = {
@@ -34,14 +38,16 @@ export const Modal: React.FC<ModalProps> = ({
   zIndex = 60,
   showCloseButton = true,
   contentClassName,
+  closeOnEscape = true,
+  closeOnBackdropClick = true,
 }) => {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && closeOnEscape) {
         onClose();
       }
     },
-    [onClose]
+    [onClose, closeOnEscape]
   );
 
   useEffect(() => {
@@ -59,7 +65,7 @@ export const Modal: React.FC<ModalProps> = ({
         'fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in'
       )}
       style={{ zIndex }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onClick={(e) => e.target === e.currentTarget && closeOnBackdropClick && onClose()}
     >
       <div
         className={cn(

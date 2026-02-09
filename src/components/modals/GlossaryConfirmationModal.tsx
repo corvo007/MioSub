@@ -223,11 +223,13 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
     <>
       <Modal
         isOpen={isOpen}
-        onClose={handleDiscard} // Or onClose prop if provided? Use handleDiscard as fallback close
+        onClose={handleDiscard}
         maxWidth="4xl"
-        title={undefined} // Custom header
+        title={undefined}
         showCloseButton={false}
-        contentClassName="p-0 flex flex-col h-full bg-white/50" // Override padding and ensure flex layout
+        closeOnEscape={false}
+        closeOnBackdropClick={false}
+        contentClassName="p-0 flex flex-col h-full bg-white/50"
       >
         <div className="flex flex-col h-[85vh] max-h-[90vh]">
           {/* Header */}
