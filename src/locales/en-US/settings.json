@@ -148,6 +148,11 @@
       "autoConfirmDesc": "Apply extracted terms directly without manual confirmation. New terms will be merged into the currently active glossary (if none exists, a new one will be created).",
       "manageGlossary": "Manage Glossary"
     },
+    "textProcessing": {
+      "title": "Text Processing",
+      "removeTrailingPunctuation": "Remove trailing punctuation",
+      "removeTrailingPunctuationDesc": "Automatically remove punctuation at the end of each subtitle after translation and proofreading"
+    },
     "alignment": {
       "title": "Timestamp Alignment",
       "mode": "Alignment Mode",

@@ -148,6 +148,11 @@
       "autoConfirmDesc": "提取术语后直接应用，无需人工确认。新术语将自动合并至当前激活的术语表（如当前无术语表，则自动新建）。",
       "manageGlossary": "管理术语表"
     },
+    "textProcessing": {
+      "title": "文本处理",
+      "removeTrailingPunctuation": "删除字幕尾部标点",
+      "removeTrailingPunctuationDesc": "翻译和校对完成后，自动删除每条字幕末尾的标点符号"
+    },
     "alignment": {
       "title": "时间轴对齐",
       "mode": "对齐模式",

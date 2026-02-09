@@ -92,6 +92,9 @@ export interface AppSettings {
   alignmentModelPath?: string; // Path to MMS alignment model directory
   localConcurrency?: number; // Max concurrent local processes (default: 1)
 
+  // Text Processing Settings
+  removeTrailingPunctuation?: boolean; // Remove trailing punctuation from subtitles (default: false)
+
   // Display Settings
   language?: 'zh-CN' | 'en-US' | 'ja-JP'; // UI language (default: auto-detect from system)
 

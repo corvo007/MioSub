@@ -163,6 +163,20 @@ export const EnhanceTab: React.FC<EnhanceTabComponentProps> = ({
         </button>
       </div>
 
+      {/* Text Processing Settings */}
+      <div className="space-y-4">
+        <SectionHeader>{t('enhance.textProcessing.title')}</SectionHeader>
+        <SettingRow
+          label={t('enhance.textProcessing.removeTrailingPunctuation')}
+          description={t('enhance.textProcessing.removeTrailingPunctuationDesc')}
+        >
+          <Toggle
+            checked={settings.removeTrailingPunctuation || false}
+            onChange={(v) => updateSetting('removeTrailingPunctuation', v)}
+          />
+        </SettingRow>
+      </div>
+
       {/* Alignment Settings */}
       <div className="space-y-4">
         <SectionHeader>{t('enhance.alignment.title')}</SectionHeader>

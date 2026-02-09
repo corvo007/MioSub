@@ -27,6 +27,7 @@ import { generateContentWithLongOutput } from '@/services/llm/providers/gemini';
 import { STEP_MODELS, buildStepConfig } from '@/config';
 import { UserActionableError } from '@/services/utils/errors';
 import { ExpectedError } from '@/utils/expectedError';
+import { removeTrailingPunctuation } from '@/services/subtitle/punctuationCleaner';
 import { logger } from '@/services/utils/logger';
 import * as Sentry from '@sentry/electron/renderer';
 import i18n from '@/i18n';
@@ -125,9 +126,14 @@ export class ProofreadStep {
       const result = await this.execute(input, ctx);
 
       // 7. Post-process: reconcile with original
-      const finalResult = this.postProcess(result, input.batch);
+      let finalResult = this.postProcess(result, input.batch);
 
-      // 8. Report progress: completed
+      // 8. Remove trailing punctuation if enabled
+      if (pipelineContext.settings.removeTrailingPunctuation) {
+        finalResult = removeTrailingPunctuation(finalResult);
+      }
+
+      // 9. Report progress: completed
       onProgress?.({
         id: batchLabel,
         total: totalBatches,

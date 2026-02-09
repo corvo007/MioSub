@@ -148,6 +148,11 @@
       "autoConfirmDesc": "抽出した用語を確認なしで直接適用します。新しい用語は現在の用語集に自動マージされます（用語集がない場合は新規作成）。",
       "manageGlossary": "用語集を管理"
     },
+    "textProcessing": {
+      "title": "テキスト処理",
+      "removeTrailingPunctuation": "字幕末尾の句読点を削除",
+      "removeTrailingPunctuationDesc": "翻訳と校正の完了後、各字幕の末尾の句読点を自動的に削除します"
+    },
     "alignment": {
       "title": "タイムスタンプ調整",
       "mode": "調整モード",

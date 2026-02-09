@@ -9,6 +9,7 @@ import { getSystemInstruction } from '@/services/llm/prompts';
 import { formatGeminiError } from '@/services/llm/providers/gemini';
 import { translateBatch } from '@/services/generation/pipeline/translation';
 import { cleanNonSpeechAnnotations } from '@/services/subtitle/parser';
+import { removeTrailingPunctuation } from '@/services/subtitle/punctuationCleaner';
 import { ArtifactSaver } from '@/services/generation/debug/artifactSaver';
 import { MockFactory } from '@/services/generation/debug/mockFactory';
 import { logger } from '@/services/utils/logger';
@@ -134,7 +135,7 @@ export class TranslationStep extends BaseStep<TranslationInput, SubtitleItem[]> 
 
   protected postProcess(output: SubtitleItem[], ctx: StepContext): SubtitleItem[] {
     // Filter out music segments and empty content
-    return output.filter((seg) => {
+    let result = output.filter((seg) => {
       const cleanOriginal = cleanNonSpeechAnnotations(seg.original || '');
       const cleanTranslated = cleanNonSpeechAnnotations(seg.translated || '');
       const hasContent = cleanOriginal.length > 0 || cleanTranslated.length > 0;
@@ -144,6 +145,13 @@ export class TranslationStep extends BaseStep<TranslationInput, SubtitleItem[]> 
       }
       return hasContent;
     });
+
+    // Remove trailing punctuation if enabled
+    if (ctx.pipelineContext.settings.removeTrailingPunctuation) {
+      result = removeTrailingPunctuation(result);
+    }
+
+    return result;
   }
 
   protected getFallback(input: TranslationInput, error: Error, ctx: StepContext): SubtitleItem[] {
