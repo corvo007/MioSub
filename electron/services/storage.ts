@@ -46,9 +46,16 @@ export class StorageService {
     this.snapshotsPath = path.join(this.storageDir, SNAPSHOTS_FILE);
   }
 
+  private ensureStorageDir(): void {
+    if (!fs.existsSync(this.storageDir)) {
+      fs.mkdirSync(this.storageDir, { recursive: true });
+    }
+  }
+
   // Settings methods - with verification and Sentry reporting
   async saveSettings(data: any): Promise<SaveResult> {
     try {
+      this.ensureStorageDir();
       const jsonString = JSON.stringify(data, null, 2);
 
       // Write to file
@@ -155,6 +162,7 @@ export class StorageService {
   // History methods
   async saveHistory(histories: WorkspaceHistoryItem[]): Promise<boolean> {
     try {
+      this.ensureStorageDir();
       await fs.promises.writeFile(this.historyPath, JSON.stringify(histories, null, 2), 'utf-8');
       return true;
     } catch (error) {
@@ -190,6 +198,7 @@ export class StorageService {
   // Snapshot methods
   async saveSnapshots(snapshots: any[]): Promise<boolean> {
     try {
+      this.ensureStorageDir();
       await fs.promises.writeFile(this.snapshotsPath, JSON.stringify(snapshots, null, 2), 'utf-8');
       return true;
     } catch (error) {

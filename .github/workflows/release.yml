@@ -102,6 +102,16 @@ jobs:
           path: release
           merge-multiple: true
 
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Fix auto-update yml hashes
+        run: |
+          npm install js-yaml
+          node scripts/fix-release-hashes.cjs release/
+
       - name: List release files
         run: ls -la release/
 
