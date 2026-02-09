@@ -59,3 +59,9 @@ High-precision timeline alignment based on CTC (Connectionist Temporal Classific
 CTC alignment requires computational resources. Optimization tips:
 1. Ensure sufficient memory (16GB+ recommended)
 2. For long videos, alignment is processed in segments
+
+### Alignment makes timing worse?
+
+This can happen if the source video has poor audio quality, or the alignment model isn't optimized for the specific language/accent. Suggestions:
+1. Check the source video audio quality
+2. Temporarily disable alignment and use the original timestamps

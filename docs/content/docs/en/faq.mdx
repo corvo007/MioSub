@@ -11,6 +11,59 @@ import { Callout } from 'fumadocs-ui/components/callout';
 
 ---
 
+## 🔑 API & Key Configuration
+
+### Wrong API key?
+
+<Callout type="warn" title="Common Mistake">
+  Gemini API Key and OpenAI API Key are **two different keys** — they cannot be used interchangeably.
+</Callout>
+
+MioSub uses two APIs:
+- **Gemini API Key**: For translation and polishing (get from Google AI Studio)
+- **OpenAI API Key**: Only for cloud Whisper transcription (get from OpenAI platform)
+
+If you put the Gemini key in the OpenAI field (or vice versa), you'll see errors like `500 Internal Server Error` or `contents is required`.
+
+**Solution**: Check the settings page and make sure each key is in the correct field.
+
+---
+
+### Errors when using the Gemini API?
+
+If you encounter errors like:
+
+`403 Forbidden` / `413 Request Entity Too Large` / `Unexpected token '<'` / `Failed to fetch` / `504 Gateway Timeout` / `429 Quota Exceeded` etc.
+
+- If using a third-party relay/proxy: This is usually a temporary proxy failure, insufficient balance, or network issue. Check your balance or try again later.
+- If using the official API: Check whether you've exceeded API request limits, whether the API key is configured correctly, whether you have access to Gemini 2.5 Flash/3 Flash/3 Pro, or whether you can connect to the API service.
+
+---
+
+### "Quota exhausted" or "Rate limited" error?
+
+You may encounter quota or rate limit errors when using APIs:
+- `insufficient_quota` — API balance depleted
+- `429 Too Many Requests` — Too many requests in a short time
+- Rate limit / quota exhaustion error messages
+
+**Solutions**:
+1. **Check API balance**: Log into the corresponding platform (Google AI Studio / OpenAI) to check remaining credits
+2. **Reduce concurrency**: Lower the "Translation concurrency" setting to avoid sending too many requests at once
+3. **If using a third-party API proxy**: Check the proxy provider's balance and rate limits
+4. **Wait and retry**: Rate limits usually reset after a few minutes
+
+---
+
+### "Invalid URL" error?
+
+The custom API endpoint URL format is incorrect. Make sure:
+- URL starts with `http://` or `https://`
+- No extra spaces or special characters
+- No trailing `/` (MioSub appends the path automatically)
+
+---
+
 ## 🎬 Video Processing
 
 ### Video download fails?
@@ -18,11 +71,40 @@ import { Callout } from 'fumadocs-ui/components/callout';
 **Common causes**:
 - **Network issues**: Ensure access to YouTube/Bilibili
 - **Wrong link format**: Use single video links, not playlists
-- **Copyright restrictions**: B站 anime, paid content cannot be downloaded
+- **Copyright restrictions**: Bilibili anime, paid content cannot be downloaded
+- **Path with special characters**: Windows usernames containing non-ASCII characters may cause download path issues (see [Path Issues](#path-with-non-ascii-characters-causes-failures))
 
 **Solutions**:
 1. Check network connection
 2. Use individual video links (not playlists)
+3. If the error message contains garbled paths, refer to the path issues section below
+4. **Bilibili shows `412 Precondition Failed`**: This is Bilibili's anti-scraping mechanism, usually triggered by multiple downloads in a short time. Wait a few minutes and retry, or use another tool to download the video then import into MioSub
+
+---
+
+### YouTube downloads the wrong language audio track?
+
+Some YouTube videos offer AI-dubbed multi-language audio tracks. MioSub may sometimes download a non-original language track (e.g., German dub instead of English original).
+
+**Solutions**:
+1. Update to the latest version first, then try re-downloading
+2. If the issue persists, download the video using another tool, then import into MioSub
+
+---
+
+### Crashes or failures when processing long videos (>2 hours)?
+
+Processing very long videos requires significant memory and may cause the app to crash.
+
+**Common symptoms**:
+- App suddenly closes with no error message
+- Out of memory (OOM) error
+- Speaker analysis or transcription step fails
+
+**Solutions**:
+1. **Update to the latest version**: v3.0.11+ has optimized memory management for long videos
+2. **Close other memory-intensive programs**: Ensure sufficient available memory
+3. **Reduce segment duration**: Split long videos into shorter clips and process them separately
 
 ---
 
@@ -39,7 +121,74 @@ import { Callout } from 'fumadocs-ui/components/callout';
 
 ---
 
-## 📝 Subtitle Issues
+### Local Whisper GPU/CUDA errors?
+
+When using GPU-accelerated local Whisper, you may encounter exit code `3221226505` with CUDA-related error messages.
+
+**Common causes**:
+- NVIDIA driver too old for the required CUDA version
+- Insufficient VRAM (especially with Large models)
+- Multiple CUDA version conflicts on the system
+
+**Solutions**:
+1. **Update GPU drivers**: Download the latest from [NVIDIA](https://www.nvidia.com/drivers)
+2. **Use a smaller model**: Switch from Large to Medium or Small to reduce VRAM usage
+3. **Fall back to CPU mode**: Uncheck GPU acceleration in settings
+4. If issues persist, use cloud Whisper API as an alternative
+
+---
+
+### "Audio decode failed" or audio extraction errors?
+
+Some videos may trigger audio decode failures or FFmpeg extraction errors (e.g., exit code `2880417800` or `254`).
+
+**Common causes**:
+- Video file is corrupted or uses an unsupported codec
+- Non-standard container format (e.g., unusual MKV/WebM packaging)
+- Insufficient space in system temp directory
+- Video has no audio track, usually caused by an incomplete download
+
+**Solutions**:
+1. **Re-download or transcode the video**: Re-download the video, or use a transcoding tool to convert to standard MP4 format before importing
+2. **Check disk space**: Ensure the system drive (where temp files are stored) has enough free space
+3. **Update to the latest version**: Newer versions continuously improve audio extraction compatibility
+
+---
+
+### Cloud Whisper transcription errors?
+
+When using the OpenAI Whisper API for cloud transcription, you may encounter these errors:
+
+| Error Message | Cause | Solution |
+|--------------|-------|----------|
+| `Whisper API Error (500)` | OpenAI server temporary failure | Wait a few minutes and retry |
+| `Whisper API Error (413)` | Audio file exceeds 25MB limit | Reduce segment duration, or use local Whisper |
+| `Failed to fetch (api.openai.com)` | Cannot connect to OpenAI | Check network connection and proxy settings |
+
+---
+
+## 📝 Subtitles & Translation
+
+### Translation output is always Chinese, regardless of target language?
+
+This is a confirmed and fixed bug. In versions before v3.0.13, some internal prompts and API parameters had "Simplified Chinese" hardcoded, causing output to always be in Chinese even when other target languages were selected.
+
+**Solutions**:
+1. **Update to v3.0.14 or later** (this issue is fully fixed)
+2. If using one-click generation mode, verify the target language setting in the wizard
+
+---
+
+### Glossary confirmation modal disappears while editing?
+
+If the glossary confirmation modal suddenly closes while you're editing terms, and your edits are lost, this was caused by pressing the Esc key or clicking outside the modal area.
+
+**Solutions**:
+1. **Update to the latest version**: This issue is fixed — the modal no longer responds to Esc or backdrop clicks
+2. After editing a term, click the "Save" button next to each term to confirm changes
+3. Finally, select a glossary and click the "Confirm & Add" button at the bottom to complete the process
+
+---
 
 ### Subtitle timing is off?
 
@@ -56,6 +205,47 @@ import { Callout } from 'fumadocs-ui/components/callout';
 1. **Choose correct scene preset**: Anime, movie, tech, etc.
 2. **Use glossary**: Ensures consistent terminology
 3. **Try polish feature**: Select subtitles and use "Polish Translation"
+4. **Add annotations**: Add translation guidance annotations to specific subtitles in the editor — they'll be referenced during polishing
+
+---
+
+## 🗂️ Files & Paths
+
+### Path with non-ASCII characters causes failures?
+
+On Windows, if your username, file path, or temp directory contains Chinese or other non-ASCII characters, transcription, downloads, and other features may fail.
+
+**Common symptoms**:
+- Local Whisper transcription fails (exit code 3221226505)
+- yt-dlp download fails with garbled paths in error message
+- ffmpeg processing errors
+
+**Solutions**:
+1. **Update to v3.0.12 or later** (most path encoding issues are fixed)
+2. If issues persist, move video files to a pure ASCII path before processing
+3. Store Whisper models in a pure ASCII path
+4. Install or extract the app to a pure ASCII directory
+
+---
+
+### "Model file not found" error?
+
+The local Whisper model file was moved, deleted, or the external drive it's on was disconnected.
+
+**Solutions**:
+1. Re-select the model file path in settings
+2. If the model was accidentally deleted, re-download it
+3. If the model is on an external drive, make sure it's connected
+
+---
+
+### "File not found" during processing?
+
+The video file was moved, renamed, or deleted during processing.
+
+**Solutions**:
+- Don't move or delete the source video file during processing
+- Ensure the disk containing the video has enough free space
 
 ---
 
@@ -63,10 +253,19 @@ import { Callout } from 'fumadocs-ui/components/callout';
 
 ### App won't open / crashes?
 
+**Windows**:
 1. Confirm you're on Windows 10 or later
 2. Try running as administrator
 3. Check if antivirus is blocking it
 4. Re-download the full installation package
+
+**macOS**:
+1. See the [macOS section](#macos-shows-cannot-be-opened-because-the-developer-cannot-be-verified-or-this-computer-cant-read-the-disk-you-attached) below
+2. Make sure you're using v3.0.13 or later (earlier versions had startup crash issues)
+
+<Callout type="warn" title="Note">
+  Do not run MioSub directly from a compressed archive's temp directory (e.g., 360 Zip's temp extraction folder). Extract to a permanent location first.
+</Callout>
 
 ---
 
@@ -74,24 +273,31 @@ import { Callout } from 'fumadocs-ui/components/callout';
 
 v3.0 supports automatic update detection. When a new version is available, the app will prompt you to update.
 
-If auto-update fails:
+If auto-update fails (especially for macOS users):
 1. Visit [Releases page](https://github.com/corvo007/Gemini-Subtitle-Pro/releases)
 2. Download the latest version
-3. Simply overwrite the old version
+3. Simply overwrite install — your settings will be preserved
+
+<Callout type="info" title="macOS Auto-Update">
+  macOS auto-update had a checksum verification failure (SHA512 mismatch) in early versions, fixed in v3.0.13+. If your version is older, manually download the latest version once — auto-update will work normally after that.
+</Callout>
 
 ---
 
-## v3.0 Specific
+### Settings lost or can't save?
 
-### Settings lost after upgrading from v2.x?
+**Possible causes**:
+- Config directory was accidentally deleted
+- Portable version running in a directory without write permissions
 
-v3.0 config file location may have changed. See the [Migration Guide](/en/docs/guide/migration) for manual migration steps.
+**Solutions**:
+1. Restart the app — it usually rebuilds the config directory automatically
+2. Ensure the app directory has write permissions
+3. If using portable version, avoid placing it in system-protected directories (e.g., `C:\Program Files`)
 
-### Where to download macOS/Linux versions?
+---
 
-v3.0 adds macOS and Linux support. Download from [Releases page](https://github.com/corvo007/Gemini-Subtitle-Pro/releases):
-- macOS: `.dmg` files
-- Linux: `.AppImage` files
+## 🍎 macOS
 
 ### macOS shows "cannot be opened because the developer cannot be verified" or "This computer can't read the disk you attached"?
 
@@ -127,6 +333,40 @@ xattr -cr /Applications/MioSub.app
 <Callout type="warn" title="Security Note">
   Always download from the [official GitHub Releases](https://github.com/corvo007/Gemini-Subtitle-Pro/releases), not third-party sources, to ensure the software hasn't been tampered with.
 </Callout>
+
+---
+
+### macOS local Whisper transcription crashes?
+
+When using local Whisper transcription on macOS, the app may crash with `dylib not found` or `exit code -11` (SIGSEGV).
+
+**Common causes**:
+- whisper.cpp dynamic library (`.dylib`) missing or architecture mismatch (Intel vs Apple Silicon)
+- macOS security policy blocking unsigned dynamic libraries
+
+**Solutions**:
+1. **Update to v3.0.13 or later** (dylib packaging and loading issues are fixed)
+2. Make sure you downloaded the version matching your Mac's architecture (Intel: `x64`, Apple Silicon: `arm64`)
+3. If issues persist, use cloud Whisper API as an alternative
+
+---
+
+## 🔄 Upgrade & Compatibility
+
+### Settings lost after upgrading from v2.x?
+
+v3.0 changed the config file location and format. v2.x settings are not automatically migrated.
+
+**Solution**:
+See the [Migration Guide](/en/docs/guide/migration) for manual migration steps.
+
+---
+
+### Where to download macOS / Linux versions?
+
+v3.0 adds macOS and Linux support. Download from [Releases page](https://github.com/corvo007/Gemini-Subtitle-Pro/releases):
+- **macOS**: `.dmg` files
+- **Linux**: `.AppImage` files
 
 ---
 
