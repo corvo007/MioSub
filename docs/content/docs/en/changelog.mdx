@@ -5,6 +5,19 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.14] - 2026-02-09
+
+### Features
+
+- **Glossary**: Added CSV import support with custom parser handling quoted fields, escaped quotes, and automatic header detection. Import button now opens a dropdown menu with JSON/CSV options and a format hint tooltip.
+- **Glossary**: Auto-detect glossary target language on JSON import when not specified in the file.
+- **Settings**: Added option to remove trailing punctuation from translated subtitles.
+
+### Fixes
+
+- **i18n**: Fixed hardcoded target language in Gemini prompt schemas and EndToEnd settings merge, ensuring dynamic language selection works correctly.
+- **Storage**: Fixed startup crash when storage directory does not exist by ensuring the directory is created before access.
+
 ## [3.0.13] - 2026-02-08
 
 ### Features
