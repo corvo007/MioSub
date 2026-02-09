@@ -3,7 +3,9 @@
     "autoName": "自动提取术语",
     "errors": {
       "invalidFormat": "术语表格式无效",
-      "parseFailed": "术语表文件解析失败"
+      "parseFailed": "术语表文件解析失败",
+      "csvEmpty": "CSV 文件为空",
+      "csvNoValidTerms": "CSV 中未找到有效术语"
     }
   },
   "api": {

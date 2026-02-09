@@ -3,7 +3,9 @@
     "autoName": "Auto Extracted Glossary",
     "errors": {
       "invalidFormat": "Invalid glossary format",
-      "parseFailed": "Failed to parse glossary file"
+      "parseFailed": "Failed to parse glossary file",
+      "csvEmpty": "CSV file is empty",
+      "csvNoValidTerms": "No valid terms found in CSV"
     }
   },
   "api": {

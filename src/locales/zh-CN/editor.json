@@ -14,6 +14,8 @@
     "lastUpdated": "最后更新",
     "setAsCurrent": "设为当前",
     "importJson": "导入 JSON",
+    "importCsv": "导入 CSV",
+    "csvFormatHint": "CSV 格式：每行为 术语,翻译,备注（备注可选）。自动识别表头行。",
     "exportJson": "导出 JSON",
     "searchTerms": "搜索术语...",
     "term": "术语",

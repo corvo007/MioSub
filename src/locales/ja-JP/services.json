@@ -3,7 +3,9 @@
     "autoName": "自動用語抽出",
     "errors": {
       "invalidFormat": "用語集の形式が無効です",
-      "parseFailed": "用語集ファイルの解析に失敗しました"
+      "parseFailed": "用語集ファイルの解析に失敗しました",
+      "csvEmpty": "CSV ファイルが空です",
+      "csvNoValidTerms": "CSV に有効な用語が見つかりません"
     }
   },
   "api": {

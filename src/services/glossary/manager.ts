@@ -1,6 +1,7 @@
 import i18n from '@/i18n';
 import { type Glossary, type GlossaryItem } from '@/types/glossary';
 import { validateGlossaryItem } from '@/services/glossary/validator';
+import { detectGlossaryLanguage } from '@/services/utils/language';
 
 /**
  * Create a new empty glossary
@@ -56,7 +57,8 @@ export function importGlossary(jsonContent: string): Glossary {
       id: crypto.randomUUID(), // Always generate new ID on import to avoid conflicts
       name: parsed.name,
       terms: validItems,
-      targetLanguage: parsed.targetLanguage,
+      targetLanguage:
+        parsed.targetLanguage || detectGlossaryLanguage({ terms: validItems } as Glossary),
       createdAt: parsed.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

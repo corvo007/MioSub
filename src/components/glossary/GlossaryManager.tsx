@@ -11,6 +11,7 @@ import {
   X,
   Search,
   AlertCircle,
+  HelpCircle,
 } from 'lucide-react';
 import { type Glossary, type GlossaryItem } from '@/types/glossary';
 import {
@@ -19,6 +20,7 @@ import {
   exportGlossary,
   importGlossary,
 } from '@/services/glossary/manager';
+import { importGlossaryFromCsv } from '@/services/glossary/csvParser';
 import {
   GlossaryImportDialog,
   type ImportMode,
@@ -88,6 +90,10 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
   const [editTermData, setEditTermData] = useState<GlossaryItem | null>(null);
 
   const termInputRef = useRef<HTMLInputElement>(null);
+  const jsonInputRef = useRef<HTMLInputElement>(null);
+  const csvInputRef = useRef<HTMLInputElement>(null);
+  const importMenuRef = useRef<HTMLDivElement>(null);
+  const [showImportMenu, setShowImportMenu] = useState(false);
 
   // Import Dialog State
   const [importDialogData, setImportDialogData] = useState<{
@@ -102,6 +108,18 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
       setSelectedGlossaryId(glossaries[0].id);
     }
   }, [glossaries, selectedGlossaryId]);
+
+  // Close import menu on click outside
+  useEffect(() => {
+    if (!showImportMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (importMenuRef.current && !importMenuRef.current.contains(e.target as Node)) {
+        setShowImportMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showImportMenu]);
 
   const selectedGlossary = glossaries.find((g) => g.id === selectedGlossaryId);
 
@@ -213,8 +231,10 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
     reader.onload = (event) => {
       try {
         const content = event.target?.result as string;
-        const imported = importGlossary(content);
-        // Instead of adding directly, open the dialog
+        const isCsv = file.name.toLowerCase().endsWith('.csv');
+        const imported = isCsv
+          ? importGlossaryFromCsv(content, file.name)
+          : importGlossary(content);
         setImportDialogData({
           isOpen: true,
           items: imported.terms,
@@ -222,11 +242,9 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
         });
       } catch (err) {
         logger.error('Import failed', err);
-        // Could add toast here
       }
     };
     reader.readAsText(file);
-    // Reset input
     e.target.value = '';
   };
 
@@ -417,11 +435,42 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
               <span className="text-sm">{t('glossary.createNew')}</span>
             </button>
             {glossaries.length === 0 && (
-              <label className="w-full flex items-center justify-center space-x-2 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 py-2 rounded-lg transition-all border border-slate-200 cursor-pointer shadow-sm hover:shadow font-medium">
-                <Upload className="w-4 h-4 text-brand-purple" />
-                <span className="text-sm">{t('glossary.import')}</span>
-                <input type="file" accept=".json" onChange={handleImport} className="hidden" />
-              </label>
+              <div className="relative" ref={importMenuRef}>
+                <button
+                  onClick={() => setShowImportMenu((v) => !v)}
+                  className="w-full flex items-center justify-center space-x-2 bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 py-2 rounded-lg transition-all border border-slate-200 shadow-sm hover:shadow font-medium"
+                >
+                  <Upload className="w-4 h-4 text-brand-purple" />
+                  <span className="text-sm">{t('glossary.import')}</span>
+                </button>
+                {showImportMenu && (
+                  <div className="absolute left-0 right-0 bottom-full mb-1 bg-white border border-slate-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                    <button
+                      onClick={() => {
+                        jsonInputRef.current?.click();
+                        setShowImportMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      {t('glossary.importJson')}
+                    </button>
+                    <button
+                      onClick={() => {
+                        csvInputRef.current?.click();
+                        setShowImportMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      {t('glossary.importCsv')}
+                      <span title={t('glossary.csvFormatHint')}>
+                        <HelpCircle className="w-3.5 h-3.5 text-slate-400 ml-auto" />
+                      </span>
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -465,13 +514,42 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                     </button>
                   )}
                   <div className="h-6 w-px bg-slate-200 mx-2" />
-                  <label
-                    className="p-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-500 hover:text-slate-700 transition-colors cursor-pointer shadow-sm"
-                    title={t('glossary.importJson')}
-                  >
-                    <Download className="w-5 h-5" />
-                    <input type="file" accept=".json" onChange={handleImport} className="hidden" />
-                  </label>
+                  <div className="relative" ref={importMenuRef}>
+                    <button
+                      onClick={() => setShowImportMenu((v) => !v)}
+                      className="p-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-500 hover:text-slate-700 transition-colors shadow-sm"
+                      title={t('glossary.import')}
+                    >
+                      <Download className="w-5 h-5" />
+                    </button>
+                    {showImportMenu && (
+                      <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                        <button
+                          onClick={() => {
+                            jsonInputRef.current?.click();
+                            setShowImportMenu(false);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <Download className="w-4 h-4" />
+                          {t('glossary.importJson')}
+                        </button>
+                        <button
+                          onClick={() => {
+                            csvInputRef.current?.click();
+                            setShowImportMenu(false);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <Download className="w-4 h-4" />
+                          {t('glossary.importCsv')}
+                          <span title={t('glossary.csvFormatHint')}>
+                            <HelpCircle className="w-3.5 h-3.5 text-slate-400 ml-auto" />
+                          </span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={handleExport}
                     className="p-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-500 hover:text-slate-700 transition-colors shadow-sm"
@@ -702,6 +780,21 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
           </button>
         </div>
       </div>
+      {/* Hidden file inputs for import */}
+      <input
+        ref={jsonInputRef}
+        type="file"
+        accept=".json"
+        className="hidden"
+        onChange={handleImport}
+      />
+      <input
+        ref={csvInputRef}
+        type="file"
+        accept=".csv"
+        className="hidden"
+        onChange={handleImport}
+      />
       <GlossaryImportDialog
         isOpen={importDialogData.isOpen}
         onClose={() => setImportDialogData({ ...importDialogData, isOpen: false })}

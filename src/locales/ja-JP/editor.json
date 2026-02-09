@@ -14,6 +14,8 @@
     "lastUpdated": "最終更新",
     "setAsCurrent": "有効にする",
     "importJson": "JSON をインポート",
+    "importCsv": "CSV をインポート",
+    "csvFormatHint": "CSV 形式：各行は 用語,翻訳,メモ（メモは任意）。ヘッダー行は自動検出されます。",
     "exportJson": "JSON をエクスポート",
     "searchTerms": "用語を検索...",
     "term": "用語",
