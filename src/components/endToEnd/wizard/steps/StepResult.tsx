@@ -98,7 +98,10 @@ export function StepResult({
                 }),
               })}
             </p>
-            <p className="text-red-800 leading-relaxed font-medium pl-3.5 bg-white/40 p-2 rounded-lg border border-red-200/50">
+            <p
+              className="text-red-800 leading-relaxed font-medium pl-3.5 bg-white/40 p-2 rounded-lg border border-red-200/50 line-clamp-3 break-all"
+              title={result.errorDetails.message}
+            >
               {result.errorDetails.message}
             </p>
           </div>

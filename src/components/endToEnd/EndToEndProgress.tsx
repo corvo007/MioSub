@@ -399,7 +399,9 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
             {/* Download details */}
             {currentStage === 'downloading' && progress?.downloadProgress && (
               <div className="flex items-center justify-between">
-                <span>{progress.message}</span>
+                <span className="truncate" title={progress.message}>
+                  {progress.message}
+                </span>
                 <div className="flex items-center gap-4">
                   {progress.downloadProgress.eta && (
                     <span>ETA: {progress.downloadProgress.eta}</span>
@@ -429,7 +431,11 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
             {/* Default message */}
             {currentStage !== 'downloading' &&
               currentStage !== 'compressing' &&
-              progress?.message && <span>{progress.message}</span>}
+              progress?.message && (
+                <span className="truncate" title={progress.message}>
+                  {progress.message}
+                </span>
+              )}
           </div>
 
           {/* Transcription chunk list (like ProgressOverlay) */}
@@ -446,7 +452,12 @@ export function EndToEndProgress({ progress, onAbort, onRetry }: EndToEndProgres
             <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
             <div>
               <div className="font-medium text-red-700 mb-1">{t('progress.errorDetails')}</div>
-              <div className="text-sm text-red-600/80">{progress.message}</div>
+              <div
+                className="text-sm text-red-600/80 line-clamp-3 break-all"
+                title={progress.message}
+              >
+                {progress.message}
+              </div>
             </div>
           </div>
         </div>

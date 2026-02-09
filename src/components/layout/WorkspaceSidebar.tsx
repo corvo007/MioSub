@@ -412,7 +412,9 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600 flex items-start space-x-2 animate-fade-in shadow-sm">
             <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-            <span className="wrap-break-word w-full">{error}</span>
+            <span className="w-full line-clamp-3 break-all" title={error}>
+              {error}
+            </span>
           </div>
         )}
 

@@ -165,7 +165,9 @@ export function DownloadPage({ onDownloadComplete, onGoBack }: DownloadPageProps
             >
               <div className="flex items-start gap-3">
                 <span className="text-xl shrink-0">{getErrorIcon()}</span>
-                <span className="leading-relaxed font-medium">{error}</span>
+                <span className="leading-relaxed font-medium line-clamp-3 break-all" title={error}>
+                  {error}
+                </span>
               </div>
               <div className="flex gap-2 justify-end">
                 {errorInfo?.retryable && (

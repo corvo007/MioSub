@@ -143,7 +143,10 @@ export const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
                 </span>
               </div>
               <div className="flex-1 flex items-center justify-end space-x-4">
-                <span className="text-xs font-medium text-slate-500">
+                <span
+                  className="text-xs font-medium text-slate-500 truncate max-w-xs"
+                  title={chunk.message || chunk.status}
+                >
                   {chunk.message || chunk.status}
                 </span>
                 {chunk.status === 'processing' && (

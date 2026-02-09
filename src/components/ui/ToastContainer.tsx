@@ -31,7 +31,9 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({ toasts, removeTo
           {toast.type === 'warning' && <AlertCircle className="w-4 h-4 shrink-0" />}
           {toast.type === 'success' && <CheckCircle className="w-4 h-4 shrink-0" />}
           {toast.type === 'info' && <MessageSquareText className="w-4 h-4 shrink-0" />}
-          <span className="truncate">{toast.message}</span>
+          <span className="line-clamp-2 break-all" title={toast.message}>
+            {toast.message}
+          </span>
           <button
             onClick={() => removeToast(toast.id)}
             className="ml-2 opacity-70 hover:opacity-100"
