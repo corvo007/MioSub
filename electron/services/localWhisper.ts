@@ -147,6 +147,176 @@ export class LocalWhisperService {
     this.activeProcesses.clear();
   }
 
+  /**
+   * Detect GPU/CUDA-related errors from whisper CLI stderr.
+   * Used to trigger automatic CPU fallback with `-ng` flag.
+   *
+   * Must match actual error patterns, not normal init logs like
+   * "ggml_cuda_init: found 1 CUDA devices:" which also contain "cuda".
+   * Real errors: "CUDA error: ...", "CUBLAS error: ...", "GGML_CUDA error"
+   */
+  private isGpuError(errorMessage: string): boolean {
+    const lower = errorMessage.toLowerCase();
+    return (
+      lower.includes('cuda error') ||
+      lower.includes('cublas error') ||
+      lower.includes('coreml error') ||
+      lower.includes('metal error') ||
+      lower.includes('unsupported toolchain') ||
+      lower.includes('ptx was compiled')
+    );
+  }
+
+  /**
+   * Spawn whisper CLI and wait for result. Does NOT clean up the input file —
+   * caller is responsible so retries can reuse it.
+   */
+  private _runWhisperProcess(
+    binaryPath: string,
+    args: string[],
+    jobId: string,
+    inputPath: string,
+    onLog?: (message: string) => void
+  ): Promise<TranscribeResult> {
+    if (onLog)
+      onLog(`[DEBUG] [LocalWhisper] Spawning (Job ${jobId}): ${binaryPath} ${args.join(' ')}`);
+    console.log(`[DEBUG] [LocalWhisper] Spawning (Job ${jobId}): ${binaryPath} ${args.join(' ')}`);
+
+    return new Promise((resolve, reject) => {
+      const spawnConfig = buildSpawnArgs(binaryPath, args);
+      const proc = spawn(spawnConfig.command, spawnConfig.args, {
+        windowsHide: true,
+        ...spawnConfig.options,
+      });
+      this.activeProcesses.set(jobId, proc);
+
+      let stderr = '';
+      let stdoutBuffer = '';
+      let stderrBuffer = '';
+
+      proc.stdout?.on('data', (data) => {
+        const chunk = data.toString();
+        stdoutBuffer += chunk;
+        const lines = stdoutBuffer.split('\n');
+        stdoutBuffer = lines.pop() || '';
+      });
+
+      proc.stderr?.on('data', (data) => {
+        const chunk = data.toString();
+        stderr += chunk;
+        stderrBuffer += chunk;
+
+        const lines = stderrBuffer.split('\n');
+        stderrBuffer = lines.pop() || '';
+
+        lines.forEach((line) => {
+          if (line.trim()) {
+            const lowerLine = line.toLowerCase();
+            if (
+              lowerLine.includes('error') ||
+              lowerLine.includes('exception') ||
+              lowerLine.includes('failed') ||
+              lowerLine.includes('panic') ||
+              lowerLine.includes('fatal')
+            ) {
+              if (onLog) onLog(`[ERROR] [Whisper CLI] ${line}`);
+              console.error(`[LocalWhisper] ${line}`);
+            }
+          }
+        });
+      });
+
+      proc.on('close', async (code, signal) => {
+        this.activeProcesses.delete(jobId);
+
+        if (code === null) {
+          if (this.isCancelled) {
+            console.log(`[LocalWhisper] Process cancelled by user (signal: ${signal})`);
+            reject(new ExpectedError(`Process cancelled (signal: ${signal})`));
+          } else {
+            console.error(`[LocalWhisper] Process killed by OS (signal: ${signal})`);
+            reject(new Error(`Process killed by OS (signal: ${signal})`));
+          }
+          return;
+        }
+
+        if (code !== 0) {
+          const errorMsg = `Process exited with code ${code}`;
+          console.error(`[LocalWhisper] ${errorMsg}`);
+          if (onLog) onLog(`[ERROR] [LocalWhisper] Error: ${errorMsg}`);
+          if (onLog) onLog(`[ERROR] [LocalWhisper] Stderr: ${stderr}`);
+          reject(new Error(`Whisper CLI failed with code ${code}: ${stderr}`));
+          return;
+        }
+
+        const outputPath = `${inputPath}.json`;
+
+        try {
+          if (!fs.existsSync(outputPath)) {
+            reject(new Error('Output JSON file not generated'));
+            return;
+          }
+
+          const jsonContent = await fs.promises.readFile(outputPath, 'utf-8');
+          const result = JSON.parse(jsonContent);
+
+          const subtitles: SubtitleItem[] = (result.transcription || []).map((item: any) => ({
+            start: item.timestamps.from,
+            end: item.timestamps.to,
+            text: item.text.trim(),
+          }));
+
+          let status: TranscribeStatus = 'success';
+          let errorHint: string | undefined;
+
+          if (subtitles.length === 0) {
+            const stderrLower = stderr.toLowerCase();
+            const hasErrorIndicators =
+              stderrLower.includes('error') ||
+              stderrLower.includes('failed') ||
+              stderrLower.includes('exception') ||
+              stderrLower.includes('panic') ||
+              stderrLower.includes('fatal');
+
+            if (hasErrorIndicators) {
+              status = 'empty_with_error';
+              const lines = stderr.split('\n');
+              const errorLine = lines.find((line) => {
+                const lower = line.toLowerCase();
+                return (
+                  lower.includes('error') ||
+                  lower.includes('failed') ||
+                  lower.includes('exception') ||
+                  lower.includes('panic') ||
+                  lower.includes('fatal')
+                );
+              });
+              errorHint = errorLine?.trim().slice(0, 200) || stderr.slice(0, 200);
+            } else {
+              status = 'empty';
+            }
+          }
+
+          resolve({ segments: subtitles, status, errorHint });
+        } catch (error) {
+          reject(error);
+        } finally {
+          // Only clean up the output JSON — input file may be needed for retry
+          try {
+            if (fs.existsSync(outputPath)) await fs.promises.unlink(outputPath);
+          } catch (e) {
+            console.error('Failed to cleanup output file:', e);
+          }
+        }
+      });
+
+      proc.on('error', (err) => {
+        this.activeProcesses.delete(jobId);
+        reject(err);
+      });
+    });
+  }
+
   async transcribe(
     audioBuffer: ArrayBuffer,
     modelPath: string,
@@ -211,6 +381,7 @@ export class LocalWhisperService {
         '2.4', // Entropy threshold to filter out low-quality/repetitive output (default 2.4)
         '-tp',
         '0.6', // Temperature to break repetition loops while maintaining quality (changed from --temperature)
+        '-fa', // Flash attention: reduces GPU VRAM usage and improves speed (default in our build, explicit for clarity)
       ];
 
       // Add VAD arguments if model exists
@@ -229,173 +400,35 @@ export class LocalWhisperService {
         console.warn(`[LocalWhisper] VAD model not found, running without VAD.`);
       }
 
-      if (onLog)
-        onLog(`[DEBUG] [LocalWhisper] Spawning (Job ${jobId}): ${binaryPath} ${args.join(' ')}`);
-      console.log(
-        `[DEBUG] [LocalWhisper] Spawning (Job ${jobId}): ${binaryPath} ${args.join(' ')}`
-      );
+      // First attempt: run with default GPU settings
+      try {
+        return await this._runWhisperProcess(binaryPath, args, jobId, inputPath, onLog);
+      } catch (error: any) {
+        // If GPU error and not cancelled, retry with CPU-only mode (-ng)
+        if (!this.isCancelled && this.isGpuError(error.message)) {
+          console.warn('[LocalWhisper] GPU error detected, retrying with CPU mode (-ng)...');
+          if (onLog)
+            onLog('[WARN] [LocalWhisper] GPU transcription failed, retrying with CPU mode...');
 
-      return new Promise((resolve, reject) => {
-        // Build spawn arguments with UTF-8 code page support for Windows
-        const spawnConfig = buildSpawnArgs(binaryPath, args);
-        const process = spawn(spawnConfig.command, spawnConfig.args, {
-          windowsHide: true,
-          ...spawnConfig.options,
-        });
-        this.activeProcesses.set(jobId, process);
-
-        let stderr = '';
-        let stdoutBuffer = '';
-        let stderrBuffer = '';
-
-        process.stdout?.on('data', (data) => {
-          const chunk = data.toString();
-          stdoutBuffer += chunk;
-
-          const lines = stdoutBuffer.split('\n');
-          stdoutBuffer = lines.pop() || ''; // Keep the last incomplete line
-
-          lines.forEach((_line) => {
-            // stdout processing if needed in future
-          });
-        });
-
-        process.stderr?.on('data', (data) => {
-          const chunk = data.toString();
-          stderr += chunk;
-          stderrBuffer += chunk;
-
-          const lines = stderrBuffer.split('\n');
-          stderrBuffer = lines.pop() || ''; // Keep the last incomplete line
-
-          lines.forEach((line) => {
-            if (line.trim()) {
-              // Intermediate output from stderr (progress) -> DEBUG
-              // Only log errors/warnings to avoid spam
-              const lowerLine = line.toLowerCase();
-              if (
-                lowerLine.includes('error') ||
-                lowerLine.includes('exception') ||
-                lowerLine.includes('failed') ||
-                lowerLine.includes('panic') ||
-                lowerLine.includes('fatal')
-              ) {
-                if (onLog) onLog(`[ERROR] [Whisper CLI] ${line}`);
-                console.error(`[LocalWhisper] ${line}`);
-              }
-            }
-          });
-        });
-
-        process.on('close', async (code, signal) => {
-          this.activeProcesses.delete(jobId); // Remove from active map
-
-          if (code === null) {
-            // Process was killed by signal
-            if (this.isCancelled) {
-              // User-initiated cancellation → expected, don't report to Sentry
-              console.log(`[LocalWhisper] Process cancelled by user (signal: ${signal})`);
-              reject(new ExpectedError(`Process cancelled (signal: ${signal})`));
-            } else {
-              // OS-level kill (SIGABRT, OOM, etc.) → unexpected, report to Sentry
-              console.error(`[LocalWhisper] Process killed by OS (signal: ${signal})`);
-              reject(new Error(`Process killed by OS (signal: ${signal})`));
-            }
-            return;
-          }
-
-          if (code !== 0) {
-            const errorMsg = `Process exited with code ${code}`;
-            console.error(`[LocalWhisper] ${errorMsg}`);
-            if (onLog) onLog(`[ERROR] [LocalWhisper] Error: ${errorMsg}`);
-            if (onLog) onLog(`[ERROR] [LocalWhisper] Stderr: ${stderr}`);
-            reject(new Error(`Whisper CLI failed with code ${code}: ${stderr}`));
-            return;
-          }
-
-          // Read output JSON
-          // Whisper.cpp generates file with .json appended to input filename
-          const outputPath = `${inputPath}.json`;
-
-          try {
-            if (!fs.existsSync(outputPath)) {
-              reject(new Error('Output JSON file not generated'));
-              return;
-            }
-
-            const jsonContent = await fs.promises.readFile(outputPath, 'utf-8');
-
-            // Log the raw JSON content (or a summary if too large, but user asked for "all")
-            // console.log(`[DEBUG] [LocalWhisper] JSON Output: ${jsonContent}`);
-            // if (onLog) onLog(`[DEBUG] [LocalWhisper] JSON Output: ${jsonContent}`);
-
-            const result = JSON.parse(jsonContent);
-
-            const subtitles: SubtitleItem[] = (result.transcription || []).map((item: any) => ({
-              start: item.timestamps.from,
-              end: item.timestamps.to,
-              text: item.text.trim(),
-            }));
-
-            // Determine status based on results and stderr
-            let status: TranscribeStatus = 'success';
-            let errorHint: string | undefined;
-
-            if (subtitles.length === 0) {
-              // Check if stderr contains error indicators
-              const stderrLower = stderr.toLowerCase();
-              const hasErrorIndicators =
-                stderrLower.includes('error') ||
-                stderrLower.includes('failed') ||
-                stderrLower.includes('exception') ||
-                stderrLower.includes('panic') ||
-                stderrLower.includes('fatal');
-
-              if (hasErrorIndicators) {
-                status = 'empty_with_error';
-                // Extract a meaningful hint from stderr (first line with error keyword)
-                const lines = stderr.split('\n');
-                const errorLine = lines.find((line) => {
-                  const lower = line.toLowerCase();
-                  return (
-                    lower.includes('error') ||
-                    lower.includes('failed') ||
-                    lower.includes('exception') ||
-                    lower.includes('panic') ||
-                    lower.includes('fatal')
-                  );
-                });
-                errorHint = errorLine?.trim().slice(0, 200) || stderr.slice(0, 200);
-              } else {
-                status = 'empty';
-              }
-            }
-
-            resolve({ segments: subtitles, status, errorHint });
-          } catch (error) {
-            reject(error);
-          } finally {
-            // Cleanup
-            try {
-              if (fs.existsSync(inputPath)) await fs.promises.unlink(inputPath);
-              if (fs.existsSync(outputPath)) await fs.promises.unlink(outputPath);
-              for (const cleanup of cleanups) await cleanup();
-            } catch (e) {
-              console.error('Failed to cleanup temp files:', e);
-            }
-          }
-        });
-
-        process.on('error', (err) => {
-          this.activeProcesses.delete(jobId);
-          reject(err);
-        });
-      });
-    } catch (error) {
-      // Ensure cleanup if spawn fails
-      if (fs.existsSync(inputPath)) await fs.promises.unlink(inputPath);
-      for (const cleanup of cleanups) await cleanup();
-      throw error;
+          const cpuJobId = uuidv4();
+          return await this._runWhisperProcess(
+            binaryPath,
+            [...args, '-ng'],
+            cpuJobId,
+            inputPath,
+            onLog
+          );
+        }
+        throw error;
+      }
+    } finally {
+      // Cleanup temp files (input WAV + symlinks) after all attempts
+      try {
+        if (fs.existsSync(inputPath)) await fs.promises.unlink(inputPath);
+        for (const cleanup of cleanups) await cleanup();
+      } catch (e) {
+        console.error('Failed to cleanup temp files:', e);
+      }
     }
   }
 
