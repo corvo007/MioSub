@@ -400,6 +400,12 @@ git push
 ## Fix Applied / Recommended Fix
 ```
 
+## Development Principles
+
+- **Don't reinvent the wheel**: Use mature third-party libraries when available (e.g., use existing libraries for JSON parsing, never write your own parser). Leverage capabilities already provided by browsers and the OS (e.g., file downloads, file pickers) instead of reimplementing them in-app.
+- **Keep non-core features simple**: Don't over-engineer peripheral functionality. MioSub's core value is the subtitle generation pipeline — auxiliary features (e.g., model downloads, file management) should use minimal implementation. They are not worth significant engineering investment.
+- **Prefer user's existing tools**: For example, for model file distribution, provide download links + a file picker. Don't build a custom download manager — the user's browser already handles downloads with resume, proxy support, and retry.
+
 ## Code Style
 
 - **Imports**: Path aliases mandatory; avoid relative paths across directories
