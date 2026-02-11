@@ -79,34 +79,34 @@ export function cleanNonSpeechAnnotations(text: string): string {
 export const parseSrt = (content: string): SubtitleItem[] => {
   const normalized = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   const blocks = normalized.split(/\n\n+/);
-  const items: SubtitleItem[] = [];
+
+  // --- Pass 1: Parse blocks and collect speaker candidates ---
+  const rawItems: {
+    start: string;
+    end: string;
+    original: string;
+    translated: string;
+    origSpeaker?: string;
+    origContent: string;
+    transSpeaker?: string;
+    transContent: string;
+  }[] = [];
+  const speakerCounts = new Map<string, number>();
 
   blocks.forEach((block) => {
     const lines = block.trim().split('\n');
     if (lines.length < 3) return;
 
-    // Line 1: ID
-    // Line 2: Time
-    // Line 3+: Text
-
-    // Sometimes index 0 is empty if file starts with newlines
     let startIndex = 0;
     if (!lines[0].match(/^\d+$/) && lines[1]?.match(/^\d+$/)) startIndex = 1;
 
-    // Check if it looks like a valid block
     const timeLine = lines[startIndex + 1];
     if (!timeLine || !timeLine.includes('-->')) return;
 
     const [start, end] = timeLine.split('-->').map((t) => t.trim());
     const textLines = lines.slice(startIndex + 2);
 
-    // Heuristic for Bilingual SRT:
-    // If we have multiple lines, we try to split them.
-    // Case 1: 2 lines -> Line 1 = Original, Line 2 = Translated
-    // Case 2: Even number of lines -> First half = Original, Second half = Translated
-    // Case 3: Odd number of lines > 1 -> First line = Original, Rest = Translated (or vice versa? Let's assume 1st line is Source)
-    // Fallback: All to Original
-
+    // Bilingual split heuristic
     let original = '';
     let translated = '';
 
@@ -117,59 +117,68 @@ export const parseSrt = (content: string): SubtitleItem[] => {
       const mid = textLines.length / 2;
       original = textLines.slice(0, mid).join('\n');
       translated = textLines.slice(mid).join('\n');
+    } else if (textLines.length > 1) {
+      original = textLines[0];
+      translated = textLines.slice(1).join('\n');
     } else {
-      // Default fallback or odd lines: Treat all as original for now,
-      // OR if user specifically wants "New Project" style which is usually 1 line orig / 1 line trans
-      // Let's try to detect if it looks like a split.
-      // For now, let's just put everything in original if it's ambiguous,
-      // BUT the user specifically asked to support "generated format".
-      // The generated format is `Original\nTranslated`.
-      // So if there are multiple lines, we should try to split.
-      if (textLines.length > 1) {
-        // Simple split: First line original, rest translated?
-        // Or maybe the user edited it to be multi-line.
-        // Let's stick to the "Split in half" heuristic if possible, otherwise just 1st line vs rest.
-        original = textLines[0];
-        translated = textLines.slice(1).join('\n');
-      } else {
-        original = textLines.join('\n');
-      }
+      original = textLines.join('\n');
     }
 
-    // --- Speaker Extraction Logic ---
-    // Format: "Speaker Name: Content"
-    // We check both original and translated lines.
-    // If both have the same speaker, we extract it.
-    // If only one has it, we extract it.
-    // If they differ, we prefer the one from 'original' (or maybe just take the first one found).
-
-    let speaker: string | undefined = undefined;
-
+    // Extract speaker candidates (not yet validated)
     const origRes = extractSpeakerFromText(original);
     const transRes = extractSpeakerFromText(translated);
 
-    if (origRes.speaker) {
-      speaker = origRes.speaker;
-      original = origRes.content;
+    // Count occurrences — deduplicate per entry to avoid inflating count
+    // when the same name appears in both original and translated (e.g., "Google:")
+    const candidates = new Set<string>();
+    if (origRes.speaker) candidates.add(origRes.speaker);
+    if (transRes.speaker) candidates.add(transRes.speaker);
+    for (const name of candidates) {
+      speakerCounts.set(name, (speakerCounts.get(name) || 0) + 1);
     }
 
-    // If translated also has speaker, remove it.
-    // If we didn't find speaker in original (rare if bilingual export), take it from translated.
-    if (transRes.speaker) {
-      if (!speaker) speaker = transRes.speaker;
-      translated = transRes.content;
-    }
-
-    items.push({
-      id: generateSubtitleId(),
-      startTime: normalizeTimestamp(start),
-      endTime: normalizeTimestamp(end),
-      original: original,
-      translated: translated,
-      speaker: speaker,
+    rawItems.push({
+      start,
+      end,
+      original,
+      translated,
+      origSpeaker: origRes.speaker,
+      origContent: origRes.content,
+      transSpeaker: transRes.speaker,
+      transContent: transRes.content,
     });
   });
-  return items;
+
+  // --- Pass 2: Only accept speakers that appear in ≥2 entries ---
+  const validSpeakers = new Set<string>();
+  for (const [name, count] of speakerCounts) {
+    if (count >= 2) validSpeakers.add(name);
+  }
+
+  return rawItems.map((raw) => {
+    let speaker: string | undefined = undefined;
+    let original = raw.original;
+    let translated = raw.translated;
+
+    if (raw.origSpeaker && validSpeakers.has(raw.origSpeaker)) {
+      speaker = raw.origSpeaker;
+      original = raw.origContent;
+    }
+
+    if (raw.transSpeaker && validSpeakers.has(raw.transSpeaker)) {
+      if (!speaker) speaker = raw.transSpeaker;
+      translated = raw.transContent;
+    }
+
+    return {
+      id: generateSubtitleId(),
+      startTime: normalizeTimestamp(raw.start),
+      endTime: normalizeTimestamp(raw.end),
+      original,
+      translated,
+      speaker,
+    };
+  });
 };
 
 /**

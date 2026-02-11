@@ -54,9 +54,7 @@ export const extractSpeakerFromText = (text: string): { speaker?: string; conten
     const potentialSpeaker = match[1]?.trim();
     const content = match[2];
 
-    // Validate speaker name:
-    // - Must not be too long (likely not a speaker name if > 30 chars)
-    // - Must have actual content after the colon
+    // Basic validation: reasonable length + has content after colon
     if (potentialSpeaker && potentialSpeaker.length <= 30 && content?.trim()) {
       return { speaker: potentialSpeaker, content: content };
     }
