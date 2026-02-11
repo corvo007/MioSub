@@ -212,6 +212,22 @@ export class ChunkProcessor {
           duration_ms: refinementResult.durationMs,
         };
 
+        // Warn user once if refinement failed and fell back to raw transcription
+        if (refinementResult.status === 'failed' && !(deps as any)._refinementFallbackToastShown) {
+          (deps as any)._refinementFallbackToastShown = true;
+          onProgress?.({
+            id: index,
+            total: totalChunks,
+            status: 'processing',
+            toast: {
+              message: i18n.t('services:pipeline.status.refinementFallback', {
+                error: refinementResult.error?.message?.substring(0, 100) || 'Unknown error',
+              }),
+              type: 'warning',
+            },
+          });
+        }
+
         // Check skipAfter: refinement
         if (settings.debug?.skipAfter === 'refinement') {
           logger.info(`[Chunk ${index}] skipAfter='refinement' - stopping pipeline`);
@@ -245,6 +261,22 @@ export class ChunkProcessor {
           status: alignmentResult.status as any,
           duration_ms: alignmentResult.durationMs,
         };
+
+        // Warn user once if alignment failed and fell back (Ref: MIOSUB-1N)
+        if (alignmentResult.status === 'failed' && !(deps as any)._alignmentFallbackToastShown) {
+          (deps as any)._alignmentFallbackToastShown = true;
+          onProgress?.({
+            id: index,
+            total: totalChunks,
+            status: 'processing',
+            toast: {
+              message: i18n.t('services:pipeline.status.alignmentFallback', {
+                error: alignmentResult.error?.message?.substring(0, 100) || 'Unknown error',
+              }),
+              type: 'warning',
+            },
+          });
+        }
 
         // Check skipAfter: alignment
         if (settings.debug?.skipAfter === 'alignment') {
@@ -282,6 +314,25 @@ export class ChunkProcessor {
           status: translationResult.status as any,
           duration_ms: translationResult.durationMs,
         };
+
+        // Warn user once if translation failed and fell back
+        if (
+          translationResult.status === 'failed' &&
+          !(deps as any)._translationFallbackToastShown
+        ) {
+          (deps as any)._translationFallbackToastShown = true;
+          onProgress?.({
+            id: index,
+            total: totalChunks,
+            status: 'processing',
+            toast: {
+              message: i18n.t('services:pipeline.status.translationFallback', {
+                error: translationResult.error?.message?.substring(0, 100) || 'Unknown error',
+              }),
+              type: 'warning',
+            },
+          });
+        }
 
         // Store final analytics in deps for later aggregation
         analytics.process_ms = Date.now() - processStartTime;

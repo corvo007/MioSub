@@ -6,6 +6,7 @@
  */
 
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { spawn, type ChildProcess } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
@@ -58,6 +59,11 @@ export interface AlignmentResult {
 // Languages that require romanization for CTC alignment
 const ROMANIZE_LANGUAGES = ['cmn', 'jpn', 'kor', 'ara', 'rus', 'zho', 'yue'];
 
+// Minimum free memory required to spawn aligner (512 MB)
+// ONNX Runtime loads the model into memory on startup; on 8GB M1 Macs this
+// can trigger macOS OOM killer (SIGKILL) if free memory is too low.
+const MIN_FREE_MEMORY_BYTES = 512 * 1024 * 1024;
+
 // ============================================================================
 // CTC Aligner Service
 // ============================================================================
@@ -72,6 +78,19 @@ export class CTCAlignerService {
   async align(request: AlignmentRequest): Promise<AlignmentResult> {
     const { segments, audioPath, language, config } = request;
     const jobId = uuidv4();
+
+    // P0: Memory pre-check — skip alignment if free memory is too low (Ref: MIOSUB-1N)
+    const freeMem = os.freemem();
+    if (freeMem < MIN_FREE_MEMORY_BYTES) {
+      const freeMB = Math.round(freeMem / 1024 / 1024);
+      console.warn(
+        `[CTCAligner] Skipping alignment: insufficient memory (${freeMB}MB free, need ${MIN_FREE_MEMORY_BYTES / 1024 / 1024}MB)`
+      );
+      return {
+        success: false,
+        error: `Insufficient memory for alignment (${freeMB}MB free)`,
+      };
+    }
 
     // Validate paths
     if (!fs.existsSync(config.alignerPath)) {
@@ -165,7 +184,7 @@ export class CTCAlignerService {
           stderr += data.toString();
         });
 
-        proc.on('close', async (code) => {
+        proc.on('close', async (code, signal) => {
           this.activeProcesses.delete(jobId);
           this.activeJobRejects.delete(jobId);
 
@@ -174,8 +193,12 @@ export class CTCAlignerService {
           }
 
           if (code !== 0) {
-            console.error(`[CTCAligner] Process exited with code ${code}`);
-            resolve({ success: false, error: `Aligner exited with code ${code}: ${stderr}` });
+            const signalInfo = signal ? ` (signal: ${signal})` : '';
+            console.error(`[CTCAligner] Process exited with code ${code}${signalInfo}`);
+            resolve({
+              success: false,
+              error: `Aligner exited with code ${code}${signalInfo}: ${stderr}`,
+            });
             return;
           }
 
