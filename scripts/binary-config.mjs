@@ -6,27 +6,27 @@
 export const BINARIES = {
   ffmpeg: {
     'win32-x64': {
-      url: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip',
+      url: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.0-latest-win64-gpl-8.0.zip',
       type: 'zip',
       extract: [
-        { from: 'ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe', to: 'ffmpeg.exe' },
-        { from: 'ffmpeg-master-latest-win64-gpl/bin/ffprobe.exe', to: 'ffprobe.exe' },
+        { from: 'ffmpeg-n8.0-latest-win64-gpl-8.0/bin/ffmpeg.exe', to: 'ffmpeg.exe' },
+        { from: 'ffmpeg-n8.0-latest-win64-gpl-8.0/bin/ffprobe.exe', to: 'ffprobe.exe' },
       ],
     },
     'linux-x64': {
-      url: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linux64-gpl.tar.xz',
+      url: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.0-latest-linux64-gpl-8.0.tar.xz',
       type: 'tar.xz',
       extract: [
-        { from: 'ffmpeg-master-latest-linux64-gpl/bin/ffmpeg', to: 'ffmpeg' },
-        { from: 'ffmpeg-master-latest-linux64-gpl/bin/ffprobe', to: 'ffprobe' },
+        { from: 'ffmpeg-n8.0-latest-linux64-gpl-8.0/bin/ffmpeg', to: 'ffmpeg' },
+        { from: 'ffmpeg-n8.0-latest-linux64-gpl-8.0/bin/ffprobe', to: 'ffprobe' },
       ],
     },
     'linux-arm64': {
-      url: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-linuxarm64-gpl.tar.xz',
+      url: 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.0-latest-linuxarm64-gpl-8.0.tar.xz',
       type: 'tar.xz',
       extract: [
-        { from: 'ffmpeg-master-latest-linuxarm64-gpl/bin/ffmpeg', to: 'ffmpeg' },
-        { from: 'ffmpeg-master-latest-linuxarm64-gpl/bin/ffprobe', to: 'ffprobe' },
+        { from: 'ffmpeg-n8.0-latest-linuxarm64-gpl-8.0/bin/ffmpeg', to: 'ffmpeg' },
+        { from: 'ffmpeg-n8.0-latest-linuxarm64-gpl-8.0/bin/ffprobe', to: 'ffprobe' },
       ],
     },
     'darwin-x64': {
