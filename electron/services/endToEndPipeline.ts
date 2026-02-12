@@ -398,47 +398,83 @@ export class EndToEndPipeline {
         const outputVideoName = `${safeTitle}_hardsubbed.mp4`;
         const outputVideoPath = path.join(outputDir, outputVideoName);
 
-        await this.videoCompressor.compress(
-          videoPath,
-          outputVideoPath,
-          {
-            encoder: config.compressionEncoder || 'libx264',
-            crf: config.compressionCrf || 23,
-            subtitlePath: this.outputs.subtitlePath,
-            hwAccel: config.useHardwareAccel ? 'auto' : 'off',
-            width: (() => {
-              const res = config.compressionResolution;
-              if (!res || res === 'original') return undefined;
-              if (res === 'custom') return config.compressionWidth;
-              const presets: Record<string, number> = { '1080p': 1920, '720p': 1280, '480p': 854 };
-              return presets[res];
-            })(),
-            height: (() => {
-              const res = config.compressionResolution;
-              if (!res || res === 'original') return undefined;
-              if (res === 'custom') return config.compressionHeight;
-              const presets: Record<string, number> = { '1080p': 1080, '720p': 720, '480p': 480 };
-              return presets[res];
-            })(),
-          },
-          (progress) => {
-            onProgress({
-              stage: 'compressing',
-              stageProgress: progress.percent,
-              overallProgress: calculateOverallProgress(
-                'compressing',
-                progress.percent,
-                config.enableCompression
-              ),
-              message: t('endToEnd.compressingVideoProgress', {
-                percent: progress.percent.toFixed(1),
-              }),
-              compressProgress: progress,
-              pipelineStartTime: this.startTime,
-            });
-          },
-          (msg) => console.log(msg)
-        );
+        const compressionEncoder = config.compressionEncoder || 'libx264';
+        const compressionCrf = config.compressionCrf || 23;
+        const hwAccel = config.useHardwareAccel ? 'auto' : 'off';
+        const resolution = (() => {
+          const res = config.compressionResolution;
+          if (!res || res === 'original') return 'original';
+          if (res === 'custom') return `${config.compressionWidth}x${config.compressionHeight}`;
+          return res;
+        })();
+
+        void analyticsService.track('compression_started', {
+          encoder: compressionEncoder,
+          crf: compressionCrf,
+          hw_accel: hwAccel === 'off' ? 'disabled' : 'enabled',
+          resolution,
+          subtitle_burned: true,
+          video_source: 'pipeline',
+        });
+
+        try {
+          await this.videoCompressor.compress(
+            videoPath,
+            outputVideoPath,
+            {
+              encoder: compressionEncoder,
+              crf: compressionCrf,
+              subtitlePath: this.outputs.subtitlePath,
+              hwAccel: hwAccel as 'auto' | 'off',
+              width: (() => {
+                const res = config.compressionResolution;
+                if (!res || res === 'original') return undefined;
+                if (res === 'custom') return config.compressionWidth;
+                const presets: Record<string, number> = {
+                  '1080p': 1920,
+                  '720p': 1280,
+                  '480p': 854,
+                };
+                return presets[res];
+              })(),
+              height: (() => {
+                const res = config.compressionResolution;
+                if (!res || res === 'original') return undefined;
+                if (res === 'custom') return config.compressionHeight;
+                const presets: Record<string, number> = { '1080p': 1080, '720p': 720, '480p': 480 };
+                return presets[res];
+              })(),
+            },
+            (progress) => {
+              onProgress({
+                stage: 'compressing',
+                stageProgress: progress.percent,
+                overallProgress: calculateOverallProgress(
+                  'compressing',
+                  progress.percent,
+                  config.enableCompression
+                ),
+                message: t('endToEnd.compressingVideoProgress', {
+                  percent: progress.percent.toFixed(1),
+                }),
+                compressProgress: progress,
+                pipelineStartTime: this.startTime,
+              });
+            },
+            (msg) => console.log(msg)
+          );
+
+          void analyticsService.track('compression_completed', {
+            success: true,
+            video_source: 'pipeline',
+          });
+        } catch (error: any) {
+          void analyticsService.track('compression_failed', {
+            error: error.message,
+            video_source: 'pipeline',
+          });
+          throw error;
+        }
 
         this.outputs.outputVideoPath = outputVideoPath;
         console.log(`[DEBUG] [Pipeline] Video compressed: ${outputVideoPath}`);
