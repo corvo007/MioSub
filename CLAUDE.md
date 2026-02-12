@@ -283,8 +283,10 @@ git push
 ```
 1. Get latest issues: search_issues("unresolved issues from last 7 days")
 2. Check README.md index - is this a known issue or duplicate?
-3. If new: create MIOSUB-X.md from template
+3. If new: create issues/MIOSUB-X.md from template
 4. If duplicate: update existing file with new event data
+5. Add investigation entry to the CURRENT WEEK file (week-2026-WXX.md)
+   - If the issue was first investigated in an earlier week, add to that week's "Late Updates" section instead
 ```
 
 #### 2. Investigation Process
@@ -350,7 +352,8 @@ git push
 2. Update README.md:
    - Version Fix Tracking table
    - Quick Stats
-3. If cascade error: note which upstream fix resolves it
+3. Update the issue's week file (where it was first investigated) with fix details
+4. If cascade error: note which upstream fix resolves it
 ```
 
 #### 4. Before Release
