@@ -5,6 +5,28 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.15] - 2026-02-12
+
+### Features
+
+- **Local Whisper**: Auto fallback to CPU when GPU transcription fails, so users with incompatible GPU drivers can still transcribe without manual configuration.
+
+### Fixes
+
+- **Compression**: Copy subtitle file to a safe temp path when the filename contains special characters (emoji, CJK, apostrophes, parentheses), fixing ffmpeg filter graph parse errors.
+- **Speaker Detection**: Use frequency-based speaker name extraction to prevent false positives from partial matches in subtitle text.
+- **Aligner**: Add memory pre-check before CTC alignment and show warning toasts when available memory is too low, preventing silent OOM crashes on low-memory devices.
+- **UI**: Truncate long error messages across all error display components to prevent layout overflow.
+- **Glossary**: Prevent accidental modal closure during term editing.
+
+### Chore
+
+- **FFmpeg**: Update ffmpeg download URLs to n8.0 release.
+
+### Documentation
+
+- **FAQ**: Comprehensive FAQ update based on common user issues.
+
 ## [3.0.14] - 2026-02-09
 
 ### Features
