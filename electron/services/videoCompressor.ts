@@ -1,5 +1,6 @@
 import ffmpeg from 'fluent-ffmpeg';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -391,7 +392,29 @@ export class VideoCompressorService {
       }
 
       // Subtitle Hardsub
+      let tempSubtitlePath: string | null = null;
       if (options.subtitlePath) {
+        // ffmpeg's filter graph parser has multiple escaping levels with many special chars:
+        // Level 1 (option value): ' \ :
+        // Level 2 (filter description): ' \ [ ] , ;
+        // Plus non-ASCII (emoji, CJK) breaks the parser entirely.
+        // Instead of blacklisting each one, use a whitelist: only allow characters that are
+        // definitely safe in filter paths. Copy to temp for anything else.
+        // See: MIOSUB-6 investigation — 5 users hit this with emoji, CJK, apostrophes, parentheses.
+        let subtitlePathForFilter = options.subtitlePath;
+        const isSafePath = /^[a-zA-Z0-9 ._\-/\\:]+$/.test(options.subtitlePath);
+        const hasUnsafeChars = !isSafePath;
+        if (hasUnsafeChars) {
+          const safeTempDir = path.join(os.tmpdir(), 'miosub-subs');
+          fs.mkdirSync(safeTempDir, { recursive: true });
+          tempSubtitlePath = path.join(safeTempDir, `sub_${Date.now()}.ass`);
+          fs.copyFileSync(options.subtitlePath, tempSubtitlePath);
+          subtitlePathForFilter = tempSubtitlePath;
+          logMsg(
+            `[Compression] Subtitle path contains unsafe chars, copied to safe path: ${tempSubtitlePath}`
+          );
+        }
+
         // Escape path for FFmpeg filter (libavfilter escaping rules):
         // 1. Convert backslashes to forward slashes (Windows path compatibility)
         // 2. Escape colons (required for Windows drive letters like C:/)
@@ -399,7 +422,7 @@ export class VideoCompressorService {
         //    - Shell escaping uses '\'' but fluent-ffmpeg passes args directly without shell
         //    - FFmpeg filter parser expects \' for literal single quote inside single-quoted string
         // 4. Escape brackets [ and ] (FFmpeg treats them as special characters)
-        const escapedPath = options.subtitlePath
+        const escapedPath = subtitlePathForFilter
           .replace(/\\/g, '/')
           .replace(/:/g, '\\:')
           .replace(/'/g, "\\'")
@@ -508,11 +531,25 @@ export class VideoCompressorService {
         })
         .on('end', () => {
           this.activeCommand = null;
+          if (tempSubtitlePath) {
+            try {
+              fs.unlinkSync(tempSubtitlePath);
+            } catch {
+              /* ignore */
+            }
+          }
           logMsg(`[Compression] Completed: ${outputPath}`);
           resolve(outputPath);
         })
         .on('error', (err, stdout, stderr) => {
           this.activeCommand = null;
+          if (tempSubtitlePath) {
+            try {
+              fs.unlinkSync(tempSubtitlePath);
+            } catch {
+              /* ignore */
+            }
+          }
           // Check if this was a user cancellation
           if (this.isCancelled) {
             logMsg(`[Compression] Cancelled by user`);
