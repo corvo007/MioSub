@@ -4,7 +4,7 @@
   "author": "Corvo007",
   "license": "AGPL-3.0-only",
   "private": true,
-  "version": "3.0.16-beta.1",
+  "version": "3.0.16-beta.2",
   "type": "module",
   "main": "dist-electron/main.cjs",
   "scripts": {
@@ -138,20 +138,8 @@
       "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "target": [
-        {
-          "target": "zip",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        },
-        {
-          "target": "dmg",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
+        "zip",
+        "dmg"
       ],
       "artifactName": "MioSub-mac-${arch}.${ext}",
       "extraResources": [
