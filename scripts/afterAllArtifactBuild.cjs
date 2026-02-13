@@ -1,18 +1,18 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const AdmZip = require('adm-zip');
+const os = require('os');
+const { execSync } = require('child_process');
 const yaml = require('js-yaml');
 
 /**
  * electron-builder afterAllArtifactBuild hook
  * Patches ZIP archives to use "portable" mode in distribution.json.
  *
- * This is the most robust way to detect portable vs installed mode:
- * - Written at build time, not runtime
- * - Inside the app package, user can't accidentally modify
- * - Platform independent
- * - No external dependencies (registry, file permissions, etc.)
+ * Uses system zip utilities instead of AdmZip to avoid corrupting
+ * large binary files (ffmpeg, ffprobe) when rewriting the archive.
+ * See: https://github.com/cthackers/adm-zip/issues — known CRC/data
+ * corruption with large files.
  *
  * IMPORTANT: After patching ZIP files, we must update the SHA512 hashes
  * in the corresponding yml files, otherwise auto-update will fail with
@@ -48,28 +48,49 @@ exports.default = async function (buildResult) {
 };
 
 /**
- * Patch ZIP file to set distribution mode to "portable"
+ * Determine the correct entry path for distribution.json inside the ZIP.
+ * Mac ZIPs have it inside the .app bundle, others have it in resources/.
+ */
+function getEntryPath(zipPath) {
+  const zipName = path.basename(zipPath);
+  if (zipName.includes('-mac-')) {
+    return 'MioSub.app/Contents/Resources/distribution.json';
+  }
+  return 'resources/distribution.json';
+}
+
+/**
+ * Patch ZIP file to set distribution mode to "portable".
+ * Uses system zip utilities to avoid AdmZip's large-file corruption.
  * @returns {{ sha512: string, size: number } | null} New hash and size, or null on failure
  */
 function patchZipDistributionMode(zipPath) {
+  const zipName = path.basename(zipPath);
+  const entryPath = getEntryPath(zipPath);
+
+  const config = {
+    mode: 'portable',
+    buildTime: new Date().toISOString(),
+  };
+  const configJson = JSON.stringify(config, null, 2);
+
+  // Create temp directory with the correct path structure for zip -u
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'miosub-patch-'));
+  const tmpFilePath = path.join(tmpDir, ...entryPath.split('/'));
+  fs.mkdirSync(path.dirname(tmpFilePath), { recursive: true });
+  fs.writeFileSync(tmpFilePath, configJson);
+
   try {
-    const zip = new AdmZip(zipPath);
-    const entryName = 'resources/distribution.json';
-    const entry = zip.getEntry(entryName);
-
-    const config = {
-      mode: 'portable',
-      buildTime: new Date().toISOString(),
-    };
-
-    if (entry) {
-      zip.updateFile(entryName, Buffer.from(JSON.stringify(config, null, 2)));
+    if (process.platform === 'win32') {
+      patchZipWindows(zipPath, entryPath, configJson);
     } else {
-      zip.addFile(entryName, Buffer.from(JSON.stringify(config, null, 2)));
+      // macOS/Linux: zip -u updates a single entry without rewriting the archive
+      execSync(`cd "${tmpDir}" && zip -u "${zipPath}" "${entryPath}"`, {
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
     }
 
-    zip.writeZip(zipPath);
-    console.log(`Patched ${path.basename(zipPath)}: distribution mode → portable`);
+    console.log(`Patched ${zipName}: distribution mode → portable (entry: ${entryPath})`);
 
     // Calculate new SHA512 hash
     const fileBuffer = fs.readFileSync(zipPath);
@@ -79,8 +100,58 @@ function patchZipDistributionMode(zipPath) {
     console.log(`  New SHA512: ${sha512.substring(0, 20)}...`);
     return { sha512, size };
   } catch (err) {
-    console.error(`Failed to patch ${path.basename(zipPath)}:`, err.message);
+    console.error(`Failed to patch ${zipName}:`, err.message);
+    if (err.stderr) console.error(`  stderr: ${err.stderr.toString()}`);
     return null;
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Patch ZIP on Windows using PowerShell's System.IO.Compression.
+ * Updates only the target entry without rewriting the entire archive.
+ */
+function patchZipWindows(zipPath, entryPath, configJson) {
+  // Write a temp .ps1 script to avoid escaping issues
+  const tmpScript = path.join(os.tmpdir(), `miosub-patch-${Date.now()}.ps1`);
+  const normalizedZipPath = zipPath.replace(/\\/g, '\\\\');
+  const normalizedEntryPath = entryPath.replace(/\\/g, '/');
+
+  const ps1 = `
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+$zipPath = "${normalizedZipPath}"
+$entryPath = "${normalizedEntryPath}"
+$content = @"
+${configJson}
+"@
+
+$zip = [System.IO.Compression.ZipFile]::Open($zipPath, [System.IO.Compression.ZipArchiveMode]::Update)
+try {
+    # Remove existing entry if present
+    $existing = $zip.GetEntry($entryPath)
+    if ($existing) {
+        $existing.Delete()
+    }
+    # Add updated entry
+    $newEntry = $zip.CreateEntry($entryPath, [System.IO.Compression.CompressionLevel]::Optimal)
+    $writer = New-Object System.IO.StreamWriter($newEntry.Open())
+    $writer.Write($content)
+    $writer.Close()
+} finally {
+    $zip.Dispose()
+}
+`;
+
+  fs.writeFileSync(tmpScript, ps1, 'utf8');
+  try {
+    execSync(`powershell -NoProfile -ExecutionPolicy Bypass -File "${tmpScript}"`, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  } finally {
+    fs.unlinkSync(tmpScript);
   }
 }
 
