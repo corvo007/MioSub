@@ -79,7 +79,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   outputMode: 'bilingual',
   proofreadBatchSize: 20,
   translationBatchSize: 20,
-  chunkDuration: 300,
+  chunkDuration: 120,
   concurrencyFlash: 5,
   concurrencyPro: 2,
   enableAutoGlossary: true,

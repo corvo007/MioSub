@@ -34,7 +34,7 @@ export async function preprocessAudio(
   signal?: AbortSignal,
   videoPath?: string // Optional video path for long video on-demand extraction
 ): Promise<PreprocessResult> {
-  const chunkDuration = settings.chunkDuration || 300;
+  const chunkDuration = settings.chunkDuration || 120;
 
   // Check if we should use long video mode (on-demand extraction)
   // This requires: Electron environment + video path + duration > threshold

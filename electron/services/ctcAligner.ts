@@ -59,10 +59,11 @@ export interface AlignmentResult {
 // Languages that require romanization for CTC alignment
 const ROMANIZE_LANGUAGES = ['cmn', 'jpn', 'kor', 'ara', 'rus', 'zho', 'yue'];
 
-// Minimum free memory required to spawn aligner (512 MB)
-// ONNX Runtime loads the model into memory on startup; on 8GB M1 Macs this
-// can trigger macOS OOM killer (SIGKILL) if free memory is too low.
-const MIN_FREE_MEMORY_BYTES = 512 * 1024 * 1024;
+// Minimum free memory required to spawn aligner (1 GB)
+// ONNX Runtime loads the model (~1GB) into memory on startup; on 8GB M1 Macs
+// this can trigger macOS OOM killer (SIGKILL) if free memory is too low.
+// Ref: MIOSUB-1N investigation - 512MB was insufficient, raised to 1GB.
+const MIN_FREE_MEMORY_BYTES = 1024 * 1024 * 1024;
 
 // ============================================================================
 // CTC Aligner Service

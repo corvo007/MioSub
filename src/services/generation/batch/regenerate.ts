@@ -172,7 +172,7 @@ export async function runRegenerateOperation(
   );
 
   // Create chunks
-  const chunkDuration = settings.chunkDuration || 300;
+  const chunkDuration = settings.chunkDuration || 120;
   const chunks = createChunksForRange(timeRange, chunkDuration);
   logger.info(`[Regenerate] Created ${chunks.length} chunks`);
 
