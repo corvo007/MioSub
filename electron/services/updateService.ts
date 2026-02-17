@@ -5,7 +5,7 @@ import { isPortableMode, getBinaryPath } from '../utils/paths.ts';
 import https from 'https';
 import fs from 'fs';
 import path from 'path';
-import { spawn } from 'child_process';
+import { execFileSync, spawn } from 'child_process';
 import pkg from '../../package.json' with { type: 'json' };
 
 const { autoUpdater } = electronUpdater;
@@ -67,6 +67,18 @@ const BINARY_REPOS = {
 } as const;
 
 type BinaryName = keyof typeof BINARY_REPOS;
+
+// Companion libraries that must be installed alongside the main binary.
+// Mirrors REQUIRED_FILES from scripts/binary-config.mjs (minus the main binary itself).
+const BINARY_COMPANIONS: Record<string, Record<string, string[]>> = {
+  'cpp-ort-aligner': {
+    'win32-x64': ['onnxruntime.dll'],
+    'linux-x64': ['libonnxruntime.so'],
+    'linux-arm64': ['libonnxruntime.so'],
+    'darwin-x64': ['libonnxruntime.dylib'],
+    'darwin-arm64': ['libonnxruntime.dylib'],
+  },
+};
 
 export interface BinaryUpdateInfo {
   name: BinaryName;
@@ -692,59 +704,111 @@ export async function downloadBinaryUpdate(
     }
   };
 
-  // Find and move binary from extracted files
+  // Find and move binary + companion libraries from extracted files
   const installBinary = (): { success: boolean; error?: string } => {
-    try {
-      // Find the binary in extracted directory (may be in subdirectory)
-      const findBinary = (dir: string): string | null => {
-        const entries = fs.readdirSync(dir, { withFileTypes: true });
-        for (const entry of entries) {
-          const fullPath = path.join(dir, entry.name);
-          if (entry.isDirectory()) {
-            const found = findBinary(fullPath);
-            if (found) return found;
-          } else if (entry.isFile()) {
-            // Match binary name (with or without .exe)
-            const baseName = entry.name.replace(/\.exe$/i, '');
-            if (baseName === binaryName) {
-              return fullPath;
-            }
-          }
-        }
-        return null;
-      };
+    const companionBackups: Array<{ filePath: string; backupPath: string }> = [];
 
-      const extractedBinary = findBinary(tempExtractDir);
+    // Recursively find a file by exact name in a directory tree
+    const findFileByName = (dir: string, fileName: string): string | null => {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          const found = findFileByName(fullPath, fileName);
+          if (found) return found;
+        } else if (entry.isFile() && entry.name === fileName) {
+          return fullPath;
+        }
+      }
+      return null;
+    };
+
+    try {
+      // Find the main binary in extracted directory (may be in subdirectory)
+      const binaryFileName = process.platform === 'win32' ? `${binaryName}.exe` : binaryName;
+      const extractedBinary = findFileByName(tempExtractDir, binaryFileName);
       if (!extractedBinary) {
         return { success: false, error: `Binary ${binaryName} not found in archive` };
       }
 
-      // Backup existing file
+      // Resolve companion files for this binary + platform
+      const platformKey = `${process.platform}-${process.arch}`;
+      const companions = BINARY_COMPANIONS[binaryName]?.[platformKey] || [];
+
+      // --- Backup phase (main binary + companions) ---
       if (fs.existsSync(binaryPath)) {
-        if (fs.existsSync(backupPath)) {
-          fs.unlinkSync(backupPath);
-        }
+        if (fs.existsSync(backupPath)) fs.unlinkSync(backupPath);
         fs.renameSync(binaryPath, backupPath);
       }
+      for (const comp of companions) {
+        const compPath = path.join(resourceDir, comp);
+        const compBackup = `${compPath}.bak`;
+        if (fs.existsSync(compPath)) {
+          if (fs.existsSync(compBackup)) fs.unlinkSync(compBackup);
+          fs.renameSync(compPath, compBackup);
+          companionBackups.push({ filePath: compPath, backupPath: compBackup });
+        }
+      }
 
-      // Move extracted binary to target
+      // --- Install phase (main binary) ---
       fs.copyFileSync(extractedBinary, binaryPath);
-
-      // Set executable permission on Unix-like systems
       if (process.platform !== 'win32') {
         fs.chmodSync(binaryPath, 0o755);
       }
 
-      // Clean up backup
-      if (fs.existsSync(backupPath)) {
-        fs.unlinkSync(backupPath);
+      // --- Install phase (companion libraries) ---
+      for (const comp of companions) {
+        const compSrc = findFileByName(tempExtractDir, comp);
+        if (compSrc) {
+          const compDst = path.join(resourceDir, comp);
+          fs.copyFileSync(compSrc, compDst);
+          if (process.platform !== 'win32') {
+            fs.chmodSync(compDst, 0o755);
+          }
+          // Re-sign on macOS to prevent KERN_CODESIGN_ERROR
+          if (process.platform === 'darwin') {
+            try {
+              execFileSync('codesign', ['--force', '-s', '-', compDst]);
+            } catch (e) {
+              console.warn(`[UpdateService] Ad-hoc codesign failed for ${comp}:`, e);
+            }
+          }
+          console.log(`[UpdateService] Installed companion: ${comp}`);
+        }
+      }
+
+      // --- Cleanup backups on success ---
+      if (fs.existsSync(backupPath)) fs.unlinkSync(backupPath);
+      for (const { backupPath: bp } of companionBackups) {
+        if (fs.existsSync(bp)) fs.unlinkSync(bp);
       }
 
       return { success: true };
     } catch (err: any) {
-      // Restore backup on failure
-      if (fs.existsSync(backupPath) && !fs.existsSync(binaryPath)) {
-        fs.renameSync(backupPath, binaryPath);
+      // Restore all backups on failure (main binary + companions)
+      if (fs.existsSync(backupPath)) {
+        try {
+          if (fs.existsSync(binaryPath)) fs.unlinkSync(binaryPath);
+        } catch {
+          /* best-effort cleanup */
+        }
+        try {
+          fs.renameSync(backupPath, binaryPath);
+        } catch {
+          /* best-effort cleanup */
+        }
+      }
+      for (const { filePath: fp, backupPath: bp } of companionBackups) {
+        try {
+          if (fs.existsSync(fp)) fs.unlinkSync(fp);
+        } catch {
+          /* best-effort cleanup */
+        }
+        try {
+          if (fs.existsSync(bp)) fs.renameSync(bp, fp);
+        } catch {
+          /* best-effort cleanup */
+        }
       }
       return { success: false, error: err.message };
     }
