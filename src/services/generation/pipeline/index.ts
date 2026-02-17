@@ -22,6 +22,7 @@ import { mapInParallel } from '@/services/utils/concurrency';
 import { logger } from '@/services/utils/logger';
 import { ChunkProcessor } from './chunkProcessor';
 import { type ChunkAnalytics } from '@/types/api';
+import { type TokenUsageAnalytics } from './usageReporter';
 import { timeToSeconds } from '@/services/subtitle/time';
 import { type SpeakerUIProfile } from '@/types/speaker';
 import { normalizeSubtitles } from '@/services/speaker/normalizer';
@@ -43,6 +44,7 @@ export const generateSubtitles = async (
   speakerProfiles: SpeakerUIProfile[];
   glossaryResults?: GlossaryExtractionResult[];
   chunkAnalytics: ChunkAnalytics[];
+  tokenUsage: TokenUsageAnalytics;
 }> => {
   // Initialize pipeline context using shared core
   const { context, usageReporter, trackUsage, semaphores, concurrency } = initializePipelineContext(
@@ -388,6 +390,7 @@ export const generateSubtitles = async (
   }
 
   usageReporter.logReport();
+  const tokenUsage = usageReporter.getAnalyticsSummary();
 
   await ArtifactSaver.saveFullIntermediateSrts(
     whisperChunksMap,
@@ -417,5 +420,6 @@ export const generateSubtitles = async (
     speakerProfiles: updatedProfiles,
     glossaryResults: (await glossaryTask).raw,
     chunkAnalytics,
+    tokenUsage,
   };
 };

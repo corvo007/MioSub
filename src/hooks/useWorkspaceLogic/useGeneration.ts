@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type GlossaryItem, type GlossaryExtractionMetadata } from '@/types/glossary';
 import { GenerationStatus, type ChunkStatus, type ChunkAnalytics } from '@/types/api';
+import { type TokenUsageAnalytics } from '@/services/generation/pipeline/usageReporter';
 import { logger } from '@/services/utils/logger';
 import { UserActionableError } from '@/services/utils/errors';
 import { autoConfirmGlossaryTerms } from '@/services/glossary/autoConfirm';
@@ -246,6 +247,7 @@ export function useGeneration({
 
     // Track chunk analytics for reporting on success/failure/cancellation
     let chunkAnalytics: ChunkAnalytics[] = [];
+    let tokenUsage: TokenUsageAnalytics | undefined;
 
     try {
       setStatus(GenerationStatus.PROCESSING);
@@ -342,6 +344,7 @@ export function useGeneration({
         subtitles: result,
         chunkAnalytics: resultAnalytics,
         speakerProfiles: updatedProfiles,
+        tokenUsage: resultTokenUsage,
       } = await generateSubtitles(
         audioSource,
         duration,
@@ -429,6 +432,7 @@ export function useGeneration({
 
       // Capture analytics for reporting
       chunkAnalytics = resultAnalytics;
+      tokenUsage = resultTokenUsage;
 
       // Then check subtitle results
       if (result.length === 0) {
@@ -482,6 +486,7 @@ export function useGeneration({
             count: result.length,
             duration_ms: Date.now() - startAt,
             chunk_durations: chunkAnalytics,
+            ...tokenUsage,
           },
           'interaction'
         );
@@ -537,6 +542,7 @@ export function useGeneration({
               duration_ms: Date.now() - startAt,
               reason: 'user_cancelled',
               chunk_durations: chunkAnalytics,
+              ...tokenUsage,
             },
             'interaction'
           );
@@ -562,6 +568,7 @@ export function useGeneration({
               error: error.message,
               duration_ms: Date.now() - startAt,
               chunk_durations: chunkAnalytics,
+              ...tokenUsage,
             },
             'interaction'
           );

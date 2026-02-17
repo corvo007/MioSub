@@ -9,6 +9,7 @@ interface ModelUsage {
   textInput: number;
   audioInput: number;
   thoughts: number;
+  cached: number;
 }
 
 /**
@@ -30,6 +31,7 @@ export class UsageReporter {
         textInput: 0,
         audioInput: 0,
         thoughts: 0,
+        cached: 0,
       };
     }
     this.usageReport[model].prompt += usage.promptTokens;
@@ -38,6 +40,7 @@ export class UsageReporter {
     this.usageReport[model].textInput += usage.textInputTokens || 0;
     this.usageReport[model].audioInput += usage.audioInputTokens || 0;
     this.usageReport[model].thoughts += usage.thoughtsTokens || 0;
+    this.usageReport[model].cached += usage.cachedTokens || 0;
   }
 
   /**
@@ -70,6 +73,7 @@ export class UsageReporter {
       reportLog += `  - Audio Input: ${usage.audioInput.toLocaleString()}\n`;
       reportLog += `  - Output: ${usage.output.toLocaleString()}\n`;
       reportLog += `  - Thoughts: ${usage.thoughts.toLocaleString()}\n`;
+      reportLog += `  - Cached: ${usage.cached.toLocaleString()}${usage.cached > 0 ? ' ✨' : ''}\n`;
       reportLog += `  - Total: ${usage.total.toLocaleString()}\n`;
       reportLog += `  - Est. Cost: $${cost.toFixed(6)}\n`;
       reportLog += `----------------------------------------\n`;
@@ -86,4 +90,65 @@ export class UsageReporter {
   getUsageData(): Record<string, ModelUsage> {
     return { ...this.usageReport };
   }
+
+  /**
+   * Get a flat analytics-friendly summary of token usage.
+   * Aggregates across all models into a single object suitable for Amplitude/Mixpanel.
+   */
+  getAnalyticsSummary(): TokenUsageAnalytics {
+    let totalPrompt = 0;
+    let totalOutput = 0;
+    let totalTokens = 0;
+    let totalTextInput = 0;
+    let totalAudioInput = 0;
+    let totalThoughts = 0;
+    let totalCached = 0;
+    let totalCost = 0;
+
+    for (const [model, usage] of Object.entries(this.usageReport)) {
+      totalPrompt += usage.prompt;
+      totalOutput += usage.output;
+      totalTokens += usage.total;
+      totalTextInput += usage.textInput;
+      totalAudioInput += usage.audioInput;
+      totalThoughts += usage.thoughts;
+      totalCached += usage.cached;
+      totalCost += calculateDetailedCost({
+        textInputTokens: usage.textInput,
+        audioInputTokens: usage.audioInput,
+        candidatesTokens: usage.output,
+        thoughtsTokens: usage.thoughts,
+        modelName: model,
+      });
+    }
+
+    return {
+      total_prompt_tokens: totalPrompt,
+      total_output_tokens: totalOutput,
+      total_tokens: totalTokens,
+      total_text_input_tokens: totalTextInput,
+      total_audio_input_tokens: totalAudioInput,
+      total_thoughts_tokens: totalThoughts,
+      total_cached_tokens: totalCached,
+      estimated_cost_usd: Math.round(totalCost * 1e6) / 1e6, // 6 decimal places
+      models_used: Object.keys(this.usageReport).length,
+    };
+  }
+}
+
+/**
+ * Flat analytics payload for token usage — suitable for Amplitude/Mixpanel event properties.
+ */
+export interface TokenUsageAnalytics {
+  total_prompt_tokens: number;
+  total_output_tokens: number;
+  total_tokens: number;
+  total_text_input_tokens: number;
+  total_audio_input_tokens: number;
+  total_thoughts_tokens: number;
+  total_cached_tokens: number;
+  /** Estimated cost in USD, rounded to 6 decimal places */
+  estimated_cost_usd: number;
+  /** Number of distinct models used in this generation */
+  models_used: number;
 }

@@ -7,6 +7,7 @@ import { useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { generateSubtitles } from '@/services/generation/pipeline';
 import { type ChunkAnalytics } from '@/types/api';
+import { type TokenUsageAnalytics } from '@/services/generation/pipeline/usageReporter';
 import { generateAssContent, generateSrtContent } from '@/services/subtitle/generator';
 import { decodeAudioWithRetry } from '@/services/audio/decoder';
 import { isLongVideo, LONG_VIDEO_THRESHOLD } from '@/services/audio/segmentExtractor';
@@ -115,6 +116,7 @@ export function useEndToEndSubtitleGeneration({
 
       // Capture incremental chunk analytics for reporting
       let accumulatedChunkAnalytics: ChunkAnalytics[] = [];
+      let tokenUsage: TokenUsageAnalytics | undefined;
 
       try {
         logger.info('[EndToEnd] Starting subtitle generation', { audioPath, config });
@@ -379,7 +381,12 @@ export function useEndToEndSubtitleGeneration({
         };
 
         // Generate subtitles
-        const { subtitles, speakerProfiles, chunkAnalytics } = await generateSubtitles(
+        const {
+          subtitles,
+          speakerProfiles,
+          chunkAnalytics,
+          tokenUsage: resultTokenUsage,
+        } = await generateSubtitles(
           audioSource,
           duration,
           mergedSettings,
@@ -411,6 +418,7 @@ export function useEndToEndSubtitleGeneration({
 
         // Capture chunk analytics from result (should be same as accumulated but sorted)
         accumulatedChunkAnalytics = chunkAnalytics;
+        tokenUsage = resultTokenUsage;
 
         // Guard: No subtitles generated
         if (!subtitles || subtitles.length === 0) {
@@ -468,6 +476,7 @@ export function useEndToEndSubtitleGeneration({
               count: subtitles.length,
               duration_ms: Date.now() - startTime,
               chunk_durations: chunkAnalytics,
+              ...tokenUsage,
             },
             'interaction'
           );
@@ -506,6 +515,7 @@ export function useEndToEndSubtitleGeneration({
                 duration_ms: Date.now() - startTime,
                 reason: 'user_cancelled',
                 chunk_durations: accumulatedChunkAnalytics, // Use accumulated analytics
+                ...tokenUsage,
               },
               'interaction'
             );
@@ -554,6 +564,7 @@ export function useEndToEndSubtitleGeneration({
               error_code: errorCode,
               duration_ms: Date.now() - startTime,
               chunk_durations: accumulatedChunkAnalytics, // Include partial chunk stats
+              ...tokenUsage,
             },
             'interaction'
           );
