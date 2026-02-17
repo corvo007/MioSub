@@ -5,6 +5,18 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.16] - 2026-02-17
+
+### Performance
+
+- **Pipeline**: Reduce default chunk duration from 300s to 120s for better transcription accuracy (MMS benchmark shows lower alignment error on shorter chunks).
+- **Aligner**: Raise CTC aligner memory threshold from 512MB to 1GB to prevent OOM kills on 8GB M1 Macs.
+
+### Fixes
+
+- **Build**: Re-sign macOS ZIP after patching `distribution.json` to preserve code signature seal. Fixes `KERN_CODESIGN_ERROR` crash when launching binaries from portable (ZIP) installs on Apple Silicon.
+- **Binary Updates**: Install companion libraries (e.g. `libonnxruntime.dylib`) alongside binary updates, with atomic backup/restore and ad-hoc codesigning on macOS.
+
 ## [3.0.15] - 2026-02-12
 
 ### Features
