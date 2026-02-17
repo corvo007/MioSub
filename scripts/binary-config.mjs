@@ -31,8 +31,8 @@ export const BINARIES = {
     },
     'darwin-x64': {
       urls: [
-        { url: 'https://evermeet.cx/ffmpeg/ffmpeg-8.0.1.7z', type: '7z', to: 'ffmpeg' },
-        { url: 'https://evermeet.cx/ffmpeg/ffprobe-8.0.1.7z', type: '7z', to: 'ffprobe' },
+        { url: 'https://ffmpeg.martin-riedl.de/download/macos/amd64/1766437297_8.0.1/ffmpeg.zip', type: 'zip', to: 'ffmpeg' },
+        { url: 'https://ffmpeg.martin-riedl.de/download/macos/amd64/1766437297_8.0.1/ffprobe.zip', type: 'zip', to: 'ffprobe' },
       ],
     },
     'darwin-arm64': {
