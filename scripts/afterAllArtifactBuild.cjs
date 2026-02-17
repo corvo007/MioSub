@@ -14,6 +14,11 @@ const yaml = require('js-yaml');
  * See: https://github.com/cthackers/adm-zip/issues — known CRC/data
  * corruption with large files.
  *
+ * macOS ZIPs require special handling: modifying files inside a signed
+ * .app bundle breaks the code signature seal (_CodeSignature/CodeResources).
+ * We extract → patch → re-sign → re-archive to preserve a valid seal.
+ * See: MIOSUB-1P investigation (KERN_CODESIGN_ERROR on portable mode).
+ *
  * IMPORTANT: After patching ZIP files, we must update the SHA512 hashes
  * in the corresponding yml files, otherwise auto-update will fail with
  * "sha512 checksum mismatch" errors. See: MIOSUB-12
@@ -26,7 +31,10 @@ exports.default = async function (buildResult) {
     // Only patch ZIP-like archives (portable distributions)
     if (artifactPath.endsWith('.zip') || artifactPath.endsWith('.7z') || artifactPath.endsWith('.tar.gz')) {
       if (artifactPath.endsWith('.zip')) {
-        const result = patchZipDistributionMode(artifactPath);
+        const isMac = path.basename(artifactPath).includes('-mac-');
+        const result = isMac
+          ? patchMacZipDistributionMode(artifactPath)
+          : patchZipDistributionMode(artifactPath);
         if (result) {
           patchedZips.set(path.basename(artifactPath), result);
         }
@@ -48,14 +56,10 @@ exports.default = async function (buildResult) {
 };
 
 /**
- * Determine the correct entry path for distribution.json inside the ZIP.
- * Mac ZIPs have it inside the .app bundle, others have it in resources/.
+ * Entry path for distribution.json in Windows/Linux ZIPs.
+ * macOS ZIPs are handled separately by patchMacZipDistributionMode().
  */
-function getEntryPath(zipPath) {
-  const zipName = path.basename(zipPath);
-  if (zipName.includes('-mac-')) {
-    return 'MioSub.app/Contents/Resources/distribution.json';
-  }
+function getEntryPath() {
   return 'resources/distribution.json';
 }
 
@@ -105,6 +109,80 @@ function patchZipDistributionMode(zipPath) {
     return null;
   } finally {
     fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Patch macOS ZIP: extract → patch distribution.json → re-sign → re-archive.
+ *
+ * Modifying any file inside a signed .app bundle breaks the code signature
+ * seal (_CodeSignature/CodeResources). We must re-sign the entire bundle
+ * after patching, then use `ditto` to create a signature-preserving ZIP.
+ *
+ * @returns {{ sha512: string, size: number } | null} New hash and size, or null on failure
+ */
+function patchMacZipDistributionMode(zipPath) {
+  const zipName = path.basename(zipPath);
+  const entryPath = 'MioSub.app/Contents/Resources/distribution.json';
+
+  const config = {
+    mode: 'portable',
+    buildTime: new Date().toISOString(),
+  };
+  const configJson = JSON.stringify(config, null, 2);
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'miosub-mac-patch-'));
+
+  try {
+    // 1. Extract the signed ZIP
+    execSync(`unzip -q "${zipPath}" -d "${tmpDir}"`, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 300_000,
+    });
+
+    // 2. Patch distribution.json inside the extracted .app bundle
+    const distJsonPath = path.join(tmpDir, entryPath);
+    if (!fs.existsSync(distJsonPath)) {
+      console.warn(`  ${zipName}: ${entryPath} not found in archive, skipping`);
+      return null;
+    }
+    fs.writeFileSync(distJsonPath, configJson);
+
+    // 3. Re-sign the .app bundle (ad-hoc) to restore the seal.
+    //    --deep is deprecated by Apple but acceptable for ad-hoc portable signing.
+    //    It recursively signs all nested Mach-O binaries (dylibs, helpers).
+    const appPath = path.join(tmpDir, 'MioSub.app');
+    execSync(`codesign --force --deep -s - "${appPath}"`, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 120_000,
+    });
+
+    // 4. Re-archive with ditto to a temp path first (atomic replace)
+    //    If ditto fails, the original ZIP survives intact.
+    const tmpZipPath = zipPath + '.tmp';
+    execSync(
+      `cd "${tmpDir}" && ditto -c -k --sequesterRsrc --keepParent MioSub.app "${tmpZipPath}"`,
+      { stdio: ['pipe', 'pipe', 'pipe'], timeout: 300_000 },
+    );
+    fs.renameSync(tmpZipPath, zipPath);
+
+    console.log(`Patched ${zipName}: distribution mode → portable (extract → re-sign → re-archive)`);
+
+    // 5. Calculate new SHA512 hash
+    const fileBuffer = fs.readFileSync(zipPath);
+    const sha512 = crypto.createHash('sha512').update(fileBuffer).digest('base64');
+    const size = fileBuffer.length;
+
+    console.log(`  New SHA512: ${sha512.substring(0, 20)}...`);
+    return { sha512, size };
+  } catch (err) {
+    console.error(`Failed to patch ${zipName}:`, err.message);
+    if (err.stderr) console.error(`  stderr: ${err.stderr.toString()}`);
+    return null;
+  } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    // Clean up temp ZIP if atomic replace didn't complete
+    try { fs.unlinkSync(zipPath + '.tmp'); } catch {}
   }
 }
 
