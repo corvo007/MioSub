@@ -35,7 +35,7 @@ MioSub is an open-source AI-powered subtitle generation and editing tool. It use
 - **Desktop**: Electron 39
 - **AI Translation**: Google Gemini API (Flash & Pro models)
 - **Speech Recognition**: OpenAI Whisper (cloud or local via whisper.cpp)
-- **Forced Alignment**: CTC-based MMS-FA ONNX model
+- **Forced Alignment**: CTC-based Omnilingual ASR CTC ONNX model (1600+ languages)
 - **Video Processing**: FFmpeg, yt-dlp
 
 ## Documentation
