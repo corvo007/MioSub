@@ -65,6 +65,57 @@
       "fileTriggers": {
         "pathPatterns": ["electron/**/*.ts"]
       }
+    },
+    "user-behavior-report": {
+      "type": "workflow",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "description": "Generate periodic user behavior reports from Amplitude/Mixpanel data",
+      "skillPath": "user-behavior-report/SKILL.md",
+      "promptTriggers": {
+        "keywords": [
+          "报告", "report", "月报", "用户行为", "user behavior",
+          "analytics report", "数据报告", "周报"
+        ],
+        "intentPatterns": [
+          "(生成|创建|更新|generate|create|update).*?(报告|report)",
+          "(用户|user).*(行为|behavior|画像|profile).*?(报告|report|分析|analysis)"
+        ]
+      },
+      "fileTriggers": {
+        "pathPatterns": ["docs/sentry-investigations/reports/user-behavior-report-*/report-data.json", "docs/sentry-investigations/reports/user-behavior-report-*/*.md"]
+      }
+    },
+    "research": {
+      "type": "workflow",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "description": "Iterative research and ideation workflow with persistent documentation",
+      "skillPath": "research/skill.md",
+      "promptTriggers": {
+        "keywords": [
+          "调研",
+          "research",
+          "investigate",
+          "想法",
+          "idea",
+          "explore",
+          "方案对比",
+          "选型",
+          "我们讨论过什么",
+          "之前调研",
+          "backlog"
+        ],
+        "intentPatterns": [
+          "(调研|研究|探索|对比).*?(方案|库|框架|工具|方法)",
+          "(research|investigate|explore|compare).*?(approach|library|framework|tool|solution)",
+          "(我有个|有个).*?(想法|idea)",
+          "(what have we|我们之前).*(researched|discussed|调研|讨论)"
+        ]
+      },
+      "fileTriggers": {
+        "pathPatterns": ["docs/plans/**/*.md"]
+      }
     }
   },
   "notes": {
