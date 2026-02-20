@@ -14,6 +14,7 @@ import pkg from '../../../../package.json';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { cn } from '@/lib/cn';
 import { logger } from '@/services/utils/logger';
+import { useAppStore } from '@/store/useAppStore';
 
 // About Tab Cache
 let cachedAboutInfo: any = null;
@@ -51,6 +52,7 @@ type BinaryUpdateState = {
 
 export const AboutTab: React.FC = () => {
   const { t } = useTranslation('settings');
+  const whisperCustomBinaryPath = useAppStore((s) => s.settings.localWhisperBinaryPath);
   const [info, setInfo] = useState<any>(cachedAboutInfo);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
@@ -130,7 +132,9 @@ export const AboutTab: React.FC = () => {
     if (!window.electronAPI?.update?.checkBinaries) return;
     setBinaryUpdate((prev) => ({ ...prev, checking: true }));
     try {
-      const result = await window.electronAPI.update.checkBinaries();
+      const result = await window.electronAPI.update.checkBinaries({
+        whisperCustomBinaryPath,
+      });
       if (result.success && result.updates) {
         setBinaryUpdate((prev) => ({ ...prev, updates: result.updates!, checking: false }));
       } else {
@@ -192,10 +196,10 @@ export const AboutTab: React.FC = () => {
   useEffect(() => {
     if (!window.electronAPI?.update?.onBinaryProgress) return;
     const unsubscribe = window.electronAPI.update.onBinaryProgress((data) => {
-      setBinaryUpdate((prev) => ({
-        ...prev,
-        downloading: { ...prev.downloading, [data.name]: data.percent },
-      }));
+      setBinaryUpdate((prev) => {
+        if (!(data.name in prev.downloading)) return prev;
+        return { ...prev, downloading: { ...prev.downloading, [data.name]: data.percent } };
+      });
     });
     return () => unsubscribe?.();
   }, []);

@@ -31,6 +31,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     modelPath: string;
     language?: string;
     threads?: number;
+    customBinaryPath?: string;
+    isCustomBinary?: boolean;
   }) => ipcRenderer.invoke('transcribe-local', data),
   abortLocalWhisper: () => ipcRenderer.invoke('local-whisper-abort'),
 
@@ -261,7 +263,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return () => ipcRenderer.removeListener('update:status', handler);
     },
     // Binary updates
-    checkBinaries: () => ipcRenderer.invoke('update:check-binaries'),
+    checkBinaries: (options?: { whisperCustomBinaryPath?: string }) =>
+      ipcRenderer.invoke('update:check-binaries', options),
     downloadBinary: (name: string, downloadUrl: string) =>
       ipcRenderer.invoke('update:download-binary', name, downloadUrl),
     openBinaryRelease: (name: string) => ipcRenderer.invoke('update:open-binary-release', name),

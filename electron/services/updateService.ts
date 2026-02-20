@@ -2,6 +2,8 @@ import electronUpdater from 'electron-updater';
 import type { UpdateInfo } from 'electron-updater';
 import { type BrowserWindow, ipcMain, shell } from 'electron';
 import { isPortableMode, getBinaryPath } from '../utils/paths.ts';
+import { compareVersions, isRealVersion } from '../utils/version.ts';
+import * as Sentry from '@sentry/electron/main';
 import https from 'https';
 import fs from 'fs';
 import path from 'path';
@@ -56,7 +58,7 @@ let updateState: UpdateState = {
 let ipcHandlersRegistered = false;
 
 const GITHUB_OWNER = 'Corvo007';
-const GITHUB_REPO = 'Gemini-Subtitle-Pro';
+const GITHUB_REPO = 'MioSub';
 const REQUEST_TIMEOUT_MS = 15000; // 15 seconds timeout for GitHub API
 
 // Binary update configuration
@@ -123,14 +125,15 @@ export function initUpdateService(window: BrowserWindow) {
     });
 
     autoUpdater.on('error', (err) => {
+      console.error('[UpdateService] Auto-updater error:', err.message);
       updateState = { ...updateState, status: 'error', error: err.message };
       sendUpdateStatus();
     });
 
     // 安装版启动后自动检测更新（延迟 3 秒）
     setTimeout(() => {
-      autoUpdater.checkForUpdates().catch(() => {
-        // 静默失败，不影响用户体验
+      autoUpdater.checkForUpdates().catch((err) => {
+        console.error('[UpdateService] Check for updates failed:', err.message);
       });
     }, 3000);
   }
@@ -208,13 +211,19 @@ function registerIpcHandlers() {
   });
 
   // Binary update handlers
-  ipcMain.handle('update:check-binaries', async () => {
-    try {
-      return { success: true, updates: await checkAllBinaryUpdates() };
-    } catch (err: any) {
-      return { success: false, error: err.message };
+  ipcMain.handle(
+    'update:check-binaries',
+    async (_event, options?: { whisperCustomBinaryPath?: string }) => {
+      try {
+        return {
+          success: true,
+          updates: await checkAllBinaryUpdates(options?.whisperCustomBinaryPath),
+        };
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
     }
-  });
+  );
 
   ipcMain.handle(
     'update:download-binary',
@@ -250,74 +259,75 @@ async function checkGitHubRelease(): Promise<{
     updateState = { ...updateState, status: 'checking', error: null };
     sendUpdateStatus();
 
-    const options = {
-      hostname: 'api.github.com',
-      path: `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`,
-      headers: { 'User-Agent': 'MioSub-Updater' },
-      timeout: REQUEST_TIMEOUT_MS,
-    };
-
     const handleError = (errorMsg: string) => {
+      console.error('[UpdateService] App update check failed:', errorMsg);
       updateState = { ...updateState, status: 'error', error: errorMsg };
       sendUpdateStatus();
       resolve({ success: false, error: errorMsg });
     };
 
-    const req = https
-      .get(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => (data += chunk));
-        res.on('end', () => {
-          try {
-            const release = JSON.parse(data);
-            const latestVersion = release.tag_name?.replace(/^v/, '') || '';
-            const currentVersion = pkg.version;
-            const hasUpdate = compareVersions(latestVersion, currentVersion) > 0;
-
-            // 查找 ZIP 下载链接
-            const zipAsset = release.assets?.find(
-              (a: any) => a.name.endsWith('.zip') && a.name.includes('win')
-            );
-
-            updateState = {
-              status: hasUpdate ? 'available' : 'not-available',
-              info: { version: latestVersion } as UpdateInfo,
-              error: null,
-              progress: 0,
-            };
-            sendUpdateStatus();
-
-            resolve({
-              success: true,
-              hasUpdate,
-              version: latestVersion,
-              downloadUrl: zipAsset?.browser_download_url || release.html_url,
-            });
-          } catch (err: any) {
-            handleError(err.message);
+    const doGet = (url: string, redirects = 0) => {
+      if (redirects > 5) {
+        handleError('Too many redirects');
+        return;
+      }
+      const urlObj = new URL(url);
+      const opts = {
+        hostname: urlObj.hostname,
+        path: urlObj.pathname + urlObj.search,
+        headers: { 'User-Agent': 'MioSub-Updater' },
+        timeout: REQUEST_TIMEOUT_MS,
+      };
+      const req = https
+        .get(opts, (res) => {
+          if ((res.statusCode === 301 || res.statusCode === 302) && res.headers.location) {
+            doGet(res.headers.location, redirects + 1);
+            return;
           }
-        });
-      })
-      .on('error', (err) => {
-        handleError(err.message);
-      })
-      .on('timeout', () => {
-        req.destroy();
-        handleError('Request timeout');
-      });
-  });
-}
+          let data = '';
+          res.on('data', (chunk) => (data += chunk));
+          res.on('end', () => {
+            try {
+              if (res.statusCode !== 200) {
+                handleError(`GitHub API ${res.statusCode}: ${data.slice(0, 200)}`);
+                return;
+              }
+              const release = JSON.parse(data);
+              const latestVersion = release.tag_name?.replace(/^v/, '') || '';
+              const currentVersion = pkg.version;
+              const hasUpdate = compareVersions(latestVersion, currentVersion) > 0;
 
-function compareVersions(a: string, b: string): number {
-  const pa = a.split('.').map(Number);
-  const pb = b.split('.').map(Number);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const na = pa[i] || 0;
-    const nb = pb[i] || 0;
-    if (na > nb) return 1;
-    if (na < nb) return -1;
-  }
-  return 0;
+              const zipAsset = release.assets?.find(
+                (a: any) => a.name.endsWith('.zip') && a.name.includes('win')
+              );
+
+              updateState = {
+                status: hasUpdate ? 'available' : 'not-available',
+                info: { version: latestVersion } as UpdateInfo,
+                error: null,
+                progress: 0,
+              };
+              sendUpdateStatus();
+
+              resolve({
+                success: true,
+                hasUpdate,
+                version: latestVersion,
+                downloadUrl: zipAsset?.browser_download_url || release.html_url,
+              });
+            } catch (err: any) {
+              handleError(err.message);
+            }
+          });
+        })
+        .on('error', (err) => handleError(err.message))
+        .on('timeout', () => {
+          req.destroy();
+          handleError('Request timeout');
+        });
+    };
+    doGet(`https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`);
+  });
 }
 
 // ============================================================================
@@ -329,34 +339,55 @@ async function fetchGitHubRelease(
   repo: string
 ): Promise<{ success: boolean; data?: any; error?: string }> {
   return new Promise((resolve) => {
-    const options = {
-      hostname: 'api.github.com',
-      path: `/repos/${owner}/${repo}/releases/latest`,
-      headers: { 'User-Agent': 'MioSub-Updater' },
-      timeout: REQUEST_TIMEOUT_MS,
-    };
-
-    const req = https
-      .get(options, (res) => {
-        let data = '';
-        res.on('data', (chunk) => (data += chunk));
-        res.on('end', () => {
-          try {
-            resolve({ success: true, data: JSON.parse(data) });
-          } catch (err: any) {
-            resolve({ success: false, error: err.message });
+    const doGet = (url: string, redirects = 0) => {
+      if (redirects > 5) {
+        resolve({ success: false, error: 'Too many redirects' });
+        return;
+      }
+      const urlObj = new URL(url);
+      const opts = {
+        hostname: urlObj.hostname,
+        path: urlObj.pathname + urlObj.search,
+        headers: { 'User-Agent': 'MioSub-Updater' },
+        timeout: REQUEST_TIMEOUT_MS,
+      };
+      const req = https
+        .get(opts, (res) => {
+          if ((res.statusCode === 301 || res.statusCode === 302) && res.headers.location) {
+            doGet(res.headers.location, redirects + 1);
+            return;
           }
+          let data = '';
+          res.on('data', (chunk) => (data += chunk));
+          res.on('end', () => {
+            try {
+              if (res.statusCode !== 200) {
+                resolve({
+                  success: false,
+                  error: `GitHub API ${res.statusCode}: ${data.slice(0, 200)}`,
+                });
+                return;
+              }
+              resolve({ success: true, data: JSON.parse(data) });
+            } catch (err: any) {
+              resolve({ success: false, error: err.message });
+            }
+          });
+        })
+        .on('error', (err) => resolve({ success: false, error: err.message }))
+        .on('timeout', () => {
+          req.destroy();
+          resolve({ success: false, error: 'Request timeout' });
         });
-      })
-      .on('error', (err) => resolve({ success: false, error: err.message }))
-      .on('timeout', () => {
-        req.destroy();
-        resolve({ success: false, error: 'Request timeout' });
-      });
+    };
+    doGet(`https://api.github.com/repos/${owner}/${repo}/releases/latest`);
   });
 }
 
-async function getCurrentBinaryVersion(name: BinaryName): Promise<string> {
+async function getCurrentBinaryVersion(
+  name: BinaryName,
+  whisperCustomBinaryPath?: string
+): Promise<string> {
   try {
     if (name === 'aligner') {
       const { ctcAlignerService } = await import('./ctcAligner.ts');
@@ -367,12 +398,13 @@ async function getCurrentBinaryVersion(name: BinaryName): Promise<string> {
       return versions.ytdlp;
     } else if (name === 'whisper') {
       const { localWhisperService } = await import('./localWhisper.ts');
-      const details = await localWhisperService.getWhisperDetails();
+      const details = await localWhisperService.getWhisperDetails(whisperCustomBinaryPath);
       if (details.source === 'Custom') return 'custom';
       return details.version.replace(/^v/, '');
     }
   } catch (err) {
     console.error(`[UpdateService] Failed to get ${name} version:`, err);
+    Sentry.captureException(err, { tags: { action: 'get-binary-version', binary: name } });
   }
   return 'unknown';
 }
@@ -397,9 +429,12 @@ function compareYtdlpVersions(a: string, b: string): number {
   return 0;
 }
 
-export async function checkBinaryUpdate(name: BinaryName): Promise<BinaryUpdateInfo> {
+export async function checkBinaryUpdate(
+  name: BinaryName,
+  whisperCustomBinaryPath?: string
+): Promise<BinaryUpdateInfo> {
   const repo = BINARY_REPOS[name];
-  const current = await getCurrentBinaryVersion(name);
+  const current = await getCurrentBinaryVersion(name, whisperCustomBinaryPath);
 
   // Skip update check for custom (third-party) binaries
   if (current === 'custom') {
@@ -413,128 +448,159 @@ export async function checkBinaryUpdate(name: BinaryName): Promise<BinaryUpdateI
     hasUpdate: false,
   };
 
-  const release = await fetchGitHubRelease(repo.owner, repo.repo);
-  if (!release.success || !release.data) {
-    console.warn(`[UpdateService] Failed to fetch ${name} release:`, release.error);
-    return result;
-  }
+  try {
+    const release = await fetchGitHubRelease(repo.owner, repo.repo);
+    if (!release.success || !release.data) {
+      console.warn(`[UpdateService] Failed to fetch ${name} release:`, release.error);
+      return result;
+    }
 
-  const tagName = release.data.tag_name || '';
-  result.releaseUrl = release.data.html_url;
+    const tagName = release.data.tag_name || '';
+    result.releaseUrl = release.data.html_url;
 
-  const platform = process.platform; // 'win32' | 'darwin' | 'linux'
-  const arch = process.arch; // 'x64' | 'arm64' | 'ia32'
+    const platform = process.platform; // 'win32' | 'darwin' | 'linux'
+    const arch = process.arch; // 'x64' | 'arm64' | 'ia32'
 
-  if (name === 'aligner') {
-    // Aligner: tag is "v0.1.2" or "0.1.2"
-    result.latest = tagName.replace(/^v/, '');
-    const currentParsed = parseAlignerVersion(current);
-    result.hasUpdate = compareVersions(result.latest, currentParsed) > 0;
-
-    // Find platform and arch specific binary asset
-    // Naming: cpp-ort-aligner-{platform}-{arch}.{zip|tar.gz}
-    // Exclude -symbols files
-    const asset = release.data.assets?.find((a: any) => {
-      const assetName = a.name.toLowerCase();
-      // Skip symbol files
-      if (assetName.includes('-symbols')) return false;
-
-      if (platform === 'win32') {
-        // Windows: .zip format
-        if (arch === 'arm64' && assetName.includes('windows-arm64') && assetName.endsWith('.zip')) {
-          return true;
-        }
-        // Default to x64 for Windows
-        return assetName.includes('windows-x64') && assetName.endsWith('.zip');
-      } else if (platform === 'darwin') {
-        // macOS: universal2 .tar.gz (supports both x64 and arm64)
-        return assetName.includes('macos-universal2') && assetName.endsWith('.tar.gz');
-      } else if (platform === 'linux') {
-        // Linux: .tar.gz format
-        if (
-          arch === 'arm64' &&
-          assetName.includes('linux-arm64') &&
-          assetName.endsWith('.tar.gz')
-        ) {
-          return true;
-        }
-        return assetName.includes('linux-x64') && assetName.endsWith('.tar.gz');
+    if (name === 'aligner') {
+      // Aligner: tag is "v0.1.2" or "0.1.2"
+      result.latest = tagName.replace(/^v/, '');
+      const currentParsed = parseAlignerVersion(current);
+      if (!isRealVersion(currentParsed)) {
+        result.hasUpdate = true;
+      } else {
+        result.hasUpdate = compareVersions(result.latest, currentParsed) > 0;
       }
-      return false;
-    });
-    if (asset) {
-      result.downloadUrl = asset.browser_download_url;
-    }
-  } else if (name === 'ytdlp') {
-    // yt-dlp: tag is "2024.12.23"
-    result.latest = tagName;
-    const currentParsed = parseYtdlpVersion(current);
-    result.hasUpdate = compareYtdlpVersions(result.latest, currentParsed) > 0;
 
-    // Find platform-specific binary asset
-    // yt-dlp naming: yt-dlp.exe (Windows), yt-dlp_macos (macOS universal), yt-dlp_linux (Linux)
-    // Note: yt-dlp provides universal binaries for macOS that work on both Intel and Apple Silicon
-    const asset = release.data.assets?.find((a: any) => {
-      const assetName = a.name;
-      if (platform === 'win32') {
-        // Windows: yt-dlp.exe or yt-dlp_win.exe
-        return assetName === 'yt-dlp.exe' || assetName === 'yt-dlp_win.exe';
-      } else if (platform === 'darwin') {
-        // macOS: yt-dlp_macos (universal binary)
-        return assetName === 'yt-dlp_macos';
-      } else if (platform === 'linux') {
-        // Linux: yt-dlp_linux or yt-dlp_linux_aarch64 for arm64
-        if (arch === 'arm64') {
-          return assetName === 'yt-dlp_linux_aarch64';
+      // Force update if companion libraries are missing (e.g. onnxruntime.dll)
+      if (!result.hasUpdate) {
+        const binPath = getBinaryPath('cpp-ort-aligner');
+        const platformKey = `${process.platform}-${process.arch}`;
+        const companions = BINARY_COMPANIONS['cpp-ort-aligner']?.[platformKey] || [];
+        for (const lib of companions) {
+          if (!fs.existsSync(path.join(path.dirname(binPath), lib))) {
+            result.hasUpdate = true;
+            break;
+          }
         }
-        return assetName === 'yt-dlp_linux';
       }
-      return false;
-    });
-    if (asset) {
-      result.downloadUrl = asset.browser_download_url;
-    }
-  } else if (name === 'whisper') {
-    // whisper.cpp: tag is "v1.8.5-custom"
-    const latestVersion = tagName.replace(/^v/, '').replace(/-custom$/, '');
-    result.latest = latestVersion;
 
-    if (current === 'unknown') {
-      // Can't detect version → always update
-      result.hasUpdate = true;
-    } else {
-      result.hasUpdate = compareVersions(latestVersion, current) > 0;
-    }
+      // Find platform and arch specific binary asset
+      // Naming: cpp-ort-aligner-{platform}-{arch}.{zip|tar.gz}
+      // Exclude -symbols files
+      const asset = release.data.assets?.find((a: any) => {
+        const assetName = a.name.toLowerCase();
+        // Skip symbol files
+        if (assetName.includes('-symbols')) return false;
 
-    // Asset naming: whisper-windows-x86_64.zip, whisper-macos-arm64.tar.gz, etc.
-    const asset = release.data.assets?.find((a: any) => {
-      const n = a.name.toLowerCase();
-      if (platform === 'win32') {
-        return n.includes('windows') && n.includes('x86_64') && n.endsWith('.zip');
-      } else if (platform === 'darwin') {
-        if (arch === 'arm64')
-          return n.includes('macos') && n.includes('arm64') && n.endsWith('.tar.gz');
-        return n.includes('macos') && n.includes('x86_64') && n.endsWith('.tar.gz');
-      } else if (platform === 'linux') {
-        if (arch === 'arm64')
-          return n.includes('linux') && n.includes('arm64') && n.endsWith('.tar.gz');
-        return n.includes('linux') && n.includes('x86_64') && n.endsWith('.tar.gz');
+        if (platform === 'win32') {
+          // Windows: .zip format
+          if (
+            arch === 'arm64' &&
+            assetName.includes('windows-arm64') &&
+            assetName.endsWith('.zip')
+          ) {
+            return true;
+          }
+          // Default to x64 for Windows
+          return assetName.includes('windows-x64') && assetName.endsWith('.zip');
+        } else if (platform === 'darwin') {
+          // macOS: universal2 .tar.gz (supports both x64 and arm64)
+          return assetName.includes('macos-universal2') && assetName.endsWith('.tar.gz');
+        } else if (platform === 'linux') {
+          // Linux: .tar.gz format
+          if (
+            arch === 'arm64' &&
+            assetName.includes('linux-arm64') &&
+            assetName.endsWith('.tar.gz')
+          ) {
+            return true;
+          }
+          return assetName.includes('linux-x64') && assetName.endsWith('.tar.gz');
+        }
+        return false;
+      });
+      if (asset) {
+        result.downloadUrl = asset.browser_download_url;
       }
-      return false;
-    });
-    if (asset) {
-      result.downloadUrl = asset.browser_download_url;
+    } else if (name === 'ytdlp') {
+      // yt-dlp: tag is "2024.12.23"
+      result.latest = tagName;
+      const currentParsed = parseYtdlpVersion(current);
+      if (!isRealVersion(currentParsed)) {
+        result.hasUpdate = true;
+      } else {
+        result.hasUpdate = compareYtdlpVersions(result.latest, currentParsed) > 0;
+      }
+
+      // Find platform-specific binary asset
+      // yt-dlp naming: yt-dlp.exe (Windows), yt-dlp_macos (macOS universal), yt-dlp_linux (Linux)
+      // Note: yt-dlp provides universal binaries for macOS that work on both Intel and Apple Silicon
+      const asset = release.data.assets?.find((a: any) => {
+        const assetName = a.name;
+        if (platform === 'win32') {
+          // Windows: yt-dlp.exe or yt-dlp_win.exe
+          return assetName === 'yt-dlp.exe' || assetName === 'yt-dlp_win.exe';
+        } else if (platform === 'darwin') {
+          // macOS: yt-dlp_macos (universal binary)
+          return assetName === 'yt-dlp_macos';
+        } else if (platform === 'linux') {
+          // Linux: yt-dlp_linux or yt-dlp_linux_aarch64 for arm64
+          if (arch === 'arm64') {
+            return assetName === 'yt-dlp_linux_aarch64';
+          }
+          return assetName === 'yt-dlp_linux';
+        }
+        return false;
+      });
+      if (asset) {
+        result.downloadUrl = asset.browser_download_url;
+      }
+    } else if (name === 'whisper') {
+      // whisper.cpp: tag is "v1.8.5-custom"
+      const latestVersion = tagName.replace(/^v/, '').replace(/-custom$/, '');
+      result.latest = latestVersion;
+
+      if (!isRealVersion(current)) {
+        result.hasUpdate = true;
+      } else {
+        result.hasUpdate = compareVersions(latestVersion, current) > 0;
+      }
+
+      // Asset naming: whisper-windows-x86_64.zip, whisper-macos-arm64.tar.gz, etc.
+      const asset = release.data.assets?.find((a: any) => {
+        const n = a.name.toLowerCase();
+        if (platform === 'win32') {
+          return n.includes('windows') && n.includes('x86_64') && n.endsWith('.zip');
+        } else if (platform === 'darwin') {
+          if (arch === 'arm64')
+            return n.includes('macos') && n.includes('arm64') && n.endsWith('.tar.gz');
+          return n.includes('macos') && n.includes('x86_64') && n.endsWith('.tar.gz');
+        } else if (platform === 'linux') {
+          if (arch === 'arm64')
+            return n.includes('linux') && n.includes('arm64') && n.endsWith('.tar.gz');
+          return n.includes('linux') && n.includes('x86_64') && n.endsWith('.tar.gz');
+        }
+        return false;
+      });
+      if (asset) {
+        result.downloadUrl = asset.browser_download_url;
+      }
     }
+  } catch (err: any) {
+    console.warn(`[UpdateService] Version comparison failed for ${name}:`, err.message);
+    Sentry.captureException(err, { tags: { action: 'version-comparison', binary: name } });
   }
 
   return result;
 }
 
-export async function checkAllBinaryUpdates(): Promise<BinaryUpdateInfo[]> {
+export async function checkAllBinaryUpdates(
+  whisperCustomBinaryPath?: string
+): Promise<BinaryUpdateInfo[]> {
   const results = await Promise.all([
     checkBinaryUpdate('aligner'),
     checkBinaryUpdate('ytdlp'),
-    checkBinaryUpdate('whisper'),
+    checkBinaryUpdate('whisper', whisperCustomBinaryPath),
   ]);
   return results;
 }
@@ -771,6 +837,7 @@ export async function downloadBinaryUpdate(
               execFileSync('codesign', ['--force', '-s', '-', compDst]);
             } catch (e) {
               console.warn(`[UpdateService] Ad-hoc codesign failed for ${comp}:`, e);
+              Sentry.captureException(e, { tags: { action: 'codesign', binary: comp } });
             }
           }
           console.log(`[UpdateService] Installed companion: ${comp}`);

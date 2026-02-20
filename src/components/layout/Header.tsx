@@ -76,7 +76,9 @@ export const Header: React.FC = () => {
     const timer = setTimeout(async () => {
       setBinaryUpdate((prev) => ({ ...prev, checking: true }));
       try {
-        const result = await window.electronAPI!.update!.checkBinaries();
+        const result = await window.electronAPI!.update!.checkBinaries({
+          whisperCustomBinaryPath: useAppStore.getState().settings.localWhisperBinaryPath,
+        });
         if (result.success && result.updates) {
           setBinaryUpdate((prev) => ({
             ...prev,
