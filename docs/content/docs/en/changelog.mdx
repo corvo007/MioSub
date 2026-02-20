@@ -5,6 +5,23 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.17] - 2026-02-20
+
+### Features
+
+- **Aligner**: Support Omnilingual ASR CTC 300M model with automatic model type detection (MMS vs Omnilingual) and aligner version compatibility check (requires v0.2.0+).
+- **Aligner**: Add warning-only preflight flow — version warnings show "Continue Anyway" instead of blocking generation.
+
+### Fixes
+
+- **Binary**: Fix macOS/Linux file picker incorrectly showing Windows `.exe` filter for whisper/aligner executables (Ref: MIOSUB-2P).
+- **Binary**: Gracefully handle missing binaries — return "Not found" instead of crashing on version detection.
+- **UX**: Extract human-readable error messages from Gemini SDK JSON error responses instead of showing raw JSON to users.
+
+### Refactor
+
+- **Update**: Overhaul update service for GitHub repo migration, add HTTP redirect handling and improved error logging.
+
 ## [3.0.16] - 2026-02-17
 
 ### Performance
