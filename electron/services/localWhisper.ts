@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { spawn, type ChildProcess } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
+import * as Sentry from '@sentry/electron/main';
 import { t } from '../i18n.ts';
 import { buildSpawnArgs, ensureAsciiSafePath, getAsciiSafeTempPath } from '../utils/shell.ts';
 import { ExpectedError } from '../utils/expectedError.ts';
@@ -99,6 +100,10 @@ export class LocalWhisperService {
     }
 
     console.warn(`[LocalWhisper] VAD model not found. Searched at: ${possiblePaths.join(', ')}`);
+    Sentry.captureMessage('VAD model not found', {
+      level: 'warning',
+      extra: { searchedPaths: possiblePaths },
+    });
     return null;
   }
 
@@ -441,7 +446,7 @@ export class LocalWhisperService {
       gpuSupport: false,
     };
 
-    if (!info.path) return details;
+    if (!info.path) return { ...details, version: 'Not found' };
 
     try {
       const { spawnSync } = await import('child_process');
@@ -497,6 +502,7 @@ export class LocalWhisperService {
       details.gpuSupport = matchedKeywords.length > 0;
     } catch (e) {
       console.warn('[LocalWhisperService] Failed to get whisper details:', e);
+      Sentry.captureException(e, { tags: { action: 'get-whisper-details' } });
     }
 
     return details;
