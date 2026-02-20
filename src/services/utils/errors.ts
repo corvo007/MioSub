@@ -86,3 +86,22 @@ export function isTransientError(error: any): boolean {
 
   return false;
 }
+
+/**
+ * Extracts a human-readable error message from any error object.
+ * Handles Gemini SDK errors where message contains raw JSON like:
+ *   {"error":{"code":503,"message":"...human text...","status":"UNAVAILABLE"}}
+ */
+export function getReadableErrorMessage(error: any): string {
+  const raw: string = error?.message || '';
+  try {
+    const match = raw.match(/\{.*\}/s);
+    if (match) {
+      const parsed = JSON.parse(match[0]);
+      if (parsed.error?.message) return parsed.error.message;
+    }
+  } catch {
+    // not JSON, use raw
+  }
+  return raw;
+}

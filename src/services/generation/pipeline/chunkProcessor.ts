@@ -16,7 +16,7 @@ import { type ChunkParams } from './preprocessor';
 import { type StepContext, type ChunkDependencies } from './core/types';
 import { MockFactory } from '@/services/generation/debug/mockFactory';
 import { logger } from '@/services/utils/logger';
-import { UserActionableError } from '@/services/utils/errors';
+import { UserActionableError, getReadableErrorMessage } from '@/services/utils/errors';
 import { formatTime, timeToSeconds } from '@/services/subtitle/time';
 import { getActionableErrorInfo } from '@/services/llm/providers/gemini';
 import * as Sentry from '@sentry/electron/renderer';
@@ -411,7 +411,9 @@ export class ChunkProcessor {
       logger.error(`Chunk ${index} failed`, e);
       const actionableInfo = getActionableErrorInfo(e);
       const errorMsg =
-        actionableInfo?.message || e?.message || i18n.t('services:pipeline.status.failed');
+        actionableInfo?.message ||
+        getReadableErrorMessage(e) ||
+        i18n.t('services:pipeline.status.failed');
       analytics.status = 'failed';
       analytics.process_ms = Date.now() - processStartTime;
       analytics.errorMessage = errorMsg;

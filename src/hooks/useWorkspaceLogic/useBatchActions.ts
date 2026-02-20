@@ -9,6 +9,7 @@ import { GenerationStatus } from '@/types/api';
 import { generateSrtContent, generateAssContent } from '@/services/subtitle/generator';
 import { downloadFile } from '@/services/subtitle/downloader';
 import { logger } from '@/services/utils/logger';
+import { getReadableErrorMessage } from '@/services/utils/errors';
 import { runProofreadOperation } from '@/services/generation/batch/proofread';
 import { runRegenerateOperation } from '@/services/generation/batch/regenerate';
 import { getActiveGlossaryTerms } from '@/services/glossary/utils';
@@ -210,9 +211,10 @@ export function useBatchActions({
           }
         } else {
           setStatus(GenerationStatus.ERROR);
-          setError(t('workspace:hooks.batch.status.failed', { error: error.message }));
+          const readableMsg = getReadableErrorMessage(error);
+          setError(t('workspace:hooks.batch.status.failed', { error: readableMsg }));
           logger.error(`Batch action ${mode} failed`, err);
-          addToast(t('workspace:hooks.batch.status.failed', { error: error.message }), 'error');
+          addToast(t('workspace:hooks.batch.status.failed', { error: readableMsg }), 'error');
         }
       } finally {
         abortControllerRef.current = null;
