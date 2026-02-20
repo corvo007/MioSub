@@ -57,6 +57,7 @@ export const transcribeWithLocalWhisper = async (
       language,
       threads,
       customBinaryPath: binaryPath,
+      isCustomBinary: !!customBinaryPath?.trim(),
     });
 
     // Track abort handler for cleanup

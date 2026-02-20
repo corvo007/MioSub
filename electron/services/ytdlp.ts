@@ -751,6 +751,11 @@ class YtDlpService {
       throw new ExpectedError(validation.error?.message || t('error.invalidVideoUrl'));
     }
 
+    // Check binary exists before attempting download
+    if (!fs.existsSync(this.binaryPath)) {
+      throw new ExpectedError(t('preflight.downloadableBinaryNotFound', { name: 'yt-dlp' }));
+    }
+
     const platform = validation.platform!;
     const isBilibili = platform === 'bilibili';
     const isYouTube = platform === 'youtube';
@@ -1222,18 +1227,20 @@ class YtDlpService {
   }
 
   async getVersions(): Promise<{ ytdlp: string; qjs: string }> {
-    let ytdlpVersion = 'unknown';
+    let ytdlpVersion = fs.existsSync(this.binaryPath) ? 'unknown' : 'Not found';
     let qjsVersion = 'unknown';
 
-    try {
-      const ytdlpOutput = await this.execute(['--version']);
-      ytdlpVersion = ytdlpOutput.trim();
-    } catch (error: any) {
-      console.warn('[YtDlpService] Failed to get yt-dlp version', {
-        error: error.message,
-        code: error.code,
-        binaryPath: this.binaryPath,
-      });
+    if (ytdlpVersion !== 'Not found') {
+      try {
+        const ytdlpOutput = await this.execute(['--version']);
+        ytdlpVersion = ytdlpOutput.trim();
+      } catch (error: any) {
+        console.warn('[YtDlpService] Failed to get yt-dlp version', {
+          error: error.message,
+          code: error.code,
+          binaryPath: this.binaryPath,
+        });
+      }
     }
 
     try {

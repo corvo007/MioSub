@@ -350,12 +350,14 @@ ipcMain.handle(
       language,
       threads,
       customBinaryPath,
+      isCustomBinary,
     }: {
       audioData: ArrayBuffer;
       modelPath: string;
       language?: string;
       threads?: number;
       customBinaryPath?: string;
+      isCustomBinary?: boolean;
     }
   ) => {
     try {
@@ -374,7 +376,7 @@ ipcMain.handle(
           threads,
           use_custom_binary: !!customBinaryPath,
           whisper_version: whisperDetails.version,
-          whisper_source: whisperDetails.source,
+          whisper_source: isCustomBinary ? 'Custom' : 'Bundled',
           use_gpu: whisperDetails.gpuSupport,
         },
         'interaction'
@@ -685,12 +687,16 @@ ipcMain.handle('select-whisper-model', async () => {
 // IPC Handler: Select Whisper Executable
 ipcMain.handle('select-whisper-executable', async () => {
   try {
+    const filters =
+      process.platform === 'win32'
+        ? [
+            { name: t('fileFilter.executableFiles'), extensions: ['exe'] },
+            { name: t('fileFilter.allFiles'), extensions: ['*'] },
+          ]
+        : [{ name: t('fileFilter.allFiles'), extensions: ['*'] }];
     const result = await dialog.showOpenDialog({
       title: t('dialog.selectWhisperExecutable'),
-      filters: [
-        { name: t('fileFilter.executableFiles'), extensions: ['exe'] },
-        { name: t('fileFilter.allFiles'), extensions: ['*'] },
-      ],
+      filters,
       properties: ['openFile'],
     });
 
@@ -708,12 +714,16 @@ ipcMain.handle('select-whisper-executable', async () => {
 // IPC Handler: Select Aligner Executable
 ipcMain.handle('select-aligner-executable', async () => {
   try {
+    const filters =
+      process.platform === 'win32'
+        ? [
+            { name: t('fileFilter.executableFiles'), extensions: ['exe'] },
+            { name: t('fileFilter.allFiles'), extensions: ['*'] },
+          ]
+        : [{ name: t('fileFilter.allFiles'), extensions: ['*'] }];
     const result = await dialog.showOpenDialog({
       title: t('dialog.selectAlignerExecutable'),
-      filters: [
-        { name: t('fileFilter.executableFiles'), extensions: ['exe'] },
-        { name: t('fileFilter.allFiles'), extensions: ['*'] },
-      ],
+      filters,
       properties: ['openFile'],
     });
 
@@ -1248,9 +1258,12 @@ ipcMain.handle(
       );
 
       // Analytics: Success
-      void analyticsService.track('compression_completed', { success: true });
+      void analyticsService.track('compression_completed', {
+        success: true,
+        actual_encoder: result.actualEncoder,
+      });
 
-      return result;
+      return result.outputPath;
     } catch (error: any) {
       console.error('[Main] Compression failed:', error);
       Sentry.captureException(error);

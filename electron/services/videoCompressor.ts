@@ -227,7 +227,7 @@ export class VideoCompressorService {
     options: CompressionOptions,
     onProgress?: (progress: CompressionProgress) => void,
     onLog?: (message: string) => void
-  ): Promise<string> {
+  ): Promise<{ outputPath: string; actualEncoder: string }> {
     const log = (msg: string) => onLog && onLog(msg);
     const hwAccel = options.hwAccel ?? 'auto';
 
@@ -251,7 +251,7 @@ export class VideoCompressorService {
 
     // Try GPU encoder first, fallback to CPU if it fails
     try {
-      return await this.runCompression(
+      const result = await this.runCompression(
         inputPath,
         outputPath,
         options,
@@ -259,6 +259,7 @@ export class VideoCompressorService {
         onProgress,
         log
       );
+      return { outputPath: result, actualEncoder: selectedEncoder };
     } catch (error: any) {
       // If GPU encoding failed and we were using GPU, try CPU fallback
       // But NOT if the user cancelled the operation
@@ -275,7 +276,7 @@ export class VideoCompressorService {
           }
         }
 
-        return await this.runCompression(
+        const result = await this.runCompression(
           inputPath,
           outputPath,
           options,
@@ -283,6 +284,7 @@ export class VideoCompressorService {
           onProgress,
           log
         );
+        return { outputPath: result, actualEncoder: options.encoder };
       }
       throw error;
     }
