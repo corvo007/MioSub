@@ -111,7 +111,8 @@ export function getStorageDir(): string {
   if (!app.isPackaged) {
     return path.join(process.cwd(), 'config');
   }
-  if (isPortableMode()) {
+  // macOS: portable storage next to exe is never viable (App Translocation, .app bundle, /Applications permissions)
+  if (isPortableMode() && process.platform !== 'darwin') {
     return path.join(path.dirname(app.getPath('exe')), 'config');
   }
   return path.join(app.getPath('userData'), 'config');
@@ -127,7 +128,8 @@ export function getLogDir(): string {
   if (!app.isPackaged) {
     return path.join(process.cwd(), 'logs');
   }
-  if (isPortableMode()) {
+  // macOS: portable storage next to exe is never viable (App Translocation, .app bundle, /Applications permissions)
+  if (isPortableMode() && process.platform !== 'darwin') {
     return path.join(path.dirname(app.getPath('exe')), 'logs');
   }
   return path.join(app.getPath('userData'), 'logs');
