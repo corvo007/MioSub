@@ -125,6 +125,7 @@ export interface ElectronAPI {
     language?: string;
     threads?: number;
     customBinaryPath?: string;
+    isCustomBinary?: boolean;
   }) => Promise<{
     success: boolean;
     segments?: { start: string; end: string; text: string }[];
@@ -217,6 +218,7 @@ export interface ElectronAPI {
       alignmentMode?: 'ctc' | 'none';
       alignmentModelPath?: string;
       alignerPath?: string;
+      alignerVersion?: string;
     }) => Promise<{
       passed: boolean;
       errors: {
@@ -543,7 +545,7 @@ export interface ElectronAPI {
       }) => void
     ) => () => void;
     // Binary updates
-    checkBinaries: () => Promise<{
+    checkBinaries: (options?: { whisperCustomBinaryPath?: string }) => Promise<{
       success: boolean;
       updates?: Array<{
         name: 'aligner' | 'ytdlp' | 'whisper';

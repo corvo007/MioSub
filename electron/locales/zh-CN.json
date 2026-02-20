@@ -109,7 +109,13 @@
     "ctcModelFilesMissing": "CTC 对齐模型目录缺少文件：{{files}}，请重新下载完整模型或检查模型目录是否正确",
     "ctcModelInvalidOnnx": "CTC 对齐模型不是有效的 ONNX 格式，请重新下载",
     "ctcModelReadError": "无法读取 CTC 对齐模型文件",
-    "ctcAlignerNotExist": "自定义对齐器可执行文件不存在"
+    "ctcAlignerNotExist": "自定义对齐器可执行文件不存在",
+    "ctcAlignerVersionTooOld": "对齐器版本 {{current}} 过低，不支持 Omnilingual 模型。请更新到 v{{required}} 或更高版本（设置 > 关于 > 检查更新）",
+    "ctcAlignerVersionUnknown": "无法确定对齐器版本。Omnilingual 模型需要对齐器 v{{required}} 或更高版本，请谨慎继续。",
+    "binaryNotExecutable": "{{path}} 存在但无法执行。在 macOS/Linux 上，请确保文件有执行权限（chmod +x）。也可以通过 设置 > 关于 > 检查更新 重新下载",
+    "ctcCompanionLibMissing": "对齐器所需的动态库 {{lib}} 未找到。可以通过 设置 > 关于 > 检查更新 重新下载",
+    "bundledBinaryNotFound": "未找到 {{name}}，安装可能已损坏，请重新安装应用",
+    "downloadableBinaryNotFound": "未找到 {{name}}，可以通过 设置 > 关于 > 检查更新 重新下载"
   },
   "endToEnd": {
     "preparingDownload": "正在准备下载...",

@@ -8,6 +8,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { t } from '../i18n.ts';
+import { getBinaryPath } from '../utils/paths.ts';
+import { compareVersions, isRealVersion } from '../utils/version.ts';
 
 // ============================================================================
 // Type Definitions
@@ -21,7 +23,7 @@ export interface PreflightError {
   /** Settings field name for UI navigation */
   field?: string;
   /** Settings tab to open */
-  tab?: 'services' | 'enhance';
+  tab?: 'services' | 'enhance' | 'about';
   /** Documentation URL for more info */
   docUrl?: string;
 }
@@ -50,6 +52,7 @@ export interface PreflightSettings {
   alignmentMode?: 'ctc' | 'none';
   alignmentModelPath?: string;
   alignerPath?: string;
+  alignerVersion?: string;
 }
 
 // ============================================================================
@@ -62,6 +65,19 @@ const GGUF_MAGIC = 0x46554747; // "GGUF" in little-endian
 
 // ONNX protobuf header - field 1 (ir_version) with varint wire type
 const ONNX_PROTOBUF_FIELD1_TAG = 0x08; // (1 << 3) | 0
+
+/** Validate that a file starts with the ONNX protobuf header byte. */
+function validateOnnxHeader(filePath: string): boolean {
+  let fd: number | undefined;
+  try {
+    fd = fs.openSync(filePath, 'r');
+    const buffer = Buffer.alloc(1);
+    fs.readSync(fd, buffer, 0, 1, 0);
+    return buffer[0] === ONNX_PROTOBUF_FIELD1_TAG;
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+  }
+}
 
 // Minimum file sizes
 const MIN_WHISPER_MODEL_SIZE = 50 * 1024 * 1024; // 50MB
@@ -113,17 +129,41 @@ export function validateWhisperModel(filePath: string): { valid: boolean; error?
   }
 }
 
+// Minimum aligner version required for Omnilingual model support
+const MIN_OMNILINGUAL_ALIGNER_VERSION = '0.2.0';
+
+/**
+ * Detected CTC model type based on directory contents.
+ */
+export type CtcModelType = 'mms' | 'omnilingual' | 'unknown';
+
+/**
+ * Detect which CTC model is present in a directory.
+ *
+ * - MMS model: model.onnx + model.onnx.data + vocab.json
+ * - Omnilingual model: model.int8.onnx + tokens.txt (or model.onnx + tokens.txt for fp32)
+ */
+function detectCtcModelType(dirPath: string): CtcModelType {
+  const hasVocabJson = fs.existsSync(path.join(dirPath, 'vocab.json'));
+  const hasTokensTxt = fs.existsSync(path.join(dirPath, 'tokens.txt'));
+  const hasModelOnnxData = fs.existsSync(path.join(dirPath, 'model.onnx.data'));
+
+  if (hasTokensTxt) return 'omnilingual';
+  if (hasVocabJson && hasModelOnnxData) return 'mms';
+  return 'unknown';
+}
+
 /**
  * Validate CTC alignment model directory
  *
- * The alignmentModelPath is a DIRECTORY containing:
- * - model.onnx (ONNX model file)
- * - model.onnx.data (model weights data)
- * - vocab.json (vocabulary file)
- *
- * All three files are required for CTC alignment to work.
+ * Supports two model formats:
+ * - MMS (legacy): model.onnx + model.onnx.data + vocab.json
+ * - Omnilingual (recommended): model.int8.onnx + tokens.txt (or model.onnx + tokens.txt)
  */
-export function validateCtcModelDir(dirPath: string): { valid: boolean; error?: string } {
+export function validateCtcModelDir(
+  dirPath: string,
+  alignerVersion?: string
+): { valid: boolean; error?: string; warning?: string; modelType?: CtcModelType } {
   try {
     // Check directory existence first (highest priority)
     if (!fs.existsSync(dirPath)) {
@@ -136,43 +176,92 @@ export function validateCtcModelDir(dirPath: string): { valid: boolean; error?: 
       return { valid: false, error: t('preflight.ctcModelPathNotDir') };
     }
 
-    // Check all required files exist
-    const requiredFiles = ['model.onnx', 'model.onnx.data', 'vocab.json'];
-    const missingFiles: string[] = [];
+    // Detect model type
+    const modelType = detectCtcModelType(dirPath);
 
-    for (const file of requiredFiles) {
-      const filePath = path.join(dirPath, file);
-      if (!fs.existsSync(filePath)) {
-        missingFiles.push(file);
+    if (modelType === 'omnilingual') {
+      // Omnilingual model: need an ONNX file + tokens.txt
+      const hasInt8 = fs.existsSync(path.join(dirPath, 'model.int8.onnx'));
+      const hasFp32 = fs.existsSync(path.join(dirPath, 'model.onnx'));
+      if (!hasInt8 && !hasFp32) {
+        return {
+          valid: false,
+          error: t('preflight.ctcModelFilesMissing', { files: 'model.int8.onnx' }),
+          modelType,
+        };
       }
+
+      // Validate ONNX header
+      const onnxFile = hasInt8 ? 'model.int8.onnx' : 'model.onnx';
+      if (!validateOnnxHeader(path.join(dirPath, onnxFile))) {
+        return { valid: false, error: t('preflight.ctcModelInvalidOnnx'), modelType };
+      }
+
+      // Check aligner version compatibility
+      if (isRealVersion(alignerVersion)) {
+        if (compareVersions(alignerVersion, MIN_OMNILINGUAL_ALIGNER_VERSION) < 0) {
+          return {
+            valid: false,
+            error: t('preflight.ctcAlignerVersionTooOld', {
+              current: alignerVersion,
+              required: MIN_OMNILINGUAL_ALIGNER_VERSION,
+            }),
+            modelType,
+          };
+        }
+      } else {
+        // Version unknown — can't verify compatibility, warn the user
+        return {
+          valid: true,
+          warning: t('preflight.ctcAlignerVersionUnknown', {
+            required: MIN_OMNILINGUAL_ALIGNER_VERSION,
+          }),
+          modelType,
+        };
+      }
+
+      return { valid: true, modelType };
     }
 
-    if (missingFiles.length > 0) {
-      return {
-        valid: false,
-        error: t('preflight.ctcModelFilesMissing', { files: missingFiles.join(', ') }),
-      };
+    if (modelType === 'mms') {
+      // MMS model: model.onnx + model.onnx.data + vocab.json
+      const requiredFiles = ['model.onnx', 'model.onnx.data', 'vocab.json'];
+      const missingFiles: string[] = [];
+      for (const file of requiredFiles) {
+        if (!fs.existsSync(path.join(dirPath, file))) {
+          missingFiles.push(file);
+        }
+      }
+      if (missingFiles.length > 0) {
+        return {
+          valid: false,
+          error: t('preflight.ctcModelFilesMissing', { files: missingFiles.join(', ') }),
+          modelType,
+        };
+      }
+
+      // Validate ONNX header
+      if (!validateOnnxHeader(path.join(dirPath, 'model.onnx'))) {
+        return { valid: false, error: t('preflight.ctcModelInvalidOnnx'), modelType };
+      }
+
+      return { valid: true, modelType };
     }
 
-    // Check model.onnx protobuf header
-    const modelPath = `${dirPath}/model.onnx`;
-    const fd = fs.openSync(modelPath, 'r');
-    const buffer = Buffer.alloc(1);
-    fs.readSync(fd, buffer, 0, 1, 0);
-    fs.closeSync(fd);
-
-    if (buffer[0] !== ONNX_PROTOBUF_FIELD1_TAG) {
-      return { valid: false, error: t('preflight.ctcModelInvalidOnnx') };
-    }
-
-    return { valid: true };
+    // Unknown model type — no recognizable file combination
+    return {
+      valid: false,
+      error: t('preflight.ctcModelFilesMissing', {
+        files: 'model.int8.onnx + tokens.txt (Omnilingual) or model.onnx + vocab.json (MMS)',
+      }),
+    };
   } catch (_error) {
     return { valid: false, error: t('preflight.ctcModelReadError') };
   }
 }
 
 /**
- * Check if a binary/executable exists
+ * Check if a binary/executable exists and is executable
  */
 function validateBinaryExists(
   filePath: string | undefined,
@@ -191,6 +280,44 @@ function validateBinaryExists(
       tab: 'services',
     };
   }
+  // On macOS/Linux, check execute permission
+  if (process.platform !== 'win32') {
+    try {
+      fs.accessSync(filePath, fs.constants.X_OK);
+    } catch {
+      return {
+        code: `${errorCode}_not_executable`,
+        message: t('preflight.binaryNotExecutable', { path: path.basename(filePath) }),
+        field,
+        tab: 'services',
+      };
+    }
+  }
+  return null;
+}
+
+// Companion dynamic libraries required by the aligner binary per platform
+const ALIGNER_COMPANION_LIBS: Record<string, string> = {
+  win32: 'onnxruntime.dll',
+  darwin: 'libonnxruntime.dylib',
+  linux: 'libonnxruntime.so',
+};
+
+/**
+ * Check that companion dynamic libraries exist alongside a binary.
+ */
+function validateCompanionLibs(binaryPath: string, field: string): PreflightError | null {
+  const lib = ALIGNER_COMPANION_LIBS[process.platform];
+  if (!lib) return null;
+  const libPath = path.join(path.dirname(binaryPath), lib);
+  if (!fs.existsSync(libPath)) {
+    return {
+      code: 'ctc_companion_lib_missing',
+      message: t('preflight.ctcCompanionLibMissing', { lib }),
+      field,
+      tab: 'about',
+    };
+  }
   return null;
 }
 
@@ -205,6 +332,19 @@ function validateBinaryExists(
 export function runPreflightCheck(settings: PreflightSettings): PreflightResult {
   const errors: PreflightError[] = [];
   const warnings: PreflightWarning[] = [];
+
+  // =========================================================================
+  // Bundled Binary Checks (should always be present in a valid installation)
+  // =========================================================================
+  for (const bin of ['ffmpeg', 'ffprobe'] as const) {
+    const binPath = getBinaryPath(bin);
+    if (!fs.existsSync(binPath)) {
+      errors.push({
+        code: `${bin}_not_found`,
+        message: t('preflight.bundledBinaryNotFound', { name: bin }),
+      });
+    }
+  }
 
   // =========================================================================
   // API Key Checks
@@ -260,15 +400,24 @@ export function runPreflightCheck(settings: PreflightSettings): PreflightResult 
       }
     }
 
-    // Check custom binary if specified
-    const binaryError = validateBinaryExists(
-      settings.localWhisperBinaryPath,
-      'whisper_binary_missing',
-      'preflight.whisperBinaryNotExist',
-      'localWhisperBinaryPath'
-    );
-    if (binaryError) {
-      errors.push({ ...binaryError, docUrl: WHISPER_DOC_URL });
+    // Check binary: custom path if specified, otherwise bundled binary
+    if (settings.localWhisperBinaryPath) {
+      const binaryError = validateBinaryExists(
+        settings.localWhisperBinaryPath,
+        'whisper_binary_missing',
+        'preflight.whisperBinaryNotExist',
+        'localWhisperBinaryPath'
+      );
+      if (binaryError) {
+        errors.push({ ...binaryError, docUrl: WHISPER_DOC_URL });
+      }
+    } else if (!fs.existsSync(getBinaryPath('whisper-cli'))) {
+      errors.push({
+        code: 'whisper_binary_missing',
+        message: t('preflight.downloadableBinaryNotFound', { name: 'whisper-cli' }),
+        tab: 'about',
+        docUrl: WHISPER_DOC_URL,
+      });
     }
   }
 
@@ -286,8 +435,8 @@ export function runPreflightCheck(settings: PreflightSettings): PreflightResult 
         docUrl: CTC_DOC_URL,
       });
     } else {
-      // Validate model directory (contains model.onnx)
-      const validation = validateCtcModelDir(settings.alignmentModelPath);
+      // Validate model directory (contains model.onnx or model.int8.onnx)
+      const validation = validateCtcModelDir(settings.alignmentModelPath, settings.alignerVersion);
       if (!validation.valid) {
         errors.push({
           code: 'ctc_model_invalid',
@@ -297,17 +446,27 @@ export function runPreflightCheck(settings: PreflightSettings): PreflightResult 
           docUrl: CTC_DOC_URL,
         });
       }
+      if (validation.warning) {
+        warnings.push({
+          code: 'ctc_aligner_version_unknown',
+          message: validation.warning,
+          field: 'alignmentModelPath',
+        });
+      }
     }
 
-    // Check custom aligner binary if specified
-    const alignerError = validateBinaryExists(
-      settings.alignerPath,
-      'ctc_aligner_missing',
-      'preflight.ctcAlignerNotExist',
-      'alignerPath'
-    );
-    if (alignerError) {
-      errors.push({ ...alignerError, tab: 'enhance' });
+    // Check bundled aligner binary and companion libraries
+    const alignerBinPath = getBinaryPath('cpp-ort-aligner');
+    if (!fs.existsSync(alignerBinPath)) {
+      errors.push({
+        code: 'ctc_aligner_missing',
+        message: t('preflight.downloadableBinaryNotFound', { name: 'cpp-ort-aligner' }),
+        tab: 'about',
+        docUrl: CTC_DOC_URL,
+      });
+    } else {
+      const companionError = validateCompanionLibs(alignerBinPath, 'alignerPath');
+      if (companionError) errors.push(companionError);
     }
   }
 

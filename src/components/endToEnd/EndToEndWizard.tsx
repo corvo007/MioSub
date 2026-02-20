@@ -47,6 +47,7 @@ export function EndToEndWizard({ settings, onComplete, onCancel }: EndToEndWizar
     state,
     preflightErrors,
     clearPreflightErrors,
+    preflightContinueCallback,
     goNext,
     goBack,
     updateConfig,
@@ -248,6 +249,7 @@ export function EndToEndWizard({ settings, onComplete, onCancel }: EndToEndWizar
           }
           setShowSettings(true);
         }}
+        onContinue={preflightContinueCallback || undefined}
       />
     </div>
   );

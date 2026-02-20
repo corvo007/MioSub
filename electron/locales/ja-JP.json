@@ -108,7 +108,13 @@
     "ctcModelFilesMissing": "CTC アライメントモデルディレクトリにファイルがありません：{{files}}、完全なモデルを再ダウンロードするか、モデルディレクトリのパスを確認してください",
     "ctcModelInvalidOnnx": "CTC アライメントモデルは有効な ONNX 形式ではありません。再ダウンロードしてください",
     "ctcModelReadError": "CTC アライメントモデルファイルを読み取れません",
-    "ctcAlignerNotExist": "カスタムアライナー実行ファイルが存在しません"
+    "ctcAlignerNotExist": "カスタムアライナー実行ファイルが存在しません",
+    "ctcAlignerVersionTooOld": "アライナーバージョン {{current}} は Omnilingual モデルに対応していません。v{{required}} 以降に更新してください（設定 > バージョン情報 > アップデートを確認）",
+    "ctcAlignerVersionUnknown": "アライナーのバージョンを確認できませんでした。Omnilingual モデルにはアライナー v{{required}} 以降が必要です。ご注意の上続行してください。",
+    "binaryNotExecutable": "{{path}} は存在しますが実行できません。macOS/Linux では実行権限を確認してください（chmod +x）。設定 > バージョン情報 > アップデートを確認 から再ダウンロードすることもできます",
+    "ctcCompanionLibMissing": "アライナーに必要な動的ライブラリ {{lib}} が見つかりません。設定 > バージョン情報 > アップデートを確認 から再ダウンロードできます",
+    "bundledBinaryNotFound": "{{name}} が見つかりません。インストールが破損している可能性があります。アプリを再インストールしてください。",
+    "downloadableBinaryNotFound": "{{name}} が見つかりません。設定 > バージョン情報 > アップデートを確認 から再ダウンロードできます"
   },
   "endToEnd": {
     "preparingDownload": "ダウンロード準備中...",

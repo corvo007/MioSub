@@ -304,7 +304,7 @@ const PreflightErrorModalContainer: React.FC = () => {
   } = useWorkspaceStore();
   const { setShowSettings, setSettingsTab } = useAppStore();
 
-  const handleOpenSettings = (tab?: 'services' | 'enhance') => {
+  const handleOpenSettings = (tab?: 'services' | 'enhance' | 'about') => {
     setShowPreflightModal(false);
     setPreflightContinueCallback(null);
     if (tab) {

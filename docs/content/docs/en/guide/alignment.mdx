@@ -29,6 +29,8 @@ v3.0 has a built-in CTC aligner. Simply:
 
   Please download `model.int8.onnx` and `tokens.txt`, place them in the same folder, then select that folder in settings.
 
+  > ⚠️ The Omnilingual model requires aligner **v0.2.0 or later**. Check your current version in Settings > About, and update via "Check for Updates".
+
   <details>
     <summary>Legacy model: MMS-300M (not recommended)</summary>
 
@@ -36,7 +38,7 @@ v3.0 has a built-in CTC aligner. Simply:
 
     [HF Mirror (for users in China)](https://hf-mirror.com/Corvo007/mms-300m-1130-forced-aligner-onnx/tree/main)
 
-    Please download all four files, place them in the same folder, then select that folder in settings.
+    Please download all four files, place them in the same folder, then select that folder in settings. This model has no aligner version requirement.
   </details>
 </Callout>
 
@@ -75,3 +77,10 @@ CTC alignment requires computational resources. Optimization tips:
 This can happen if the source video has poor audio quality, or the alignment model isn't optimized for the specific language/accent. Suggestions:
 1. Check the source video audio quality
 2. Temporarily disable alignment and use the original timestamps
+
+### Aligner version too old?
+
+The Omnilingual ASR CTC 300M model requires aligner v0.2.0 or later. To fix:
+1. Open **Settings > About**
+2. Click "Check for Updates" to update the aligner component
+3. If the update is unavailable, you can temporarily switch back to the legacy MMS-300M model

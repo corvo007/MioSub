@@ -17,6 +17,7 @@ import { localWhisperService } from './localWhisper.ts';
 import { ctcAlignerService } from './ctcAligner.ts';
 import { ytDlpService } from './ytdlp.ts';
 import { getCompressorInstance } from './videoCompressor.ts';
+import { isRealVersion } from '../utils/version.ts';
 
 // ============================================================================
 // Types
@@ -180,16 +181,14 @@ class SystemInfoService {
     // Get dependency versions (these are the "heavy" operations)
     const ytDlpInfo = await ytDlpService.getVersions();
     const whisperDetails = await localWhisperService.getWhisperDetails(config.customWhisperPath);
-    const whisperVersionStr = `${whisperDetails.version} (${whisperDetails.source}${whisperDetails.gpuSupport ? ' + GPU' : ''})`;
+    const whisperVersionStr =
+      whisperDetails.version === 'Not found'
+        ? 'Not found'
+        : `${whisperDetails.version} (${whisperDetails.source}${whisperDetails.gpuSupport ? ' + GPU' : ''})`;
 
     const alignerVersionRaw = await ctcAlignerService.getVersion(config.customAlignerPath);
     let alignerVersion = alignerVersionRaw;
-    if (
-      alignerVersionRaw &&
-      alignerVersionRaw !== 'Not found' &&
-      alignerVersionRaw !== 'Error' &&
-      alignerVersionRaw !== 'Unknown'
-    ) {
+    if (isRealVersion(alignerVersionRaw)) {
       alignerVersion = `v${alignerVersionRaw}`;
     }
 

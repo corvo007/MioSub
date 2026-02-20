@@ -15,7 +15,7 @@ export interface PreflightError {
   code: string;
   message: string;
   field?: string;
-  tab?: 'services' | 'enhance';
+  tab?: 'services' | 'enhance' | 'about';
   docUrl?: string;
   severity?: 'error' | 'warning';
 }
@@ -24,7 +24,7 @@ interface PreflightErrorModalProps {
   isOpen: boolean;
   onClose: () => void;
   errors: PreflightError[];
-  onOpenSettings: (tab?: 'services' | 'enhance') => void;
+  onOpenSettings: (tab?: 'services' | 'enhance' | 'about') => void;
   onContinue?: () => void;
 }
 
@@ -102,7 +102,7 @@ export const PreflightErrorModal: React.FC<PreflightErrorModalProps> = ({
                       </>
                     )}
                   </p>
-                  {error.field && (
+                  {(error.field || error.tab) && (
                     <button
                       onClick={() => handleGoToSettings(error)}
                       className={cn(

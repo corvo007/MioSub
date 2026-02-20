@@ -1,12 +1,12 @@
 import { type RefObject } from 'react';
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type GlossaryItem, type GlossaryExtractionMetadata } from '@/types/glossary';
 import { GenerationStatus, type ChunkStatus, type ChunkAnalytics } from '@/types/api';
 import { type TokenUsageAnalytics } from '@/services/generation/pipeline/usageReporter';
 import { logger } from '@/services/utils/logger';
-import { UserActionableError } from '@/services/utils/errors';
+import { UserActionableError, getReadableErrorMessage } from '@/services/utils/errors';
 import { autoConfirmGlossaryTerms } from '@/services/glossary/autoConfirm';
 import { generateSubtitles } from '@/services/generation/pipeline';
 import { getActiveGlossaryTerms, getActiveGlossary } from '@/services/glossary/utils';
@@ -54,6 +54,7 @@ export function useGeneration({
   setShowSettings,
 }: UseGenerationProps): UseGenerationReturn {
   const { t, i18n } = useTranslation(['workspace', 'services']);
+  const skipPreflightRef = useRef(false);
 
   const handleGenerate = useCallback(async () => {
     // Read fresh state/settings
@@ -83,7 +84,13 @@ export function useGeneration({
     }
 
     // Run preflight check (Electron only)
-    if (window.electronAPI?.preflight) {
+    if (window.electronAPI?.preflight && !skipPreflightRef.current) {
+      // Only fetch aligner version when CTC alignment is active (avoids unnecessary IPC)
+      let alignerVersion: string | undefined;
+      if (settings.alignmentMode === 'ctc') {
+        const binInfo = await window.electronAPI.binaries?.getInfo?.();
+        alignerVersion = binInfo?.versions?.aligner;
+      }
       const preflight = await window.electronAPI.preflight.check({
         geminiKey: settings.geminiKey || ENV.GEMINI_API_KEY,
         openaiKey: settings.openaiKey || ENV.OPENAI_API_KEY,
@@ -93,6 +100,7 @@ export function useGeneration({
         alignmentMode: settings.alignmentMode,
         alignmentModelPath: settings.alignmentModelPath,
         alignerPath: settings.alignerPath,
+        alignerVersion,
       });
 
       if (!preflight.passed) {
@@ -100,7 +108,24 @@ export function useGeneration({
         setShowPreflightModal(true);
         return;
       }
+
+      // Warnings only (no errors) — show modal with "Continue Anyway"
+      if (preflight.warnings?.length > 0) {
+        setPreflightErrors(
+          preflight.warnings.map((w: { code: string; message: string; field?: string }) => ({
+            ...w,
+            severity: 'warning' as const,
+          }))
+        );
+        setPreflightContinueCallback(() => {
+          skipPreflightRef.current = true;
+          handleGenerate();
+        });
+        setShowPreflightModal(true);
+        return;
+      }
     }
+    skipPreflightRef.current = false;
 
     // Glossary language mismatch check (blocking)
     const activeGlossary = getActiveGlossary(settings);
@@ -556,9 +581,10 @@ export function useGeneration({
         window.electronAPI?.task?.unregister(`workspace_${startAt}`).catch(console.error);
       } else {
         setStatus(GenerationStatus.ERROR);
-        setError(error.message);
+        const readableMsg = getReadableErrorMessage(error);
+        setError(readableMsg);
         logger.error('Subtitle generation failed', err);
-        addToast(t('workspace:hooks.generation.status.failed', { error: error.message }), 'error');
+        addToast(t('workspace:hooks.generation.status.failed', { error: readableMsg }), 'error');
 
         // Analytics: Error
         if (window.electronAPI?.analytics) {

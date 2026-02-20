@@ -17,6 +17,7 @@ import type { VideoInfo } from '@electron/services/ytdlp';
 import type { AppSettings } from '@/types/settings';
 import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 import { logger } from '@/services/utils/logger';
+import { getReadableErrorMessage } from '@/services/utils/errors';
 import { ENV } from '@/config';
 
 // Re-export types for convenience
@@ -29,6 +30,7 @@ interface UseEndToEndReturn {
   // Preflight errors
   preflightErrors: PreflightError[];
   clearPreflightErrors: () => void;
+  preflightContinueCallback: (() => void) | null;
 
   // Navigation
   setStep: (step: WizardStep) => void;
@@ -83,6 +85,10 @@ export function useEndToEnd(): UseEndToEndReturn {
 
   // Preflight errors state
   const [preflightErrors, setPreflightErrors] = useState<PreflightError[]>([]);
+  const [preflightContinueCallback, setPreflightContinueCallback] = useState<(() => void) | null>(
+    null
+  );
+  const skipPreflightRef = useRef(false);
 
   // Refs for cleanup
   const progressUnsubscribeRef = useRef<(() => void) | null>(null);
@@ -274,7 +280,13 @@ export function useEndToEnd(): UseEndToEndReturn {
       }
 
       // Run preflight check before starting pipeline
-      if (window.electronAPI?.preflight && globalSettings) {
+      if (window.electronAPI?.preflight && globalSettings && !skipPreflightRef.current) {
+        // Only fetch aligner version when CTC alignment is active (avoids unnecessary IPC)
+        let alignerVersion: string | undefined;
+        if (globalSettings.alignmentMode === 'ctc') {
+          const binInfo = await window.electronAPI.binaries?.getInfo?.();
+          alignerVersion = binInfo?.versions?.aligner;
+        }
         const preflight = await window.electronAPI.preflight.check({
           geminiKey: globalSettings.geminiKey || ENV.GEMINI_API_KEY,
           openaiKey: globalSettings.openaiKey || ENV.OPENAI_API_KEY,
@@ -284,6 +296,7 @@ export function useEndToEnd(): UseEndToEndReturn {
           alignmentMode: globalSettings.alignmentMode,
           alignmentModelPath: globalSettings.alignmentModelPath,
           alignerPath: globalSettings.alignerPath,
+          alignerVersion,
         });
 
         if (!preflight.passed) {
@@ -291,7 +304,23 @@ export function useEndToEnd(): UseEndToEndReturn {
           setPreflightErrors(preflight.errors as PreflightError[]);
           return null;
         }
+
+        // Warnings only (no errors) — show modal with "Continue Anyway"
+        if (preflight.warnings?.length > 0) {
+          setPreflightErrors(
+            preflight.warnings.map((w: { code: string; message: string; field?: string }) => ({
+              ...w,
+              severity: 'warning' as const,
+            }))
+          );
+          setPreflightContinueCallback(() => () => {
+            skipPreflightRef.current = true;
+            startPipeline(globalSettings);
+          });
+          return null;
+        }
       }
+      skipPreflightRef.current = false;
 
       setState((prev) => ({
         ...prev,
@@ -356,7 +385,7 @@ export function useEndToEnd(): UseEndToEndReturn {
           taskIdRef.current = null;
         }
 
-        const errorMessage = error.message || t('errors.executionFailed');
+        const errorMessage = getReadableErrorMessage(error) || t('errors.executionFailed');
         logger.error(`[EndToEnd] Pipeline execution failed: ${errorMessage}`, error);
 
         const errorResult = {
@@ -426,6 +455,7 @@ export function useEndToEnd(): UseEndToEndReturn {
   // Clear preflight errors
   const clearPreflightErrors = useCallback(() => {
     setPreflightErrors([]);
+    setPreflightContinueCallback(null);
   }, []);
 
   // 防抖版本 - 防止快速重复点击
@@ -436,6 +466,7 @@ export function useEndToEnd(): UseEndToEndReturn {
     state,
     preflightErrors,
     clearPreflightErrors,
+    preflightContinueCallback,
     setStep,
     goNext,
     goBack,
