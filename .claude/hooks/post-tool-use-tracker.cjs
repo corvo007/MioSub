@@ -8,7 +8,9 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+// Normalize to forward slashes — Claude Code passes backslash paths on Windows,
+// but process.cwd() returns forward slashes, causing String.replace to fail.
+const projectDir = (process.env.CLAUDE_PROJECT_DIR || process.cwd()).replace(/\\/g, '/');
 
 let input = '';
 process.stdin.setEncoding('utf8');
@@ -23,7 +25,7 @@ process.stdin.on('end', () => {
   try {
     const data = JSON.parse(input);
     const toolName = data.tool_name || '';
-    const filePath = data.tool_input?.file_path || '';
+    const filePath = (data.tool_input?.file_path || '').replace(/\\/g, '/');
     const sessionId = data.session_id || 'default';
 
     // Skip if not an edit tool or no file path
