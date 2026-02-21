@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect, type RefObject } from 'react';
 import { useOutsideClick } from './useOutsideClick';
 import { useDropdownDirection, DEFAULT_MIN_SPACE_BELOW } from './useDropdownDirection';
+import { isProgrammaticScroll } from '@/utils/programmaticScroll';
 
 interface UseDropdownOptions {
   /** Initial open state */
@@ -106,7 +107,10 @@ export function useDropdown<
       }
 
       if (closeOnScroll) {
-        setIsOpen(false);
+        // Skip close during programmatic scrolls (e.g., auto-scroll to active subtitle)
+        if (!isProgrammaticScroll()) {
+          setIsOpen(false);
+        }
       } else if (recalculateOnScroll) {
         calculatePosition();
       }

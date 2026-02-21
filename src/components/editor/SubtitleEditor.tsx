@@ -13,6 +13,7 @@ import { SearchReplacePanel } from '@/components/editor/SearchReplacePanel';
 import { SimpleConfirmationModal } from '@/components/modals/SimpleConfirmationModal';
 import { isVideoFile } from '@/services/utils/file';
 import { timeToSeconds } from '@/services/subtitle/time';
+import { markProgrammaticScroll } from '@/utils/programmaticScroll';
 
 import { useAppStore } from '@/store/useAppStore';
 import {
@@ -507,6 +508,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
             const activeBatchIndex = findActiveBatchIndex(chunks, currentPlayTime);
 
             if (activeBatchIndex !== -1 && virtuosoRef.current) {
+              markProgrammaticScroll();
               virtuosoRef.current.scrollToIndex({
                 index: activeBatchIndex,
                 align: 'start',
@@ -574,6 +576,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
         const activeIndex = findActiveSubtitleIndex(filteredSubtitles, currentPlayTime);
 
         if (activeIndex !== -1) {
+          markProgrammaticScroll();
           virtuosoRef.current.scrollToIndex({
             index: activeIndex,
             align: 'center',
@@ -594,6 +597,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
 
           if (batchChanged) {
             // Batch changed: first scroll to batch with Virtuoso, then delay scroll to row
+            markProgrammaticScroll();
             virtuosoRef.current.scrollToIndex({
               index: activeBatchIndex,
               align: 'start',
@@ -611,6 +615,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
               rowScrollTimerRef.current = setTimeout(() => {
                 const element = document.getElementById(`subtitle-row-${activeSub.id}`);
                 if (element) {
+                  markProgrammaticScroll();
                   element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }
                 rowScrollTimerRef.current = undefined;
@@ -622,6 +627,7 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
             if (activeSub) {
               const element = document.getElementById(`subtitle-row-${activeSub.id}`);
               if (element) {
+                markProgrammaticScroll();
                 element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 lastScrollTimeRef.current = now;
               }
