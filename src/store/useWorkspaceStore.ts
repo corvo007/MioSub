@@ -41,6 +41,9 @@ interface WorkspaceState {
   chunkProgress: Record<string, ChunkStatus>;
   startTime: number | null;
 
+  // Video dimensions (from video element metadata or ffprobe)
+  videoDimensions: { width: number; height: number } | null;
+
   // UI state
   selectedBatches: Set<number>;
   batchComments: Record<string, string>;
@@ -92,6 +95,9 @@ interface WorkspaceActions {
   setEditingSubtitleId: (id: string | null) => void;
   setIsLoadingFile: (loading: boolean) => void;
   setIsLoadingSubtitle: (loading: boolean) => void;
+
+  // Video dimension setter
+  setVideoDimensions: (dims: { width: number; height: number } | null) => void;
 
   // Speaker setters
   setSpeakerProfiles: (profiles: SpeakerUIProfile[]) => void;
@@ -163,6 +169,7 @@ const initialState: WorkspaceState = {
   duration: 0,
   subtitles: [],
   subtitleFileName: null,
+  videoDimensions: null,
   status: GenerationStatus.IDLE,
   error: null,
   progressMsg: '',
@@ -242,6 +249,7 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>()(
     setIsLoadingSubtitle: (isLoadingSubtitle) => set({ isLoadingSubtitle }),
 
     // Speaker setters
+    setVideoDimensions: (videoDimensions) => set({ videoDimensions }),
     setSpeakerProfiles: (speakerProfiles) => set({ speakerProfiles }),
 
     // Preflight setters
@@ -256,6 +264,7 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>()(
         duration: 0,
         subtitles: [],
         subtitleFileName: null,
+        videoDimensions: null,
         status: GenerationStatus.IDLE,
         error: null,
         progressMsg: '',

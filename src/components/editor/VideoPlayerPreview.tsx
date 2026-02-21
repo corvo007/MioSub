@@ -80,6 +80,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
     const { status } = useWorkspaceStore(useShallow(selectGenerationState));
     const { isLoadingFile } = useWorkspaceStore(useShallow(selectFileState));
     const speakerProfiles = useWorkspaceStore(useShallow((s) => s.speakerProfiles));
+    const setStoreVideoDimensions = useWorkspaceStore((s) => s.setVideoDimensions);
     const showSourceText = useWorkspaceStore((s) => s.showSourceText);
     const setShowSourceText = useWorkspaceStore((s) => s.actions.setShowSourceText);
 
@@ -224,7 +225,8 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
         includeSpeakerInExport,
         useSpeakerColors,
         speakerProfiles,
-        targetLanguage
+        targetLanguage,
+        videoDimensions ?? undefined
       );
     }, [
       subtitles,
@@ -234,6 +236,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
       showSourceText,
       isGenerating,
       targetLanguage,
+      videoDimensions,
     ]);
 
     // Debounce the ASS content updates (Issue 3 fix: 300ms delay)
@@ -472,10 +475,12 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
                   onTimeUpdate={handleTimeUpdate}
                   onLoadedMetadata={() => {
                     if (videoRef.current) {
-                      setVideoDimensions({
+                      const dims = {
                         width: videoRef.current.videoWidth,
                         height: videoRef.current.videoHeight,
-                      });
+                      };
+                      setVideoDimensions(dims);
+                      setStoreVideoDimensions(dims);
                       setDuration(videoRef.current.duration);
                       setReady(true);
                       // Restore time if switching modes (use ref to get latest value)

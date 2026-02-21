@@ -46,6 +46,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
   const setShowLogs = useAppStore((s) => s.setShowLogs);
   const setShowSettings = useAppStore((s) => s.setShowSettings);
   const targetLanguage = useAppStore((s) => s.settings.targetLanguage);
+  const outputMode = useAppStore((s) => s.settings.outputMode);
 
   const { t } = useTranslation('compression');
   const [file, setFile] = useState<File | null>(null);
@@ -224,14 +225,25 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
         workspaceSubtitles.length > 0
       ) {
         try {
+          // Probe video to get actual dimensions for correct ASS PlayRes
+          let videoDimensions: { width: number; height: number } | undefined;
+          try {
+            const info = await window.electronAPI.compression.getInfo(inputPath);
+            if (info.width && info.height) {
+              videoDimensions = { width: info.width, height: info.height };
+            }
+          } catch {
+            // Fall back to default 1920×1080 if probe fails
+          }
           const assContent = generateAssContent(
             workspaceSubtitles,
             'Gemini Subtitle',
-            true,
+            outputMode === 'bilingual',
             false,
             true,
             workspaceSpeakerProfiles,
-            targetLanguage
+            targetLanguage,
+            videoDimensions
           );
           const res = await window.electronAPI.writeTempFile(assContent, 'ass');
           if (res.success && res.path) {

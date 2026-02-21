@@ -79,7 +79,8 @@ export function useEndToEndSubtitleGeneration({
   const executeGeneration = useCallback(
     async (
       config: any,
-      audioPath: string
+      audioPath: string,
+      videoPath?: string
     ): Promise<{
       success: boolean;
       subtitles?: SubtitleItem[];
@@ -453,6 +454,19 @@ export function useEndToEndSubtitleGeneration({
         const bilingual = outputMode === 'bilingual';
         const title = config.videoInfo?.title || 'video';
 
+        // Probe video dimensions for correct ASS PlayRes
+        let videoDimensions: { width: number; height: number } | undefined;
+        if (videoPath && window.electronAPI?.compression?.getInfo) {
+          try {
+            const info = await window.electronAPI.compression.getInfo(videoPath);
+            if (info.width && info.height) {
+              videoDimensions = { width: info.width, height: info.height };
+            }
+          } catch {
+            // Fall back to default 1920×1080
+          }
+        }
+
         let content = '';
         if (format === 'srt') {
           content = generateSrtContent(subtitles, bilingual, !!config.includeSpeaker);
@@ -464,7 +478,8 @@ export function useEndToEndSubtitleGeneration({
             !!config.includeSpeaker,
             !!config.useSpeakerColors,
             speakerProfiles,
-            config.targetLanguage
+            config.targetLanguage,
+            videoDimensions
           );
         }
 
@@ -637,7 +652,7 @@ export function useEndToEndSubtitleGeneration({
     async (data: { config: any; videoPath: string; audioPath: string }) => {
       logger.info('[EndToEnd] Received subtitle generation request', data);
 
-      const result = await executeGeneration(data.config, data.audioPath);
+      const result = await executeGeneration(data.config, data.audioPath, data.videoPath);
 
       // Send result back to main process
       window.electronAPI?.endToEnd?.sendSubtitleResult?.(result);

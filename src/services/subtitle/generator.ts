@@ -54,11 +54,16 @@ export const generateAssContent = (
   includeSpeaker: boolean = false,
   useSpeakerColors: boolean = false,
   speakerProfiles?: SpeakerUIProfile[],
-  targetLanguage?: string
+  targetLanguage?: string,
+  videoDimensions?: { width: number; height: number }
 ): string => {
-  // Updated Styles:
-  // Default: Fontsize 82 (Large), White (Primary) -> Used for Translation
-  // Secondary: Fontsize 54 (Small), Yellow (Original) -> Used for Original Text
+  // PlayRes & font sizes: base values are calibrated for 1920×1080.
+  // For other resolutions (e.g. vertical 1080×1920), scale proportionally by width.
+  const playResX = videoDimensions?.width || 1920;
+  const playResY = videoDimensions?.height || 1080;
+  const fontScale = playResX / 1920;
+  const baseFontSize = Math.round(82 * fontScale);
+  const secondaryFontSize = Math.round(54 * fontScale);
 
   // Translated text font: Use targetLanguage setting directly (no detection needed)
   // This fixes the bug where Japanese source content caused Chinese translations to use JP font
@@ -90,7 +95,7 @@ export const generateAssContent = (
           const uniqueSuffix = profile.shortId ? `_${profile.shortId}` : '';
           const styleName = `Speaker_${sanitizedSpeaker}${uniqueSuffix}`;
 
-          return `Style: ${styleName},${defaultFont},82,${bgrColor},&H000000FF,&H00000000,&H00800000,0,0,0,0,100,100,0,0,1,2,1,2,10,10,10,1`;
+          return `Style: ${styleName},${defaultFont},${baseFontSize},${bgrColor},&H000000FF,&H00000000,&H00800000,0,0,0,0,100,100,0,0,1,2,1,2,10,10,10,1`;
         })
         .join('\n');
     } else {
@@ -104,7 +109,7 @@ export const generateAssContent = (
           const bgrColor = hexToAssBgr(color);
           const sanitizedSpeaker = sanitizeSpeakerForStyle(speaker);
           const styleName = `Speaker_${sanitizedSpeaker}`;
-          return `Style: ${styleName},${defaultFont},82,${bgrColor},&H000000FF,&H00000000,&H00800000,0,0,0,0,100,100,0,0,1,2,1,2,10,10,10,1`;
+          return `Style: ${styleName},${defaultFont},${baseFontSize},${bgrColor},&H000000FF,&H00000000,&H00800000,0,0,0,0,100,100,0,0,1,2,1,2,10,10,10,1`;
         })
         .join('\n');
     }
@@ -117,13 +122,13 @@ ScriptType: v4.00+
 WrapStyle: 0
 ScaledBorderAndShadow: yes
 YCbCr Matrix: TV.601
-PlayResX: 1920
-PlayResY: 1080
+PlayResX: ${playResX}
+PlayResY: ${playResY}
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,${defaultFont},82,&H00FFFFFF,&H000000FF,&H00000000,&H00800000,0,0,0,0,100,100,0,0,1,2,1,2,10,10,10,1
-Style: Secondary,${defaultFont},54,&H0000FFFF,&H000000FF,&H00000000,&H00800000,0,0,0,0,100,100,0,0,1,2,1,2,10,10,10,1
+Style: Default,${defaultFont},${baseFontSize},&H00FFFFFF,&H000000FF,&H00000000,&H00800000,0,0,0,0,100,100,0,0,1,2,1,2,10,10,10,1
+Style: Secondary,${defaultFont},${secondaryFontSize},&H0000FFFF,&H000000FF,&H00000000,&H00800000,0,0,0,0,100,100,0,0,1,2,1,2,10,10,10,1
 ${speakerStylesStr}
 
 [Events]

@@ -227,7 +227,7 @@ export function useBatchActions({
   const handleDownload = useCallback((format: 'srt' | 'ass') => {
     // Read state directly
     const { settings } = useAppStore.getState();
-    const { subtitles, file, speakerProfiles } = useWorkspaceStore.getState();
+    const { subtitles, file, speakerProfiles, videoDimensions } = useWorkspaceStore.getState();
 
     if (subtitles.length === 0) return;
     const isBilingual = settings.outputMode === 'bilingual';
@@ -242,7 +242,8 @@ export function useBatchActions({
             includeSpeaker,
             settings.useSpeakerColors,
             speakerProfiles,
-            settings.targetLanguage
+            settings.targetLanguage,
+            videoDimensions ?? undefined
           );
     const filename = file ? file.name.replace(/\.[^/.]+$/, '') : 'subtitles';
     logger.info(`Downloading subtitles: ${filename}.${format}`);
