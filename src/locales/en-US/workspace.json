@@ -33,7 +33,9 @@
     "noGlossary": "(None)",
     "speakerCount": "Speaker Count (Optional)",
     "speakerMin": "Min",
-    "speakerMax": "Max"
+    "speakerMax": "Max",
+    "expand": "Show Sidebar",
+    "collapse": "Hide Sidebar"
   },
   "genres": {
     "general": "General",

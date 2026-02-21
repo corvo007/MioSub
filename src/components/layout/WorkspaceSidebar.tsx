@@ -120,8 +120,9 @@ export const WorkspaceSidebar: React.FC<WorkspaceSidebarProps> = ({
         ref={sidebarRef}
         className={cn(
           'workspace-sidebar max-h-[60vh] h-auto overflow-y-auto custom-scrollbar space-y-2 sm:space-y-3',
-          (sidebarCollapsed && forceVerticalLayout) || sidebarCollapsed ? 'hidden' : 'block',
+          sidebarCollapsed ? 'hidden' : 'block',
           !forceVerticalLayout &&
+            !sidebarCollapsed &&
             'md:block md:col-span-4 lg:col-span-3 md:h-full md:min-h-0 md:max-h-none'
         )}
       >

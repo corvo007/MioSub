@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronUp, ChevronDown, FolderOpen } from 'lucide-react';
+import { ChevronUp, ChevronDown, FolderOpen, PanelLeftOpen, PanelLeftClose } from 'lucide-react';
 
 import { type SubtitleSnapshot, type SubtitleItem } from '@/types/subtitle';
 import { type SpeakerUIProfile } from '@/types/speaker';
@@ -164,7 +164,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         !forceVerticalLayout && 'md:overflow-hidden'
       )}
     >
-      <div className="max-w-screen-2xl mx-auto w-full flex-1 flex flex-col space-y-2 sm:space-y-4">
+      <div className="max-w-[1920px] mx-auto w-full flex-1 flex flex-col space-y-2 sm:space-y-4">
         <WorkspaceHeader
           title={activeTab === 'new' ? t('header.newProject') : t('header.subtitleEditor')}
           modeLabel={activeTab === 'new' ? t('header.generateMode') : t('header.importMode')}
@@ -218,16 +218,31 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
           <div
             className={cn(
               'flex flex-col h-[60vh] sm:h-[70vh] min-h-0',
-              !forceVerticalLayout && 'md:col-span-8 lg:col-span-9 md:h-full'
+              !forceVerticalLayout &&
+                (sidebarCollapsed
+                  ? 'md:col-span-10 lg:col-span-10 md:h-full'
+                  : 'md:col-span-8 lg:col-span-9 md:h-full')
             )}
           >
-            {/* Desktop Spacer for Alignment - matches sidebar spacer */}
+            {/* Desktop sidebar toggle */}
             <div
               className={cn(
-                'h-6 mb-1 shrink-0',
-                !forceVerticalLayout ? 'hidden md:block' : 'hidden'
+                'h-6 mb-1 shrink-0 items-center',
+                !forceVerticalLayout ? 'hidden md:flex' : 'hidden'
               )}
-            ></div>
+            >
+              <button
+                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                className="p-1 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                title={t(sidebarCollapsed ? 'sidebar.expand' : 'sidebar.collapse')}
+              >
+                {sidebarCollapsed ? (
+                  <PanelLeftOpen className="w-4 h-4" />
+                ) : (
+                  <PanelLeftClose className="w-4 h-4" />
+                )}
+              </button>
+            </div>
             <div className="bg-white/80 backdrop-blur-xl border border-white/20 rounded-xl sm:rounded-2xl overflow-hidden flex flex-col shadow-xl shadow-slate-200/40 relative flex-1 min-h-0">
               <div className="flex flex-col flex-1 relative w-full h-full min-h-0">
                 {/* Video Preview Panel - show for video OR audio files in Electron */}

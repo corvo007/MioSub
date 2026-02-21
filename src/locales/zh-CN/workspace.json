@@ -33,7 +33,9 @@
     "noGlossary": "(无)",
     "speakerCount": "说话人数量 (可选)",
     "speakerMin": "最少",
-    "speakerMax": "最多"
+    "speakerMax": "最多",
+    "expand": "显示侧栏",
+    "collapse": "隐藏侧栏"
   },
   "genres": {
     "general": "通用",
