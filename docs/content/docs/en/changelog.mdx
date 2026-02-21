@@ -5,6 +5,22 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.18] - 2026-02-21
+
+### Features
+
+- **Workspace**: Added a desktop sidebar toggle and responsive editor panel expansion so the subtitle workspace can use more horizontal space when the sidebar is hidden.
+
+### Fixes
+
+- **Storage (macOS)**: Disabled portable-path storage mode on macOS and always use `userData` paths, preventing startup/write failures caused by App Translocation read-only locations (Fixes MIOSUB-32).
+- **Editor**: Prevented dropdown menus from closing during playback-driven auto-scroll in the subtitle list.
+- **Subtitles (ASS)**: Generate ASS `PlayRes` and font sizes from actual video dimensions in preview/export/compression flows, fixing incorrect subtitle scaling on non-16:9 videos.
+
+### Chore
+
+- **Dev Tooling**: Normalized Windows path handling in local hook trackers and ignored `cpp-ort-aligner/` source directory for cleaner repository state.
+
 ## [3.0.17] - 2026-02-20
 
 ### Features
