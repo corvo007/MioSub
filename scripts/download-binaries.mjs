@@ -316,6 +316,16 @@ async function processBinary(name, config, platform) {
     await extractTar(archivePath, RESOURCES_DIR, config);
   }
 
+  // On Linux, ensure versioned soname exists for onnxruntime
+  if (platform.startsWith('linux') && name === 'cpp-ort-aligner') {
+    const so = path.join(RESOURCES_DIR, 'libonnxruntime.so');
+    const so1 = path.join(RESOURCES_DIR, 'libonnxruntime.so.1');
+    if (fs.existsSync(so) && !fs.existsSync(so1)) {
+      fs.copyFileSync(so, so1);
+      console.log(`    Created: libonnxruntime.so.1 (copy of libonnxruntime.so)`);
+    }
+  }
+
   // Set executable permissions
   const outputFiles = config.extract?.map((r) => r.to) || [];
   for (const file of outputFiles) {

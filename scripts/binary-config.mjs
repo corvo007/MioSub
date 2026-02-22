@@ -180,8 +180,8 @@ export const EXPECTED_FILES = {
     'cpp-ort-aligner.exe',
     'onnxruntime.dll',
   ],
-  'linux-x64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner', 'libonnxruntime.so'],
-  'linux-arm64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner', 'libonnxruntime.so'],
+  'linux-x64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner', 'libonnxruntime.so', 'libonnxruntime.so.1'],
+  'linux-arm64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner', 'libonnxruntime.so', 'libonnxruntime.so.1'],
   'darwin-x64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner', 'libonnxruntime.dylib'],
   'darwin-arm64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner', 'libonnxruntime.dylib'],
 };
@@ -190,8 +190,8 @@ export const EXPECTED_FILES = {
 export const REQUIRED_FILES = {
   'cpp-ort-aligner': {
     'win32-x64': ['cpp-ort-aligner.exe', 'onnxruntime.dll'],
-    'linux-x64': ['cpp-ort-aligner', 'libonnxruntime.so'],
-    'linux-arm64': ['cpp-ort-aligner', 'libonnxruntime.so'],
+    'linux-x64': ['cpp-ort-aligner', 'libonnxruntime.so', 'libonnxruntime.so.1'],
+    'linux-arm64': ['cpp-ort-aligner', 'libonnxruntime.so', 'libonnxruntime.so.1'],
     'darwin-x64': ['cpp-ort-aligner', 'libonnxruntime.dylib'],
     'darwin-arm64': ['cpp-ort-aligner', 'libonnxruntime.dylib'],
   },
