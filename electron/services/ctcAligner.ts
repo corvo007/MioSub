@@ -326,7 +326,16 @@ export class CTCAlignerService {
         proc.on('close', () => {
           // Parse: cpp-ort-aligner 0.1.2 (582ff15-dirty) -> 0.1.2
           const match = output.trim().match(/cpp-ort-aligner\s+([\d.]+)/);
-          resolve(match ? match[1] : output.trim() || 'Unknown');
+          if (!match) {
+            console.warn(
+              `[CTCAligner] Version parse failed, output: ${output.trim().slice(0, 200)}`
+            );
+            Sentry.captureMessage('Aligner version parse failed', {
+              level: 'warning',
+              extra: { output: output.trim().slice(0, 500) },
+            });
+          }
+          resolve(match ? match[1] : 'unknown');
         });
 
         proc.on('error', (err) => {

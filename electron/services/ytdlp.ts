@@ -10,6 +10,7 @@ import fs from 'fs';
 import http from 'http';
 import https from 'https';
 import { t } from '../i18n.ts';
+import * as Sentry from '@sentry/electron/main';
 import { getBinaryPath } from '../utils/paths.ts';
 import { ExpectedError } from '../utils/expectedError.ts';
 import { buildSpawnArgs } from '../utils/shell.ts';
@@ -1240,6 +1241,7 @@ class YtDlpService {
           code: error.code,
           binaryPath: this.binaryPath,
         });
+        Sentry.captureException(error, { tags: { action: 'ytdlp-version' } });
       }
     }
 
@@ -1251,6 +1253,14 @@ class YtDlpService {
       const firstLine = output.split('\n')[0];
       if (firstLine.includes('QuickJS version')) {
         qjsVersion = firstLine.replace('QuickJS version ', '').trim();
+      } else {
+        console.warn(
+          `[YtDlpService] QuickJS version parse failed, output: ${output.trim().slice(0, 200)}`
+        );
+        Sentry.captureMessage('QuickJS version parse failed', {
+          level: 'warning',
+          extra: { output: output.trim().slice(0, 500) },
+        });
       }
     } catch (error: any) {
       console.warn('[YtDlpService] Failed to get QuickJS version', {
@@ -1258,6 +1268,7 @@ class YtDlpService {
         code: error.code,
         quickjsPath: this.quickjsPath,
       });
+      Sentry.captureException(error, { tags: { action: 'quickjs-version' } });
     }
 
     return { ytdlp: ytdlpVersion, qjs: qjsVersion };

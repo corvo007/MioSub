@@ -478,6 +478,15 @@ export class LocalWhisperService {
         const helpVersionMatch =
           output.match(/whisper\.cpp v?(\d+\.\d+\.\d+)/i) || output.match(/v?(\d+\.\d+\.\d+)/i);
         details.version = helpVersionMatch ? `v${helpVersionMatch[1]}` : 'unknown';
+        if (!helpVersionMatch) {
+          console.warn(
+            `[LocalWhisper] Version parse failed, output: ${output.trim().slice(0, 200)}`
+          );
+          Sentry.captureMessage('Whisper version parse failed', {
+            level: 'warning',
+            extra: { output: output.trim().slice(0, 500) },
+          });
+        }
       }
 
       // Detect GPU support
