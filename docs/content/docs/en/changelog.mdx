@@ -5,6 +5,18 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.19] - 2026-02-22
+
+### Features
+
+- **Glossary**: Added "Duplicate" button to glossary sidebar and widened the modal layout to reduce name truncation.
+
+### Fixes
+
+- **Linux**: Fixed binary updates silently failing on AppImage by writing to a writable overlay directory instead of the read-only FUSE mount (Fixes MIOSUB-36).
+- **Linux**: Added versioned `libonnxruntime.so.1` soname required by the Linux dynamic linker at runtime.
+- **i18n**: Added 27 missing translation keys for English and Japanese locales.
+
 ## [3.0.18] - 2026-02-21
 
 ### Features
