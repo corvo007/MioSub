@@ -19,6 +19,21 @@ export function createGlossary(name: string, targetLanguage?: string): Glossary 
 }
 
 /**
+ * Duplicate a glossary with a new ID and name suffix
+ */
+export function duplicateGlossary(glossary: Glossary, copySuffix: string): Glossary {
+  const now = new Date().toISOString();
+  return {
+    ...glossary,
+    id: crypto.randomUUID(),
+    name: `${glossary.name} (${copySuffix})`,
+    terms: glossary.terms.map((t) => ({ ...t })),
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/**
  * Rename a glossary
  */
 export function renameGlossary(glossary: Glossary, newName: string): Glossary {

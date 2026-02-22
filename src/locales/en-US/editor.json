@@ -25,6 +25,8 @@
     "cancel": "Cancel",
     "edit": "Edit",
     "delete": "Delete",
+    "duplicate": "Duplicate",
+    "copySuffix": "Copy",
     "selectToManage": "Select a glossary to manage terms"
   },
   "subtitleRow": {

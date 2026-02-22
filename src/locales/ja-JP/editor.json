@@ -25,6 +25,8 @@
     "cancel": "キャンセル",
     "edit": "編集",
     "delete": "削除",
+    "duplicate": "複製",
+    "copySuffix": "コピー",
     "selectToManage": "用語集を選択して用語を管理"
   },
   "subtitleRow": {

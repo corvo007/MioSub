@@ -12,10 +12,12 @@ import {
   Search,
   AlertCircle,
   HelpCircle,
+  Copy,
 } from 'lucide-react';
 import { type Glossary, type GlossaryItem } from '@/types/glossary';
 import {
   createGlossary,
+  duplicateGlossary,
   renameGlossary,
   exportGlossary,
   importGlossary,
@@ -152,6 +154,12 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
     const updated = glossaries.map((g) => (g.id === id ? renameGlossary(g, editNameValue) : g));
     onUpdateGlossaries(updated);
     setEditingNameId(null);
+  };
+
+  const handleDuplicate = (glossary: Glossary) => {
+    const copy = duplicateGlossary(glossary, t('glossary.copySuffix'));
+    onUpdateGlossaries([...glossaries, copy]);
+    setSelectedGlossaryId(copy.id);
   };
 
   const handleDelete = (id: string) => {
@@ -295,11 +303,11 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
 
   return (
     <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="bg-white/95 backdrop-blur-xl border border-white/60 rounded-2xl w-full max-w-5xl h-[85vh] flex shadow-2xl shadow-brand-purple/20 overflow-hidden relative ring-1 ring-slate-900/5">
+      <div className="bg-white/95 backdrop-blur-xl border border-white/60 rounded-2xl w-full max-w-6xl h-[85vh] flex shadow-2xl shadow-brand-purple/20 overflow-hidden relative ring-1 ring-slate-900/5">
         <div className="absolute inset-0 bg-warm-mesh opacity-30 pointer-events-none" />
 
         {/* Sidebar - Glossary List */}
-        <div className="w-64 bg-slate-50/80 backdrop-blur-md border-r border-slate-200/60 flex flex-col relative z-20">
+        <div className="w-80 bg-slate-50/80 backdrop-blur-md border-r border-slate-200/60 flex flex-col relative z-20">
           <div className="p-4 border-b border-slate-200 flex items-center justify-between">
             <h2 className="text-lg font-bold text-slate-800 flex items-center tracking-tight">
               <div className="p-1.5 bg-brand-purple/10 rounded-lg mr-2">
@@ -411,6 +419,16 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
                     title={t('glossary.rename')}
                   >
                     <Edit2 className="w-3 h-3" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDuplicate(glossary);
+                    }}
+                    className="p-1.5 hover:bg-slate-100 rounded text-slate-400 hover:text-brand-purple transition-colors"
+                    title={t('glossary.duplicate')}
+                  >
+                    <Copy className="w-3 h-3" />
                   </button>
                   <button
                     onClick={(e) => {
