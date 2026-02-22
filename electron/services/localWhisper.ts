@@ -5,6 +5,7 @@ import { spawn, type ChildProcess } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import * as Sentry from '@sentry/electron/main';
 import { t } from '../i18n.ts';
+import { getWritableBinDir } from '../utils/paths.ts';
 import { buildSpawnArgs, ensureAsciiSafePath, getAsciiSafeTempPath } from '../utils/shell.ts';
 import { ExpectedError } from '../utils/expectedError.ts';
 
@@ -56,6 +57,7 @@ export class LocalWhisperService {
     const exeDir = path.dirname(exePath);
 
     const possiblePaths = [
+      path.join(getWritableBinDir(), binaryName),
       path.join(exeDir, 'resources', binaryName),
       path.join(exeDir, binaryName),
       path.join(process.resourcesPath, binaryName),

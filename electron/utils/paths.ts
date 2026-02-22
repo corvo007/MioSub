@@ -61,7 +61,22 @@ function isDirectoryWritable(dir: string): boolean {
 }
 
 /**
- * Get the path to a binary file in the resources directory.
+ * Get the writable directory for user-updated binaries.
+ * Acts as an overlay: updated binaries go here, bundled binaries remain read-only.
+ * This fixes Linux AppImage where process.resourcesPath is a read-only FUSE mount.
+ */
+export function getWritableBinDir(): string {
+  if (!app.isPackaged) {
+    return path.join(process.cwd(), 'resources');
+  }
+  if (isPortableMode() && process.platform !== 'darwin') {
+    return path.join(path.dirname(app.getPath('exe')), 'resources');
+  }
+  return path.join(app.getPath('userData'), 'binaries');
+}
+
+/**
+ * Get the path to a binary file, checking the writable overlay first.
  * Handles both production (packaged) and development environments.
  * Automatically adds .exe extension on Windows if missing.
  */
@@ -69,11 +84,13 @@ export function getBinaryPath(name: string): string {
   const binaryName = process.platform === 'win32' && !name.endsWith('.exe') ? `${name}.exe` : name;
 
   if (app.isPackaged) {
+    // Check writable overlay first (user-updated binaries)
+    const overlayPath = path.join(getWritableBinDir(), binaryName);
+    if (fs.existsSync(overlayPath)) return overlayPath;
+    // Fallback to bundled (may be read-only, e.g. Linux AppImage)
     return path.join(process.resourcesPath, binaryName);
   }
 
-  // In development, resources are in the project root
-  // process.cwd() is usually the project root in dev mode
   return path.join(process.cwd(), 'resources', binaryName);
 }
 

@@ -1,7 +1,7 @@
 import electronUpdater from 'electron-updater';
 import type { UpdateInfo } from 'electron-updater';
 import { type BrowserWindow, ipcMain, shell } from 'electron';
-import { isPortableMode, getBinaryPath } from '../utils/paths.ts';
+import { isPortableMode, getBinaryPath, getWritableBinDir } from '../utils/paths.ts';
 import { compareVersions, isRealVersion } from '../utils/version.ts';
 import * as Sentry from '@sentry/electron/main';
 import https from 'https';
@@ -75,8 +75,8 @@ type BinaryName = keyof typeof BINARY_REPOS;
 const BINARY_COMPANIONS: Record<string, Record<string, string[]>> = {
   'cpp-ort-aligner': {
     'win32-x64': ['onnxruntime.dll'],
-    'linux-x64': ['libonnxruntime.so'],
-    'linux-arm64': ['libonnxruntime.so'],
+    'linux-x64': ['libonnxruntime.so', 'libonnxruntime.so.1'],
+    'linux-arm64': ['libonnxruntime.so', 'libonnxruntime.so.1'],
     'darwin-x64': ['libonnxruntime.dylib'],
     'darwin-arm64': ['libonnxruntime.dylib'],
   },
@@ -627,8 +627,11 @@ export async function downloadBinaryUpdate(
     whisper: 'whisper-cli',
   };
   const binaryName = binaryNameMap[name];
-  const binaryPath = getBinaryPath(binaryName);
-  const resourceDir = path.dirname(binaryPath);
+  const binaryFileName =
+    process.platform === 'win32' && !binaryName.endsWith('.exe') ? `${binaryName}.exe` : binaryName;
+  const resourceDir = getWritableBinDir();
+  fs.mkdirSync(resourceDir, { recursive: true });
+  const binaryPath = path.join(resourceDir, binaryFileName);
   const isArchive = downloadUrl.endsWith('.zip') || downloadUrl.endsWith('.tar.gz');
   const archiveExt = downloadUrl.endsWith('.zip') ? '.zip' : '.tar.gz';
   const tempArchivePath = path.join(resourceDir, `${binaryName}-update${archiveExt}`);
@@ -825,23 +828,24 @@ export async function downloadBinaryUpdate(
       // --- Install phase (companion libraries) ---
       for (const comp of companions) {
         const compSrc = findFileByName(tempExtractDir, comp);
-        if (compSrc) {
-          const compDst = path.join(resourceDir, comp);
-          fs.copyFileSync(compSrc, compDst);
-          if (process.platform !== 'win32') {
-            fs.chmodSync(compDst, 0o755);
-          }
-          // Re-sign on macOS to prevent KERN_CODESIGN_ERROR
-          if (process.platform === 'darwin') {
-            try {
-              execFileSync('codesign', ['--force', '-s', '-', compDst]);
-            } catch (e) {
-              console.warn(`[UpdateService] Ad-hoc codesign failed for ${comp}:`, e);
-              Sentry.captureException(e, { tags: { action: 'codesign', binary: comp } });
-            }
-          }
-          console.log(`[UpdateService] Installed companion: ${comp}`);
+        if (!compSrc) {
+          return { success: false, error: `Missing companion library in archive: ${comp}` };
         }
+        const compDst = path.join(resourceDir, comp);
+        fs.copyFileSync(compSrc, compDst);
+        if (process.platform !== 'win32') {
+          fs.chmodSync(compDst, 0o755);
+        }
+        // Re-sign on macOS to prevent KERN_CODESIGN_ERROR
+        if (process.platform === 'darwin') {
+          try {
+            execFileSync('codesign', ['--force', '-s', '-', compDst]);
+          } catch (e) {
+            console.warn(`[UpdateService] Ad-hoc codesign failed for ${comp}:`, e);
+            Sentry.captureException(e, { tags: { action: 'codesign', binary: comp } });
+          }
+        }
+        console.log(`[UpdateService] Installed companion: ${comp}`);
       }
 
       // --- Cleanup backups on success ---
