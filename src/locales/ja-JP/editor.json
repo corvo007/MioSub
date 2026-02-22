@@ -89,7 +89,8 @@
     "autoScrollOn": "自動スクロール: オン",
     "autoScrollOff": "自動スクロール: オフ",
     "batchReplace": "一括置換",
-    "batchReplaceDesc": "字幕内のテキストを検索して置換"
+    "batchReplaceDesc": "字幕内のテキストを検索して置換",
+    "noSpeakers": "話者がまだいません"
   },
   "regenerateModal": {
     "title": "字幕を再生成",

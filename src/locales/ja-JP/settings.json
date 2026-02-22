@@ -76,6 +76,7 @@
         "instructionModelSuffix": " のみです。Faster-whisper モデルはサポートされていません。",
         "instructionDocs": "詳細な設定ガイドは",
         "instructionDocsLink": "公式ドキュメント",
+        "clearBinaryPath": "クリア（バンドル版を使用）",
         "instructionDocsSuffix": "をご覧ください。",
         "selectError": "モデルの選択に失敗しました: {{error}}",
         "selectErrorGeneric": "モデルの選択に失敗しました"
@@ -249,6 +250,10 @@
   },
   "about": {
     "dependencies": "依存コンポーネント",
+    "checkBinaryUpdates": "更新を確認",
+    "downloadUpdate": "更新をダウンロード",
+    "viewRelease": "リリースを表示",
+    "aligner": "Aligner バージョン",
     "ffmpeg": "FFmpeg バージョン",
     "ffprobe": "FFprobe バージョン",
     "ytdlp": "yt-dlp バージョン",

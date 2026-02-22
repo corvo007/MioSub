@@ -67,7 +67,11 @@
     "settings": "設定",
     "subtitle": "AI 字幕生成・翻訳ツール",
     "help": "ヘルプ",
-    "viewHelp": "ヘルプドキュメントを表示"
+    "viewHelp": "ヘルプドキュメントを表示",
+    "docs": "ドキュメント",
+    "qqGroup": "QQグループ",
+    "qqGroupNumber": "1082480420",
+    "copied": "コピーしました"
   },
   "upload": {
     "changeFile": "ファイルを変更"

@@ -90,7 +90,8 @@
     "modelInvalidFormat": "無効なモデルファイル形式です（.bin 形式が必要）",
     "modelTooSmall": "モデルファイルが小さすぎます（無効なファイルの可能性）",
     "modelReadError": "モデルファイルを読み取れません",
-    "binaryNotFound": "Whisper 実行ファイルが見つかりません。設定のパスを確認するか、ソフトウェアが正しくインストールされていることを確認してください。"
+    "binaryNotFound": "Whisper 実行ファイルが見つかりません。設定のパスを確認するか、ソフトウェアが正しくインストールされていることを確認してください。",
+    "modelIncompatibleFormat": "互換性のないモデル形式です。whisper.cpp は GGML/GGUF 形式のモデルが必要です。faster-whisper (CTranslate2) 形式はサポートされていません。正しい形式のモデルをダウンロードしてください。"
   },
   "preflight": {
     "geminiKeyMissing": "Gemini API Key が設定されていません。翻訳と校正ができません",

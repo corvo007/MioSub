@@ -17,6 +17,7 @@
   "openOutputDir": "ダウンロードディレクトリを開く",
   "downloadNewVideo": "新しい動画をダウンロード",
   "continueGenerating": "字幕生成を続行",
+  "thumbnailSuccess": "サムネイルをダウンロードしました",
   "errors": {
     "thumbnailFailed": "サムネイルのダウンロードに失敗しました"
   },

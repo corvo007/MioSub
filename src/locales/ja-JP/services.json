@@ -37,7 +37,8 @@
         "notElectron": "ローカル Whisper はデスクトップアプリでのみ使用可能です",
         "transcriptionFailed": "ローカル Whisper の文字起こしに失敗しました",
         "noModelPath": "Whisper モデルパスが見つかりません",
-        "fallbackToApi": "OpenAI API にフォールバックしています"
+        "fallbackToApi": "OpenAI API にフォールバックしています",
+        "transcriptionWarning": "文字起こし中に警告が発生しました: {{details}}"
       }
     },
     "openai": {
@@ -151,6 +152,7 @@
       "ffmpegFilePathRequired": "FFmpeg 操作にはファイルパスが必要です",
       "getAudioInfoFailed": "音声情報の取得に失敗しました",
       "ffmpegExtractionFailed": "音声抽出に失敗しました",
+      "ffmpegRequiredForLargeFile": "大きなファイルには FFmpeg が必要です。FFmpeg が正しくインストールされていることを確認してください。",
       "webAudioNotSupported": "このブラウザでは Web Audio API がサポートされていません",
       "unsupportedAudioFormat": "サポートされていない音声形式です",
       "unsupportedBrowserEncoding": "ブラウザのエンコーディングがサポートされていません",

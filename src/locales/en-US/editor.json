@@ -89,7 +89,8 @@
     "autoScrollOn": "Auto Scroll: On",
     "autoScrollOff": "Auto Scroll: Off",
     "batchReplace": "Batch Replace",
-    "batchReplaceDesc": "Find and replace text in subtitles"
+    "batchReplaceDesc": "Find and replace text in subtitles",
+    "noSpeakers": "No speakers yet"
   },
   "regenerateModal": {
     "title": "Regenerate Subtitles",

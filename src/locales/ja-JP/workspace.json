@@ -153,5 +153,15 @@
   "task": {
     "generating": "字幕を生成中"
   },
+  "preflight": {
+    "title": "設定チェックに失敗しました",
+    "description": "開始前に以下の設定の問題を修正してください：",
+    "goToSettings": "設定へ移動",
+    "openSettings": "設定を開く",
+    "close": "閉じる",
+    "seeDoc": "ドキュメントを参照",
+    "continueAnyway": "続行する",
+    "glossaryMismatch": "有効な用語集「{{glossaryName}}」には {{glossaryLang}} の翻訳が含まれていますが、ターゲット言語は {{targetLang}} です。ターゲット言語に一致する用語集を選択するか、用語集の選択を解除して再生成してください。"
+  },
   "unableToLoadFile": "ファイルを読み込めません: {{error}}"
 }

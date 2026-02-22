@@ -67,7 +67,11 @@
     "settings": "Settings",
     "subtitle": "AI Subtitle Generation & Translation Tool",
     "help": "Help",
-    "viewHelp": "View Help Documentation"
+    "viewHelp": "View Help Documentation",
+    "docs": "Documentation",
+    "qqGroup": "QQ Group",
+    "qqGroupNumber": "1082480420",
+    "copied": "Copied"
   },
   "upload": {
     "changeFile": "Change File"
