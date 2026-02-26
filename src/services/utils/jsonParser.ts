@@ -26,16 +26,43 @@ export function safeParseJson<T = unknown>(text: string): T {
     throw new Error('Invalid input: expected non-empty string');
   }
 
+  // Strip markdown code fences — third-party API proxies may ignore responseMimeType
+  const stripped = stripMarkdownCodeFence(text);
+
   try {
-    const repaired = jsonrepair(text);
+    const repaired = jsonrepair(stripped);
     return JSON.parse(repaired) as T;
   } catch (error) {
+    const pos = (error as any)?.position;
     logger.warn('JSON repair/parse failed', {
       error,
-      textPreview: text.slice(0, 500),
+      textLength: stripped.length,
+      textPreview: stripped.slice(0, 500),
+      ...(pos != null && {
+        errorPosition: pos,
+        errorContext: stripped.slice(Math.max(0, pos - 40), pos + 40),
+      }),
     });
     throw error;
   }
+}
+
+/**
+ * Strip markdown code fences wrapping JSON content.
+ * Handles: ```json ... ```, ```JSON ... ```, ``` ... ```
+ */
+function stripMarkdownCodeFence(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith('```')) return text;
+  // Remove opening fence (```json, ```JSON, or just ```)
+  const openEnd = trimmed.indexOf('\n');
+  if (openEnd === -1) return text;
+  let inner = trimmed.slice(openEnd + 1);
+  // Remove closing fence
+  if (inner.trimEnd().endsWith('```')) {
+    inner = inner.trimEnd().slice(0, -3);
+  }
+  return inner;
 }
 
 /**

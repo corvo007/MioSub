@@ -13,7 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as Sentry from '@sentry/electron/main';
 import { writeTempFile } from './fileUtils.ts';
 import { getBinaryPath } from '../utils/paths.ts';
-import { buildSpawnArgs } from '../utils/shell.ts';
+import { buildSpawnArgs, ensureAsciiSafePath } from '../utils/shell.ts';
 import { ExpectedError } from '../utils/expectedError.ts';
 
 // ============================================================================
@@ -129,17 +129,23 @@ export class CTCAlignerService {
     }
     const outputJsonPath = outputResult.path;
 
+    // Workaround: C++ binaries using main(argc, argv) convert UTF-16 to system
+    // ANSI code page, corrupting non-ASCII paths. Create ASCII-safe symlinks.
+    // (Same pattern as localWhisper.ts — Ref: MIOSUB-3H investigation)
+    const safeAudio = await ensureAsciiSafePath(audioPath);
+    const safeModel = await ensureAsciiSafePath(config.modelPath);
+
     try {
-      // Build command arguments (paths are already set above)
+      // Build command arguments using ASCII-safe paths
       const args = [
         '--audio',
-        audioPath,
+        safeAudio.safePath,
         '--json-input',
         inputJsonPath,
         '--json-output',
         outputJsonPath,
         '--model',
-        config.modelPath,
+        safeModel.safePath,
         '--language',
         language,
       ];
@@ -264,10 +270,12 @@ export class CTCAlignerService {
     } catch (e: any) {
       return { success: false, error: `IPC setup failed: ${e.message}` };
     } finally {
-      // Cleanup temp files (best effort)
+      // Cleanup temp files + safe path aliases (best effort)
       try {
         if (fs.existsSync(inputJsonPath)) fs.unlinkSync(inputJsonPath);
         if (fs.existsSync(outputJsonPath)) fs.unlinkSync(outputJsonPath);
+        await safeAudio.cleanup();
+        await safeModel.cleanup();
       } catch (e) {
         console.warn(`[CTCAligner] Cleanup failed: ${e}`);
       }

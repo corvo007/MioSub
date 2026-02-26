@@ -15,9 +15,10 @@ export function mergeGlossaryResults(
 } {
   const termMap = new Map<string, GlossaryItem[]>();
 
-  // Collect all terms
+  // Collect all terms (filter out malformed items from LLM responses)
   for (const result of results) {
     for (const item of result.terms) {
+      if (!item.term) continue;
       const key = item.term.toLowerCase().trim();
       if (!termMap.has(key)) {
         termMap.set(key, []);
