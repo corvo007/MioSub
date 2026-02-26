@@ -484,7 +484,16 @@ export class LocalWhisperService {
           );
           Sentry.captureMessage('Whisper version parse failed', {
             level: 'warning',
-            extra: { output: output.trim().slice(0, 500) },
+            extra: {
+              output: output.trim().slice(0, 500),
+              versionExitCode: versionResult.status,
+              versionSignal: versionResult.signal,
+              versionError: versionResult.error?.message,
+              helpExitCode: result.status,
+              helpSignal: result.signal,
+              helpError: result.error?.message,
+              binaryPath: info.path,
+            },
           });
         }
       }

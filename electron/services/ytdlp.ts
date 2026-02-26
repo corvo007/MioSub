@@ -1251,15 +1251,22 @@ class YtDlpService {
       const result = spawnSync(this.quickjsPath, ['-h'], { encoding: 'utf-8', windowsHide: true });
       const output = result.stdout || result.stderr || '';
       const firstLine = output.split('\n')[0];
-      if (firstLine.includes('QuickJS version')) {
-        qjsVersion = firstLine.replace('QuickJS version ', '').trim();
+      const qjsMatch = firstLine.match(/QuickJS(?:-ng)? version\s+(.+)/i);
+      if (qjsMatch) {
+        qjsVersion = qjsMatch[1].trim();
       } else {
         console.warn(
           `[YtDlpService] QuickJS version parse failed, output: ${output.trim().slice(0, 200)}`
         );
         Sentry.captureMessage('QuickJS version parse failed', {
           level: 'warning',
-          extra: { output: output.trim().slice(0, 500) },
+          extra: {
+            output: output.trim().slice(0, 500),
+            exitCode: result.status,
+            signal: result.signal,
+            error: result.error?.message,
+            binaryPath: this.quickjsPath,
+          },
         });
       }
     } catch (error: any) {

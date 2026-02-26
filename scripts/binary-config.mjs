@@ -72,31 +72,31 @@ export const BINARIES = {
   },
 
   quickjs: {
-    // Universal binary (platform-independent cosmopolitan build)
+    // Native binaries from quickjs-ng (replaces cosmopolitan APE which fails macOS codesign)
     'win32-x64': {
-      url: 'https://bellard.org/quickjs/binary_releases/quickjs-cosmo-2025-09-13.zip',
-      type: 'zip',
-      extract: [{ from: 'qjs', to: 'qjs.exe' }],
+      url: 'https://github.com/quickjs-ng/quickjs/releases/latest/download/qjs-windows-x86_64.exe',
+      type: 'binary',
+      to: 'qjs.exe',
     },
     'linux-x64': {
-      url: 'https://bellard.org/quickjs/binary_releases/quickjs-cosmo-2025-09-13.zip',
-      type: 'zip',
-      extract: [{ from: 'qjs', to: 'qjs' }],
+      url: 'https://github.com/quickjs-ng/quickjs/releases/latest/download/qjs-linux-x86_64',
+      type: 'binary',
+      to: 'qjs',
     },
     'linux-arm64': {
-      url: 'https://bellard.org/quickjs/binary_releases/quickjs-cosmo-2025-09-13.zip',
-      type: 'zip',
-      extract: [{ from: 'qjs', to: 'qjs' }],
+      url: 'https://github.com/quickjs-ng/quickjs/releases/latest/download/qjs-linux-aarch64',
+      type: 'binary',
+      to: 'qjs',
     },
     'darwin-x64': {
-      url: 'https://bellard.org/quickjs/binary_releases/quickjs-cosmo-2025-09-13.zip',
-      type: 'zip',
-      extract: [{ from: 'qjs', to: 'qjs' }],
+      url: 'https://github.com/quickjs-ng/quickjs/releases/latest/download/qjs-darwin',
+      type: 'binary',
+      to: 'qjs',
     },
     'darwin-arm64': {
-      url: 'https://bellard.org/quickjs/binary_releases/quickjs-cosmo-2025-09-13.zip',
-      type: 'zip',
-      extract: [{ from: 'qjs', to: 'qjs' }],
+      url: 'https://github.com/quickjs-ng/quickjs/releases/latest/download/qjs-darwin',
+      type: 'binary',
+      to: 'qjs',
     },
   },
 
