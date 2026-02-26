@@ -5,6 +5,15 @@ description: "MioSub 的所有重要更新记录"
 
 本文件记录了项目的所有重要更改。
 
+## [3.0.20] - 2026-02-26
+
+### 修复
+
+- **macOS**：将 QuickJS 引擎从 cosmopolitan APE 构建切换为 quickjs-ng 原生二进制，修复 macOS 上的代码签名失败问题（Ref: MIOSUB-38）。
+- **术语表**：防御 LLM 响应中未定义的术语表条目，避免术语合并时崩溃（Fixes MIOSUB-3A）。
+- **JSON 解析器**：当第三方代理忽略 `responseMimeType` 时自动剥离 JSON 响应中的 Markdown 代码围栏，并改进错误位置日志（Fixes MIOSUB-11）。
+- **对齐器**：为 CTC 对齐器的音频和模型路径添加 `ensureAsciiSafePath()` 包装，修复非 ASCII 路径下的对齐失败（Fixes MIOSUB-3H）。
+
 ## [3.0.19] - 2026-02-22
 
 ### 新功能

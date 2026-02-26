@@ -5,6 +5,15 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.20] - 2026-02-26
+
+### Fixes
+
+- **macOS**: Switch QuickJS engine from cosmopolitan APE builds to quickjs-ng native binaries, fixing codesign failures on macOS (Ref: MIOSUB-38).
+- **Glossary**: Guard against undefined glossary terms in LLM responses, preventing crashes during glossary merging (Fixes MIOSUB-3A).
+- **JSON Parser**: Strip markdown code fences from JSON responses when third-party proxies ignore `responseMimeType`, with improved error position logging (Fixes MIOSUB-11).
+- **Aligner**: Wrap CTC aligner audio and model paths with `ensureAsciiSafePath()`, fixing alignment failures on non-ASCII paths (Fixes MIOSUB-3H).
+
 ## [3.0.19] - 2026-02-22
 
 ### Features
