@@ -8,6 +8,11 @@ import { type SubtitleItem } from '@/types/subtitle';
 import { getAudioSegment } from '@/services/audio/audioSourceHelper';
 import { transcribeAudio } from '@/services/transcribe/openai/transcribe';
 import { cleanNonSpeechAnnotations } from '@/services/subtitle/parser';
+import {
+  filterHallucinatedSegments,
+  cleanRepetitions,
+  deduplicateConsecutive,
+} from '@/services/subtitle/hallucinationFilter';
 import { ArtifactSaver } from '@/services/generation/debug/artifactSaver';
 import { MockFactory } from '@/services/generation/debug/mockFactory';
 import { logger } from '@/services/utils/logger';
@@ -76,13 +81,21 @@ export class TranscriptionStep extends BaseStep<TranscriptionInput, SubtitleItem
   }
 
   protected postProcess(output: SubtitleItem[], _ctx: StepContext): SubtitleItem[] {
-    // Clean non-speech annotations and filter empty segments
-    return output
+    // 1. Text cleaning: remove non-speech annotations + repetition patterns
+    let segments = output
       .map((seg) => ({
         ...seg,
-        original: cleanNonSpeechAnnotations(seg.original),
+        original: cleanRepetitions(cleanNonSpeechAnnotations(seg.original)),
       }))
       .filter((seg) => seg.original.length > 0);
+
+    // 2. Remove hallucinated segments (exact blacklist + non-verbal detection)
+    segments = filterHallucinatedSegments(segments);
+
+    // 3. Merge consecutive near-duplicate segments (Whisper "stuck loop")
+    segments = deduplicateConsecutive(segments);
+
+    return segments;
   }
 
   protected async saveArtifact(result: SubtitleItem[], ctx: StepContext): Promise<void> {

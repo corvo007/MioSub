@@ -26,6 +26,7 @@ import { type TokenUsageAnalytics } from './usageReporter';
 import { timeToSeconds } from '@/services/subtitle/time';
 import { type SpeakerUIProfile } from '@/types/speaker';
 import { normalizeSubtitles } from '@/services/speaker/normalizer';
+import { deduplicateConsecutive } from '@/services/subtitle/hallucinationFilter';
 import i18n from '@/i18n';
 
 export const generateSubtitles = async (
@@ -379,7 +380,7 @@ export const generateSubtitles = async (
     }
   });
 
-  const finalSubtitles = chunkResults.flat();
+  const finalSubtitles = deduplicateConsecutive(chunkResults.flat());
 
   // ERROR CHECK: If we have NO subtitles but DID have errors, it means the pipeline failed completely.
   // We should throw the first error to give the user a useful message (e.g., "Whisper binary not found")
