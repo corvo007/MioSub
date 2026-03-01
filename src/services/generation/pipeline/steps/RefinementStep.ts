@@ -42,7 +42,8 @@ export class RefinementStep extends BaseStep<RefinementInput, SubtitleItem[]> {
 
   protected async execute(input: RefinementInput, ctx: StepContext): Promise<SubtitleItem[]> {
     const { chunk, deps, pipelineContext, chunkDuration } = ctx;
-    const { ai, settings, signal, trackUsage } = pipelineContext;
+    const { ai, settings, signal } = pipelineContext;
+    const trackUsage = pipelineContext.usageReporter.getTracker('refinement');
     const { audioBuffer, videoPath, isLongVideo } = deps;
     const targetLanguage = settings.targetLanguage || 'Simplified Chinese';
     const glossary = ctx.glossary || [];

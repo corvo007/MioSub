@@ -100,6 +100,7 @@ export function initializePipelineContext(options: PipelineInitOptions): Pipelin
     settings,
     signal,
     trackUsage,
+    usageReporter,
     onProgress,
     isDebug,
     geminiKey,

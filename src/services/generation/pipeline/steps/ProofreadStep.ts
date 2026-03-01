@@ -196,7 +196,8 @@ export class ProofreadStep {
     const { batch, batchComment, systemInstruction } = input;
     const { pipelineContext, audioBuffer, videoPath, isLongVideo, totalVideoDuration, batchLabel } =
       ctx;
-    const { ai, settings, signal, trackUsage } = pipelineContext;
+    const { ai, settings, signal } = pipelineContext;
+    const trackUsage = pipelineContext.usageReporter.getTracker('refinement');
 
     if (batch.length === 0) return [];
 

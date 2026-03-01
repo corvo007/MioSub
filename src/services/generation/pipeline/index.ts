@@ -227,7 +227,7 @@ export const generateSubtitles = async (
           });
         },
         signal,
-        trackUsage,
+        usageReporter.getTracker('glossary'),
         (settings.requestTimeout || 600) * 1000, // Custom timeout in milliseconds
         settings.targetLanguage,
         // Long video mode parameters

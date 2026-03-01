@@ -6,6 +6,7 @@ import { type GlossaryItem, type GlossaryExtractionResult } from '@/types/glossa
 import { type SpeakerProfile } from '@/services/generation/extractors/speakerProfile';
 import { type ChunkStatus } from '@/types/api';
 import { type VideoInfo } from '@/types/artifact';
+import { type UsageReporter } from '@/services/generation/pipeline/usageReporter';
 
 // Re-export common types for convenience
 export type {
@@ -24,6 +25,8 @@ export interface PipelineContext {
   settings: AppSettings;
   signal?: AbortSignal;
   trackUsage: (usage: TokenUsage) => void;
+  /** UsageReporter instance for creating step-tagged trackers */
+  usageReporter: UsageReporter;
   onProgress?: (update: ChunkStatus) => void;
   isDebug: boolean;
   geminiKey: string;

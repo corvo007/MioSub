@@ -48,7 +48,8 @@ export class AlignmentStep extends BaseStep<AlignmentInput, SubtitleItem[]> {
 
   protected async execute(input: AlignmentInput, ctx: StepContext): Promise<SubtitleItem[]> {
     const { chunk, deps, pipelineContext } = ctx;
-    const { ai, settings, signal, trackUsage } = pipelineContext;
+    const { ai, settings, signal } = pipelineContext;
+    const trackUsage = pipelineContext.trackUsage;
     const { audioBuffer, videoPath, isLongVideo } = deps;
 
     // Mock API: pass-through (skip CTC processing)

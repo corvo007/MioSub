@@ -197,18 +197,38 @@ export function useGeneration({
 
     // Analytics: Start
     const startAt = Date.now();
+    const generationId = crypto.randomUUID();
+
+    // Key config fields shared across all lifecycle events (_started, _completed, _cancelled, _failed)
+    // This enables single-event queries to group tokens by config dimension without cross-event JOINs
+    const generationConfig = {
+      generation_id: generationId,
+      duration_sec: duration,
+      genre: settings.genre,
+      target_language: settings.targetLanguage,
+      output_mode: settings.outputMode,
+      alignment_mode: settings.alignmentMode,
+      chunk_duration: settings.chunkDuration,
+      enable_auto_glossary: settings.enableAutoGlossary,
+      enable_diarization: settings.enableDiarization,
+      enable_speaker_pre_analysis: settings.enableSpeakerPreAnalysis,
+      glossary_sample_minutes: settings.glossarySampleMinutes,
+      has_preset_glossary: !!(settings.activeGlossaryId && settings.glossaries?.length),
+      preset_glossary_terms_count:
+        settings.glossaries?.find((g) => g.id === settings.activeGlossaryId)?.terms?.length || 0,
+      is_third_party_gemini: !!(settings.geminiEndpoint && settings.geminiEndpoint !== ''),
+      has_custom_translation_prompt: !!settings.customTranslationPrompt?.trim(),
+      has_custom_refinement_prompt: !!settings.customRefinementPrompt?.trim(),
+    };
+
     if (window.electronAPI?.analytics) {
       void window.electronAPI.analytics.track(
         'workspace_generation_started',
         {
-          // File info
-          file_ext: file.name.split('.').pop(),
-          duration_sec: duration,
+          ...generationConfig,
 
-          // Core settings
-          genre: settings.genre,
-          target_language: settings.targetLanguage,
-          output_mode: settings.outputMode,
+          // File info (start-only)
+          file_ext: file.name.split('.').pop(),
 
           // Transcription
           model: settings.useLocalWhisper ? 'local' : 'api',
@@ -217,39 +237,20 @@ export function useGeneration({
           concurrency_flash: settings.concurrencyFlash,
           concurrency_pro: settings.concurrencyPro,
           concurrency_local: settings.localConcurrency,
-          chunk_duration: settings.chunkDuration,
           use_smart_split: settings.useSmartSplit,
 
           // Batch sizes
           translation_batch_size: settings.translationBatchSize,
           proofread_batch_size: settings.proofreadBatchSize,
 
-          // Alignment
-          alignment_mode: settings.alignmentMode,
-
-          // Glossary settings
-          enable_auto_glossary: settings.enableAutoGlossary,
+          // Glossary settings (detailed, start-only)
           glossary_auto_confirm: settings.glossaryAutoConfirm,
-          glossary_sample_minutes: settings.glossarySampleMinutes,
-          has_preset_glossary: !!(settings.activeGlossaryId && settings.glossaries?.length),
-          preset_glossary_terms_count:
-            settings.glossaries?.find((g) => g.id === settings.activeGlossaryId)?.terms?.length ||
-            0,
 
-          // Diarization settings
-          enable_diarization: settings.enableDiarization,
-          enable_speaker_pre_analysis: settings.enableSpeakerPreAnalysis,
+          // Diarization settings (detailed, start-only)
           min_speakers: settings.minSpeakers,
           max_speakers: settings.maxSpeakers,
           use_speaker_colors: settings.useSpeakerColors,
           use_speaker_styled_translation: settings.useSpeakerStyledTranslation,
-
-          // Third-party API detection
-          is_third_party_gemini: !!(settings.geminiEndpoint && settings.geminiEndpoint !== ''),
-
-          // Has custom prompts
-          has_custom_translation_prompt: !!settings.customTranslationPrompt?.trim(),
-          has_custom_refinement_prompt: !!settings.customRefinementPrompt?.trim(),
         },
         'interaction'
       );
@@ -508,6 +509,7 @@ export function useGeneration({
         void window.electronAPI.analytics.track(
           'workspace_generation_completed',
           {
+            ...generationConfig,
             count: result.length,
             duration_ms: Date.now() - startAt,
             chunk_durations: chunkAnalytics,
@@ -563,6 +565,7 @@ export function useGeneration({
           void window.electronAPI.analytics.track(
             'workspace_generation_cancelled',
             {
+              ...generationConfig,
               partial_count: currentSubtitles.length,
               duration_ms: Date.now() - startAt,
               reason: 'user_cancelled',
@@ -591,6 +594,7 @@ export function useGeneration({
           void window.electronAPI.analytics.track(
             'workspace_generation_failed',
             {
+              ...generationConfig,
               error: error.message,
               duration_ms: Date.now() - startAt,
               chunk_durations: chunkAnalytics,

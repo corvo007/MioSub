@@ -19,7 +19,8 @@ export class SpeakerAnalyzer {
       totalDuration?: number;
     }
   ): Promise<SpeakerProfile[]> {
-    const { settings, onProgress, signal, ai, trackUsage, isDebug } = context;
+    const { settings, onProgress, signal, ai, isDebug } = context;
+    const trackSpeakerUsage = context.usageReporter.getTracker('speaker');
     const { isLongVideo, videoPath, totalDuration } = options || {};
 
     logger.info('Starting parallel speaker profile extraction...');
@@ -68,7 +69,7 @@ export class SpeakerAnalyzer {
         duration,
         settings.genre,
         (settings.requestTimeout || 600) * 1000, // Use configured timeout
-        trackUsage,
+        trackSpeakerUsage,
         signal,
         settings.minSpeakers,
         settings.maxSpeakers

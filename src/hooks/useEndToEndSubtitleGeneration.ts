@@ -105,6 +105,7 @@ export function useEndToEndSubtitleGeneration({
 
       isProcessingRef.current = true;
       const startTime = Date.now();
+      const generationId = crypto.randomUUID();
       abortControllerRef.current = new AbortController();
       const signal = abortControllerRef.current.signal;
 
@@ -118,6 +119,8 @@ export function useEndToEndSubtitleGeneration({
       // Capture incremental chunk analytics for reporting
       let accumulatedChunkAnalytics: ChunkAnalytics[] = [];
       let tokenUsage: TokenUsageAnalytics | undefined;
+      // Shared config for all lifecycle events — assigned after duration is known
+      let generationConfig: Record<string, unknown> | undefined;
 
       try {
         logger.info('[EndToEnd] Starting subtitle generation', { audioPath, config });
@@ -224,21 +227,45 @@ export function useEndToEndSubtitleGeneration({
         // Get duration from either audioBuffer or videoDuration
         const duration = audioBuffer?.duration ?? videoDuration ?? 0;
 
+        // Key config fields shared across all lifecycle events (_started, _completed, _cancelled, _failed)
+        // This enables single-event queries to group tokens by config dimension without cross-event JOINs
+        generationConfig = {
+          generation_id: generationId,
+          video_duration: duration,
+          genre: config.genre ?? currentSettings.genre,
+          target_language: config.targetLanguage ?? currentSettings.targetLanguage,
+          output_mode: config.outputMode || 'bilingual',
+          alignment_mode: currentSettings.alignmentMode,
+          chunk_duration: currentSettings.chunkDuration,
+          enable_auto_glossary: config.enableGlossary ?? currentSettings.enableAutoGlossary,
+          enable_diarization: config.enableDiarization ?? currentSettings.enableDiarization,
+          enable_speaker_pre_analysis:
+            config.enableSpeakerPreAnalysis ?? currentSettings.enableSpeakerPreAnalysis,
+          glossary_sample_minutes: currentSettings.glossarySampleMinutes,
+          has_preset_glossary: !!(
+            currentSettings.activeGlossaryId && currentSettings.glossaries?.length
+          ),
+          preset_glossary_terms_count:
+            currentSettings.glossaries?.find((g) => g.id === currentSettings.activeGlossaryId)
+              ?.terms?.length || 0,
+          is_third_party_gemini: !!(
+            currentSettings.geminiEndpoint && currentSettings.geminiEndpoint !== ''
+          ),
+          has_custom_translation_prompt: !!currentSettings.customTranslationPrompt?.trim(),
+          has_custom_refinement_prompt: !!currentSettings.customRefinementPrompt?.trim(),
+        };
+
         // Analytics: End-to-End Generation Started
         // We do this after decoding to get accurate duration
         if (window.electronAPI?.analytics) {
           void window.electronAPI.analytics.track(
             'end_to_end_generation_started',
             {
-              // File info
-              file_ext: audioPath.split('.').pop() || 'unknown',
-              video_duration: duration,
-              is_long_video_mode: isLongVideoMode,
+              ...generationConfig,
 
-              // Core settings
-              genre: config.genre ?? currentSettings.genre,
-              target_language: config.targetLanguage ?? currentSettings.targetLanguage,
-              output_mode: config.outputMode || 'bilingual',
+              // File info (start-only)
+              file_ext: audioPath.split('.').pop() || 'unknown',
+              is_long_video_mode: isLongVideoMode,
 
               // Transcription
               model: currentSettings.useLocalWhisper ? 'local' : 'api',
@@ -247,57 +274,24 @@ export function useEndToEndSubtitleGeneration({
               concurrency_flash: currentSettings.concurrencyFlash,
               concurrency_pro: currentSettings.concurrencyPro,
               concurrency_local: currentSettings.localConcurrency,
-              chunk_duration: currentSettings.chunkDuration,
               use_smart_split: currentSettings.useSmartSplit,
 
               // Batch sizes
               translation_batch_size: currentSettings.translationBatchSize,
               proofread_batch_size: currentSettings.proofreadBatchSize,
 
-              // Alignment
-              alignment_mode: currentSettings.alignmentMode,
-
-              // Glossary settings
-              enable_auto_glossary: config.enableGlossary ?? currentSettings.enableAutoGlossary,
+              // Glossary settings (detailed, start-only)
               glossary_auto_confirm: true, // End-to-end always auto-confirms
-              glossary_sample_minutes: currentSettings.glossarySampleMinutes,
-              has_preset_glossary: !!(
-                currentSettings.activeGlossaryId && currentSettings.glossaries?.length
-              ),
-              preset_glossary_terms_count:
-                currentSettings.glossaries?.find((g) => g.id === currentSettings.activeGlossaryId)
-                  ?.terms?.length || 0,
 
-              // Diarization settings
-              enable_diarization: config.enableDiarization ?? currentSettings.enableDiarization,
-              enable_speaker_pre_analysis:
-                config.enableSpeakerPreAnalysis ?? currentSettings.enableSpeakerPreAnalysis,
+              // Diarization settings (detailed, start-only)
               min_speakers: config.minSpeakers ?? currentSettings.minSpeakers,
               max_speakers: config.maxSpeakers ?? currentSettings.maxSpeakers,
               use_speaker_colors: config.useSpeakerColors ?? currentSettings.useSpeakerColors,
               use_speaker_styled_translation:
                 config.useSpeakerStyledTranslation ?? currentSettings.useSpeakerStyledTranslation,
 
-              // Third-party API detection
-              // is_third_party_openai: !!(
-              //   currentSettings.openaiEndpoint && currentSettings.openaiEndpoint !== ''
-              // ),
-              is_third_party_gemini: !!(
-                currentSettings.geminiEndpoint && currentSettings.geminiEndpoint !== ''
-              ),
-
-              // Step providers
-              // provider_refinement: currentSettings.stepProviders?.refinement?.type || 'gemini',
-              // provider_translation: currentSettings.stepProviders?.translation?.type || 'gemini',
-
-              // Has custom prompts
-              has_custom_translation_prompt: !!currentSettings.customTranslationPrompt?.trim(),
-              has_custom_refinement_prompt: !!currentSettings.customRefinementPrompt?.trim(),
-
-              // End-to-end specific
+              // End-to-end specific (start-only)
               enable_compression: config.enableCompression ?? false,
-
-              // UI settings
               zoom_level: currentSettings.zoomLevel,
             },
             'interaction'
@@ -488,6 +482,7 @@ export function useEndToEndSubtitleGeneration({
           void window.electronAPI.analytics.track(
             'end_to_end_generation_completed',
             {
+              ...generationConfig,
               count: subtitles.length,
               duration_ms: Date.now() - startTime,
               chunk_durations: chunkAnalytics,
@@ -527,6 +522,7 @@ export function useEndToEndSubtitleGeneration({
             void window.electronAPI.analytics.track(
               'end_to_end_generation_cancelled',
               {
+                ...generationConfig,
                 duration_ms: Date.now() - startTime,
                 reason: 'user_cancelled',
                 chunk_durations: accumulatedChunkAnalytics, // Use accumulated analytics
@@ -574,6 +570,7 @@ export function useEndToEndSubtitleGeneration({
           void window.electronAPI.analytics.track(
             'end_to_end_generation_failed',
             {
+              ...generationConfig,
               error: error.message || 'Unknown error',
               stage: 'generation', // We are in the generation phase here
               error_code: errorCode,

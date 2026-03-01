@@ -37,7 +37,8 @@ export class TranslationStep extends BaseStep<TranslationInput, SubtitleItem[]> 
 
   protected async execute(input: TranslationInput, ctx: StepContext): Promise<SubtitleItem[]> {
     const { chunk, pipelineContext } = ctx;
-    const { ai, settings, signal, trackUsage, onProgress } = pipelineContext;
+    const { ai, settings, signal, onProgress } = pipelineContext;
+    const trackUsage = pipelineContext.usageReporter.getTracker('translation');
     const targetLanguage = settings.targetLanguage || 'Simplified Chinese';
     const glossary = ctx.glossary || [];
     const speakerProfiles = ctx.speakerProfiles;
