@@ -137,6 +137,22 @@ export interface ElectronAPI {
   }>;
   abortLocalWhisper: () => Promise<void>;
 
+  // Native VAD APIs
+  nativeVadAnalyze: (
+    filePath: string,
+    options?: {
+      threshold?: number;
+      minSpeechDurationMs?: number;
+      minSilenceDurationMs?: number;
+      speechPadMs?: number;
+    }
+  ) => Promise<{
+    success: boolean;
+    segments?: { start: number; end: number }[];
+    error?: string;
+  }>;
+  nativeVadAbort: () => Promise<{ success: boolean }>;
+
   // FFmpeg 新增方法
   extractAudioFFmpeg: (
     videoPath: string,

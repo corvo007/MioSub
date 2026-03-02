@@ -93,6 +93,12 @@
     "modelReadError": "Cannot read model file",
     "binaryNotFound": "Whisper executable not found. Please check the path in settings or ensure the software is installed correctly."
   },
+  "nativeVad": {
+    "binaryNotFound": "VAD executable not found. Please ensure the software is installed correctly.",
+    "modelNotFound": "VAD model file not found (ggml-silero-v6.2.0.bin)",
+    "fileNotFound": "Audio file does not exist: {{path}}",
+    "processFailed": "VAD analysis failed (exit code: {{code}}): {{stderr}}"
+  },
   "preflight": {
     "geminiKeyMissing": "Gemini API Key is not set, translation and refinement unavailable",
     "openaiKeyMissing": "OpenAI API Key is not set, online Whisper transcription unavailable",

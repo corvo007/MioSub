@@ -135,19 +135,21 @@ export const PerformanceTab: React.FC<TabProps> = ({ settings, updateSetting }) 
         </div>
       </div>
 
-      {/* Audio Processing Section */}
-      <div className="space-y-4">
-        <SectionHeader>{t('performance.audio.title')}</SectionHeader>
-        <SettingRow
-          label={t('performance.audio.smartSplit')}
-          description={t('performance.audio.smartSplitDesc')}
-        >
-          <Toggle
-            checked={settings.useSmartSplit !== false}
-            onChange={(v) => updateSetting('useSmartSplit', v)}
-          />
-        </SettingRow>
-      </div>
+      {/* Audio Processing Section - Only show in Electron (native VAD) */}
+      {isElectron && (
+        <div className="space-y-4">
+          <SectionHeader>{t('performance.audio.title')}</SectionHeader>
+          <SettingRow
+            label={t('performance.audio.smartSplit')}
+            description={t('performance.audio.smartSplitDesc')}
+          >
+            <Toggle
+              checked={settings.useSmartSplit !== false}
+              onChange={(v) => updateSetting('useSmartSplit', v)}
+            />
+          </SettingRow>
+        </div>
+      )}
 
       {/* Video Preview Cache - Only show in Electron */}
       {isElectron && (

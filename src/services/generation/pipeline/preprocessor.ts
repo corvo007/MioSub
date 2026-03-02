@@ -46,7 +46,7 @@ export async function preprocessAudio(
 
         if (isLongVideo(duration)) {
           logger.info(
-            `Long video detected (${formatTime(duration)} > ${formatTime(LONG_VIDEO_THRESHOLD)}). Using on-demand segment extraction.`
+            `Long video detected (${formatTime(duration)} > ${formatTime(LONG_VIDEO_THRESHOLD)}). Using on-demand segment extraction with native VAD.`
           );
 
           onProgress?.({
@@ -58,10 +58,67 @@ export async function preprocessAudio(
             }),
           });
 
-          // Generate fixed chunks without loading AudioBuffer
-          const chunksParams = generateFixedChunks(duration, chunkDuration);
+          // Use native VAD for smart segmentation (Electron only)
+          let chunksParams: ChunkParams[];
+          if (window.electronAPI?.nativeVadAnalyze) {
+            try {
+              logger.info('Running native VAD analysis for long video...');
+              onProgress?.({
+                id: 'vad',
+                total: 1,
+                status: 'processing',
+                message: i18n.t('services:pipeline.status.analyzingAudio'),
+              });
 
-          logger.info('Fixed Segmentation Results (Long Video Mode)', {
+              const vadResult = await window.electronAPI.nativeVadAnalyze(videoPath, {
+                threshold: 0.6,
+                minSpeechDurationMs: 250,
+                minSilenceDurationMs: 100,
+                speechPadMs: 30,
+              });
+
+              if (vadResult.success && vadResult.segments) {
+                logger.info(`Native VAD found ${vadResult.segments.length} speech segments`);
+                onProgress?.({
+                  id: 'vad',
+                  total: 1,
+                  status: 'completed',
+                  message: i18n.t('services:pipeline.status.vadComplete', {
+                    count: vadResult.segments.length,
+                  }),
+                });
+
+                // Use VAD segments to create smart chunks (reuse SmartSegmenter logic)
+                const rawChunks = SmartSegmenter.createChunksFromVadSegments(
+                  vadResult.segments,
+                  duration,
+                  chunkDuration
+                );
+                // Convert to ChunkParams format with index
+                chunksParams = rawChunks.map((chunk, i) => ({
+                  index: i + 1,
+                  start: chunk.start,
+                  end: chunk.end,
+                }));
+                logger.info('Smart Segmentation Results (Long Video Mode with VAD)', {
+                  count: chunksParams.length,
+                  chunks: chunksParams,
+                });
+              } else {
+                logger.warn('Native VAD failed, falling back to fixed chunks');
+                chunksParams = generateFixedChunks(duration, chunkDuration);
+              }
+            } catch (vadError) {
+              logger.warn('Native VAD error, falling back to fixed chunks:', vadError);
+              chunksParams = generateFixedChunks(duration, chunkDuration);
+            }
+          } else {
+            // No native VAD available, use fixed chunks
+            logger.info('Native VAD not available, using fixed chunks');
+            chunksParams = generateFixedChunks(duration, chunkDuration);
+          }
+
+          logger.info('Final Segmentation Results (Long Video Mode)', {
             count: chunksParams.length,
             chunks: chunksParams,
           });

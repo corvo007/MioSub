@@ -209,6 +209,7 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 import { localWhisperService } from './services/localWhisper.ts';
+import { NativeVadService } from './services/nativeVad.ts';
 import { ytDlpService, classifyError } from './services/ytdlp.ts';
 import { VideoCompressorService } from './services/videoCompressor.ts';
 import type { CompressionOptions } from './services/videoCompressor.ts';
@@ -223,6 +224,7 @@ import { systemInfoService } from './services/systemInfoService.ts';
 import { runPreflightCheck, type PreflightSettings } from './services/preflightCheck.ts';
 
 const videoCompressorService = new VideoCompressorService();
+const nativeVadService = new NativeVadService();
 
 // ============================================================================
 // Active Task Tracking (for close confirmation and analytics)
@@ -431,6 +433,53 @@ ipcMain.handle(
 ipcMain.handle('local-whisper-abort', async () => {
   console.log('[DEBUG] [Main] Aborting all local whisper processes');
   localWhisperService.abort();
+  return { success: true };
+});
+
+// IPC Handler: Native VAD Analysis
+ipcMain.handle('vad:analyze', async (_event, filePath: string, options?: any) => {
+  try {
+    // Track analytics
+    void analyticsService.track('vad_analysis_started', {
+      file_path_length: filePath.length,
+      has_options: !!options,
+      threshold: options?.threshold,
+      min_speech_duration_ms: options?.minSpeechDurationMs,
+      min_silence_duration_ms: options?.minSilenceDurationMs,
+      speech_pad_ms: options?.speechPadMs,
+    });
+
+    const startTime = Date.now();
+    const segments = await nativeVadService.analyzeAudio(filePath, options);
+    const duration = Date.now() - startTime;
+
+    // Track completion
+    void analyticsService.track('vad_analysis_completed', {
+      duration_ms: duration,
+      segment_count: segments.length,
+      success: true,
+    });
+
+    return { success: true, segments };
+  } catch (error: any) {
+    console.error('[Main] Native VAD analysis failed:', error);
+
+    // Track failure
+    void analyticsService.track('vad_analysis_completed', {
+      success: false,
+      error_message: error.message,
+    });
+
+    if (!(error as any).isExpected) {
+      Sentry.captureException(error, { tags: { action: 'vad-analyze' } });
+    }
+    return { success: false, error: error.message };
+  }
+});
+
+// IPC Handler: Abort Native VAD
+ipcMain.handle('vad:abort', async () => {
+  nativeVadService.abort();
   return { success: true };
 });
 

@@ -36,6 +36,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   }) => ipcRenderer.invoke('transcribe-local', data),
   abortLocalWhisper: () => ipcRenderer.invoke('local-whisper-abort'),
 
+  // Native VAD APIs
+  nativeVadAnalyze: (
+    filePath: string,
+    options?: {
+      threshold?: number;
+      minSpeechDurationMs?: number;
+      minSilenceDurationMs?: number;
+      speechPadMs?: number;
+    }
+  ) => ipcRenderer.invoke('vad:analyze', filePath, options),
+  nativeVadAbort: () => ipcRenderer.invoke('vad:abort'),
+
   // FFmpeg APIs
   extractAudioFFmpeg: (videoPath: string, options?: any) =>
     ipcRenderer.invoke('extract-audio-ffmpeg', videoPath, options),

@@ -1,9 +1,4 @@
-// Removed imports to use global script tags
-// import { NonRealTimeVAD, utils } from "@ricky0123/vad-web";
-// import * as ort from "onnxruntime-web";
-
 import { logger } from '@/services/utils/logger';
-import i18n from '@/i18n';
 
 export interface SegmentationOptions {
   minDurationMs?: number;
@@ -30,7 +25,7 @@ export class SmartSegmenter {
    */
   public static disposeInstance(): void {
     if (SmartSegmenter.instance) {
-      SmartSegmenter.instance.dispose();
+      // No resources to clean up anymore (native VAD doesn't need cleanup)
       // Clear the static reference to allow garbage collection
       SmartSegmenter.instance = undefined as unknown as SmartSegmenter;
       logger.debug('SmartSegmenter singleton instance disposed');
@@ -55,9 +50,32 @@ export class SmartSegmenter {
     // We use a smaller minDuration to detect even short pauses
     const speechSegments = await this.analyzeAudio(audioBuffer, { minDurationMs: 500, signal });
 
-    const chunks: { start: number; end: number }[] = [];
-    const totalDuration = audioBuffer.duration;
+    // 2. Create smart chunks based on VAD segments
+    const chunks = SmartSegmenter.createChunksFromVadSegments(
+      speechSegments,
+      audioBuffer.duration,
+      targetDurationSec
+    );
 
+    logger.debug(`Segmented audio into ${chunks.length} chunks.`);
+
+    // Return both chunks and VAD segments for caching
+    return {
+      chunks,
+      vadSegments: speechSegments,
+    };
+  }
+
+  /**
+   * Create smart chunks from VAD segments.
+   * This is a static method so it can be reused for long videos without loading AudioBuffer.
+   */
+  public static createChunksFromVadSegments(
+    speechSegments: { start: number; end: number }[],
+    totalDuration: number,
+    targetDurationSec: number
+  ): { start: number; end: number }[] {
+    const chunks: { start: number; end: number }[] = [];
     let currentChunkStart = 0;
 
     while (currentChunkStart < totalDuration) {
@@ -69,12 +87,6 @@ export class SmartSegmenter {
       }
 
       // Find the best split point near targetEnd
-      // We look for a silence gap.
-      // A silence gap exists BETWEEN speech segments.
-
-      // Find a speech segment that overlaps with targetEnd
-      // or the first one that starts after it.
-
       let bestSplitPoint = targetEnd;
       let minDistance = Infinity;
 
@@ -82,12 +94,6 @@ export class SmartSegmenter {
       const searchWindow = Math.min(targetDurationSec * 0.1, 30);
       const searchStart = Math.max(currentChunkStart + 10, targetEnd - searchWindow);
       const searchEnd = Math.min(totalDuration, targetEnd + searchWindow);
-
-      // We want to find a point t in [searchStart, searchEnd] such that t is NOT inside a speech segment.
-      // And ideally in the middle of a silence gap.
-
-      // Flatten speech segments to just a list of "busy" intervals
-      // We iterate to find gaps.
 
       let foundGap = false;
 
@@ -120,8 +126,6 @@ export class SmartSegmenter {
 
         // Check gap before first segment if it starts after searchStart
         if (relevantSegments[0].start > searchStart) {
-          // Actually, we can cut anywhere before the segment starts.
-          // Let's cut right before the segment starts.
           const split = relevantSegments[0].start - 0.1;
           if (Math.abs(split - targetEnd) < minDistance) {
             minDistance = Math.abs(split - targetEnd);
@@ -142,9 +146,7 @@ export class SmartSegmenter {
       }
 
       if (!foundGap) {
-        // If no silence found, we must cut mid-speech (unfortunate)
-        // or we extend to the nearest silence if allowed?
-        // For now, hard cut at targetEnd
+        // If no silence found, hard cut at targetEnd
         bestSplitPoint = targetEnd;
       }
 
@@ -176,13 +178,7 @@ export class SmartSegmenter {
       }
     }
 
-    logger.debug(`Segmented audio into ${chunks.length} chunks.`);
-
-    // Return both chunks and VAD segments for caching
-    return {
-      chunks,
-      vadSegments: speechSegments,
-    };
+    return chunks;
   }
 
   private worker: Worker | null = null;
@@ -202,163 +198,152 @@ export class SmartSegmenter {
       options,
     });
 
-    // Convert AudioBuffer to Float32Array (mono)
+    // Check if running in Electron and native VAD is available
+    if (window.electronAPI?.nativeVadAnalyze) {
+      logger.debug('Using native VAD (Electron mode)');
+      return this.analyzeAudioNative(audioBuffer, options);
+    }
+
+    // Fallback to energy-based segmentation for web mode
+    logger.debug('Using energy-based segmentation (web mode or native VAD unavailable)');
     const audioData = audioBuffer.getChannelData(0);
+    return this.energyBasedSegmentation(
+      audioData,
+      audioBuffer.sampleRate,
+      options.minDurationMs || 1000
+    );
+  }
+
+  /**
+   * Analyze audio using native VAD (Electron only)
+   */
+  private async analyzeAudioNative(
+    audioBuffer: AudioBuffer,
+    options: SegmentationOptions = {}
+  ): Promise<{ start: number; end: number }[]> {
+    // Early abort check before doing any work
+    if (options.signal?.aborted) {
+      throw new DOMException('Aborted', 'AbortError');
+    }
 
     try {
-      logger.debug('Initializing VAD Worker...');
-      const startTime = performance.now();
+      // Write AudioBuffer to temporary WAV file
+      const wavBlob = await this.audioBufferToWav(audioBuffer);
+      const wavArrayBuffer = await wavBlob.arrayBuffer();
 
-      if (!this.worker) {
-        // Initialize worker
-        // Note: The worker file is still in public/ or src/workers/ ?
-        // The original code used new URL('./workers/vad.worker.ts', import.meta.url)
-        // We need to make sure this path is still valid relative to the new file location.
-        // New file: src/services/audio/segmenter.ts
-        // Worker: src/workers/vad.worker.ts (assuming)
-        // Relative path: ../../workers/vad.worker.ts
-
-        this.worker = new Worker(new URL('../../workers/vad.worker.ts', import.meta.url), {
-          type: 'classic', // Use classic to allow importScripts
-        });
-
-        this.workerReadyPromise = new Promise((resolve, reject) => {
-          if (!this.worker) return reject('Worker not created');
-
-          const handleInitMessage = (e: MessageEvent) => {
-            if (e.data.type === 'ready') {
-              this.worker?.removeEventListener('message', handleInitMessage);
-              resolve();
-            } else if (e.data.type === 'error') {
-              this.worker?.removeEventListener('message', handleInitMessage);
-              const errorDetails = {
-                message: e.data.message,
-                stack: e.data.stack,
-                details: e.data.details,
-              };
-              logger.error('VAD Worker initialization error details:', errorDetails);
-              reject(new Error(e.data.message));
-            }
-          };
-          this.worker.addEventListener('message', handleInitMessage);
-
-          // Calculate base URL for script loading (handles both dev and prod/electron)
-          // In Electron, we need to use the file:// protocol base path
-          let baseUrl: string;
-
-          // Check if running in Electron
-          if (window.electronAPI) {
-            // In Electron, use the current location without query/hash
-            baseUrl = window.location.href.split('?')[0].split('#')[0];
-            if (!baseUrl.endsWith('/')) {
-              baseUrl = baseUrl.substring(0, baseUrl.lastIndexOf('/') + 1);
-            }
-
-            // Fix for ASAR unpacked resources
-            // ONNX Runtime cannot load files from within ASAR archives
-            // We unpacked them to app.asar.unpacked, so we need to point there
-            if (baseUrl.includes('app.asar')) {
-              baseUrl = baseUrl.replace('app.asar', 'app.asar.unpacked');
-              logger.debug('Adjusted base URL for unpacked ASAR resources:', baseUrl);
-            }
-
-            logger.debug('Electron environment detected, using base URL:', baseUrl);
-          } else {
-            // In web browser, use the standard method
-            baseUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
-            logger.debug('Web environment detected, using base URL:', baseUrl);
-          }
-
-          this.worker.postMessage({
-            command: 'init',
-            base: baseUrl,
-            options: {
-              positiveSpeechThreshold: 0.6,
-              negativeSpeechThreshold: 0.4,
-              minSpeechFrames: 4,
-              redemptionFrames: 8, // ~250ms silence ends segment
-              preSpeechPadFrames: 1,
-              // Explicitly set URLs using the calculated base URL
-              // NonRealTimeVAD only supports legacy model in this version
-              modelURL: new URL('silero_vad_legacy.onnx', baseUrl).href,
-              workletURL: new URL('vad.worklet.bundle.min.js', baseUrl).href,
-            },
-          });
-        });
+      // Write to temp file via IPC
+      const tempResult = await window.electronAPI.writeTempAudioFile(wavArrayBuffer, 'wav');
+      if (!tempResult.success || !tempResult.path) {
+        throw new Error('Failed to write temporary audio file');
       }
 
-      await this.workerReadyPromise;
-      const initTime = performance.now() - startTime;
-      logger.debug(`VAD Worker initialized in ${initTime.toFixed(2)}ms`);
+      const tempPath = tempResult.path;
+      logger.debug(`Temporary audio file created: ${tempPath}`);
 
-      // Run VAD via worker
-      return new Promise((resolve, reject) => {
-        if (!this.worker) return reject('Worker not available');
-        if (options.signal?.aborted)
-          return reject(new Error(i18n.t('services:pipeline.errors.cancelled')));
+      let abortListener: (() => void) | null = null;
+      try {
+        // Wire abort signal to stop the native process if cancelled
+        if (options.signal) {
+          abortListener = () => void window.electronAPI.nativeVadAbort();
+          options.signal.addEventListener('abort', abortListener);
+        }
 
-        const handleProcessMessage = (e: MessageEvent) => {
-          const msg = e.data;
-          if (msg.type === 'result') {
-            cleanup();
-            const runTime = performance.now() - startTime - initTime;
-            logger.debug(
-              `VAD execution complete in ${runTime.toFixed(2)}ms. Found ${msg.segments.length} speech segments.`
-            );
-            resolve(msg.segments);
-          } else if (msg.type === 'progress') {
-            logger.debug(
-              `VAD Progress: ${msg.processed} segments (Latest: ${msg.latestTime.toFixed(2)}s)`
-            );
-          } else if (msg.type === 'error') {
-            cleanup();
-            const errorDetails = {
-              message: msg.message,
-              stack: msg.stack,
-              details: msg.details,
-            };
-            logger.error('VAD Worker processing error details:', errorDetails);
-            reject(new Error(msg.message));
-          }
+        // Call native VAD via IPC
+        const vadOptions = {
+          threshold: 0.6, // Slightly higher than default for better precision
+          minSpeechDurationMs: options.minDurationMs || 250,
+          minSilenceDurationMs: 100,
+          speechPadMs: 30,
         };
 
-        const onAbort = () => {
-          // Send stop command to worker to interrupt processing
-          if (this.worker) {
-            this.worker.postMessage({ command: 'stop' });
-          }
-          cleanup();
-          reject(new Error(i18n.t('services:pipeline.errors.cancelled')));
-        };
+        const startTime = performance.now();
+        const result = await window.electronAPI.nativeVadAnalyze(tempPath, vadOptions);
+        const duration = performance.now() - startTime;
 
-        const cleanup = () => {
-          this.worker?.removeEventListener('message', handleProcessMessage);
-          options.signal?.removeEventListener('abort', onAbort);
-        };
+        if (!result.success || !result.segments) {
+          throw new Error(result.error || 'Native VAD analysis failed');
+        }
 
-        this.worker.addEventListener('message', handleProcessMessage);
-        options.signal?.addEventListener('abort', onAbort);
+        logger.debug(
+          `Native VAD completed in ${duration.toFixed(2)}ms. Found ${result.segments.length} speech segments.`
+        );
 
-        // Send process command
-        this.worker.postMessage({
-          command: 'process',
-          audioData: audioData,
-          sampleRate: audioBuffer.sampleRate,
-        });
-      });
-    } catch (e) {
-      logger.error('Silero VAD failed initialization or execution', {
-        error: e,
-        message: e instanceof Error ? e.message : String(e),
-        stack: e instanceof Error ? e.stack : undefined,
-      });
-      logger.warn('Falling back to energy-based segmentation due to VAD error');
+        return result.segments;
+      } finally {
+        if (abortListener && options.signal) {
+          options.signal.removeEventListener('abort', abortListener);
+        }
+        // Cleanup temp file
+        try {
+          await window.electronAPI.cleanupTempAudio(tempPath);
+        } catch (cleanupError) {
+          logger.warn('Failed to cleanup temp audio file:', cleanupError);
+        }
+      }
+    } catch (error) {
+      // Rethrow abort/cancellation errors — do NOT fall back to energy segmentation
+      if (options.signal?.aborted) {
+        throw error;
+      }
+      logger.error('Native VAD failed, falling back to energy-based segmentation:', error);
+      // Fallback to energy-based segmentation
+      const audioData = audioBuffer.getChannelData(0);
       return this.energyBasedSegmentation(
         audioData,
         audioBuffer.sampleRate,
         options.minDurationMs || 1000
       );
     }
+  }
+
+  /**
+   * Convert AudioBuffer to WAV blob
+   */
+  private async audioBufferToWav(audioBuffer: AudioBuffer): Promise<Blob> {
+    const numberOfChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const length = audioBuffer.length * numberOfChannels * 2; // 16-bit samples
+    const buffer = new ArrayBuffer(44 + length);
+    const view = new DataView(buffer);
+
+    // WAV header
+    const writeString = (offset: number, string: string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    };
+
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + length, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true); // fmt chunk size
+    view.setUint16(20, 1, true); // PCM format
+    view.setUint16(22, numberOfChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * numberOfChannels * 2, true); // byte rate
+    view.setUint16(32, numberOfChannels * 2, true); // block align
+    view.setUint16(34, 16, true); // bits per sample
+    writeString(36, 'data');
+    view.setUint32(40, length, true);
+
+    // Write audio data
+    const offset = 44;
+    const channels: Float32Array[] = [];
+    for (let i = 0; i < numberOfChannels; i++) {
+      channels.push(audioBuffer.getChannelData(i));
+    }
+
+    let index = 0;
+    for (let i = 0; i < audioBuffer.length; i++) {
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        const sample = Math.max(-1, Math.min(1, channels[channel][i]));
+        view.setInt16(offset + index, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+        index += 2;
+      }
+    }
+
+    return new Blob([buffer], { type: 'audio/wav' });
   }
 
   private energyBasedSegmentation(
@@ -438,13 +423,5 @@ export class SmartSegmenter {
     }
 
     return segments;
-  }
-  public dispose(): void {
-    if (this.worker) {
-      this.worker.terminate();
-      this.worker = null;
-      this.workerReadyPromise = null;
-      logger.debug('SmartSegmenter disposed and worker terminated');
-    }
   }
 }
