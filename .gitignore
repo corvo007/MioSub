@@ -110,3 +110,5 @@ whisper.cpp/
 .playwright-mcp/
 MelBandRoformer.cpp/
 cpp-ort-aligner/
+
+.gitnexus/
