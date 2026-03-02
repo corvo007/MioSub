@@ -5,7 +5,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
-import { viteStaticCopy } from 'vite-plugin-static-copy';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 import fs from 'fs';
@@ -25,35 +24,6 @@ export default defineConfig(({ mode }) => {
         babel: {
           plugins: [['babel-plugin-react-compiler', { target: '19' }]],
         },
-      }),
-      viteStaticCopy({
-        targets: [
-          {
-            src: 'node_modules/onnxruntime-web/dist/ort.min.js',
-            dest: '.',
-          },
-          {
-            src: 'node_modules/@ricky0123/vad-web/dist/bundle.min.js',
-            dest: '.',
-            rename: 'vad.bundle.min.js',
-          },
-          {
-            src: 'node_modules/onnxruntime-web/dist/*.wasm',
-            dest: '.',
-          },
-          {
-            src: 'node_modules/onnxruntime-web/dist/*.mjs',
-            dest: '.',
-          },
-          {
-            src: 'node_modules/@ricky0123/vad-web/dist/vad.worklet.bundle.min.js',
-            dest: '.',
-          },
-          {
-            src: 'node_modules/@ricky0123/vad-web/dist/*.onnx',
-            dest: '.',
-          },
-        ],
       }),
       // Sentry source maps upload (only in CI with env vars)
       env.SENTRY_AUTH_TOKEN

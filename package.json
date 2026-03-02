@@ -36,7 +36,6 @@
     "@amplitude/analytics-node": "^1.5.32",
     "@anthropic-ai/sdk": "^0.71.2",
     "@google/genai": "^1.30.0",
-    "@ricky0123/vad-web": "^0.0.30",
     "@sentry/electron": "^7.6.0",
     "@uiw/react-json-view": "^2.0.0-alpha.40",
     "assjs": "^0.1.4",
@@ -52,7 +51,6 @@
     "jsonrepair": "^3.13.2",
     "lucide-react": "^0.562.0",
     "mixpanel": "^0.20.0",
-    "onnxruntime-web": "^1.23.2",
     "openai": "^6.9.1",
     "p-map": "^7.0.4",
     "pathe": "^2.0.3",
@@ -109,7 +107,6 @@
     "ts-node": "^10.9.2",
     "typescript": "~5.8.2",
     "vite": "^6.2.0",
-    "vite-plugin-static-copy": "^3.1.4",
     "wait-on": "^9.0.3"
   },
   "build": {
@@ -122,15 +119,7 @@
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
-      "!node_modules/onnxruntime-web/**/*",
-      "!node_modules/@ricky0123/vad-web/**/*",
       "resources/icon.png"
-    ],
-    "asarUnpack": [
-      "dist/*.onnx",
-      "dist/*.wasm",
-      "dist/*.mjs",
-      "dist/*.js"
     ],
     "extraResources": [],
     "mac": {
@@ -148,6 +137,7 @@
           "to": ".",
           "filter": [
             "whisper-cli",
+            "whisper-vad-speech-segments",
             "yt-dlp",
             "qjs",
             "ffmpeg",
@@ -183,6 +173,7 @@
           "to": ".",
           "filter": [
             "whisper-cli.exe",
+            "whisper-vad-speech-segments.exe",
             "yt-dlp.exe",
             "qjs.exe",
             "ffmpeg.exe",
@@ -217,11 +208,14 @@
           "to": ".",
           "filter": [
             "whisper-cli",
+            "whisper-vad-speech-segments",
             "yt-dlp",
             "qjs",
             "ffmpeg",
             "ffprobe",
             "cpp-ort-aligner",
+            "libonnxruntime.so",
+            "libonnxruntime.so.1",
             "ggml-silero-v6.2.0.bin",
             "Chinese_to_Pinyin.txt",
             "fonts/**/*"

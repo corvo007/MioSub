@@ -130,6 +130,36 @@ export const BINARIES = {
     },
   },
 
+  'whisper-vad-speech-segments': {
+    'win32-x64': {
+      url: 'https://github.com/corvo007/whisper.cpp/releases/latest/download/whisper-windows-x86_64.zip',
+      type: 'zip',
+      extract: [
+        { from: 'whisper-vad-speech-segments.exe', to: 'whisper-vad-speech-segments.exe' },
+      ],
+    },
+    'linux-x64': {
+      url: 'https://github.com/corvo007/whisper.cpp/releases/latest/download/whisper-linux-x86_64.tar.gz',
+      type: 'tar.gz',
+      extract: [{ from: 'whisper-vad-speech-segments', to: 'whisper-vad-speech-segments' }],
+    },
+    'linux-arm64': {
+      url: 'https://github.com/corvo007/whisper.cpp/releases/latest/download/whisper-linux-arm64.tar.gz',
+      type: 'tar.gz',
+      extract: [{ from: 'whisper-vad-speech-segments', to: 'whisper-vad-speech-segments' }],
+    },
+    'darwin-x64': {
+      url: 'https://github.com/corvo007/whisper.cpp/releases/latest/download/whisper-macos-x86_64.tar.gz',
+      type: 'tar.gz',
+      extract: [{ from: 'whisper-vad-speech-segments', to: 'whisper-vad-speech-segments' }],
+    },
+    'darwin-arm64': {
+      url: 'https://github.com/corvo007/whisper.cpp/releases/latest/download/whisper-macos-arm64.tar.gz',
+      type: 'tar.gz',
+      extract: [{ from: 'whisper-vad-speech-segments', to: 'whisper-vad-speech-segments' }],
+    },
+  },
+
   'cpp-ort-aligner': {
     'win32-x64': {
       url: 'https://github.com/corvo007/cpp-ctc-aligner/releases/latest/download/cpp-ort-aligner-windows-x64.zip',
@@ -177,13 +207,14 @@ export const EXPECTED_FILES = {
     'yt-dlp.exe',
     'qjs.exe',
     'whisper-cli.exe',
+    'whisper-vad-speech-segments.exe',
     'cpp-ort-aligner.exe',
     'onnxruntime.dll',
   ],
-  'linux-x64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner', 'libonnxruntime.so', 'libonnxruntime.so.1'],
-  'linux-arm64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner', 'libonnxruntime.so', 'libonnxruntime.so.1'],
-  'darwin-x64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner', 'libonnxruntime.dylib'],
-  'darwin-arm64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'cpp-ort-aligner', 'libonnxruntime.dylib'],
+  'linux-x64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'whisper-vad-speech-segments', 'cpp-ort-aligner', 'libonnxruntime.so', 'libonnxruntime.so.1'],
+  'linux-arm64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'whisper-vad-speech-segments', 'cpp-ort-aligner', 'libonnxruntime.so', 'libonnxruntime.so.1'],
+  'darwin-x64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'whisper-vad-speech-segments', 'cpp-ort-aligner', 'libonnxruntime.dylib'],
+  'darwin-arm64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'whisper-vad-speech-segments', 'cpp-ort-aligner', 'libonnxruntime.dylib'],
 };
 
 // Files required for each binary (used for skip logic with extractAll)
