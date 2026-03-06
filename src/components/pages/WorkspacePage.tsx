@@ -21,6 +21,7 @@ import { cn } from '@/lib/cn';
 import { useWorkspaceController } from '@/hooks/useWorkspaceLogic/useWorkspaceController';
 import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 import { useAppStore } from '@/store/useAppStore';
+import { useShallow } from 'zustand/react/shallow';
 
 interface WorkspacePageProps {
   activeTab: 'new' | 'import';
@@ -316,8 +317,17 @@ const PreflightErrorModalContainer: React.FC = () => {
     setShowPreflightModal,
     preflightContinueCallback,
     setPreflightContinueCallback,
-  } = useWorkspaceStore();
-  const { setShowSettings, setSettingsTab } = useAppStore();
+  } = useWorkspaceStore(
+    useShallow((s) => ({
+      preflightErrors: s.preflightErrors,
+      showPreflightModal: s.showPreflightModal,
+      setShowPreflightModal: s.setShowPreflightModal,
+      preflightContinueCallback: s.preflightContinueCallback,
+      setPreflightContinueCallback: s.setPreflightContinueCallback,
+    }))
+  );
+  const setShowSettings = useAppStore((s) => s.setShowSettings);
+  const setSettingsTab = useAppStore((s) => s.setSettingsTab);
 
   const handleOpenSettings = (tab?: 'services' | 'enhance' | 'about') => {
     setShowPreflightModal(false);

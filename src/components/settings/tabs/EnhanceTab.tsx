@@ -200,12 +200,15 @@ const VocalSeparationSection: React.FC<{
   const [hasGpu, setHasGpu] = useState<boolean | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     window.electronAPI?.vocal?.detectGpu().then((gpu) => {
+      if (cancelled) return;
       setHasGpu(gpu);
       if (gpu === false && settings.useVocalSeparation) {
         updateSetting('useVocalSeparation', false);
       }
     });
+    return () => { cancelled = true; };
   }, []);
 
   const handleSelectModel = async () => {

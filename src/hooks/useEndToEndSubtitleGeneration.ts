@@ -3,7 +3,7 @@
  * 用于处理主进程发送的字幕生成请求
  */
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { generateSubtitles } from '@/services/generation/pipeline';
 import { type ChunkAnalytics } from '@/types/api';
@@ -36,6 +36,7 @@ export function useEndToEndSubtitleGeneration({
 }: UseEndToEndSubtitleGenerationProps) {
   const { t } = useTranslation('endToEnd');
   const isProcessingRef = useRef(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Use refs to store settings and updateSetting to prevent infinite loop
@@ -104,6 +105,7 @@ export function useEndToEndSubtitleGeneration({
       }
 
       isProcessingRef.current = true;
+      setIsProcessing(true);
       const startTime = Date.now();
       const generationId = crypto.randomUUID();
       abortControllerRef.current = new AbortController();
@@ -636,6 +638,7 @@ export function useEndToEndSubtitleGeneration({
       } finally {
         clearTimeout(timeoutId);
         isProcessingRef.current = false;
+        setIsProcessing(false);
         abortControllerRef.current = null;
       }
     },
@@ -694,6 +697,6 @@ export function useEndToEndSubtitleGeneration({
   }, [handleGenerateRequest]); // Depend on handleGenerateRequest which is memoized
 
   return {
-    isProcessing: isProcessingRef.current,
+    isProcessing,
   };
 }

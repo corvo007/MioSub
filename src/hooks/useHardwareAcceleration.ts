@@ -7,35 +7,39 @@ export function useHardwareAcceleration() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchHwAccelInfo = async () => {
-      // Check sessionStorage cache first (cleared on app restart)
       const cached = sessionStorage.getItem('hwAccelInfo');
       if (cached) {
         try {
           const info = JSON.parse(cached) as HardwareAccelInfo;
-          setHwAccelInfo(info);
-          setIsLoading(false);
+          if (!cancelled) {
+            setHwAccelInfo(info);
+            setIsLoading(false);
+          }
           return;
         } catch {
           sessionStorage.removeItem('hwAccelInfo');
         }
       }
 
-      // Fetch from backend if not cached
       if (window.electronAPI?.compression?.getHwAccelInfo) {
         try {
           const info = await window.electronAPI.compression.getHwAccelInfo();
-          setHwAccelInfo(info);
-          // Cache to sessionStorage
-          sessionStorage.setItem('hwAccelInfo', JSON.stringify(info));
+          if (!cancelled) {
+            setHwAccelInfo(info);
+            sessionStorage.setItem('hwAccelInfo', JSON.stringify(info));
+          }
         } catch (error) {
           logger.error('[useHardwareAcceleration] Failed to get hardware acceleration info', error);
         }
       }
-      setIsLoading(false);
+      if (!cancelled) setIsLoading(false);
     };
 
     void fetchHwAccelInfo();
+    return () => { cancelled = true; };
   }, []);
 
   return { hwAccelInfo, isLoading };

@@ -475,7 +475,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                   <div className="flex-1">
                     <EncoderSelector
                       value={options.encoder}
-                      onChange={(val) => setOptions({ ...options, encoder: val as any })}
+                      onChange={(val) => setOptions((prev) => ({ ...prev, encoder: val as any }))}
                     />
                   </div>
                 </div>
@@ -503,7 +503,7 @@ export const CompressionPage: React.FC<CompressionPageProps> = ({
                   <div className="flex-1 space-y-2">
                     <NumberInput
                       value={options.crf}
-                      onChange={(v) => setOptions({ ...options, crf: v ?? 23 })}
+                      onChange={(v) => setOptions((prev) => ({ ...prev, crf: v ?? 23 }))}
                       min={0}
                       max={51}
                       allowDecimals={true}
