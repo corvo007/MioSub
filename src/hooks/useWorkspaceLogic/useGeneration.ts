@@ -309,11 +309,22 @@ export function useGeneration({
         }
       }
 
-      if (isMockMode || isLongVideoMode) {
+      const useVocalSep = !!(
+        settings.useVocalSeparation &&
+        settings.vocalSeparationModelPath &&
+        videoPath &&
+        window.electronAPI?.vocal
+      );
+
+      if (isMockMode || isLongVideoMode || useVocalSep) {
         audioSource = file;
         if (isMockMode) {
           logger.info(
             'Debug/Mock mode detected: Skipping eager audio decoding in workspace. Delegating to pipeline.'
+          );
+        } else if (useVocalSep) {
+          logger.info(
+            'Vocal separation enabled: Skipping eager audio decoding. Preprocessor will decode separated vocals.'
           );
         }
       } else {

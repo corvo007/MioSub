@@ -213,6 +213,7 @@ import { NativeVadService } from './services/nativeVad.ts';
 import { ytDlpService, classifyError } from './services/ytdlp.ts';
 import { VideoCompressorService } from './services/videoCompressor.ts';
 import type { CompressionOptions } from './services/videoCompressor.ts';
+import { vocalSeparatorService } from './services/vocalSeparator.ts';
 import { endToEndPipeline } from './services/endToEndPipeline.ts';
 import type { EndToEndConfig } from '@/types/endToEnd.ts';
 import { t, changeLanguage } from './i18n.ts';
@@ -815,6 +816,25 @@ ipcMain.handle('select-aligner-model-dir', async () => {
   }
 });
 
+// IPC Handler: Select Vocal Separation Model
+ipcMain.handle('select-vocal-separation-model', async () => {
+  try {
+    const result = await dialog.showOpenDialog({
+      title: t('dialog.selectVocalSeparationModel'),
+      properties: ['openFile'],
+      filters: [{ name: 'GGUF Model', extensions: ['gguf'] }],
+    });
+
+    if (!result.canceled && result.filePaths.length > 0) {
+      return { success: true, path: result.filePaths[0] };
+    }
+    return { success: false, canceled: true };
+  } catch (error: any) {
+    console.error('[Main] Vocal separation model selection failed:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // IPC Handler: Save Subtitle Dialog
 ipcMain.handle(
   'save-subtitle-dialog',
@@ -1361,6 +1381,34 @@ ipcMain.handle('video:hw-accel-info', async () => {
       preferredH265: 'libx265',
     };
   }
+});
+
+// ============================================================================
+// Vocal Separation IPC Handlers
+// ============================================================================
+ipcMain.handle('vocal:detect-gpu', () => {
+  return vocalSeparatorService.detectGpu();
+});
+
+ipcMain.handle('vocal:separate', async (event, input: { videoPath: string; modelPath: string }) => {
+  return vocalSeparatorService.separate(
+    input.videoPath,
+    input.modelPath,
+    (pct) => {
+      if (!event.sender.isDestroyed()) {
+        event.sender.send('vocal:progress', { percent: pct });
+      }
+    }
+  );
+});
+
+ipcMain.handle('vocal:abort', () => {
+  vocalSeparatorService.abort();
+  return { success: true };
+});
+
+ipcMain.handle('vocal:read-file', async (_, filePath: string) => {
+  return vocalSeparatorService.readVocalsFile(filePath);
 });
 
 // ============================================================================

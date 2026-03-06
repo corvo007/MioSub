@@ -13,6 +13,7 @@
     "segment": "Segment {{id}}",
     "init": "Initializing",
     "decoding": "Decoding audio",
+    "vocalSeparation": "Vocal separation",
     "segmenting": "Segmenting",
     "glossary": "Extracting terms",
     "diarization": "Speaker pre-analysis"

@@ -60,6 +60,11 @@
       }
     }
   },
+  "vocalSeparator": {
+    "processFailed": "ボーカル分離に失敗しました（終了コード {{exitCode}}）：{{stderr}}",
+    "vocalsNotGenerated": "ボーカルファイルが生成されませんでした",
+    "accessDenied": "アクセスが拒否されました：ファイルは一時ディレクトリ内に存在する必要があります"
+  },
   "snapshots": {
     "autoSave": "自動保存",
     "initialImport": "初期インポート",

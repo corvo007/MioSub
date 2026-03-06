@@ -60,6 +60,11 @@
       }
     }
   },
+  "vocalSeparator": {
+    "processFailed": "Vocal separation failed (exit code {{exitCode}}): {{stderr}}",
+    "vocalsNotGenerated": "Vocals file not generated",
+    "accessDenied": "Access denied: file must be in temp directory"
+  },
   "snapshots": {
     "autoSave": "Auto Save",
     "initialImport": "Initial Import",
@@ -81,6 +86,9 @@
   },
   "pipeline": {
     "status": {
+      "separatingVocals": "Separating vocals...",
+      "separatingVocalsProgress": "Separating vocals... {{percent}}%",
+      "separatingVocalsComplete": "Vocal separation complete",
       "decoding": "Decoding audio...",
       "decodingUsingCache": "Using cached audio (Duration: {{duration}})",
       "decodingComplete": "Audio decoding complete (Duration: {{duration}})",

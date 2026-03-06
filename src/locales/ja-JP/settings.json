@@ -154,6 +154,20 @@
       "removeTrailingPunctuation": "字幕末尾の句読点を削除",
       "removeTrailingPunctuationDesc": "翻訳と校正の完了後、各字幕の末尾の句読点を自動的に削除します"
     },
+    "vocalSeparation": {
+      "title": "ボーカル分離",
+      "enable": "ボーカル分離を有効化",
+      "enableDesc": "文字起こし前にボーカルとBGMを分離し、BGM付き動画の精度を向上（GPU必須）",
+      "noGpu": "Vulkan GPU が検出されませんでした。ボーカル分離は利用できません",
+      "memWarning": "この機能を有効にすると大量のメモリが必要です。十分な空きメモリを確保してください。",
+      "modelPath": "モデルパス",
+      "modelPathDesc": "GGUF形式のMelBandRoformerモデルファイルを選択",
+      "modelPathPlaceholder": "モデルファイルを選択してください",
+      "selectModel": "モデルを選択",
+      "browseButton": "📁 参照",
+      "instructions": "設定手順：",
+      "instructionModel": "GGUF形式のBSRoformerモデルをダウンロード"
+    },
     "alignment": {
       "title": "タイムスタンプ調整",
       "mode": "調整モード",

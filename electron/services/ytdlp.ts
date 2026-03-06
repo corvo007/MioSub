@@ -826,8 +826,9 @@ class YtDlpService {
       const parsed = JSON.parse(output);
       // If it's an array, take first element
       data = Array.isArray(parsed) ? parsed[0] : parsed;
-    } catch {
-      throw new ExpectedError(t('error.parseVideoFailed'));
+    } catch (parseError) {
+      // JSON parse failure indicates yt-dlp output issue, should be reported
+      throw new Error(`Failed to parse yt-dlp output: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
     }
 
     // Extract formats with proper filtering
@@ -1233,7 +1234,7 @@ class YtDlpService {
 
     if (ytdlpVersion !== 'Not found') {
       try {
-        const ytdlpOutput = await this.execute(['--version']);
+        const ytdlpOutput = await this.execute(['--version'], 5000);
         ytdlpVersion = ytdlpOutput.trim();
       } catch (error: any) {
         console.warn('[YtDlpService] Failed to get yt-dlp version', {

@@ -73,6 +73,10 @@ export interface AppSettings {
   whisperModelPath?: string; // Model file path (.bin)
   localWhisperBinaryPath?: string; // Whisper executable path (whisper-cli.exe)
 
+  // Vocal Separation Settings
+  useVocalSeparation?: boolean; // Enable vocal separation preprocessing (default: false)
+  vocalSeparationModelPath?: string; // GGUF model file path
+
   // Speaker Diarization Settings
   enableDiarization?: boolean; // Enable speaker identification (default: false)
   includeSpeakerInExport?: boolean; // Include speaker names in exported subtitles (default: false)

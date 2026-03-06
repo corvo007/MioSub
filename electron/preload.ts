@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectWhisperBinary: () => ipcRenderer.invoke('select-whisper-executable'),
   selectAlignerExecutable: () => ipcRenderer.invoke('select-aligner-executable'),
   selectAlignerModelDir: () => ipcRenderer.invoke('select-aligner-model-dir'),
+  selectVocalSeparationModel: () => ipcRenderer.invoke('select-vocal-separation-model'),
   transcribeLocal: (data: {
     audioData: ArrayBuffer;
     modelPath: string;
@@ -165,6 +166,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
       return () => {
         ipcRenderer.removeListener('video:compression-progress', subscription);
       };
+    },
+  },
+
+  // Vocal Separation APIs
+  vocal: {
+    detectGpu: () => ipcRenderer.invoke('vocal:detect-gpu'),
+    separate: (input: any) => ipcRenderer.invoke('vocal:separate', input),
+    abort: () => ipcRenderer.invoke('vocal:abort'),
+    readFile: (path: string) => ipcRenderer.invoke('vocal:read-file', path),
+    onProgress: (cb: (p: { percent: number }) => void) => {
+      const sub = (_: any, p: any) => cb(p);
+      ipcRenderer.on('vocal:progress', sub);
+      return () => ipcRenderer.removeListener('vocal:progress', sub);
     },
   },
 

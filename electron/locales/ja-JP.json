@@ -8,6 +8,7 @@
     "selectWhisperExecutable": "Whisper 実行ファイルを選択",
     "selectAlignerExecutable": "アライナー実行ファイルを選択",
     "selectAlignerModelDir": "アライナーモデルフォルダを選択",
+    "selectVocalSeparationModel": "ボーカル分離モデルを選択",
     "selectDownloadDir": "ダウンロードディレクトリを選択",
     "saveSubtitleFile": "字幕ファイルを保存",
     "exportLogs": "ログをエクスポート"

@@ -215,7 +215,8 @@ export class NativeVadService {
       if (code !== 0) {
         console.error(`[NativeVad] Process exited with code ${code}`);
         console.error(`[NativeVad] stderr: ${stderr}`);
-        throw new ExpectedError(t('nativeVad.processFailed', { code, stderr }));
+        // Process failure should be reported to Sentry
+        throw new Error(`VAD process failed (exit code ${code}): ${stderr}`);
       }
 
       // Parse output

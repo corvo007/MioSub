@@ -119,6 +119,12 @@ export interface ElectronAPI {
     error?: string;
     canceled?: boolean;
   }>;
+  selectVocalSeparationModel: () => Promise<{
+    success: boolean;
+    path?: string;
+    error?: string;
+    canceled?: boolean;
+  }>;
   transcribeLocal: (data: {
     audioData: ArrayBuffer;
     modelPath: string;
@@ -395,6 +401,15 @@ export interface ElectronAPI {
       preferredH265: string;
     }>;
     onProgress: (callback: (progress: any) => void) => () => void;
+  };
+
+  // Vocal Separation APIs
+  vocal: {
+    detectGpu: () => Promise<boolean>;
+    separate: (input: { videoPath: string; modelPath: string }) => Promise<{ vocalsPath: string }>;
+    abort: () => Promise<{ success: boolean }>;
+    readFile: (path: string) => Promise<Buffer>;
+    onProgress: (cb: (p: { percent: number }) => void) => () => void;
   };
 
   // Video Preview Transcoding APIs (for streaming playback during transcode)

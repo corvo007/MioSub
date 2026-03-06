@@ -8,6 +8,7 @@
     "selectWhisperExecutable": "Select Whisper Executable",
     "selectAlignerExecutable": "Select Aligner Executable",
     "selectAlignerModelDir": "Select Aligner Model Directory",
+    "selectVocalSeparationModel": "Select Vocal Separation Model",
     "selectDownloadDir": "Select Download Directory",
     "saveSubtitleFile": "Save Subtitle File",
     "exportLogs": "Export Logs"

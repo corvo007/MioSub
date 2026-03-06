@@ -133,7 +133,7 @@
       "styledTranslationDisabledDesc": "需要启用「说话人预分析」才能使用此功能"
     },
     "glossary": {
-      "title": "术语表设置",
+      "title": "术语表提取",
       "enableAutoGlossary": "启用自动术语表",
       "enableAutoGlossaryDesc": "自动识别并提取专业术语，提升翻译准确性和一致性",
       "sampleDuration": "术语提取音频长度",
@@ -152,6 +152,20 @@
       "title": "文本处理",
       "removeTrailingPunctuation": "删除字幕尾部标点",
       "removeTrailingPunctuationDesc": "翻译和校对完成后，自动删除每条字幕末尾的标点符号"
+    },
+    "vocalSeparation": {
+      "title": "人声分离",
+      "enable": "启用人声分离",
+      "enableDesc": "在转录前分离人声和背景音乐，提高含 BGM 视频的转录准确率（需要 GPU）",
+      "noGpu": "未检测到 Vulkan GPU，无法使用人声分离",
+      "memWarning": "启用此功能需要大量的内存，请确保可用内存充足。",
+      "modelPath": "模型路径",
+      "modelPathDesc": "选择 GGUF 格式的 MelBandRoformer 模型文件",
+      "modelPathPlaceholder": "请选择模型文件",
+      "selectModel": "选择模型",
+      "browseButton": "📁 浏览",
+      "instructions": "设置说明：",
+      "instructionModel": "需要下载 GGUF 格式的 BSRoformer 模型"
     },
     "alignment": {
       "title": "时间轴对齐",

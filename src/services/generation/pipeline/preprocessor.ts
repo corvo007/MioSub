@@ -21,6 +21,7 @@ export interface PreprocessResult {
   vadSegments?: { start: number; end: number }[];
   totalDuration: number;
   chunkDuration: number;
+  vocalsTempPath?: string; // Temp vocals file path for cleanup
 }
 
 /**
@@ -36,11 +37,58 @@ export async function preprocessAudio(
 ): Promise<PreprocessResult> {
   const chunkDuration = settings.chunkDuration || 120;
 
+  // ── Vocal Separation (optional, Electron + GPU only) ──────────────────────
+  let effectiveVideoPath = videoPath;
+  let vocalsTempPath: string | null = null;
+
+  const shouldSeparate =
+    settings.useVocalSeparation &&
+    settings.vocalSeparationModelPath &&
+    videoPath &&
+    window.electronAPI?.vocal;
+
+  if (shouldSeparate) {
+    onProgress?.({
+      id: 'vocalSeparation',
+      total: 1,
+      status: 'processing',
+      message: i18n.t('services:pipeline.status.separatingVocals'),
+    });
+
+    const unsubscribe = window.electronAPI!.vocal.onProgress(({ percent }) => {
+      onProgress?.({
+        id: 'vocalSeparation',
+        total: 1,
+        status: 'processing',
+        message: i18n.t('services:pipeline.status.separatingVocalsProgress', { percent: Math.round(percent) }),
+      });
+    });
+
+    try {
+      const result = await window.electronAPI!.vocal.separate({
+        videoPath: videoPath!,
+        modelPath: settings.vocalSeparationModelPath!,
+      });
+      vocalsTempPath = result.vocalsPath;
+      effectiveVideoPath = result.vocalsPath;
+    } finally {
+      unsubscribe();
+    }
+
+    onProgress?.({
+      id: 'vocalSeparation',
+      total: 1,
+      status: 'completed',
+      message: i18n.t('services:pipeline.status.separatingVocalsComplete'),
+    });
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
   // Check if we should use long video mode (on-demand extraction)
   // This requires: Electron environment + video path + duration > threshold
-  if (videoPath && window.electronAPI?.getAudioInfo) {
+  if (effectiveVideoPath && window.electronAPI?.getAudioInfo) {
     try {
-      const infoResult = await window.electronAPI.getAudioInfo(videoPath);
+      const infoResult = await window.electronAPI.getAudioInfo(effectiveVideoPath);
       if (infoResult.success && infoResult.info) {
         const duration = infoResult.info.duration;
 
@@ -70,7 +118,7 @@ export async function preprocessAudio(
                 message: i18n.t('services:pipeline.status.analyzingAudio'),
               });
 
-              const vadResult = await window.electronAPI.nativeVadAnalyze(videoPath, {
+              const vadResult = await window.electronAPI.nativeVadAnalyze(effectiveVideoPath, {
                 threshold: 0.6,
                 minSpeechDurationMs: 250,
                 minSilenceDurationMs: 100,
@@ -125,11 +173,12 @@ export async function preprocessAudio(
 
           return {
             audioBuffer: null,
-            videoPath,
+            videoPath: effectiveVideoPath,
             isLongVideo: true,
             chunksParams,
             totalDuration: duration,
             chunkDuration,
+            vocalsTempPath,
           };
         }
       }
@@ -152,7 +201,22 @@ export async function preprocessAudio(
 
   let audioBuffer: AudioBuffer;
   try {
-    if (audioSource instanceof AudioBuffer) {
+    if (vocalsTempPath && window.electronAPI?.vocal) {
+      // Vocal separation produced a file -- always decode from it
+      const buf = await window.electronAPI.vocal.readFile(vocalsTempPath);
+      const blob = new Blob([buf], { type: 'audio/wav' });
+      const vocalsFile = new File([blob], 'vocals.wav', { type: 'audio/wav' });
+
+      audioBuffer = await decodeAudioWithRetry(vocalsFile);
+      onProgress?.({
+        id: 'decoding',
+        total: 1,
+        status: 'completed',
+        message: i18n.t('services:pipeline.status.decodingComplete', {
+          duration: formatTime(audioBuffer.duration),
+        }),
+      });
+    } else if (audioSource instanceof AudioBuffer) {
       audioBuffer = audioSource;
       onProgress?.({
         id: 'decoding',
@@ -244,6 +308,7 @@ export async function preprocessAudio(
     vadSegments,
     totalDuration,
     chunkDuration,
+    vocalsTempPath,
   };
 }
 

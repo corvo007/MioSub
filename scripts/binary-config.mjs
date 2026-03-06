@@ -187,6 +187,34 @@ export const BINARIES = {
       extractAll: true,
     },
   },
+
+  'bs-roformer-cli': {
+    'win32-x64': {
+      url: 'https://github.com/corvo007/BSRoformer.cpp/releases/latest/download/BSRoformer-windows-vulkan.zip',
+      type: 'zip',
+      extract: [{ from: 'bs_roformer-cli.exe', to: 'bs-roformer-cli.exe' }],
+    },
+    'linux-x64': {
+      url: 'https://github.com/corvo007/BSRoformer.cpp/releases/latest/download/BSRoformer-linux-vulkan.zip',
+      type: 'zip',
+      extract: [{ from: 'bs_roformer-cli', to: 'bs-roformer-cli' }],
+    },
+    'linux-arm64': {
+      url: 'https://github.com/corvo007/BSRoformer.cpp/releases/latest/download/BSRoformer-linux-arm64-cpu.zip',
+      type: 'zip',
+      extract: [{ from: 'bs_roformer-cli', to: 'bs-roformer-cli' }],
+    },
+    'darwin-x64': {
+      url: 'https://github.com/corvo007/BSRoformer.cpp/releases/latest/download/BSRoformer-macos-x64.zip',
+      type: 'zip',
+      extract: [{ from: 'bs_roformer-cli', to: 'bs-roformer-cli' }],
+    },
+    'darwin-arm64': {
+      url: 'https://github.com/corvo007/BSRoformer.cpp/releases/latest/download/BSRoformer-macos-arm64.zip',
+      type: 'zip',
+      extract: [{ from: 'bs_roformer-cli', to: 'bs-roformer-cli' }],
+    },
+  },
 };
 
 // Files that should be kept in the repository (not downloaded)
@@ -210,11 +238,12 @@ export const EXPECTED_FILES = {
     'whisper-vad-speech-segments.exe',
     'cpp-ort-aligner.exe',
     'onnxruntime.dll',
+    'bs-roformer-cli.exe',
   ],
-  'linux-x64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'whisper-vad-speech-segments', 'cpp-ort-aligner', 'libonnxruntime.so', 'libonnxruntime.so.1'],
-  'linux-arm64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'whisper-vad-speech-segments', 'cpp-ort-aligner', 'libonnxruntime.so', 'libonnxruntime.so.1'],
-  'darwin-x64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'whisper-vad-speech-segments', 'cpp-ort-aligner', 'libonnxruntime.dylib'],
-  'darwin-arm64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'whisper-vad-speech-segments', 'cpp-ort-aligner', 'libonnxruntime.dylib'],
+  'linux-x64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'whisper-vad-speech-segments', 'cpp-ort-aligner', 'libonnxruntime.so', 'libonnxruntime.so.1', 'bs-roformer-cli'],
+  'linux-arm64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'whisper-vad-speech-segments', 'cpp-ort-aligner', 'libonnxruntime.so', 'libonnxruntime.so.1', 'bs-roformer-cli'],
+  'darwin-x64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'whisper-vad-speech-segments', 'cpp-ort-aligner', 'libonnxruntime.dylib', 'bs-roformer-cli'],
+  'darwin-arm64': ['ffmpeg', 'ffprobe', 'yt-dlp', 'qjs', 'whisper-cli', 'whisper-vad-speech-segments', 'cpp-ort-aligner', 'libonnxruntime.dylib', 'bs-roformer-cli'],
 };
 
 // Files required for each binary (used for skip logic with extractAll)

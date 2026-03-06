@@ -153,6 +153,20 @@
       "removeTrailingPunctuation": "Remove trailing punctuation",
       "removeTrailingPunctuationDesc": "Automatically remove punctuation at the end of each subtitle after translation and proofreading"
     },
+    "vocalSeparation": {
+      "title": "Vocal Separation",
+      "enable": "Enable vocal separation",
+      "enableDesc": "Separate vocals from background music before transcription to improve accuracy for videos with BGM (requires GPU)",
+      "noGpu": "Vulkan GPU not detected, vocal separation unavailable",
+      "memWarning": "This feature requires significant memory. Please ensure sufficient available memory.",
+      "modelPath": "Model Path",
+      "modelPathDesc": "Select a MelBandRoformer model file in GGUF format",
+      "modelPathPlaceholder": "Please select a model file",
+      "selectModel": "Select Model",
+      "browseButton": "📁 Browse",
+      "instructions": "Setup Instructions:",
+      "instructionModel": "Download BSRoformer model in GGUF format"
+    },
     "alignment": {
       "title": "Timestamp Alignment",
       "mode": "Alignment Mode",

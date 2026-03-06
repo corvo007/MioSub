@@ -8,6 +8,7 @@
     "selectWhisperExecutable": "选择 Whisper 可执行文件",
     "selectAlignerExecutable": "选择对齐器可执行文件",
     "selectAlignerModelDir": "选择对齐器模型目录",
+    "selectVocalSeparationModel": "选择人声分离模型",
     "selectDownloadDir": "选择下载目录",
     "saveSubtitleFile": "保存字幕文件",
     "exportLogs": "导出日志"

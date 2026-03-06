@@ -13,6 +13,7 @@
     "segment": "セグメント {{id}}",
     "init": "初期化",
     "decoding": "音声をデコード",
+    "vocalSeparation": "ボーカル分離",
     "segmenting": "セグメント処理",
     "glossary": "用語を抽出",
     "diarization": "話者の事前分析"

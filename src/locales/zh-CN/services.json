@@ -60,6 +60,11 @@
       }
     }
   },
+  "vocalSeparator": {
+    "processFailed": "人声分离失败（退出码 {{exitCode}}）：{{stderr}}",
+    "vocalsNotGenerated": "人声文件未生成",
+    "accessDenied": "访问被拒绝：文件必须位于临时目录中"
+  },
   "snapshots": {
     "autoSave": "自动保存",
     "initialImport": "初始导入",
@@ -81,6 +86,9 @@
   },
   "pipeline": {
     "status": {
+      "separatingVocals": "正在分离人声...",
+      "separatingVocalsProgress": "正在分离人声... {{percent}}%",
+      "separatingVocalsComplete": "人声分离完成",
       "decoding": "正在解码音频...",
       "decodingUsingCache": "使用缓存的音频 (时长: {{duration}})",
       "decodingComplete": "音频解码完成 (时长: {{duration}})",

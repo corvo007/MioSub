@@ -92,6 +92,7 @@ export interface AudioExtractionOptions {
   sampleRate?: number;
   channels?: number;
   bitrate?: string;
+  codec?: string; // Audio codec (e.g., 'pcm_s16le', 'pcm_f32le')
   customFfmpegPath?: string;
   customFfprobePath?: string;
 }
@@ -121,6 +122,7 @@ export async function extractAudioFromVideo(
     sampleRate = 16000,
     channels = 1,
     bitrate = '128k',
+    codec,
     customFfmpegPath,
     customFfprobePath,
   } = options;
@@ -161,6 +163,11 @@ export async function extractAudioFromVideo(
         `-ac ${channels}`, // 声道数
       ])
       .output(outputPath);
+
+    // Set audio codec if specified
+    if (codec) {
+      command = command.audioCodec(codec);
+    }
 
     // 根据格式设置比特率
     if (format === 'mp3') {
