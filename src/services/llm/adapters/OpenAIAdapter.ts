@@ -566,10 +566,13 @@ export class OpenAIAdapter extends BaseAdapter {
 
       // Track usage
       if (options.onUsage && response.usage) {
+        const completionTokens = response.usage.completion_tokens;
         options.onUsage({
           promptTokens: response.usage.prompt_tokens,
-          completionTokens: response.usage.completion_tokens,
+          candidatesTokens: completionTokens,
+          completionTokens,
           totalTokens: response.usage.total_tokens,
+          modelName: this.model,
         });
       }
 

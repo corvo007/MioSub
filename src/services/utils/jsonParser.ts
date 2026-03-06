@@ -96,7 +96,10 @@ export function safeParseJsonArray<T = unknown>(text: string): T[] {
     });
     return [];
   } catch (error) {
-    console.warn('[jsonParser] Failed to parse JSON array:', error instanceof Error ? error.message : error);
+    console.warn(
+      '[jsonParser] Failed to parse JSON array:',
+      error instanceof Error ? error.message : error
+    );
     logger.warn('safeParseJsonArray failed', { error });
     return [];
   }

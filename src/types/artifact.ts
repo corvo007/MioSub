@@ -58,7 +58,7 @@ export interface ArtifactMetadata {
   /** ISO timestamp when artifact was created */
   timestamp: string;
   /** Video information (optional for chunk-level artifacts) */
-  video?: VideoInfo;
+  video?: PipelineVideoInfo;
   /** Chunk information (only for chunk-level artifacts) */
   chunk?: ChunkInfo;
   /** Pipeline stage information */

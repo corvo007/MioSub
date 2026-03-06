@@ -282,10 +282,13 @@ export class ClaudeAdapter extends BaseAdapter {
 
       // Track usage
       if (options.onUsage && response.usage) {
+        const completionTokens = response.usage.output_tokens;
         options.onUsage({
           promptTokens: response.usage.input_tokens,
-          completionTokens: response.usage.output_tokens,
+          candidatesTokens: completionTokens,
+          completionTokens,
           totalTokens: response.usage.input_tokens + response.usage.output_tokens,
+          modelName: this.model,
         });
       }
 

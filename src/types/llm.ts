@@ -3,6 +3,8 @@
  * Core interfaces and types for multi-provider LLM architecture
  */
 
+import type { TokenUsage } from './api';
+
 // Provider types
 export type ProviderType = 'gemini' | 'openai' | 'claude';
 

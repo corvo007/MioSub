@@ -183,10 +183,13 @@ export class GeminiAdapter extends BaseAdapter {
    * Map Gemini usage to standard TokenUsage
    */
   private mapUsage(geminiUsage: any, callback: (usage: TokenUsage) => void): void {
+    const candidatesTokens = geminiUsage.candidatesTokens || geminiUsage.candidatesTokenCount || 0;
     callback({
       promptTokens: geminiUsage.promptTokens || 0,
-      completionTokens: geminiUsage.candidatesTokens || 0,
+      candidatesTokens,
+      completionTokens: candidatesTokens,
       totalTokens: geminiUsage.totalTokens || 0,
+      modelName: this.model,
     });
   }
 
