@@ -5,8 +5,8 @@
 
 import { type ChunkStatus } from '@/types/api';
 import { type SubtitleItem } from '@/types/subtitle';
-import { type DownloadProgress, type VideoInfo } from '@electron/services/ytdlp';
-import { type CompressionProgress } from '@electron/services/videoCompressor';
+import { type DownloadProgress, type VideoInfo } from './download';
+import { type CompressionProgress } from './compression';
 
 // ============================================================================
 // Pipeline Stage Definitions

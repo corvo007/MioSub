@@ -8,7 +8,7 @@
 /**
  * Video information for artifact metadata
  */
-export interface VideoInfo {
+export interface PipelineVideoInfo {
   /** Original filename (e.g., "example.mp4") */
   filename: string;
   /** Video duration in seconds */
