@@ -201,15 +201,17 @@ const VocalSeparationSection: React.FC<{
 
   useEffect(() => {
     let cancelled = false;
-    window.electronAPI?.vocal?.detectGpu().then((gpu) => {
+    void window.electronAPI?.vocal?.detectGpu().then((gpu) => {
       if (cancelled) return;
       setHasGpu(gpu);
       if (gpu === false && settings.useVocalSeparation) {
         updateSetting('useVocalSeparation', false);
       }
     });
-    return () => { cancelled = true; };
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [settings.useVocalSeparation, updateSetting]);
 
   const handleSelectModel = async () => {
     try {
@@ -271,7 +273,9 @@ const VocalSeparationSection: React.FC<{
           </div>
 
           <div className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-200">
-            <p className="font-medium mb-1 text-slate-800">{t('enhance.vocalSeparation.instructions')}</p>
+            <p className="font-medium mb-1 text-slate-800">
+              {t('enhance.vocalSeparation.instructions')}
+            </p>
             <ul className="list-disc list-inside space-y-1">
               <li>
                 {t('enhance.vocalSeparation.instructionModel')}{' '}

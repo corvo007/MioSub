@@ -828,7 +828,9 @@ class YtDlpService {
       data = Array.isArray(parsed) ? parsed[0] : parsed;
     } catch (parseError) {
       // JSON parse failure indicates yt-dlp output issue, should be reported
-      throw new Error(`Failed to parse yt-dlp output: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to parse yt-dlp output: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`
+      );
     }
 
     // Extract formats with proper filtering

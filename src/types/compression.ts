@@ -3,6 +3,7 @@ export interface CompressionOptions {
   crf: number;
   width?: number;
   height?: number;
+  subtitlePath?: string;
   hwAccel?: 'auto' | 'off'; // GPU hardware acceleration mode
   videoSource?: 'workspace' | 'external';
   subtitleSource?: 'workspace' | 'external' | 'none';

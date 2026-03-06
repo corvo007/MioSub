@@ -1,4 +1,3 @@
-import { app } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -90,10 +89,12 @@ export class VocalSeparator {
       // Scale delay based on file size: 200ms base + 1ms per MB
       const delayMs = Math.max(200, 200 + Math.floor(stats.size / (1024 * 1024)));
       console.log(`[VocalSeparator] Waiting ${delayMs}ms for file system flush...`);
-      await new Promise(resolve => setTimeout(resolve, delayMs));
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
 
       // Step 3: Run BSRoformer
-      const binaryPath = getBinaryPath(process.platform === 'win32' ? 'bs-roformer-cli.exe' : 'bs-roformer-cli');
+      const binaryPath = getBinaryPath(
+        process.platform === 'win32' ? 'bs-roformer-cli.exe' : 'bs-roformer-cli'
+      );
       if (!fs.existsSync(binaryPath)) {
         throw new ExpectedError(`BSRoformer binary not found: ${binaryPath}`);
       }
@@ -102,13 +103,15 @@ export class VocalSeparator {
       }
       const outputBase = path.join(tempDir, `mbr_output_${timestamp}`);
 
-      const { command, args: spawnArgs, options: spawnOptions } = buildSpawnArgs(binaryPath, [
-        safeModelPath,
-        inputWav,
-        outputBase,
-      ]);
+      const {
+        command,
+        args: spawnArgs,
+        options: spawnOptions,
+      } = buildSpawnArgs(binaryPath, [safeModelPath, inputWav, outputBase]);
 
-      console.log(`[VocalSeparator] Spawning: ${command} ${spawnArgs.map(a => `"${a}"`).join(' ')}`);
+      console.log(
+        `[VocalSeparator] Spawning: ${command} ${spawnArgs.map((a) => `"${a}"`).join(' ')}`
+      );
       const proc = spawn(command, spawnArgs, { ...spawnOptions, windowsHide: true });
       const processId = `vocal-${Date.now()}-${++this.processSeq}`;
       this.activeProcesses.set(processId, proc);
@@ -170,8 +173,11 @@ export class VocalSeparator {
 
       if (exitCode !== 0) {
         // Extract key error line for message
-        const errorLines = stderr.split('\n').filter(line => line.toLowerCase().includes('error'));
-        const keyError = errorLines[errorLines.length - 1] || stderr.trim().split('\n').pop() || 'Unknown error';
+        const errorLines = stderr
+          .split('\n')
+          .filter((line) => line.toLowerCase().includes('error'));
+        const keyError =
+          errorLines[errorLines.length - 1] || stderr.trim().split('\n').pop() || 'Unknown error';
 
         // Report to Sentry with full context
         const error = new Error(`Vocal separation failed (exit code ${exitCode}): ${keyError}`);
@@ -240,4 +246,3 @@ export class VocalSeparator {
 }
 
 export const vocalSeparatorService = new VocalSeparator();
-

@@ -39,7 +39,9 @@ export function useHardwareAcceleration() {
     };
 
     void fetchHwAccelInfo();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return { hwAccelInfo, isLoading };
