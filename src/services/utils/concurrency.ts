@@ -44,7 +44,7 @@ export class Semaphore {
     if (this.tasks.length > 0) {
       const next = this.tasks.shift();
       if (next) next();
-    } else {
+    } else if (this.count < this.max) {
       this.count++;
     }
   }

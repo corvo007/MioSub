@@ -2,10 +2,11 @@
  * Formats seconds to HH:MM:SS,mmm
  */
 export const formatTime = (seconds: number): string => {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  const ms = Math.floor((seconds % 1) * 1000);
+  const clamped = Math.max(0, seconds);
+  const h = Math.floor(clamped / 3600);
+  const m = Math.floor((clamped % 3600) / 60);
+  const s = Math.floor(clamped % 60);
+  const ms = Math.floor((clamped % 1) * 1000);
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')},${ms.toString().padStart(3, '0')}`;
 };
 
@@ -109,7 +110,7 @@ export const normalizeTimestamp = (timeStr: string, maxDuration?: number): strin
  * Converts normalized HH:MM:SS,mmm to ASS format H:MM:SS.cc
  */
 export const toAssTime = (normalizedTime: string): string => {
-  const [hms, ms] = normalizedTime.split(',');
+  const [hms, ms = '000'] = normalizedTime.split(',');
   const [h, m, s] = hms.split(':');
   const cs = ms.slice(0, 2);
   const p2 = (n: string) => n.padStart(2, '0').slice(-2);

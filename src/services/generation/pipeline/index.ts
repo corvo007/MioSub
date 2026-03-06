@@ -352,10 +352,16 @@ export const generateSubtitles = async (
 
       // Incremental update - push new results instead of O(N²) .flat() on every chunk
       if (result.final.length > 0) {
-        intermediateResults.push(...result.final);
-        // Sort by start time (Timsort is efficient on nearly-sorted data)
-        intermediateResults.sort((a, b) => timeToSeconds(a.startTime) - timeToSeconds(b.startTime));
-        // Pass a copy to prevent external mutation of our accumulator
+        for (const item of result.final) {
+          const itemTime = timeToSeconds(item.startTime);
+          let lo = 0, hi = intermediateResults.length;
+          while (lo < hi) {
+            const mid = (lo + hi) >>> 1;
+            if (timeToSeconds(intermediateResults[mid].startTime) < itemTime) lo = mid + 1;
+            else hi = mid;
+          }
+          intermediateResults.splice(lo, 0, item);
+        }
         onIntermediateResult?.([...intermediateResults]);
       }
 
@@ -378,7 +384,7 @@ export const generateSubtitles = async (
       // Should already be handled in ChunkProcessor, but safety net
       logger.error(`Unexpected error in Chunk ${chunk.index}`, e);
     }
-  });
+  }, context.signal);
 
   const finalSubtitles = deduplicateConsecutive(chunkResults.flat());
 

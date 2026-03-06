@@ -60,6 +60,8 @@ export abstract class BaseAdapter implements ILLMAdapter {
   ): Promise<T> {
     const { signal, timeoutMs, retries = 3 } = options;
 
+    let lastError: Error | undefined;
+
     for (let attempt = 0; attempt < retries; attempt++) {
       this.checkAborted(signal);
 
@@ -70,6 +72,7 @@ export abstract class BaseAdapter implements ILLMAdapter {
         }
         return await fn();
       } catch (error: any) {
+        lastError = error instanceof Error ? error : new Error(String(error));
         // Check if error is retryable
         if (this.isRetryableError(error) && attempt < retries - 1) {
           const delay = Math.pow(2, attempt) * 2000 + Math.random() * 1000;
@@ -87,7 +90,7 @@ export abstract class BaseAdapter implements ILLMAdapter {
       }
     }
 
-    throw new Error(i18n.t('services:api.errors.retryFailed'));
+    throw new Error(i18n.t('services:api.errors.retryFailed'), { cause: lastError });
   }
 
   /**

@@ -119,7 +119,7 @@ export const transcribeWithLocalWhisper = async (
         id: generateSubtitleId(),
         startTime: seg.start,
         endTime: seg.end,
-        original: seg.text.trim(),
+        original: (seg.text ?? '').trim(),
         translated: '',
       }));
     } finally {
