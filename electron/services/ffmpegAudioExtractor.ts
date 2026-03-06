@@ -43,6 +43,42 @@ interface AudioExtractionJob {
 }
 const activeJobs = new Map<number, AudioExtractionJob>();
 let jobCounter = 0;
+let currentJobId: number | null = null;
+
+function getLatestActiveJobId(excludeJobId?: number): number | null {
+  let latestJobId: number | null = null;
+
+  for (const [jobId, job] of activeJobs) {
+    if (jobId === excludeJobId || job.isCancelled) {
+      continue;
+    }
+    latestJobId = jobId;
+  }
+
+  return latestJobId;
+}
+
+function registerJob(jobId: number, job: AudioExtractionJob): void {
+  activeJobs.set(jobId, job);
+  currentJobId = jobId;
+}
+
+function unregisterJob(jobId: number): AudioExtractionJob | undefined {
+  const job = activeJobs.get(jobId);
+  activeJobs.delete(jobId);
+
+  if (currentJobId === jobId) {
+    currentJobId = getLatestActiveJobId(jobId);
+  }
+
+  return job;
+}
+
+function removeOutputFile(outputPath: string): void {
+  if (fs.existsSync(outputPath)) {
+    fs.unlinkSync(outputPath);
+  }
+}
 
 /**
  * Kill all active audio extraction processes.
@@ -64,29 +100,39 @@ export function killAllAudioExtractions(): void {
  * Returns true if cancellation was successful, false if no extraction was running.
  */
 export function cancelAudioExtraction(): boolean {
-  if (activeJobs.size > 0) {
+  const targetJobId = currentJobId ?? getLatestActiveJobId();
+  if (targetJobId === null) {
+    return false;
+  }
+
+  const job = activeJobs.get(targetJobId);
+  if (!job) {
+    currentJobId = getLatestActiveJobId(targetJobId);
+    return false;
+  }
+
+  try {
+    job.isCancelled = true;
+    currentJobId = getLatestActiveJobId(targetJobId);
+
     try {
-      for (const [id, job] of activeJobs) {
-        job.isCancelled = true;
-        try {
-          job.command.kill('SIGKILL');
-        } catch (_e) {}
-        const outputPath = job.outputPath;
-        setTimeout(() => {
-          if (fs.existsSync(outputPath)) {
-            try {
-              fs.unlinkSync(outputPath);
-            } catch (_e) {}
-          }
-        }, 500);
-        activeJobs.delete(id);
-      }
-      return true;
+      job.command.kill('SIGKILL');
     } catch (_e) {
       return false;
     }
+
+    setTimeout(() => {
+      try {
+        removeOutputFile(job.outputPath);
+      } catch (_e) {
+        return;
+      }
+    }, 500);
+
+    return true;
+  } catch (_e) {
+    return false;
   }
-  return false;
 }
 
 export interface AudioExtractionOptions {
@@ -214,28 +260,25 @@ export async function extractAudioFromVideo(
 
     command.on('end', () => {
       activeAudioCommands.delete(command);
-      activeJobs.delete(jobId);
+      unregisterJob(jobId);
       resolve(outputPath);
     });
 
     command.on('error', (err) => {
-      const job = activeJobs.get(jobId);
+      const job = unregisterJob(jobId);
       activeAudioCommands.delete(command);
-      activeJobs.delete(jobId);
       if (job?.isCancelled) {
         reject(new ExpectedError('Audio extraction cancelled'));
         return;
       }
-      if (fs.existsSync(outputPath)) {
-        fs.unlinkSync(outputPath);
-      }
+      removeOutputFile(outputPath);
       reject(new Error(`FFmpeg extraction failed: ${err.message}`));
     });
 
     command.run();
 
     activeAudioCommands.add(command);
-    activeJobs.set(jobId, { command, outputPath, isCancelled: false });
+    registerJob(jobId, { command, outputPath, isCancelled: false });
   });
 }
 
@@ -363,28 +406,25 @@ export async function extractAudioSegment(
 
     command.on('end', () => {
       activeAudioCommands.delete(command);
-      activeJobs.delete(jobId);
+      unregisterJob(jobId);
       resolve(outputPath);
     });
 
     command.on('error', (err) => {
-      const job = activeJobs.get(jobId);
+      const job = unregisterJob(jobId);
       activeAudioCommands.delete(command);
-      activeJobs.delete(jobId);
       if (job?.isCancelled) {
         reject(new ExpectedError('Audio extraction cancelled'));
         return;
       }
-      if (fs.existsSync(outputPath)) {
-        fs.unlinkSync(outputPath);
-      }
+      removeOutputFile(outputPath);
       reject(new Error(`FFmpeg segment extraction failed: ${err.message}`));
     });
 
     command.run();
 
     activeAudioCommands.add(command);
-    activeJobs.set(jobId, { command, outputPath, isCancelled: false });
+    registerJob(jobId, { command, outputPath, isCancelled: false });
   });
 }
 
@@ -505,11 +545,13 @@ export async function extractMultipleAudioSegments(
       kill: (signal: string) => {
         try {
           proc.kill(signal);
-        } catch (_e) {}
+        } catch (_e) {
+          return;
+        }
       },
     } as ReturnType<typeof ffmpeg>;
     activeAudioCommands.add(procWrapper);
-    activeJobs.set(jobId, { command: procWrapper, outputPath, isCancelled: false });
+    registerJob(jobId, { command: procWrapper, outputPath, isCancelled: false });
 
     proc.stderr.on('data', (data: Buffer) => {
       const line = data.toString();
@@ -526,14 +568,11 @@ export async function extractMultipleAudioSegments(
     });
 
     proc.on('close', (code: number) => {
-      const job = activeJobs.get(jobId);
+      const job = unregisterJob(jobId);
       activeAudioCommands.delete(procWrapper);
-      activeJobs.delete(jobId);
 
       if (job?.isCancelled) {
-        if (fs.existsSync(outputPath)) {
-          fs.unlinkSync(outputPath);
-        }
+        removeOutputFile(outputPath);
         reject(new ExpectedError('Audio extraction cancelled'));
         return;
       }
@@ -541,20 +580,15 @@ export async function extractMultipleAudioSegments(
       if (code === 0) {
         resolve(outputPath);
       } else {
-        if (fs.existsSync(outputPath)) {
-          fs.unlinkSync(outputPath);
-        }
+        removeOutputFile(outputPath);
         reject(new Error(`FFmpeg concat extraction failed with code ${code}`));
       }
     });
 
     proc.on('error', (err: Error) => {
+      unregisterJob(jobId);
       activeAudioCommands.delete(procWrapper);
-      activeJobs.delete(jobId);
-
-      if (fs.existsSync(outputPath)) {
-        fs.unlinkSync(outputPath);
-      }
+      removeOutputFile(outputPath);
       reject(new Error(`FFmpeg spawn error: ${err.message}`));
     });
   });

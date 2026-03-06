@@ -5,7 +5,7 @@ import { SmartSegmenter } from '@/services/audio/segmenter';
 import { SpeakerAnalyzer } from './speakerAnalyzer';
 import { GlossaryHandler } from './glossaryHandler';
 import { initializePipelineContext, calculateMainLoopConcurrency } from './pipelineCore';
-import { type VideoInfo } from '@/types/pipeline';
+import { type PipelineVideoInfo } from '@/types/pipeline';
 import { type SubtitleItem } from '@/types/subtitle';
 import { type AppSettings } from '@/types/settings';
 import { type ChunkStatus } from '@/types/api';
@@ -37,7 +37,7 @@ export const generateSubtitles = async (
   onIntermediateResult?: (subs: SubtitleItem[]) => void,
   onGlossaryReady?: (metadata: GlossaryExtractionMetadata) => Promise<GlossaryItem[]>,
   signal?: AbortSignal,
-  videoInfo?: VideoInfo,
+  videoInfo?: PipelineVideoInfo,
   existingProfiles: SpeakerUIProfile[] = [],
   videoPath?: string // Optional video path for long video on-demand extraction
 ): Promise<{
@@ -48,14 +48,12 @@ export const generateSubtitles = async (
   tokenUsage: TokenUsageAnalytics;
 }> => {
   // Initialize pipeline context using shared core
-  const { context, usageReporter, trackUsage, semaphores, concurrency } = initializePipelineContext(
-    {
-      settings,
-      onProgress,
-      signal,
-      videoInfo,
-    }
-  );
+  const { context, usageReporter, semaphores, concurrency } = initializePipelineContext({
+    settings,
+    onProgress,
+    signal,
+    videoInfo,
+  });
 
   const { ai, isDebug } = context;
 
@@ -324,67 +322,73 @@ export const generateSubtitles = async (
   // Error collector to track failures across chunks
   const chunkErrors: Error[] = [];
 
-  await mapInParallel(chunksParams, mainLoopConcurrency, async (chunk, i) => {
-    try {
-      // Delegate processing to ChunkProcessor
-      const result = await ChunkProcessor.process(chunk, context, {
-        glossaryState,
-        speakerProfilePromise,
-        transcriptionSemaphore,
-        refinementSemaphore,
-        alignmentSemaphore,
-        audioBuffer,
-        videoPath: longVideoPath,
-        isLongVideo: isLongVideoMode,
-        chunkDuration,
-        totalChunks,
-      });
+  await mapInParallel(
+    chunksParams,
+    mainLoopConcurrency,
+    async (chunk, i) => {
+      try {
+        // Delegate processing to ChunkProcessor
+        const result = await ChunkProcessor.process(chunk, context, {
+          glossaryState,
+          speakerProfilePromise,
+          transcriptionSemaphore,
+          refinementSemaphore,
+          alignmentSemaphore,
+          audioBuffer,
+          videoPath: longVideoPath,
+          isLongVideo: isLongVideoMode,
+          chunkDuration,
+          totalChunks,
+        });
 
-      // Update maps for artifact saving
-      if (result.whisper.length > 0) whisperChunksMap.set(chunk.index, result.whisper);
-      if (result.refined.length > 0) refinedChunksMap.set(chunk.index, result.refined);
-      if (result.aligned.length > 0) alignedChunksMap.set(chunk.index, result.aligned);
-      if (result.translated.length > 0) translatedChunksMap.set(chunk.index, result.translated);
+        // Update maps for artifact saving
+        if (result.whisper.length > 0) whisperChunksMap.set(chunk.index, result.whisper);
+        if (result.refined.length > 0) refinedChunksMap.set(chunk.index, result.refined);
+        if (result.aligned.length > 0) alignedChunksMap.set(chunk.index, result.aligned);
+        if (result.translated.length > 0) translatedChunksMap.set(chunk.index, result.translated);
 
-      // Store final result (Uses 'final' which includes fallback logic: Translated > Refined > Whisper)
-      // This ensures that if translation fails, we at least fallback to the corrected original text.
-      chunkResults[i] = result.final;
+        // Store final result (Uses 'final' which includes fallback logic: Translated > Refined > Whisper)
+        // This ensures that if translation fails, we at least fallback to the corrected original text.
+        chunkResults[i] = result.final;
 
-      // Incremental update - push new results instead of O(N²) .flat() on every chunk
-      if (result.final.length > 0) {
-        for (const item of result.final) {
-          const itemTime = timeToSeconds(item.startTime);
-          let lo = 0, hi = intermediateResults.length;
-          while (lo < hi) {
-            const mid = (lo + hi) >>> 1;
-            if (timeToSeconds(intermediateResults[mid].startTime) < itemTime) lo = mid + 1;
-            else hi = mid;
+        // Incremental update - push new results instead of O(N²) .flat() on every chunk
+        if (result.final.length > 0) {
+          for (const item of result.final) {
+            const itemTime = timeToSeconds(item.startTime);
+            let lo = 0,
+              hi = intermediateResults.length;
+            while (lo < hi) {
+              const mid = (lo + hi) >>> 1;
+              if (timeToSeconds(intermediateResults[mid].startTime) < itemTime) lo = mid + 1;
+              else hi = mid;
+            }
+            intermediateResults.splice(lo, 0, item);
           }
-          intermediateResults.splice(lo, 0, item);
+          onIntermediateResult?.([...intermediateResults]);
         }
-        onIntermediateResult?.([...intermediateResults]);
+
+        // Collect analytics for this chunk (for return value sorting)
+        // Note: Analytics are also reported incrementally via onProgress for error/cancel robustness
+        chunkAnalytics.push(result.analytics);
+      } catch (e: any) {
+        // Check for cancellation
+        if (
+          context.signal?.aborted ||
+          e.message === i18n.t('services:pipeline.errors.cancelled') ||
+          e.name === 'AbortError'
+        ) {
+          throw e;
+        }
+
+        // Capture error for potential final reporting
+        chunkErrors.push(e);
+
+        // Should already be handled in ChunkProcessor, but safety net
+        logger.error(`Unexpected error in Chunk ${chunk.index}`, e);
       }
-
-      // Collect analytics for this chunk (for return value sorting)
-      // Note: Analytics are also reported incrementally via onProgress for error/cancel robustness
-      chunkAnalytics.push(result.analytics);
-    } catch (e: any) {
-      // Check for cancellation
-      if (
-        context.signal?.aborted ||
-        e.message === i18n.t('services:pipeline.errors.cancelled') ||
-        e.name === 'AbortError'
-      ) {
-        throw e;
-      }
-
-      // Capture error for potential final reporting
-      chunkErrors.push(e);
-
-      // Should already be handled in ChunkProcessor, but safety net
-      logger.error(`Unexpected error in Chunk ${chunk.index}`, e);
-    }
-  }, context.signal);
+    },
+    context.signal
+  );
 
   const finalSubtitles = deduplicateConsecutive(chunkResults.flat());
 

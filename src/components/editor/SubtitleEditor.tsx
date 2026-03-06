@@ -799,5 +799,5 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
         </div>
       </SearchReplaceProvider>
     );
-  },
+  }
 );

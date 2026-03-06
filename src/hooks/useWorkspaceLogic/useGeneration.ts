@@ -119,7 +119,7 @@ export function useGeneration({
         );
         setPreflightContinueCallback(() => {
           skipPreflightRef.current = true;
-          handleGenerate();
+          void handleGenerate();
         });
         setShowPreflightModal(true);
         return;
@@ -643,6 +643,7 @@ export function useGeneration({
     abortControllerRef,
     audioCacheRef,
     handleProgress,
+    i18n.language,
     t,
   ]);
 

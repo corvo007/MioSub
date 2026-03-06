@@ -1,6 +1,10 @@
 import { type AppSettings } from '@/types/settings';
 import { type WorkspaceHistory } from '@/types/history';
-import { type SubtitleSnapshot } from '@/types/subtitle';
+import { type SubtitleSnapshot, type SubtitleItem } from '@/types/subtitle';
+import { type ChunkStatus } from '@/types/api';
+import { type CompressionOptions, type CompressionProgress } from './compression';
+import { type DownloadProgress, type VideoInfo } from './download';
+import { type EndToEndConfig } from './endToEnd';
 
 export interface PreflightError {
   code: string;
@@ -384,9 +388,15 @@ export interface ElectronAPI {
 
   // Video Compression APIs
   compression: {
-    compress: (inputPath: string, outputPath: string, options: import('./compression').CompressionOptions) => Promise<string>;
+    compress: (
+      inputPath: string,
+      outputPath: string,
+      options: CompressionOptions
+    ) => Promise<string>;
     cancel: () => Promise<{ success: boolean }>;
-    getInfo: (filePath: string) => Promise<{ duration: number; width: number; height: number; codec: string; size: number }>;
+    getInfo: (
+      filePath: string
+    ) => Promise<{ duration: number; width: number; height: number; codec: string; size: number }>;
     getHwAccelInfo: () => Promise<{
       available: boolean;
       encoders: {
@@ -400,7 +410,7 @@ export interface ElectronAPI {
       preferredH264: string;
       preferredH265: string;
     }>;
-    onProgress: (callback: (progress: import('./compression').CompressionProgress) => void) => () => void;
+    onProgress: (callback: (progress: CompressionProgress) => void) => () => void;
   };
 
   // Vocal Separation APIs
@@ -598,14 +608,14 @@ export interface ElectronAPI {
 
   // End-to-End Pipeline APIs
   endToEnd: {
-    start: (config: import('./endToEnd').EndToEndConfig) => Promise<{
+    start: (config: EndToEndConfig) => Promise<{
       success: boolean;
       finalStage: string;
       outputs: {
         videoPath?: string;
         audioPath?: string;
         thumbnailPath?: string;
-        subtitles?: import('./subtitle').SubtitleItem[];
+        subtitles?: SubtitleItem[];
         subtitlePath?: string;
         outputVideoPath?: string;
       };
@@ -630,25 +640,29 @@ export interface ElectronAPI {
         stageProgress: number;
         overallProgress: number;
         message: string;
-        videoInfo?: import('./download').VideoInfo;
-        downloadProgress?: import('./download').DownloadProgress;
+        videoInfo?: VideoInfo;
+        downloadProgress?: DownloadProgress;
         transcribeProgress?: { percent: number };
-        compressProgress?: import('./compression').CompressionProgress;
+        compressProgress?: CompressionProgress;
         finalStage?: string;
       }) => void
     ) => () => void;
     onGenerateSubtitles: (
-      callback: (data: { config: Record<string, unknown>; videoPath: string; audioPath: string }) => void
+      callback: (data: {
+        config: Record<string, unknown>;
+        videoPath: string;
+        audioPath: string;
+      }) => void
     ) => () => void;
     sendSubtitleResult: (result: {
       success: boolean;
-      subtitles?: import('./subtitle').SubtitleItem[];
+      subtitles?: SubtitleItem[];
       subtitlePath?: string;
       subtitleContent?: string;
       subtitleFormat?: string;
       error?: string;
     }) => void;
-    sendSubtitleProgress: (progress: import('./api').ChunkStatus) => void;
+    sendSubtitleProgress: (progress: ChunkStatus) => void;
     onAbortSubtitleGeneration: (callback: () => void) => () => void;
   };
 }

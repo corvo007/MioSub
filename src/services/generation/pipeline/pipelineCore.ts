@@ -9,7 +9,7 @@
  */
 
 import { GoogleGenAI } from '@google/genai';
-import { type PipelineContext, type VideoInfo } from '@/types/pipeline';
+import { type PipelineContext, type PipelineVideoInfo } from '@/types/pipeline';
 import { type AppSettings } from '@/types/settings';
 import { type ChunkStatus } from '@/types/api';
 import { UsageReporter } from './usageReporter';
@@ -25,7 +25,7 @@ export interface PipelineInitOptions {
   settings: AppSettings;
   onProgress?: (update: ChunkStatus) => void;
   signal?: AbortSignal;
-  videoInfo?: VideoInfo;
+  videoInfo?: PipelineVideoInfo;
   /** Override isDebug detection (for testing) */
   isDebugOverride?: boolean;
   /** Skip OpenAI key validation (for proofread-only operations) */

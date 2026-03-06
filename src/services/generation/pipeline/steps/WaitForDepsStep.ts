@@ -79,7 +79,10 @@ export class WaitForDepsStep extends BaseStep<WaitForDepsInput, WaitForDepsOutpu
             speakerProfilePromise,
             new Promise<never>((_, reject) => {
               if (signal.aborted) reject(new Error('Operation cancelled'));
-              else signal.addEventListener('abort', () => reject(new Error('Operation cancelled')), { once: true });
+              else
+                signal.addEventListener('abort', () => reject(new Error('Operation cancelled')), {
+                  once: true,
+                });
             }),
           ]);
         } else {

@@ -60,7 +60,9 @@ export async function preprocessAudio(
         id: 'vocalSeparation',
         total: 1,
         status: 'processing',
-        message: i18n.t('services:pipeline.status.separatingVocalsProgress', { percent: Math.round(percent) }),
+        message: i18n.t('services:pipeline.status.separatingVocalsProgress', {
+          percent: Math.round(percent),
+        }),
       });
     });
 

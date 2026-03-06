@@ -23,40 +23,6 @@ const HEADER_NAMES = new Set([
 ]);
 
 /**
- * Parse a single CSV line respecting quoted fields
- */
-function parseCsvLine(line: string): string[] {
-  const fields: string[] = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];
-    if (inQuotes) {
-      if (char === '"') {
-        if (i + 1 < line.length && line[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        current += char;
-      }
-    } else if (char === '"') {
-      inQuotes = true;
-    } else if (char === ',') {
-      fields.push(current);
-      current = '';
-    } else {
-      current += char;
-    }
-  }
-  fields.push(current);
-  return fields;
-}
-
-/**
  * RFC 4180-compliant CSV parser that handles quoted fields with embedded newlines.
  */
 function parseCSVLines(content: string): string[][] {
@@ -88,13 +54,13 @@ function parseCSVLines(content: string): string[][] {
         currentField = '';
       } else if (char === '\r' && nextChar === '\n') {
         currentRow.push(currentField.trim());
-        if (currentRow.some(f => f.length > 0)) rows.push(currentRow);
+        if (currentRow.some((f) => f.length > 0)) rows.push(currentRow);
         currentRow = [];
         currentField = '';
         i++;
       } else if (char === '\n') {
         currentRow.push(currentField.trim());
-        if (currentRow.some(f => f.length > 0)) rows.push(currentRow);
+        if (currentRow.some((f) => f.length > 0)) rows.push(currentRow);
         currentRow = [];
         currentField = '';
       } else {
@@ -105,7 +71,7 @@ function parseCSVLines(content: string): string[][] {
 
   if (currentField || currentRow.length > 0) {
     currentRow.push(currentField.trim());
-    if (currentRow.some(f => f.length > 0)) rows.push(currentRow);
+    if (currentRow.some((f) => f.length > 0)) rows.push(currentRow);
   }
 
   return rows;

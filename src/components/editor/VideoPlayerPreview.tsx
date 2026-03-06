@@ -699,6 +699,7 @@ export const VideoPlayerPreview = forwardRef<VideoPlayerPreviewRef, VideoPlayerP
         handleVolumeChange,
         onToggleSourceText,
         showSourceText,
+        setStoreVideoDimensions,
       ]
     ); // Removed dockedHeight dependency
 
