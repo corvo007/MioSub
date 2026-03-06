@@ -54,7 +54,7 @@ export const transcribeWithOpenAIChat = async (
 
     // Handle external signal
     if (signal) {
-      signal.addEventListener('abort', () => controller.abort());
+      signal.addEventListener('abort', () => controller.abort(), { once: true });
     }
 
     const response = await fetch(`${baseUrl}/chat/completions`, {

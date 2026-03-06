@@ -57,6 +57,61 @@ function parseCsvLine(line: string): string[] {
 }
 
 /**
+ * RFC 4180-compliant CSV parser that handles quoted fields with embedded newlines.
+ */
+function parseCSVLines(content: string): string[][] {
+  const rows: string[][] = [];
+  let currentRow: string[] = [];
+  let currentField = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i];
+    const nextChar = content[i + 1];
+
+    if (inQuotes) {
+      if (char === '"') {
+        if (nextChar === '"') {
+          currentField += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        currentField += char;
+      }
+    } else {
+      if (char === '"') {
+        inQuotes = true;
+      } else if (char === ',') {
+        currentRow.push(currentField.trim());
+        currentField = '';
+      } else if (char === '\r' && nextChar === '\n') {
+        currentRow.push(currentField.trim());
+        if (currentRow.some(f => f.length > 0)) rows.push(currentRow);
+        currentRow = [];
+        currentField = '';
+        i++;
+      } else if (char === '\n') {
+        currentRow.push(currentField.trim());
+        if (currentRow.some(f => f.length > 0)) rows.push(currentRow);
+        currentRow = [];
+        currentField = '';
+      } else {
+        currentField += char;
+      }
+    }
+  }
+
+  if (currentField || currentRow.length > 0) {
+    currentRow.push(currentField.trim());
+    if (currentRow.some(f => f.length > 0)) rows.push(currentRow);
+  }
+
+  return rows;
+}
+
+/**
  * Detect if the first row is a header row
  */
 function isHeaderRow(fields: string[]): boolean {
@@ -67,21 +122,21 @@ function isHeaderRow(fields: string[]): boolean {
  * Import glossary from CSV string
  */
 export function importGlossaryFromCsv(csvContent: string, filename: string): Glossary {
-  const lines = csvContent.split(/\r?\n/).filter((line) => line.trim() !== '');
+  csvContent = csvContent.replace(/^\uFEFF/, '');
+  const rows = parseCSVLines(csvContent);
 
-  if (lines.length === 0) {
+  if (rows.length === 0) {
     throw new Error(i18n.t('services:glossary.errors.csvEmpty'));
   }
 
   let startIndex = 0;
-  const firstFields = parseCsvLine(lines[0]);
-  if (isHeaderRow(firstFields)) {
+  if (isHeaderRow(rows[0])) {
     startIndex = 1;
   }
 
   const items: GlossaryItem[] = [];
-  for (let i = startIndex; i < lines.length; i++) {
-    const fields = parseCsvLine(lines[i]);
+  for (let i = startIndex; i < rows.length; i++) {
+    const fields = rows[i];
     if (fields.length < 2) continue;
 
     const raw: GlossaryItem = {

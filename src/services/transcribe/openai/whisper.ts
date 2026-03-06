@@ -179,7 +179,7 @@ export const transcribeWithWhisper = async (
         id: generateSubtitleId(),
         startTime: formatTime(seg.start),
         endTime: formatTime(seg.end),
-        original: seg.text.trim(),
+        original: (seg.text ?? '').trim(),
         translated: '', // Filled later by Gemini
       }));
     } catch (e: any) {

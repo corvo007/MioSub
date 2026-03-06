@@ -341,9 +341,9 @@ export async function generateContentWithRetry<T = any>(
           if (usageMeta.promptTokensDetails && Array.isArray(usageMeta.promptTokensDetails)) {
             for (const detail of usageMeta.promptTokensDetails) {
               if (detail.modality === 'TEXT') {
-                textInputTokens = detail.tokenCount || 0;
+                textInputTokens += detail.tokenCount || 0;
               } else if (detail.modality === 'AUDIO') {
-                audioInputTokens = detail.tokenCount || 0;
+                audioInputTokens += detail.tokenCount || 0;
               }
             }
           }

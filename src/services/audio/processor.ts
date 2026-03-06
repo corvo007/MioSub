@@ -190,6 +190,9 @@ export function parseWavToAudioBuffer(arrayBuffer: ArrayBuffer): AudioBuffer {
 
       const dataOffset = offset + 8;
       const dataSize = chunkSize;
+      if (dataOffset + dataSize > arrayBuffer.byteLength) {
+        throw new Error(`Truncated WAV: data chunk extends beyond buffer (offset=${dataOffset}, size=${dataSize}, buffer=${arrayBuffer.byteLength})`);
+      }
       const bytesPerSample = bitsPerSample / 8;
       const numSamples = Math.floor(dataSize / (numChannels * bytesPerSample));
 
@@ -235,13 +238,19 @@ export function parseWavToAudioBuffer(arrayBuffer: ArrayBuffer): AudioBuffer {
 /**
  * Merges multiple AudioBuffers into a single AudioBuffer.
  * Assumes all buffers have the same number of channels.
- * Resamples if necessary to match the target sample rate.
+ * Validates sample rates match the target sample rate.
  */
 export function mergeAudioBuffers(buffers: AudioBuffer[], sampleRate: number): AudioBuffer {
   const ctx = getAudioContext(sampleRate);
 
   if (buffers.length === 0) {
     return ctx.createBuffer(1, 1, sampleRate); // Minimum valid buffer
+  }
+
+  const targetRate = sampleRate || buffers[0]?.sampleRate;
+  const mismatch = buffers.find(b => b.sampleRate !== targetRate);
+  if (mismatch) {
+    console.warn(`[mergeAudioBuffers] Sample rate mismatch: expected ${targetRate}Hz, got ${mismatch.sampleRate}Hz. Using target rate.`);
   }
 
   const numberOfChannels = buffers[0].numberOfChannels;
