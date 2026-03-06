@@ -203,7 +203,7 @@ protocol.registerSchemesAsPrivileged([
       secure: true,
       supportFetchAPI: true,
       stream: true, // Required for video/audio streaming
-      bypassCSP: true, // Bypass Content Security Policy
+      bypassCSP: false,
     },
   },
 ]);
@@ -980,7 +980,11 @@ ipcMain.handle('read-extracted-audio', async (_event, audioPath: string) => {
 // IPC Handler: 读取音频文件 (Fallback)
 ipcMain.handle('read-audio-file', async (_event, filePath: string) => {
   try {
-    const buffer = await fs.promises.readFile(filePath);
+    const normalizedPath = path.normalize(filePath);
+    if (!path.isAbsolute(normalizedPath) || normalizedPath.includes('..')) {
+      return { success: false, error: 'Access denied: invalid path' };
+    }
+    const buffer = await fs.promises.readFile(normalizedPath);
     return buffer.buffer;
   } catch (error: any) {
     console.error('[Main] Failed to read audio file:', error);
@@ -992,7 +996,11 @@ ipcMain.handle('read-audio-file', async (_event, filePath: string) => {
 // IPC Handler: 清理临时音频文件
 ipcMain.handle('cleanup-temp-audio', async (_event, audioPath: string) => {
   try {
-    await cleanupTempAudio(audioPath);
+    const normalizedPath = path.normalize(audioPath);
+    if (!normalizedPath.startsWith(os.tmpdir())) {
+      return { success: false, error: 'Access denied: path must be within temp directory' };
+    }
+    await cleanupTempAudio(normalizedPath);
     return { success: true };
   } catch (error: any) {
     console.error('[Main] Failed to cleanup temp audio:', error);
@@ -2120,19 +2128,22 @@ app.on('ready', async () => {
       const decodedPath = decodeURIComponent(pathPart);
       const filePath = path.normalize(decodedPath);
 
-      // Security check: ensure absolute path and no traversal if possible (though we normalized)
-      // Actually we just use it.
-
-      // Check if file exists
-      if (!fs.existsSync(filePath)) {
-        console.error('[local-video] File not found:', filePath);
-        return new Response('File not found: ' + filePath, { status: 404 });
+      if (!path.isAbsolute(filePath) || filePath.includes('..')) {
+        return new Response('Access denied: invalid path', { status: 403 });
       }
 
-      const stat = fs.statSync(filePath);
+      let stat: fs.Stats;
+      try {
+        stat = await fs.promises.stat(filePath);
+      } catch (err: any) {
+        if (err.code === 'ENOENT') {
+          console.error('[local-video] File not found:', filePath);
+          return new Response('File not found', { status: 404 });
+        }
+        throw err;
+      }
       const fileSize = stat.size;
 
-      // Handle empty files gracefully
       if (fileSize === 0) {
         return new Response(null, {
           status: 200,

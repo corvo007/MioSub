@@ -19,6 +19,7 @@ class MainLogger {
   private isReady = false;
   private queue: string[] = [];
   private isProcessing = false; // Recursion guard for Sentry instrumentation
+  private writeStream: fs.WriteStream | null = null;
 
   constructor() {
     this.hookConsole();
@@ -36,12 +37,13 @@ class MainLogger {
 
       const date = new Date().toISOString().split('T')[0];
       this.logFile = path.join(logDir, `app-${date}.log`);
+      this.writeStream = fs.createWriteStream(this.logFile, { flags: 'a' });
       this.isReady = true;
 
       // Flush queue
       if (this.queue.length > 0) {
         const content = this.queue.join('\n') + '\n';
-        fs.appendFileSync(this.logFile, content);
+        this.writeStream.write(content);
         this.queue = [];
       }
 
@@ -190,12 +192,8 @@ class MainLogger {
       });
 
       // Write to file (String!)
-      if (this.isReady && this.logFile) {
-        try {
-          fs.appendFileSync(this.logFile, fullLogLine + os.EOL);
-        } catch (_err) {
-          // Ignore write errors
-        }
+      if (this.isReady && this.writeStream) {
+        this.writeStream.write(fullLogLine + os.EOL);
       } else {
         this.queue.push(fullLogLine);
       }

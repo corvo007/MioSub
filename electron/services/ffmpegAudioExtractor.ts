@@ -35,12 +35,14 @@ export const getFFprobePath = () => getBinaryPath('ffprobe');
 // Track active audio extraction commands for cleanup on app quit
 const activeAudioCommands: Set<ReturnType<typeof ffmpeg>> = new Set();
 
-// Track current audio extraction for cancellation support
-let currentAudioCommand: {
+// Track active audio extractions for cancellation support (supports concurrent extractions)
+interface AudioExtractionJob {
   command: ReturnType<typeof ffmpeg>;
   outputPath: string;
-} | null = null;
-let isAudioExtractionCancelled = false;
+  isCancelled: boolean;
+}
+const activeJobs = new Map<number, AudioExtractionJob>();
+let jobCounter = 0;
 
 /**
  * Kill all active audio extraction processes.
@@ -62,23 +64,23 @@ export function killAllAudioExtractions(): void {
  * Returns true if cancellation was successful, false if no extraction was running.
  */
 export function cancelAudioExtraction(): boolean {
-  if (currentAudioCommand) {
+  if (activeJobs.size > 0) {
     try {
-      isAudioExtractionCancelled = true;
-      currentAudioCommand.command.kill('SIGKILL');
-      const outputPath = currentAudioCommand.outputPath;
-      // Delay cleanup to allow process to release file handle
-      setTimeout(() => {
-        if (fs.existsSync(outputPath)) {
-          try {
-            fs.unlinkSync(outputPath);
-          } catch (_e) {
-            // Ignore cleanup errors
+      for (const [id, job] of activeJobs) {
+        job.isCancelled = true;
+        try {
+          job.command.kill('SIGKILL');
+        } catch (_e) {}
+        const outputPath = job.outputPath;
+        setTimeout(() => {
+          if (fs.existsSync(outputPath)) {
+            try {
+              fs.unlinkSync(outputPath);
+            } catch (_e) {}
           }
-        }
-      }, 500);
-      activeAudioCommands.delete(currentAudioCommand.command);
-      currentAudioCommand = null;
+        }, 500);
+        activeJobs.delete(id);
+      }
       return true;
     } catch (_e) {
       return false;
@@ -154,8 +156,7 @@ export async function extractAudioFromVideo(
   const outputPath = path.join(tempDir, outputFileName);
 
   return new Promise((resolve, reject) => {
-    // Reset cancellation flag at start
-    isAudioExtractionCancelled = false;
+    const jobId = ++jobCounter;
 
     let command = ffmpeg(videoPath)
       .outputOptions([
@@ -211,36 +212,30 @@ export async function extractAudioFromVideo(
       });
     }
 
-    // 监听完成
     command.on('end', () => {
       activeAudioCommands.delete(command);
-      currentAudioCommand = null;
+      activeJobs.delete(jobId);
       resolve(outputPath);
     });
 
-    // 监听错误
     command.on('error', (err) => {
+      const job = activeJobs.get(jobId);
       activeAudioCommands.delete(command);
-      currentAudioCommand = null;
-      // Check if this was a cancellation
-      if (isAudioExtractionCancelled) {
+      activeJobs.delete(jobId);
+      if (job?.isCancelled) {
         reject(new ExpectedError('Audio extraction cancelled'));
         return;
       }
-      // 清理可能生成的临时文件
       if (fs.existsSync(outputPath)) {
         fs.unlinkSync(outputPath);
       }
       reject(new Error(`FFmpeg extraction failed: ${err.message}`));
     });
 
-    // 开始处理
     command.run();
 
-    // Track this command for cleanup on app quit
     activeAudioCommands.add(command);
-    // Track as current command for cancellation
-    currentAudioCommand = { command, outputPath };
+    activeJobs.set(jobId, { command, outputPath, isCancelled: false });
   });
 }
 
@@ -312,8 +307,7 @@ export async function extractAudioSegment(
   const outputPath = path.join(tempDir, outputFileName);
 
   return new Promise((resolve, reject) => {
-    // Reset cancellation flag at start
-    isAudioExtractionCancelled = false;
+    const jobId = ++jobCounter;
 
     // Use -ss before -i for fast seeking (input seeking)
     let command = ffmpeg(videoPath)
@@ -367,36 +361,30 @@ export async function extractAudioSegment(
       });
     }
 
-    // Listen for completion
     command.on('end', () => {
       activeAudioCommands.delete(command);
-      currentAudioCommand = null;
+      activeJobs.delete(jobId);
       resolve(outputPath);
     });
 
-    // Listen for errors
     command.on('error', (err) => {
+      const job = activeJobs.get(jobId);
       activeAudioCommands.delete(command);
-      currentAudioCommand = null;
-      // Check if this was a cancellation
-      if (isAudioExtractionCancelled) {
+      activeJobs.delete(jobId);
+      if (job?.isCancelled) {
         reject(new ExpectedError('Audio extraction cancelled'));
         return;
       }
-      // Clean up temp file if it was created
       if (fs.existsSync(outputPath)) {
         fs.unlinkSync(outputPath);
       }
       reject(new Error(`FFmpeg segment extraction failed: ${err.message}`));
     });
 
-    // Start processing
     command.run();
 
-    // Track this command for cleanup on app quit
     activeAudioCommands.add(command);
-    // Track as current command for cancellation
-    currentAudioCommand = { command, outputPath };
+    activeJobs.set(jobId, { command, outputPath, isCancelled: false });
   });
 }
 
@@ -473,10 +461,8 @@ export async function extractMultipleAudioSegments(
   const outputPath = path.join(tempDir, outputFileName);
 
   return new Promise((resolve, reject) => {
-    isAudioExtractionCancelled = false;
+    const jobId = ++jobCounter;
 
-    // Build FFmpeg command with multiple inputs
-    // Each segment becomes a separate input with -ss and -t
     const inputArgs: string[] = [];
     const filterInputs: string[] = [];
 
@@ -485,7 +471,6 @@ export async function extractMultipleAudioSegments(
       filterInputs.push(`[${i}:a]`);
     });
 
-    // Build concat filter
     const concatFilter = `${filterInputs.join('')}concat=n=${segments.length}:v=0:a=1[out]`;
 
     if (onLog) {
@@ -493,7 +478,6 @@ export async function extractMultipleAudioSegments(
       onLog(`[DEBUG] Concat filter: ${concatFilter}`);
     }
 
-    // Use spawn directly for complex filter graphs
     const { spawn } = require('child_process');
     const ffmpegBin = getFFmpegPath();
 
@@ -507,7 +491,7 @@ export async function extractMultipleAudioSegments(
       String(sampleRate),
       '-ac',
       String(channels),
-      '-y', // Overwrite output
+      '-y',
       outputPath,
     ];
 
@@ -517,18 +501,15 @@ export async function extractMultipleAudioSegments(
 
     const proc = spawn(ffmpegBin, args);
 
-    // Create a wrapper to track this process for cleanup/cancellation
     const procWrapper = {
       kill: (signal: string) => {
         try {
           proc.kill(signal);
-        } catch (_e) {
-          // Ignore if process already exited
-        }
+        } catch (_e) {}
       },
     } as ReturnType<typeof ffmpeg>;
     activeAudioCommands.add(procWrapper);
-    currentAudioCommand = { command: procWrapper, outputPath };
+    activeJobs.set(jobId, { command: procWrapper, outputPath, isCancelled: false });
 
     proc.stderr.on('data', (data: Buffer) => {
       const line = data.toString();
@@ -545,10 +526,11 @@ export async function extractMultipleAudioSegments(
     });
 
     proc.on('close', (code: number) => {
+      const job = activeJobs.get(jobId);
       activeAudioCommands.delete(procWrapper);
-      currentAudioCommand = null;
+      activeJobs.delete(jobId);
 
-      if (isAudioExtractionCancelled) {
+      if (job?.isCancelled) {
         if (fs.existsSync(outputPath)) {
           fs.unlinkSync(outputPath);
         }
@@ -568,7 +550,7 @@ export async function extractMultipleAudioSegments(
 
     proc.on('error', (err: Error) => {
       activeAudioCommands.delete(procWrapper);
-      currentAudioCommand = null;
+      activeJobs.delete(jobId);
 
       if (fs.existsSync(outputPath)) {
         fs.unlinkSync(outputPath);

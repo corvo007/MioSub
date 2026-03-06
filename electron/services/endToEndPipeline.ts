@@ -15,7 +15,7 @@ import fs from 'fs';
 import { ytDlpService, classifyError } from './ytdlp.ts';
 import { ExpectedError } from '../utils/expectedError.ts';
 import { extractAudioFromVideo } from './ffmpegAudioExtractor.ts';
-import { VideoCompressorService } from './videoCompressor.ts';
+import { getCompressorInstance } from './videoCompressor.ts';
 import { analyticsService } from './analyticsService.ts';
 import { t } from '../i18n.ts';
 import type {
@@ -97,7 +97,7 @@ export class EndToEndPipeline {
   private startTime: number = 0;
 
   constructor() {
-    this.videoCompressor = new VideoCompressorService();
+    this.videoCompressor = getCompressorInstance();
   }
 
   /**
@@ -575,11 +575,24 @@ export class EndToEndPipeline {
         return;
       }
 
-      // Set up response handler
+      if (this.isAborted) {
+        reject(new Error('Pipeline was aborted'));
+        return;
+      }
+
       const responseChannel = 'end-to-end:subtitle-complete';
       const progressChannel = 'end-to-end:subtitle-progress';
+      const SUBTITLE_GENERATION_TIMEOUT = 30 * 60 * 1000;
 
-      // Chunk progress handler
+      const cleanup = () => {
+        clearTimeout(timeoutId);
+        ipcMain.removeListener(responseChannel, responseHandler);
+        ipcMain.removeListener(progressChannel, progressHandler);
+        if (this.mainWindow && !this.mainWindow.isDestroyed()) {
+          this.mainWindow.removeListener('closed', onWindowClosed);
+        }
+      };
+
       const progressHandler = (_event: Electron.IpcMainEvent, chunkStatus: any) => {
         if (onChunkProgress) {
           onChunkProgress(chunkStatus);
@@ -599,16 +612,27 @@ export class EndToEndPipeline {
           chunkAnalytics?: any[];
         }
       ) => {
-        // Remove listeners after response
-        ipcMain.removeListener(responseChannel, responseHandler);
-        ipcMain.removeListener(progressChannel, progressHandler);
+        cleanup();
         resolve(result);
       };
+
+      const onWindowClosed = () => {
+        cleanup();
+        reject(new Error('Main window was closed during subtitle generation'));
+      };
+
+      const timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error('Subtitle generation timed out after 30 minutes'));
+      }, SUBTITLE_GENERATION_TIMEOUT);
+
+      if (this.mainWindow) {
+        this.mainWindow.on('closed', onWindowClosed);
+      }
 
       ipcMain.on(progressChannel, progressHandler);
       ipcMain.on(responseChannel, responseHandler);
 
-      // Send request to renderer
       this.mainWindow.webContents.send('end-to-end:generate-subtitles', {
         config,
         videoPath,
