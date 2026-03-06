@@ -315,7 +315,7 @@ export function useEndToEnd(): UseEndToEndReturn {
           );
           setPreflightContinueCallback(() => () => {
             skipPreflightRef.current = true;
-            startPipeline(globalSettings);
+            void startPipeline(globalSettings);
           });
           return null;
         }

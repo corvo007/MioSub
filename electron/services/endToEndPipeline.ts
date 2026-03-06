@@ -88,7 +88,7 @@ function calculateOverallProgress(
 export class EndToEndPipeline {
   private isAborted: boolean = false;
   private mainWindow: BrowserWindow | null = null;
-  private videoCompressor: VideoCompressorService;
+  private videoCompressor: ReturnType<typeof getCompressorInstance>;
 
   // Current execution state
   private currentStage: PipelineStage = 'idle';

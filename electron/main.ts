@@ -11,6 +11,7 @@ import {
   protocol,
 } from 'electron';
 import path from 'path';
+import os from 'os';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
@@ -1399,15 +1400,11 @@ ipcMain.handle('vocal:detect-gpu', () => {
 });
 
 ipcMain.handle('vocal:separate', async (event, input: { videoPath: string; modelPath: string }) => {
-  return vocalSeparatorService.separate(
-    input.videoPath,
-    input.modelPath,
-    (pct) => {
-      if (!event.sender.isDestroyed()) {
-        event.sender.send('vocal:progress', { percent: pct });
-      }
+  return vocalSeparatorService.separate(input.videoPath, input.modelPath, (pct) => {
+    if (!event.sender.isDestroyed()) {
+      event.sender.send('vocal:progress', { percent: pct });
     }
-  );
+  });
 });
 
 ipcMain.handle('vocal:abort', () => {

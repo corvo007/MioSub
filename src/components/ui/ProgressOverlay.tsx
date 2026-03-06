@@ -27,7 +27,14 @@ export const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
 
   const chunks = (Object.values(chunkProgress) as ChunkStatus[]).sort((a, b) => {
     // Prioritize system tasks (init first, then others)
-    const systemOrder = { init: 0, decoding: 1, vocalSeparation: 2, segmenting: 3, glossary: 4, diarization: 5 };
+    const systemOrder = {
+      init: 0,
+      decoding: 1,
+      vocalSeparation: 2,
+      segmenting: 3,
+      glossary: 4,
+      diarization: 5,
+    };
     const orderA = systemOrder[a.id as keyof typeof systemOrder] ?? 999;
     const orderB = systemOrder[b.id as keyof typeof systemOrder] ?? 999;
 
@@ -39,7 +46,14 @@ export const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
     return String(a.id).localeCompare(String(b.id));
   });
 
-  const systemIds = ['init', 'decoding', 'vocalSeparation', 'segmenting', 'glossary', 'diarization'];
+  const systemIds = [
+    'init',
+    'decoding',
+    'vocalSeparation',
+    'segmenting',
+    'glossary',
+    'diarization',
+  ];
   const systemChunks = chunks.filter((c) => systemIds.includes(String(c.id)));
   const contentChunks = chunks.filter((c) => !systemIds.includes(String(c.id)));
 
@@ -126,7 +140,9 @@ export const ProgressOverlay: React.FC<ProgressOverlayProps> = ({
                 <span className="text-slate-700 text-sm font-medium">
                   {typeof chunk.id === 'number'
                     ? t('chunks.segment', { id: chunk.id })
-                    : t(`chunks.${chunk.id}`, { defaultValue: t('chunks.segment', { id: chunk.id }) })}
+                    : t(`chunks.${chunk.id}`, {
+                        defaultValue: t('chunks.segment', { id: chunk.id }),
+                      })}
                 </span>
               </div>
               <div className="flex-1 flex items-center justify-end space-x-4">
