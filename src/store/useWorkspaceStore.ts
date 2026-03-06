@@ -277,6 +277,9 @@ export const useWorkspaceStore = create<WorkspaceState & WorkspaceActions>()(
         isLoadingFile: false,
         isLoadingSubtitle: false,
         speakerProfiles: [],
+        preflightErrors: [],
+        showPreflightModal: false,
+        preflightContinueCallback: null,
         // Note: showSourceText is intentionally preserved across workspace resets
       }),
 

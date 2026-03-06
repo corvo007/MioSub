@@ -86,6 +86,7 @@ export function useProgressSmoothing<T extends { percent: number }>(
   const rafIdRef = useRef<number | null>(null);
   const lastResetFieldValueRef = useRef<unknown>(undefined);
   const movingAveragesRef = useRef<Map<keyof T, MovingAverage>>(new Map());
+  const rawProgressRef = useRef<T | null>(rawProgress);
 
   // Memoize smoothedFields key for dependency array
   const smoothedFieldsKey = smoothedFields.join(',');
@@ -117,8 +118,9 @@ export function useProgressSmoothing<T extends { percent: number }>(
 
   // Animation loop
   useEffect(() => {
+    rawProgressRef.current = rawProgress;
+
     if (!rawProgress) {
-      // If raw progress becomes null, stop animation but keep last smoothed value
       if (rafIdRef.current !== null) {
         cancelAnimationFrame(rafIdRef.current);
         rafIdRef.current = null;
@@ -178,14 +180,14 @@ export function useProgressSmoothing<T extends { percent: number }>(
 
         // Build smoothed progress object
         setSmoothedProgress((prev) => {
-          if (!rawProgress) return prev;
+          const currentRaw = rawProgressRef.current;
+          if (!currentRaw) return prev;
 
-          const result = { ...rawProgress, percent: current };
+          const result = { ...currentRaw, percent: current };
 
-          // Apply moving average to specified fields
           for (const field of smoothedFields) {
             const avg = movingAveragesRef.current.get(field);
-            const rawValue = rawProgress[field];
+            const rawValue = currentRaw[field];
             if (avg && typeof rawValue === 'number') {
               (result as Record<keyof T, unknown>)[field] = avg.push(rawValue);
             }

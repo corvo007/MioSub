@@ -800,7 +800,4 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
       </SearchReplaceProvider>
     );
   },
-  (prev, next) => {
-    return prev.activeTab === next.activeTab && prev.currentPlayTime === next.currentPlayTime;
-  }
 );

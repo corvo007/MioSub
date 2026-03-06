@@ -109,52 +109,50 @@ export function useSearchReplace(subtitles: SubtitleItem[]): UseSearchReplaceRet
     [debouncedSearchPattern, state.replaceWith, state.isRegex, state.caseSensitive]
   );
 
-  // Find all matches with performance protection and error handling
-  const matches = useMemo(() => {
+  // Find all matches with performance protection and error handling (pure computation)
+  const { matches, regexErrorValue } = useMemo(() => {
     if (!debouncedSearchPattern || debouncedSearchPattern.length < MIN_SEARCH_LENGTH) {
-      setRegexError(null);
-      return [];
+      return { matches: [] as SearchMatch[], regexErrorValue: null as string | null };
     }
 
-    // Skip search for very large datasets with short patterns (non-regex)
     if (
       !state.isRegex &&
       debouncedSearchPattern.length < 2 &&
       subtitles.length > MAX_SUBTITLES_FOR_SHORT_PATTERN
     ) {
-      return [];
+      return { matches: [] as SearchMatch[], regexErrorValue: null as string | null };
     }
 
     const result: SearchMatch[] = [];
 
     try {
       const regex = createSearchRegex(debouncedConfig);
-      setRegexError(null);
 
       subtitles.forEach((sub, index) => {
-        // Check original
         if (sub.original && regex.test(sub.original)) {
           result.push({ subtitleId: sub.id, field: 'original', index });
         }
         regex.lastIndex = 0;
 
-        // Check translated
         if (sub.translated && regex.test(sub.translated)) {
           result.push({ subtitleId: sub.id, field: 'translated', index });
         }
         regex.lastIndex = 0;
       });
+
+      return { matches: result, regexErrorValue: null as string | null };
     } catch (e) {
-      // Only show error in regex mode
       if (state.isRegex) {
         const message = e instanceof Error ? e.message : 'Invalid regex pattern';
-        setRegexError(message);
+        return { matches: [] as SearchMatch[], regexErrorValue: message };
       }
-      return [];
+      return { matches: [] as SearchMatch[], regexErrorValue: null as string | null };
     }
-
-    return result;
   }, [subtitles, debouncedSearchPattern, state.isRegex, debouncedConfig]);
+
+  useEffect(() => {
+    setRegexError(regexErrorValue);
+  }, [regexErrorValue]);
 
   // A2: Build O(1) lookup set for isMatch
   const matchSet = useMemo(() => {
