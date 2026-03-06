@@ -86,6 +86,9 @@
   },
   "pipeline": {
     "status": {
+      "separatingVocals": "ボーカル分離中...",
+      "separatingVocalsProgress": "ボーカル分離中... {{percent}}%",
+      "separatingVocalsComplete": "ボーカル分離完了",
       "decoding": "音声をデコード中...",
       "decodingUsingCache": "キャッシュされた音声を使用中（長さ: {{duration}}）",
       "decodingComplete": "音声デコード完了（長さ: {{duration}}）",

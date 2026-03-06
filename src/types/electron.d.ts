@@ -384,9 +384,9 @@ export interface ElectronAPI {
 
   // Video Compression APIs
   compression: {
-    compress: (inputPath: string, outputPath: string, options: any) => Promise<string>;
+    compress: (inputPath: string, outputPath: string, options: import('./compression').CompressionOptions) => Promise<string>;
     cancel: () => Promise<{ success: boolean }>;
-    getInfo: (filePath: string) => Promise<any>;
+    getInfo: (filePath: string) => Promise<{ duration: number; width: number; height: number; codec: string; size: number }>;
     getHwAccelInfo: () => Promise<{
       available: boolean;
       encoders: {
@@ -400,7 +400,7 @@ export interface ElectronAPI {
       preferredH264: string;
       preferredH265: string;
     }>;
-    onProgress: (callback: (progress: any) => void) => () => void;
+    onProgress: (callback: (progress: import('./compression').CompressionProgress) => void) => () => void;
   };
 
   // Vocal Separation APIs
@@ -598,14 +598,14 @@ export interface ElectronAPI {
 
   // End-to-End Pipeline APIs
   endToEnd: {
-    start: (config: any) => Promise<{
+    start: (config: import('./endToEnd').EndToEndConfig) => Promise<{
       success: boolean;
       finalStage: string;
       outputs: {
         videoPath?: string;
         audioPath?: string;
         thumbnailPath?: string;
-        subtitles?: any[];
+        subtitles?: import('./subtitle').SubtitleItem[];
         subtitlePath?: string;
         outputVideoPath?: string;
       };
@@ -621,7 +621,7 @@ export interface ElectronAPI {
     abort: () => Promise<{ success: boolean }>;
     getStatus: () => Promise<{
       stage: string;
-      outputs: any;
+      outputs: Record<string, string | undefined>;
       isRunning: boolean;
     }>;
     onProgress: (
@@ -630,25 +630,25 @@ export interface ElectronAPI {
         stageProgress: number;
         overallProgress: number;
         message: string;
-        videoInfo?: any;
-        downloadProgress?: any;
-        transcribeProgress?: any;
-        compressProgress?: any;
+        videoInfo?: import('./download').VideoInfo;
+        downloadProgress?: import('./download').DownloadProgress;
+        transcribeProgress?: { percent: number };
+        compressProgress?: import('./compression').CompressionProgress;
         finalStage?: string;
       }) => void
     ) => () => void;
     onGenerateSubtitles: (
-      callback: (data: { config: any; videoPath: string; audioPath: string }) => void
+      callback: (data: { config: Record<string, unknown>; videoPath: string; audioPath: string }) => void
     ) => () => void;
     sendSubtitleResult: (result: {
       success: boolean;
-      subtitles?: any[];
+      subtitles?: import('./subtitle').SubtitleItem[];
       subtitlePath?: string;
       subtitleContent?: string;
       subtitleFormat?: string;
       error?: string;
     }) => void;
-    sendSubtitleProgress: (progress: any) => void;
+    sendSubtitleProgress: (progress: import('./api').ChunkStatus) => void;
     onAbortSubtitleGeneration: (callback: () => void) => () => void;
   };
 }

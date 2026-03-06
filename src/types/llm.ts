@@ -29,13 +29,9 @@ export interface AdapterCapabilities {
 }
 
 /**
- * Token usage tracking
+ * Token usage tracking — re-exported from api.ts (canonical definition)
  */
-export interface TokenUsage {
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
-}
+export type { TokenUsage } from './api';
 
 /**
  * Audio input for multimodal requests

@@ -2,7 +2,7 @@ import { type SubtitleItem } from '@/types/subtitle';
 import { type GlossaryExtractionResult, type GlossaryItem } from '@/types/glossary';
 import { type SpeakerProfile } from '@/services/generation/extractors/speakerProfile';
 import {
-  type VideoInfo,
+  type PipelineVideoInfo,
   type ArtifactMetadata,
   type ChunkInfo,
   type PipelineInfo,
@@ -21,12 +21,12 @@ export interface ChunkArtifactOptions {
   stage: 'whisper' | 'refinement' | 'alignment' | 'translation';
   chunkStart?: number;
   chunkEnd?: number;
-  videoInfo?: VideoInfo;
+  videoInfo?: PipelineVideoInfo;
 }
 
 /** Options for full SRT artifact saving */
 export interface FullSrtArtifactOptions {
-  videoInfo?: VideoInfo;
+  videoInfo?: PipelineVideoInfo;
   totalChunks?: number;
 }
 

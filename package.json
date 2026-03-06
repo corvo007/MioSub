@@ -181,7 +181,7 @@
             "ffmpeg.exe",
             "ffprobe.exe",
             "cpp-ort-aligner.exe",
-            "mel-band-roformer-cli.exe",
+            "bs-roformer-cli.exe",
             "*.dll",
             "ggml-silero-v6.2.0.bin",
             "Chinese_to_Pinyin.txt",

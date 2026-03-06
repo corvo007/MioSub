@@ -71,9 +71,9 @@ export interface ChunkAnalytics {
 export interface TokenUsage {
   promptTokens: number;
   candidatesTokens: number;
+  completionTokens?: number;
   totalTokens: number;
   modelName: string;
-  // Detailed breakdown by modality
   textInputTokens?: number;
   audioInputTokens?: number;
   thoughtsTokens?: number;

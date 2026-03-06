@@ -5,7 +5,7 @@ import { type AppSettings } from '@/types/settings';
 import { type GlossaryItem, type GlossaryExtractionResult } from '@/types/glossary';
 import { type SpeakerProfile } from '@/services/generation/extractors/speakerProfile';
 import { type ChunkStatus } from '@/types/api';
-import { type VideoInfo } from '@/types/artifact';
+import { type PipelineVideoInfo } from '@/types/artifact';
 import { type UsageReporter } from '@/services/generation/pipeline/usageReporter';
 
 // Re-export common types for convenience
@@ -16,7 +16,7 @@ export type {
   SubtitleItem,
   AppSettings,
   ChunkStatus,
-  VideoInfo,
+  PipelineVideoInfo,
 };
 
 // Shared Context for Pipeline Stages
@@ -32,7 +32,7 @@ export interface PipelineContext {
   geminiKey: string;
   openaiKey?: string;
   /** Video information for artifact metadata */
-  videoInfo?: VideoInfo;
+  videoInfo?: PipelineVideoInfo;
 }
 
 // Context for Chunk Processing

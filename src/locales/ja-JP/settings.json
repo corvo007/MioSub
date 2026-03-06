@@ -295,7 +295,10 @@
       "checkNow": "更新を確認",
       "download": "更新をダウンロード",
       "restart": "再起動して更新",
-      "goToDownload": "Go to Download"
+      "goToDownload": "ダウンロードページへ",
+      "componentUpdate": "コンポーネント更新",
+      "updatingComponents": "更新中 {{progress}}%",
+      "retryUpdate": "更新を再試行"
     },
     "privacy": {
       "title": "データとプライバシー",
