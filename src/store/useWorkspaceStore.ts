@@ -62,7 +62,7 @@ interface WorkspaceState {
     code: string;
     message: string;
     field?: string;
-    tab?: 'services' | 'enhance';
+    tab?: 'services' | 'enhance' | 'about';
     severity?: 'error' | 'warning';
   }[];
   showPreflightModal: boolean;
@@ -108,7 +108,7 @@ interface WorkspaceActions {
       code: string;
       message: string;
       field?: string;
-      tab?: 'services' | 'enhance';
+      tab?: 'services' | 'enhance' | 'about';
       severity?: 'error' | 'warning';
     }[]
   ) => void;

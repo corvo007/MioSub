@@ -2,6 +2,7 @@
   "progress": {
     "elapsed": "用时: {{time}}",
     "chunkLabels": {
+      "vocalSeparation": "人声分离",
       "decoding": "解码音频",
       "segmenting": "分段处理",
       "glossary": "提取术语",

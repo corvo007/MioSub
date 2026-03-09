@@ -268,6 +268,7 @@
     "downloadUpdate": "更新をダウンロード",
     "viewRelease": "リリースを表示",
     "aligner": "Aligner バージョン",
+    "bsRoformer": "BSRoformer",
     "ffmpeg": "FFmpeg バージョン",
     "ffprobe": "FFprobe バージョン",
     "ytdlp": "yt-dlp バージョン",

@@ -36,7 +36,7 @@ type UpdateStatus = {
 };
 
 type BinaryUpdateInfo = {
-  name: 'aligner' | 'ytdlp' | 'whisper';
+  name: 'aligner' | 'ytdlp' | 'whisper' | 'bsroformer';
   current: string;
   latest: string;
   hasUpdate: boolean;
@@ -147,7 +147,7 @@ export const AboutTab: React.FC = () => {
   };
 
   const handleDownloadBinary = async (
-    name: 'aligner' | 'ytdlp' | 'whisper',
+    name: 'aligner' | 'ytdlp' | 'whisper' | 'bsroformer',
     downloadUrl: string
   ) => {
     if (!window.electronAPI?.update?.downloadBinary) return;
@@ -188,7 +188,7 @@ export const AboutTab: React.FC = () => {
     }
   };
 
-  const handleOpenBinaryRelease = (name: 'aligner' | 'ytdlp' | 'whisper') => {
+  const handleOpenBinaryRelease = (name: 'aligner' | 'ytdlp' | 'whisper' | 'bsroformer') => {
     void window.electronAPI?.update?.openBinaryRelease(name);
   };
 
@@ -270,6 +270,11 @@ export const AboutTab: React.FC = () => {
               key: 'whisper',
             },
             { label: t('about.aligner', 'Aligner'), value: info?.versions.aligner, key: 'aligner' },
+            {
+              label: t('about.bsRoformer', 'BSRoformer'),
+              value: info?.versions.bsRoformer,
+              key: 'bsroformer',
+            },
           ].map((item) => {
             const updateInfo = binaryUpdate.updates.find((u) => u.name === item.key);
             const isDownloading = item.key in binaryUpdate.downloading;

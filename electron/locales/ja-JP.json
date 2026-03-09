@@ -122,7 +122,11 @@
     "binaryNotExecutable": "{{path}} は存在しますが実行できません。macOS/Linux では実行権限を確認してください（chmod +x）。設定 > バージョン情報 > アップデートを確認 から再ダウンロードすることもできます",
     "ctcCompanionLibMissing": "アライナーに必要な動的ライブラリ {{lib}} が見つかりません。設定 > バージョン情報 > アップデートを確認 から再ダウンロードできます",
     "bundledBinaryNotFound": "{{name}} が見つかりません。インストールが破損している可能性があります。アプリを再インストールしてください。",
-    "downloadableBinaryNotFound": "{{name}} が見つかりません。設定 > バージョン情報 > アップデートを確認 から再ダウンロードできます"
+    "downloadableBinaryNotFound": "{{name}} が見つかりません。設定 > バージョン情報 > アップデートを確認 から再ダウンロードできます",
+    "vocalPathEmpty": "ボーカル分離が有効ですが、モデルパスが設定されていません",
+    "vocalModelNotExist": "ボーカル分離モデルファイルが存在しません。移動または削除された可能性があります",
+    "vocalModelInvalidFormat": "ボーカル分離モデル形式が無効です（.gguf 形式が必要）",
+    "vocalModelReadError": "ボーカル分離モデルファイルを読み取れません"
   },
   "endToEnd": {
     "preparingDownload": "ダウンロード準備中...",

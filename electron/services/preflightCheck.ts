@@ -53,6 +53,9 @@ export interface PreflightSettings {
   alignmentModelPath?: string;
   alignerPath?: string;
   alignerVersion?: string;
+  // Vocal Separation
+  useVocalSeparation?: boolean;
+  vocalSeparationModelPath?: string;
 }
 
 // ============================================================================
@@ -257,6 +260,39 @@ export function validateCtcModelDir(
     };
   } catch (_error) {
     return { valid: false, error: t('preflight.ctcModelReadError') };
+  }
+}
+
+/**
+ * Validate vocal separation model file (GGUF format)
+ */
+export function validateVocalSeparationModel(filePath: string): { valid: boolean; error?: string } {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return { valid: false, error: t('preflight.vocalModelNotExist') };
+    }
+
+    if (!filePath.endsWith('.gguf')) {
+      return { valid: false, error: t('preflight.vocalModelInvalidFormat') };
+    }
+
+    // Check GGUF magic number
+    let fd: number | undefined;
+    try {
+      fd = fs.openSync(filePath, 'r');
+      const buffer = Buffer.alloc(4);
+      fs.readSync(fd, buffer, 0, 4, 0);
+      const magic = buffer.readUInt32LE(0);
+      if (magic !== GGUF_MAGIC) {
+        return { valid: false, error: t('preflight.vocalModelInvalidFormat') };
+      }
+    } finally {
+      if (fd !== undefined) fs.closeSync(fd);
+    }
+
+    return { valid: true };
+  } catch (_error) {
+    return { valid: false, error: t('preflight.vocalModelReadError') };
   }
 }
 
@@ -467,6 +503,67 @@ export function runPreflightCheck(settings: PreflightSettings): PreflightResult 
     } else {
       const companionError = validateCompanionLibs(alignerBinPath, 'alignerPath');
       if (companionError) errors.push(companionError);
+      // On macOS/Linux, check execute permission
+      if (process.platform !== 'win32') {
+        try {
+          fs.accessSync(alignerBinPath, fs.constants.X_OK);
+        } catch {
+          errors.push({
+            code: 'ctc_aligner_not_executable',
+            message: t('preflight.binaryNotExecutable', { path: path.basename(alignerBinPath) }),
+            tab: 'about',
+            docUrl: CTC_DOC_URL,
+          });
+        }
+      }
+    }
+  }
+
+  // =========================================================================
+  // Vocal Separation Checks
+  // =========================================================================
+  if (settings.useVocalSeparation) {
+    // Check model path is set
+    if (!settings.vocalSeparationModelPath) {
+      errors.push({
+        code: 'vocal_path_empty',
+        message: t('preflight.vocalPathEmpty'),
+        field: 'vocalSeparationModelPath',
+        tab: 'enhance',
+      });
+    } else {
+      // Validate model file (GGUF format)
+      const validation = validateVocalSeparationModel(settings.vocalSeparationModelPath);
+      if (!validation.valid) {
+        errors.push({
+          code: 'vocal_model_invalid',
+          message: validation.error!,
+          field: 'vocalSeparationModelPath',
+          tab: 'enhance',
+        });
+      }
+    }
+
+    // Check bundled BSRoformer binary
+    const bsrBinaryName = process.platform === 'win32' ? 'bs-roformer-cli.exe' : 'bs-roformer-cli';
+    const bsrBinPath = getBinaryPath(bsrBinaryName);
+    if (!fs.existsSync(bsrBinPath)) {
+      errors.push({
+        code: 'bs_roformer_missing',
+        message: t('preflight.downloadableBinaryNotFound', { name: 'bs-roformer-cli' }),
+        tab: 'about',
+      });
+    } else if (process.platform !== 'win32') {
+      // On macOS/Linux, check execute permission
+      try {
+        fs.accessSync(bsrBinPath, fs.constants.X_OK);
+      } catch {
+        errors.push({
+          code: 'bs_roformer_not_executable',
+          message: t('preflight.binaryNotExecutable', { path: path.basename(bsrBinPath) }),
+          tab: 'about',
+        });
+      }
     }
   }
 

@@ -101,6 +101,8 @@ export function useGeneration({
         alignmentModelPath: settings.alignmentModelPath,
         alignerPath: settings.alignerPath,
         alignerVersion,
+        useVocalSeparation: settings.useVocalSeparation,
+        vocalSeparationModelPath: settings.vocalSeparationModelPath,
       });
 
       if (!preflight.passed) {

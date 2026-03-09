@@ -274,6 +274,7 @@
     "qjs": "QuickJS 版本",
     "whisper": "Whisper.cpp 版本",
     "aligner": "Aligner 版本",
+    "bsRoformer": "BSRoformer",
     "checkBinaryUpdates": "检查更新",
     "downloadUpdate": "下载更新",
     "viewRelease": "查看发布",

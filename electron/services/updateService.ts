@@ -9,6 +9,10 @@ import fs from 'fs';
 import path from 'path';
 import { execFileSync, spawn } from 'child_process';
 import pkg from '../../package.json' with { type: 'json' };
+import { ctcAlignerService } from './ctcAligner.ts';
+import { ytDlpService } from './ytdlp.ts';
+import { localWhisperService } from './localWhisper.ts';
+import { vocalSeparatorService } from './vocalSeparator.ts';
 
 const { autoUpdater } = electronUpdater;
 
@@ -66,6 +70,7 @@ const BINARY_REPOS = {
   aligner: { owner: 'Corvo007', repo: 'cpp-ctc-aligner' },
   ytdlp: { owner: 'yt-dlp', repo: 'yt-dlp' },
   whisper: { owner: 'Corvo007', repo: 'whisper.cpp' },
+  bsroformer: { owner: 'Corvo007', repo: 'BSRoformer.cpp' },
 } as const;
 
 type BinaryName = keyof typeof BINARY_REPOS;
@@ -390,17 +395,16 @@ async function getCurrentBinaryVersion(
 ): Promise<string> {
   try {
     if (name === 'aligner') {
-      const { ctcAlignerService } = await import('./ctcAligner.ts');
       return await ctcAlignerService.getVersion();
     } else if (name === 'ytdlp') {
-      const { ytDlpService } = await import('./ytdlp.ts');
       const versions = await ytDlpService.getVersions();
       return versions.ytdlp;
     } else if (name === 'whisper') {
-      const { localWhisperService } = await import('./localWhisper.ts');
       const details = await localWhisperService.getWhisperDetails(whisperCustomBinaryPath);
       if (details.source === 'Custom') return 'custom';
       return details.version.replace(/^v/, '');
+    } else if (name === 'bsroformer') {
+      return await vocalSeparatorService.getVersion();
     }
   } catch (err) {
     console.error(`[UpdateService] Failed to get ${name} version:`, err);
@@ -585,6 +589,35 @@ export async function checkBinaryUpdate(
       if (asset) {
         result.downloadUrl = asset.browser_download_url;
       }
+    } else if (name === 'bsroformer') {
+      // BSRoformer: tag is "v0.1.0"
+      result.latest = tagName.replace(/^v/, '');
+      if (!isRealVersion(current)) {
+        result.hasUpdate = true;
+      } else {
+        result.hasUpdate = compareVersions(result.latest, current) > 0;
+      }
+
+      // Asset naming: BSRoformer-windows-vulkan.zip, BSRoformer-linux-vulkan.tar.gz,
+      // BSRoformer-macos-arm64.tar.gz, BSRoformer-macos-x86_64.tar.gz
+      const asset = release.data.assets?.find((a: any) => {
+        const n = a.name.toLowerCase();
+        if (platform === 'win32') {
+          return n.includes('windows') && n.endsWith('.zip');
+        } else if (platform === 'darwin') {
+          if (arch === 'arm64')
+            return n.includes('macos') && n.includes('arm64') && n.endsWith('.tar.gz');
+          return n.includes('macos') && n.includes('x86_64') && n.endsWith('.tar.gz');
+        } else if (platform === 'linux') {
+          if (arch === 'arm64')
+            return n.includes('linux') && n.includes('arm64') && n.endsWith('.tar.gz');
+          return n.includes('linux') && n.includes('vulkan') && n.endsWith('.tar.gz');
+        }
+        return false;
+      });
+      if (asset) {
+        result.downloadUrl = asset.browser_download_url;
+      }
     }
   } catch (err: any) {
     console.warn(`[UpdateService] Version comparison failed for ${name}:`, err.message);
@@ -601,6 +634,7 @@ export async function checkAllBinaryUpdates(
     checkBinaryUpdate('aligner'),
     checkBinaryUpdate('ytdlp'),
     checkBinaryUpdate('whisper', whisperCustomBinaryPath),
+    checkBinaryUpdate('bsroformer'),
   ]);
   return results;
 }
@@ -625,6 +659,7 @@ export async function downloadBinaryUpdate(
     aligner: 'cpp-ort-aligner',
     ytdlp: 'yt-dlp',
     whisper: 'whisper-cli',
+    bsroformer: 'bs-roformer-cli',
   };
   const binaryName = binaryNameMap[name];
   const binaryFileName =

@@ -2,6 +2,7 @@
   "progress": {
     "elapsed": "Elapsed: {{time}}",
     "chunkLabels": {
+      "vocalSeparation": "Vocal Separation",
       "decoding": "Decoding Audio",
       "segmenting": "Segmenting",
       "glossary": "Extracting Glossary",

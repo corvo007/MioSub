@@ -10,7 +10,7 @@ export interface PreflightError {
   code: string;
   message: string;
   field?: string;
-  tab?: 'services' | 'enhance';
+  tab?: 'services' | 'enhance' | 'about';
   docUrl?: string;
 }
 
@@ -245,13 +245,15 @@ export interface ElectronAPI {
       alignmentModelPath?: string;
       alignerPath?: string;
       alignerVersion?: string;
+      useVocalSeparation?: boolean;
+      vocalSeparationModelPath?: string;
     }) => Promise<{
       passed: boolean;
       errors: {
         code: string;
         message: string;
         field?: string;
-        tab?: 'services' | 'enhance';
+        tab?: 'services' | 'enhance' | 'about';
         docUrl?: string;
       }[];
       warnings: {
@@ -367,6 +369,8 @@ export interface ElectronAPI {
       ytdlp: string;
       qjs: string;
       whisper: string;
+      aligner: string;
+      bsRoformer: string;
       whisperDetails: {
         path: string;
         source: string;
@@ -475,6 +479,7 @@ export interface ElectronAPI {
         qjs: string;
         whisper: string;
         aligner: string;
+        bsRoformer: string;
         whisperDetails: {
           path: string;
           source: 'Custom' | 'Bundled' | 'Portable' | 'Dev' | 'unknown';
@@ -589,7 +594,7 @@ export interface ElectronAPI {
     checkBinaries: (options?: { whisperCustomBinaryPath?: string }) => Promise<{
       success: boolean;
       updates?: Array<{
-        name: 'aligner' | 'ytdlp' | 'whisper';
+        name: 'aligner' | 'ytdlp' | 'whisper' | 'bsroformer';
         current: string;
         latest: string;
         hasUpdate: boolean;
@@ -599,10 +604,12 @@ export interface ElectronAPI {
       error?: string;
     }>;
     downloadBinary: (
-      name: 'aligner' | 'ytdlp' | 'whisper',
+      name: 'aligner' | 'ytdlp' | 'whisper' | 'bsroformer',
       downloadUrl: string
     ) => Promise<{ success: boolean; error?: string }>;
-    openBinaryRelease: (name: 'aligner' | 'ytdlp' | 'whisper') => Promise<{ success: boolean }>;
+    openBinaryRelease: (
+      name: 'aligner' | 'ytdlp' | 'whisper' | 'bsroformer'
+    ) => Promise<{ success: boolean }>;
     onBinaryProgress: (callback: (data: { name: string; percent: number }) => void) => () => void;
   };
 

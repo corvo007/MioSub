@@ -46,9 +46,17 @@ function ElapsedTime({ startTime }: { startTime: number }) {
 function TranscribeChunkList({ chunks }: { chunks: ChunkStatus[] }) {
   const { t } = useTranslation('endToEnd');
 
+  // Extract percentage from message (e.g., "正在分离人声... 45%" or "17 %")
+  const extractPercent = (message?: string): number | null => {
+    if (!message) return null;
+    const match = message.match(/(\d+)\s*%/);
+    return match ? parseInt(match[1], 10) : null;
+  };
+
   // Chunk labels - using translations
   const getChunkLabel = (id: string | number): string => {
     const labelKeys: Record<string, string> = {
+      vocalSeparation: 'progress.chunkLabels.vocalSeparation',
       decoding: 'progress.chunkLabels.decoding',
       segmenting: 'progress.chunkLabels.segmenting',
       glossary: 'progress.chunkLabels.glossary',
@@ -61,6 +69,7 @@ function TranscribeChunkList({ chunks }: { chunks: ChunkStatus[] }) {
   // Sort chunks: system tasks first, then by id
   const sortedChunks = [...chunks].sort((a, b) => {
     const systemOrder: Record<string, number> = {
+      vocalSeparation: 0,
       decoding: 1,
       segmenting: 2,
       glossary: 3,
@@ -77,13 +86,16 @@ function TranscribeChunkList({ chunks }: { chunks: ChunkStatus[] }) {
 
   // Prep phase chunks
   const prepChunks = sortedChunks.filter((c) =>
-    ['decoding', 'segmenting', 'glossary', 'diarization'].includes(String(c.id))
+    ['vocalSeparation', 'decoding', 'segmenting', 'glossary', 'diarization'].includes(String(c.id))
   );
   const prepCompleted = prepChunks.filter((c) => c.status === 'completed').length;
 
   // Content chunks
   const contentChunks = sortedChunks.filter(
-    (c) => !['decoding', 'segmenting', 'glossary', 'diarization'].includes(String(c.id))
+    (c) =>
+      !['vocalSeparation', 'decoding', 'segmenting', 'glossary', 'diarization'].includes(
+        String(c.id)
+      )
   );
   const contentCompleted = contentChunks.filter((c) => c.status === 'completed').length;
   const contentTotal = contentChunks.length > 0 ? contentChunks[0].total : 0;
@@ -101,29 +113,34 @@ function TranscribeChunkList({ chunks }: { chunks: ChunkStatus[] }) {
         </span>
       </div>
       <div className="max-h-32 overflow-y-auto space-y-1 custom-scrollbar">
-        {sortedChunks.map((chunk) => (
-          <div
-            key={chunk.id}
-            className="flex items-center justify-between text-sm py-1.5 px-2 bg-slate-50 border border-slate-100 rounded"
-          >
-            <div className="flex items-center gap-2">
-              <div
-                className={cn(
-                  'w-1.5 h-1.5 rounded-full',
-                  chunk.status === 'completed' && 'bg-emerald-500',
-                  chunk.status === 'error' && 'bg-red-500',
-                  chunk.status === 'processing' && 'bg-brand-purple animate-pulse',
-                  chunk.status !== 'completed' &&
-                    chunk.status !== 'error' &&
-                    chunk.status !== 'processing' &&
-                    'bg-slate-200'
-                )}
-              />
-              <span className="text-slate-600">{getChunkLabel(chunk.id)}</span>
+        {sortedChunks.map((chunk) => {
+          const percent = extractPercent(chunk.message);
+          return (
+            <div
+              key={chunk.id}
+              className="flex items-center justify-between text-sm py-1.5 px-2 bg-slate-50 border border-slate-100 rounded"
+            >
+              <div className="flex items-center gap-2">
+                <div
+                  className={cn(
+                    'w-1.5 h-1.5 rounded-full',
+                    chunk.status === 'completed' && 'bg-emerald-500',
+                    chunk.status === 'error' && 'bg-red-500',
+                    chunk.status === 'processing' && 'bg-brand-purple animate-pulse',
+                    chunk.status !== 'completed' &&
+                      chunk.status !== 'error' &&
+                      chunk.status !== 'processing' &&
+                      'bg-slate-200'
+                  )}
+                />
+                <span className="text-slate-600">{getChunkLabel(chunk.id)}</span>
+              </div>
+              <span className="text-slate-400 text-xs">
+                {percent !== null && chunk.status === 'processing' ? `(${percent}%)` : ''}
+              </span>
             </div>
-            <span className="text-slate-400 text-xs">{chunk.message || chunk.status}</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

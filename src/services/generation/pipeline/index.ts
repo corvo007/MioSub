@@ -101,6 +101,7 @@ export const generateSubtitles = async (
   let chunkDuration: number;
   let isLongVideoMode = false; // Flag for long video on-demand extraction
   let longVideoPath: string | undefined; // Video path for long video extraction
+  let vocalsTempPath: string | undefined; // Temp vocals file for cleanup
 
   if (shouldSkipAudioProcessing) {
     logger.info('🚀 [OPTIMIZATION] Skipping Audio Processing (Decoding/Segmentation).');
@@ -128,6 +129,7 @@ export const generateSubtitles = async (
     chunksParams = result.chunksParams;
     vadSegments = result.vadSegments;
     chunkDuration = result.chunkDuration;
+    vocalsTempPath = result.vocalsTempPath;
     // Store long video info for chunk processing
     isLongVideoMode = result.isLongVideo;
     longVideoPath = result.videoPath;
@@ -414,6 +416,13 @@ export const generateSubtitles = async (
 
   // Cleanup: Dispose SmartSegmenter singleton to free VAD Worker resources
   SmartSegmenter.disposeInstance();
+
+  // Cleanup: Delete temporary vocals file if it exists
+  if (vocalsTempPath && window.electronAPI?.cleanupTempAudio) {
+    window.electronAPI.cleanupTempAudio(vocalsTempPath).catch((e) => {
+      logger.warn('Failed to cleanup vocals temp file:', e);
+    });
+  }
 
   // Ensure deterministic order for analytics
   chunkAnalytics.sort((a, b) => a.index - b.index);

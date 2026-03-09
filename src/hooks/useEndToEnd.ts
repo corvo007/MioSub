@@ -297,6 +297,8 @@ export function useEndToEnd(): UseEndToEndReturn {
           alignmentModelPath: globalSettings.alignmentModelPath,
           alignerPath: globalSettings.alignerPath,
           alignerVersion,
+          useVocalSeparation: globalSettings.useVocalSeparation,
+          vocalSeparationModelPath: globalSettings.vocalSeparationModelPath,
         });
 
         if (!preflight.passed) {

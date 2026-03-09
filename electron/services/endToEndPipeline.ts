@@ -295,6 +295,7 @@ export class EndToEndPipeline {
           // Calculate Prep Progress (10%)
           // Include basic steps + optional steps based on config
           const prepSteps = ['decoding', 'segmenting'];
+          if (config.enableVocalSeparation) prepSteps.unshift('vocalSeparation');
           if (config.enableGlossary) prepSteps.push('glossary');
           if (config.enableDiarization) prepSteps.push('diarization');
 
@@ -310,7 +311,10 @@ export class EndToEndPipeline {
           // Calculate Content Progress (90%)
           const chunks = Array.from(chunkProgress.values());
           const contentChunks = chunks.filter(
-            (c) => !['decoding', 'segmenting', 'glossary', 'diarization'].includes(String(c.id))
+            (c) =>
+              !['vocalSeparation', 'decoding', 'segmenting', 'glossary', 'diarization'].includes(
+                String(c.id)
+              )
           );
 
           let contentProgress = 0;

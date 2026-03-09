@@ -2,6 +2,7 @@
   "progress": {
     "elapsed": "経過時間: {{time}}",
     "chunkLabels": {
+      "vocalSeparation": "ボーカル分離",
       "decoding": "音声をデコード",
       "segmenting": "セグメント処理",
       "glossary": "用語を抽出",

@@ -56,13 +56,15 @@ export async function preprocessAudio(
     });
 
     const unsubscribe = window.electronAPI!.vocal.onProgress(({ percent }) => {
+      const message = i18n.t('services:pipeline.status.separatingVocalsProgress', {
+        percent: Math.round(percent),
+      });
+      console.log(`[Preprocessor] Vocal separation progress: ${percent}% - Message: ${message}`);
       onProgress?.({
         id: 'vocalSeparation',
         total: 1,
         status: 'processing',
-        message: i18n.t('services:pipeline.status.separatingVocalsProgress', {
-          percent: Math.round(percent),
-        }),
+        message,
       });
     });
 
@@ -203,11 +205,18 @@ export async function preprocessAudio(
 
   let audioBuffer: AudioBuffer;
   try {
-    if (vocalsTempPath && window.electronAPI?.vocal) {
-      // Vocal separation produced a file -- always decode from it
-      const buf = await window.electronAPI.vocal.readFile(vocalsTempPath);
-      const blob = new Blob([buf], { type: 'audio/wav' });
-      const vocalsFile = new File([blob], 'vocals.wav', { type: 'audio/wav' });
+    if (vocalsTempPath) {
+      // Vocal separation produced a file on disk — create a stub File with path
+      // so FFmpeg can decode directly (16kHz mono), avoiding:
+      //  1. ~240MB IPC transfer of raw WAV data into renderer
+      //  2. Web Audio API fallback (wrong sample rate/channels for VAD)
+      const vocalsFile = new File([], 'vocals.wav', { type: 'audio/wav' });
+      Object.defineProperty(vocalsFile, 'path', {
+        value: vocalsTempPath,
+        writable: false,
+        enumerable: false,
+        configurable: false,
+      });
 
       audioBuffer = await decodeAudioWithRetry(vocalsFile);
       onProgress?.({

@@ -7,6 +7,7 @@ import { t } from '../i18n.ts';
 import { getBinaryPath } from '../utils/paths.ts';
 import { buildSpawnArgs, ensureAsciiSafePath } from '../utils/shell.ts';
 import { ExpectedError } from '../utils/expectedError.ts';
+import { detectBinaryVersion } from '../utils/version.ts';
 import { extractAudioFromVideo } from './ffmpegAudioExtractor.ts';
 
 export interface VocalSeparationInput {
@@ -107,7 +108,13 @@ export class VocalSeparator {
         command,
         args: spawnArgs,
         options: spawnOptions,
-      } = buildSpawnArgs(binaryPath, [safeModelPath, inputWav, outputBase]);
+      } = buildSpawnArgs(binaryPath, [
+        safeModelPath,
+        inputWav,
+        outputBase,
+        '--segment-minutes',
+        '30',
+      ]);
 
       console.log(
         `[VocalSeparator] Spawning: ${command} ${spawnArgs.map((a) => `"${a}"`).join(' ')}`
@@ -133,17 +140,55 @@ export class VocalSeparator {
 
       let stderr = '';
       let stdout = '';
+      let lastProgress = -1;
+
       proc.stderr?.on('data', (data) => {
-        const line = data.toString();
-        stderr += line;
-        // Parse progress: "[=====>   ] 42 %"
-        const match = line.match(/\]\s+(\d+)\s*%/);
-        if (match && onProgress) {
-          onProgress(parseInt(match[1], 10));
+        const chunk = data.toString();
+        stderr += chunk;
+
+        // Split by both newline and carriage return to handle progress updates
+        const lines = chunk.split(/[\r\n]+/).filter((l) => l.trim());
+
+        for (const line of lines) {
+          // Parse progress: "[=====>   ] 42 %" or "] 42 %"
+          const match = line.match(/\]\s+(\d+)\s*%/);
+          if (match) {
+            const percent = parseInt(match[1], 10);
+            // Only send progress if it changed (avoid duplicate updates)
+            if (percent !== lastProgress && onProgress) {
+              lastProgress = percent;
+              onProgress(percent);
+            }
+          }
+          // Only log non-progress messages
+          if (!match && !line.includes('[>') && !line.includes('[=')) {
+            console.log(`[VocalSeparator] ${line.trimEnd()}`);
+          }
         }
       });
+
       proc.stdout?.on('data', (data) => {
-        stdout += data.toString();
+        const chunk = data.toString();
+        stdout += chunk;
+
+        // Split by both newline and carriage return to handle progress updates
+        const lines = chunk.split(/[\r\n]+/).filter((l) => l.trim());
+
+        for (const line of lines) {
+          // Parse progress from stdout as well
+          const match = line.match(/\]\s+(\d+)\s*%/);
+          if (match) {
+            const percent = parseInt(match[1], 10);
+            if (percent !== lastProgress && onProgress) {
+              lastProgress = percent;
+              onProgress(percent);
+            }
+          }
+          // Only log non-progress messages
+          if (!match && !line.includes('[>') && !line.includes('[=')) {
+            console.log(`[VocalSeparator] ${line.trimEnd()}`);
+          }
+        }
       });
 
       const { code: exitCode, signal: exitSignal } = await new Promise<{
@@ -218,6 +263,20 @@ export class VocalSeparator {
       await cleanupVideo();
       await cleanupModel();
     }
+  }
+
+  /**
+   * Get BSRoformer binary version.
+   * Output format: "bs-roformer-cli 1.0.0"
+   */
+  async getVersion(): Promise<string> {
+    const binaryName = process.platform === 'win32' ? 'bs-roformer-cli.exe' : 'bs-roformer-cli';
+    return detectBinaryVersion({
+      binaryPath: getBinaryPath(binaryName),
+      versionFlag: '--version',
+      parseRegex: /bs-roformer-cli\s+([\d.]+)/,
+      label: 'BSRoformer',
+    });
   }
 
   /**

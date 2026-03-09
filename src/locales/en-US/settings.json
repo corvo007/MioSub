@@ -267,6 +267,7 @@
     "downloadUpdate": "Download Update",
     "viewRelease": "View Release",
     "aligner": "Aligner Version",
+    "bsRoformer": "BSRoformer",
     "ffmpeg": "FFmpeg Version",
     "ffprobe": "FFprobe Version",
     "ytdlp": "yt-dlp Version",

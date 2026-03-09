@@ -122,7 +122,11 @@
     "binaryNotExecutable": "{{path}} exists but is not executable. On macOS/Linux, ensure it has execute permission (chmod +x). You can also re-download via Settings > About > Check for Updates",
     "ctcCompanionLibMissing": "Required dynamic library {{lib}} not found alongside the aligner binary. You can re-download via Settings > About > Check for Updates",
     "bundledBinaryNotFound": "{{name}} not found. The installation may be corrupted — please reinstall the application.",
-    "downloadableBinaryNotFound": "{{name}} not found. You can re-download via Settings > About > Check for Updates"
+    "downloadableBinaryNotFound": "{{name}} not found. You can re-download via Settings > About > Check for Updates",
+    "vocalPathEmpty": "Vocal separation is enabled but model path is not set",
+    "vocalModelNotExist": "Vocal separation model file does not exist, may have been moved or deleted",
+    "vocalModelInvalidFormat": "Invalid vocal separation model format (requires .gguf)",
+    "vocalModelReadError": "Cannot read vocal separation model file"
   },
   "endToEnd": {
     "preparingDownload": "Preparing download...",

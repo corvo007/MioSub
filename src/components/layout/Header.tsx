@@ -22,7 +22,7 @@ type UpdateStatus = {
 };
 
 type BinaryUpdateInfo = {
-  name: 'aligner' | 'ytdlp' | 'whisper';
+  name: 'aligner' | 'ytdlp' | 'whisper' | 'bsroformer';
   current: string;
   latest: string;
   hasUpdate: boolean;

@@ -15,6 +15,7 @@ import { getBinaryPath, getFileHash, getLogDir, getStorageDir } from '../utils/p
 import { storageService } from './storage.ts';
 import { localWhisperService } from './localWhisper.ts';
 import { ctcAlignerService } from './ctcAligner.ts';
+import { vocalSeparatorService } from './vocalSeparator.ts';
 import { ytDlpService } from './ytdlp.ts';
 import { getCompressorInstance } from './videoCompressor.ts';
 import { isRealVersion } from '../utils/version.ts';
@@ -52,6 +53,7 @@ export interface SystemInfo {
     qjs: string;
     whisper: string;
     aligner: string;
+    bsRoformer: string;
     whisperDetails: WhisperDetails;
   };
   gpu: {
@@ -112,6 +114,9 @@ class SystemInfoService {
     const ytDlpPath = getBinaryPath('yt-dlp');
     const qjsPath = getBinaryPath('qjs');
     const alignerPath = customAlignerPath || getBinaryPath('cpp-ort-aligner');
+    const bsRoformerPath = getBinaryPath(
+      process.platform === 'win32' ? 'bs-roformer-cli.exe' : 'bs-roformer-cli'
+    );
 
     // Check mtime for both (whether custom or bundled)
     const ffmpegHash = getFileHash(ffmpegPath);
@@ -120,6 +125,7 @@ class SystemInfoService {
     const qjsHash = getFileHash(qjsPath);
     const whisperHash = getFileHash(whisperInfo.path);
     const alignerHash = getFileHash(alignerPath);
+    const bsRoformerHash = getFileHash(bsRoformerPath);
 
     // Get commit hash (cached)
     if (!this.cachedCommitHash) {
@@ -149,6 +155,7 @@ class SystemInfoService {
       `yd:${ytDlpHash}`,
       `qj:${qjsHash}`,
       `al:${alignerHash}`,
+      `br:${bsRoformerHash}`,
       `p:${process.env.PORTABLE_EXECUTABLE_DIR || 'none'}`,
     ].join('|');
 
@@ -192,6 +199,12 @@ class SystemInfoService {
       alignerVersion = `v${alignerVersionRaw}`;
     }
 
+    const bsRoformerVersionRaw = await vocalSeparatorService.getVersion();
+    let bsRoformerVersion = bsRoformerVersionRaw;
+    if (isRealVersion(bsRoformerVersionRaw)) {
+      bsRoformerVersion = `v${bsRoformerVersionRaw}`;
+    }
+
     // Get FFmpeg/FFprobe versions
     let ffmpegVersion = 'unknown';
     let ffprobeVersion = 'unknown';
@@ -228,6 +241,7 @@ class SystemInfoService {
         qjs: ytDlpInfo.qjs,
         whisper: whisperVersionStr,
         aligner: alignerVersion,
+        bsRoformer: bsRoformerVersion,
         whisperDetails,
       },
       gpu: hwAccelInfo,
@@ -273,6 +287,7 @@ class SystemInfoService {
       ffmpeg_hw_h264: data.gpu.preferredH264 || 'libx264',
       ffmpeg_hw_h265: data.gpu.preferredH265 || 'libx265',
       aligner_version: data.versions.aligner,
+      bsroformer_version: data.versions.bsRoformer,
       ytdlp_version: data.versions.ytdlp,
       qjs_version: data.versions.qjs,
     };
@@ -298,6 +313,7 @@ class SystemInfoService {
       ffmpeg_qsv: data.gpu.encoders?.h264_qsv || false,
       ffmpeg_amf: data.gpu.encoders?.h264_amf || false,
       aligner_version: data.versions.aligner,
+      bsroformer_version: data.versions.bsRoformer,
       ytdlp_version: data.versions.ytdlp,
       qjs_version: data.versions.qjs,
     };

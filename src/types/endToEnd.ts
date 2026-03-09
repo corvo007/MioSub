@@ -69,6 +69,8 @@ export interface EndToEndConfig {
   whisperModel?: string; // Whisper 模型路径 (如果使用本地)
 
   // 高级选项
+  enableVocalSeparation?: boolean; // 启用人声分离
+  vocalSeparationModelPath?: string; // 人声分离模型路径
   enableGlossary: boolean; // 启用术语提取 (自动确认)
   enableDiarization: boolean; // 启用说话人识别
   minSpeakers?: number; // 最少说话人数 (可选)
