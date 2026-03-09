@@ -22,7 +22,7 @@ export const decodeAudio = async (
 
   // Priority: file.path (from native dialog) > webUtils.getPathForFile > undefined
   const filePath = isElectron()
-    ? (file as any).path || window.electronAPI.getFilePath(file) || undefined
+    ? (file as any).path || window.electronAPI?.getFilePath?.(file) || undefined
     : undefined;
 
   // Debug logs

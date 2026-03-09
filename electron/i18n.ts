@@ -6,6 +6,7 @@
 import i18n from 'i18next';
 import path from 'path';
 import fs from 'fs';
+
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);

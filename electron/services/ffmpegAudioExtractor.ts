@@ -1,11 +1,10 @@
 import ffmpeg from 'fluent-ffmpeg';
-import path from 'path';
-import os from 'os';
 import fs from 'fs';
 import { app } from 'electron';
 
 import { getBinaryPath } from '../utils/paths.ts';
 import { ExpectedError } from '../utils/expectedError.ts';
+import { ensureAsciiSafePath, getAsciiSafeTempPath } from '../utils/shell.ts';
 
 const checkBinaryExistence = (name: string, pathStr: string) => {
   if (!app.isPackaged && !fs.existsSync(pathStr)) {
@@ -196,15 +195,18 @@ export async function extractAudioFromVideo(
     }
   }
 
-  // 创建临时输出文件路径
-  const tempDir = os.tmpdir();
-  const outputFileName = `audio_${Date.now()}.${format}`;
-  const outputPath = path.join(tempDir, outputFileName);
+  // Create ASCII-safe alias for the input video path (handles Japanese/Chinese paths on Windows,
+  // where FFmpeg reports EILSEQ -42 when the path contains non-ASCII characters).
+  const { safePath: safeVideoPath, cleanup: cleanupSafePath } =
+    await ensureAsciiSafePath(videoPath);
+
+  // Use ASCII-safe temp path for output (handles non-ASCII usernames in the temp dir).
+  const outputPath = getAsciiSafeTempPath(`audio_${Date.now()}.${format}`);
 
   return new Promise((resolve, reject) => {
     const jobId = ++jobCounter;
 
-    let command = ffmpeg(videoPath)
+    let command = ffmpeg(safeVideoPath)
       .outputOptions([
         `-ar ${sampleRate}`, // 采样率
         `-ac ${channels}`, // 声道数
@@ -261,12 +263,14 @@ export async function extractAudioFromVideo(
     command.on('end', () => {
       activeAudioCommands.delete(command);
       unregisterJob(jobId);
+      cleanupSafePath();
       resolve(outputPath);
     });
 
     command.on('error', (err) => {
       const job = unregisterJob(jobId);
       activeAudioCommands.delete(command);
+      cleanupSafePath();
       if (job?.isCancelled) {
         reject(new ExpectedError('Audio extraction cancelled'));
         return;
@@ -344,16 +348,20 @@ export async function extractAudioSegment(
     }
   }
 
-  // Create temp output file path
-  const tempDir = os.tmpdir();
-  const outputFileName = `audio_segment_${Date.now()}_${startTime.toFixed(0)}.${format}`;
-  const outputPath = path.join(tempDir, outputFileName);
+  // Create ASCII-safe alias for the input video path (handles Japanese/Chinese paths on Windows).
+  const { safePath: safeVideoPath, cleanup: cleanupSafePath } =
+    await ensureAsciiSafePath(videoPath);
+
+  // Use ASCII-safe temp path for output (handles non-ASCII usernames in the temp dir).
+  const outputPath = getAsciiSafeTempPath(
+    `audio_segment_${Date.now()}_${startTime.toFixed(0)}.${format}`
+  );
 
   return new Promise((resolve, reject) => {
     const jobId = ++jobCounter;
 
     // Use -ss before -i for fast seeking (input seeking)
-    let command = ffmpeg(videoPath)
+    let command = ffmpeg(safeVideoPath)
       .inputOptions([`-ss ${startTime}`]) // Seek to start time before reading input
       .outputOptions([
         `-t ${duration}`, // Duration to extract
@@ -407,12 +415,14 @@ export async function extractAudioSegment(
     command.on('end', () => {
       activeAudioCommands.delete(command);
       unregisterJob(jobId);
+      cleanupSafePath();
       resolve(outputPath);
     });
 
     command.on('error', (err) => {
       const job = unregisterJob(jobId);
       activeAudioCommands.delete(command);
+      cleanupSafePath();
       if (job?.isCancelled) {
         reject(new ExpectedError('Audio extraction cancelled'));
         return;
@@ -495,10 +505,12 @@ export async function extractMultipleAudioSegments(
 
   const { format = 'wav', sampleRate = 16000, channels = 1 } = options;
 
-  // Create temp output file path
-  const tempDir = os.tmpdir();
-  const outputFileName = `audio_concat_${Date.now()}.${format}`;
-  const outputPath = path.join(tempDir, outputFileName);
+  // Create ASCII-safe alias for the input video path (handles Japanese/Chinese paths on Windows).
+  const { safePath: safeVideoPath, cleanup: cleanupSafePath } =
+    await ensureAsciiSafePath(videoPath);
+
+  // Use ASCII-safe temp path for output (handles non-ASCII usernames in the temp dir).
+  const outputPath = getAsciiSafeTempPath(`audio_concat_${Date.now()}.${format}`);
 
   return new Promise((resolve, reject) => {
     const jobId = ++jobCounter;
@@ -507,7 +519,7 @@ export async function extractMultipleAudioSegments(
     const filterInputs: string[] = [];
 
     segments.forEach((seg, i) => {
-      inputArgs.push('-ss', String(seg.startTime), '-t', String(seg.duration), '-i', videoPath);
+      inputArgs.push('-ss', String(seg.startTime), '-t', String(seg.duration), '-i', safeVideoPath);
       filterInputs.push(`[${i}:a]`);
     });
 
@@ -570,6 +582,7 @@ export async function extractMultipleAudioSegments(
     proc.on('close', (code: number) => {
       const job = unregisterJob(jobId);
       activeAudioCommands.delete(procWrapper);
+      cleanupSafePath();
 
       if (job?.isCancelled) {
         removeOutputFile(outputPath);
@@ -588,6 +601,7 @@ export async function extractMultipleAudioSegments(
     proc.on('error', (err: Error) => {
       unregisterJob(jobId);
       activeAudioCommands.delete(procWrapper);
+      cleanupSafePath();
       removeOutputFile(outputPath);
       reject(new Error(`FFmpeg spawn error: ${err.message}`));
     });
