@@ -15,6 +15,7 @@ import { writeTempFile } from './fileUtils.ts';
 import { getBinaryPath } from '../utils/paths.ts';
 import { buildSpawnArgs, ensureAsciiSafePath } from '../utils/shell.ts';
 import { ExpectedError } from '../utils/expectedError.ts';
+import { detectBinaryVersion } from '../utils/version.ts';
 
 // ============================================================================
 // Type Definitions
@@ -306,62 +307,11 @@ export class CTCAlignerService {
    * Get the version string of the aligner binary.
    */
   async getVersion(customPath?: string): Promise<string> {
-    const alignerPath = customPath || getBinaryPath('cpp-ort-aligner');
-
-    if (!fs.existsSync(alignerPath)) {
-      return 'Not found';
-    }
-
-    return new Promise((resolve) => {
-      try {
-        // Build spawn arguments with UTF-8 code page support for Windows
-        const spawnConfig = buildSpawnArgs(alignerPath, ['-v']);
-        const proc = spawn(spawnConfig.command, spawnConfig.args, {
-          windowsHide: true,
-          ...spawnConfig.options,
-        });
-
-        let output = '';
-        proc.stdout.on('data', (d) => {
-          output += d.toString();
-        });
-
-        // Also capture stderr just in case
-        proc.stderr?.on('data', (d) => {
-          output += d.toString();
-        });
-
-        proc.on('close', () => {
-          // Parse: cpp-ort-aligner 0.1.2 (582ff15-dirty) -> 0.1.2
-          const match = output.trim().match(/cpp-ort-aligner\s+([\d.]+)/);
-          if (!match) {
-            console.warn(
-              `[CTCAligner] Version parse failed, output: ${output.trim().slice(0, 200)}`
-            );
-            Sentry.captureMessage('Aligner version parse failed', {
-              level: 'warning',
-              extra: { output: output.trim().slice(0, 500) },
-            });
-          }
-          resolve(match ? match[1] : 'unknown');
-        });
-
-        proc.on('error', (err) => {
-          console.warn(`[CTCAligner] Failed to get version: ${err.message}`);
-          Sentry.captureException(err, { tags: { action: 'ctc-aligner-version' } });
-          resolve('Error');
-        });
-
-        // Timeout to prevent hanging
-        setTimeout(() => {
-          if (!proc.killed) {
-            proc.kill();
-            resolve('Timeout');
-          }
-        }, 3000);
-      } catch {
-        resolve('Error');
-      }
+    return detectBinaryVersion({
+      binaryPath: customPath || getBinaryPath('cpp-ort-aligner'),
+      versionFlag: '-v',
+      parseRegex: /cpp-ort-aligner\s+([\d.]+)/,
+      label: 'CTCAligner',
     });
   }
 }
