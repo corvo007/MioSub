@@ -221,7 +221,7 @@ import { t, changeLanguage } from './i18n.ts';
 import { ctcAlignerService } from './services/ctcAligner.ts';
 import { writeTempFile } from './services/fileUtils.ts';
 import { analyticsService } from './services/analyticsService.ts';
-import { initUpdateService } from './services/updateService.ts';
+import { initUpdateService } from './services/update/index.ts';
 import { systemInfoService } from './services/systemInfoService.ts';
 import { runPreflightCheck, type PreflightSettings } from './services/preflightCheck.ts';
 
