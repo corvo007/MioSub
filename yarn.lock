@@ -7801,7 +7801,7 @@ p-map@^4.0.0:
   dependencies:
     aggregate-error "^3.0.0"
 
-p-map@^7.0.4:
+p-map@^7.0.3, p-map@^7.0.4:
   version "7.0.4"
   resolved "https://registry.npmmirror.com/p-map/-/p-map-7.0.4.tgz"
   integrity sha512-tkAQEw8ysMzmkhgw8k+1U/iPhWNhykKnSk4Rd5zLoPJCuJaGRPo6YposrZgaxHKzDHdDWWZvE/Sk7hsL2X/CpQ==
@@ -9524,13 +9524,13 @@ vfile@^6.0.0, vfile@^6.0.3:
     "@types/unist" "^3.0.0"
     vfile-message "^4.0.0"
 
-vite-plugin-static-copy@^3.2.0:
-  version "3.2.0"
-  resolved "https://registry.npmmirror.com/vite-plugin-static-copy/-/vite-plugin-static-copy-3.2.0.tgz#5d3adb40438530520b5fdbfa27d9a95c1985cdfd"
-  integrity sha512-g2k9z8B/1Bx7D4wnFjPLx9dyYGrqWMLTpwTtPHhcU+ElNZP2O4+4OsyaficiDClus0dzVhdGvoGFYMJxoXZ12Q==
+vite-plugin-static-copy@3.1.4:
+  version "3.1.4"
+  resolved "https://registry.npmmirror.com/vite-plugin-static-copy/-/vite-plugin-static-copy-3.1.4.tgz#d8365b717c2506885ca9a51457a1bcfe6f3a2bef"
+  integrity sha512-iCmr4GSw4eSnaB+G8zc2f4dxSuDjbkjwpuBLLGvQYR9IW7rnDzftnUjOH5p4RYR+d4GsiBqXRvzuFhs5bnzVyw==
   dependencies:
     chokidar "^3.6.0"
-    p-map "^7.0.4"
+    p-map "^7.0.3"
     picocolors "^1.1.1"
     tinyglobby "^0.2.15"
 
