@@ -112,3 +112,5 @@ MelBandRoformer.cpp/
 cpp-ort-aligner/
 
 .gitnexus/
+.narrafork/
+.worktrees/
