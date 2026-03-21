@@ -299,6 +299,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('update:binary-progress', handler);
       return () => ipcRenderer.removeListener('update:binary-progress', handler);
     },
+    fetchChangelog: (version: string, language: string) =>
+      ipcRenderer.invoke('changelog:fetch', { version, language }),
   },
 
   // End-to-End Pipeline APIs

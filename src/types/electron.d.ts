@@ -611,6 +611,10 @@ export interface ElectronAPI {
       name: 'aligner' | 'ytdlp' | 'whisper' | 'bsroformer'
     ) => Promise<{ success: boolean }>;
     onBinaryProgress: (callback: (data: { name: string; percent: number }) => void) => () => void;
+    fetchChangelog: (
+      version: string,
+      language: string
+    ) => Promise<{ success: boolean; changelog?: string; version?: string; error?: string }>;
   };
 
   // End-to-End Pipeline APIs

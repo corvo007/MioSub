@@ -136,4 +136,7 @@ export interface AppSettings {
     };
   };
   providerCapabilities?: Record<string, { jsonMode: string; probedAt: number }>;
+
+  // Changelog tracking
+  lastSeenChangelog?: string; // Version string of last seen changelog (e.g., "3.2.0")
 }

@@ -11,6 +11,7 @@ import {
   SimpleConfirmationModal,
   SpeakerManagerModal,
   CloseConfirmModal,
+  ChangelogModal,
 } from '@/components/modals';
 import { ToastContainer, ProgressOverlay } from '@/components/ui';
 
@@ -37,6 +38,7 @@ import { CompressionPage } from '@/components/pages/CompressionPage';
 import { EndToEndWizard } from '@/components/endToEnd';
 
 import { ENV } from '@/config';
+import pkg from '../package.json';
 
 export default function App() {
   const { t } = useTranslation('app');
@@ -69,6 +71,8 @@ export default function App() {
   const setShowSnapshots = useAppStore((s) => s.setShowSnapshots);
   const showGenreSettings = useAppStore((s) => s.showGenreSettings);
   const setShowGenreSettings = useAppStore((s) => s.setShowGenreSettings);
+  const showChangelog = useAppStore((s) => s.showChangelog);
+  const setShowChangelog = useAppStore((s) => s.setShowChangelog);
 
   // Custom Hooks
   const snapshotsValues = useSnapshots();
@@ -86,6 +90,21 @@ export default function App() {
       }
     }
   }, [isSettingsLoaded, settings.language]);
+
+  // Auto-show changelog on first launch after update (Electron only)
+  useEffect(() => {
+    if (!isSettingsLoaded || !window.electronAPI) return;
+    if (pkg.version !== settings.lastSeenChangelog) {
+      const timer = setTimeout(() => {
+        // Re-check latest state to avoid reopening if user already viewed manually
+        const current = useAppStore.getState();
+        if (current.settings.lastSeenChangelog !== pkg.version && !current.showChangelog) {
+          setShowChangelog(true);
+        }
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isSettingsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Analytics: Track Page Views
   useEffect(() => {
@@ -338,6 +357,11 @@ export default function App() {
           setCloseConfirm({ isOpen: false, tasks: [] });
           void window.electronAPI?.app?.forceClose();
         }}
+      />
+      <ChangelogModal
+        isOpen={showChangelog}
+        onClose={() => setShowChangelog(false)}
+        mode={settings.lastSeenChangelog !== pkg.version ? 'auto' : 'manual'}
       />
     </>
   );

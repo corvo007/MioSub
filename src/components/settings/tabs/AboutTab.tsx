@@ -9,6 +9,7 @@ import {
   RefreshCw,
   Shield,
   Download,
+  Sparkles,
 } from 'lucide-react';
 import pkg from '../../../../package.json';
 import { SectionHeader } from '@/components/ui/SectionHeader';
@@ -238,6 +239,16 @@ export const AboutTab: React.FC = () => {
                 onInstall={handleInstallUpdate}
                 onGoToDownload={handleGoToDownload}
               />
+            )}
+            {/* What's New button (Electron only) */}
+            {window.electronAPI && (
+              <button
+                onClick={() => useAppStore.getState().setShowChangelog(true)}
+                className="px-3 py-1 text-sm text-slate-600 hover:text-brand-purple border border-slate-200 hover:border-brand-purple/30 rounded-lg transition-colors flex items-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                {t('about.changelog.whatsNew', "What's New")}
+              </button>
             )}
           </div>
         </div>

@@ -2,6 +2,8 @@ import { ipcMain } from 'electron';
 import type { BrowserWindow } from 'electron';
 import { isPortableMode } from '../../utils/paths.ts';
 import type { BinaryName, UpdateState } from './types.ts';
+import { fetchGitHubReleaseByTag } from './githubApi.ts';
+import { extractChangelog } from './changelogParser.ts';
 
 export interface UpdateIpcDeps {
   autoUpdater: any;
@@ -117,4 +119,25 @@ export function registerUpdateIpcHandlers(deps: UpdateIpcDeps) {
     openBinaryReleaseUrl(name);
     return { success: true };
   });
+
+  // Changelog handler
+  ipcMain.handle(
+    'changelog:fetch',
+    async (_event, payload?: { version?: string; language?: string }) => {
+      try {
+        const version = typeof payload?.version === 'string' ? payload.version : '';
+        const language = typeof payload?.language === 'string' ? payload.language : 'en-US';
+        if (!version) return { success: false, error: 'Invalid version' };
+        const tag = version.startsWith('v') ? version : `v${version}`;
+        const result = await fetchGitHubReleaseByTag('corvo007', 'Gemini-Subtitle-Pro', tag);
+        if (!result.success || !result.data?.body) {
+          return { success: false, error: result.error || 'No release body found' };
+        }
+        const changelog = extractChangelog(result.data.body, language);
+        return { success: true, changelog, version };
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
+    }
+  );
 }

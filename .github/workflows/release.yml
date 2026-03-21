@@ -161,11 +161,12 @@ jobs:
             echo "::warning::No changelog found for version $VERSION. Check changelog.mdx format."
             CHANGELOG="No changelog available for version $VERSION"
           else
-            # Combine bilingual changelog
-            CHANGELOG="$CHANGELOG_ZH
+            # Combine bilingual changelog with machine-parseable language markers
+            # (HTML comments are invisible on GitHub's rendered view)
+            CHANGELOG="<!-- changelog:zh-CN -->
+          $CHANGELOG_ZH
 
-          ---
-
+          <!-- changelog:en-US -->
           $CHANGELOG_EN"
           fi
 

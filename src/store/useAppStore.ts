@@ -26,6 +26,7 @@ interface UIState {
   showSpeakerManager: boolean;
   showSnapshots: boolean;
   showGenreSettings: boolean;
+  showChangelog: boolean;
   settingsTab: string;
   view: AppView;
 }
@@ -48,6 +49,7 @@ export interface AppState extends UIState, ToastState, SettingsState {
   setShowSpeakerManager: (show: boolean) => void;
   setShowSnapshots: (show: boolean) => void;
   setShowGenreSettings: (show: boolean) => void;
+  setShowChangelog: (show: boolean) => void;
   setSettingsTab: (tab: string) => void;
   setView: (view: AppView) => void;
 
@@ -122,6 +124,7 @@ export const useAppStore = create<AppState>()(
     showSpeakerManager: false,
     showSnapshots: false,
     showGenreSettings: false,
+    showChangelog: false,
     settingsTab: 'general',
     view: 'home',
 
@@ -131,6 +134,7 @@ export const useAppStore = create<AppState>()(
     setShowSpeakerManager: (show) => set({ showSpeakerManager: show }),
     setShowSnapshots: (show) => set({ showSnapshots: show }),
     setShowGenreSettings: (show) => set({ showGenreSettings: show }),
+    setShowChangelog: (show) => set({ showChangelog: show }),
     setSettingsTab: (tab) => set({ settingsTab: tab }),
     setView: (view) => set({ view }),
 

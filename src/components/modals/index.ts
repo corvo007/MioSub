@@ -5,3 +5,4 @@ export { GlossaryImportDialog } from './GlossaryImportDialog';
 export { SpeakerManagerModal } from './SpeakerManagerModal';
 export { PreflightErrorModal, type PreflightError } from './PreflightErrorModal';
 export { CloseConfirmModal } from './CloseConfirmModal';
+export { ChangelogModal } from './ChangelogModal';
