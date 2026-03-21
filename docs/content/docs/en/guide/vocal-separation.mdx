@@ -1,0 +1,96 @@
+---
+title: 'Vocal Separation'
+description: 'Use AI models to separate vocals from video, improving transcription quality for noisy audio'
+---
+
+<Callout type="warn" title="Hardware Requirements">
+  Vocal separation requires **GPU acceleration** and is only supported on:
+  - **macOS**: Apple Silicon (M1/M2/M3/M4), accelerated via Metal. Intel Macs are not supported.
+  - **Windows**: Dedicated NVIDIA / AMD GPU, accelerated via Vulkan
+
+  Windows PCs without a dedicated GPU (e.g., ultrabooks with integrated graphics) **cannot use** this feature.
+</Callout>
+
+Vocal separation automatically isolates human speech from background music and noise before transcription, feeding only clean vocals to Whisper. This significantly improves transcription accuracy for noisy audio such as music videos, variety shows, and videos with background music.
+
+---
+
+## ⚡ Quick Start
+
+1. **Download Model**: Download a `.gguf` model file (see recommendations below)
+2. **Enable Feature**: Settings > Enhancement > Vocal Separation, toggle on
+3. **Select Model**: Click "Browse" to select the downloaded `.gguf` file
+4. **Start Using**: Vocal separation will automatically run before transcription
+
+<Callout type="info" title="Feature unavailable?">
+  If the toggle is grayed out, no compatible GPU was detected. Make sure your device meets the hardware requirements above.
+</Callout>
+
+---
+
+## 📦 Model Download
+
+### Model Specifications Table
+
+| Quantization | Filename | Size | Quality | Recommended |
+|:-------------|:---------|:-----|:--------|:------------|
+| **Q8_0** | `voc_fv6-Q8_0.gguf` | 240 MB | Near-lossless | ⭐ Best value |
+| **FP16** | `voc_fv6-FP16.gguf` | 436 MB | Lossless | Maximum quality |
+| Q5_1 | `voc_fv6-Q5_1.gguf` | 173 MB | Slight loss | Low VRAM |
+| Q5_0 | `voc_fv6-Q5_0.gguf` | 160 MB | Slight loss | Low VRAM |
+
+### Quantization Levels Explained
+
+- **FP16**: Half-precision floating point. Lossless quality, moderate size. Choose this for the best separation quality.
+- **Q8_0**: 8-bit quantization. Near-lossless quality at just over half the size of FP16. **Best value — recommended for most users.**
+- **Q5_0 / Q5_1**: 5-bit quantization. Smaller size with slight quality reduction. Suitable when VRAM is limited.
+
+<Callout type="info" title="Download Links">
+  Click to download the `.gguf` file directly:
+
+  **Hugging Face (Original)**
+
+  [Q8_0 (Recommended)](https://huggingface.co/chenmozhijin/BSRoformer-GGUF/resolve/main/GaboxR67/MelBandRoformers/melbandroformers/vocals/voc_fv6-Q8_0.gguf)
+   ·  [FP16](https://huggingface.co/chenmozhijin/BSRoformer-GGUF/resolve/main/GaboxR67/MelBandRoformers/melbandroformers/vocals/voc_fv6-FP16.gguf)
+   ·  [Q5_1](https://huggingface.co/chenmozhijin/BSRoformer-GGUF/resolve/main/GaboxR67/MelBandRoformers/melbandroformers/vocals/voc_fv6-Q5_1.gguf)
+   ·  [Q5_0](https://huggingface.co/chenmozhijin/BSRoformer-GGUF/resolve/main/GaboxR67/MelBandRoformers/melbandroformers/vocals/voc_fv6-Q5_0.gguf)
+</Callout>
+
+---
+
+## 🎯 How It Works
+
+AI-powered vocal extraction based on the MelBandRoformer (Mel Band-Split Roformer) architecture:
+
+1. **Audio Extraction**: Extracts 44.1kHz stereo WAV audio from the video
+2. **Band Splitting**: The model divides audio into frequency sub-bands, each processed by separate Transformer attention heads
+3. **Vocal Isolation**: Outputs a clean vocal track, automatically fed into the subsequent Whisper transcription pipeline
+
+---
+
+## ❓ FAQ
+
+### Toggle is grayed out?
+
+No compatible GPU was detected. Please verify:
+- **macOS**: Using an Apple Silicon Mac (M1 or later). Intel Macs are not supported.
+- **Windows**: Confirm your system has Vulkan-compatible GPU drivers installed (most NVIDIA/AMD dedicated GPUs support this by default).
+
+### Processing is slow?
+
+Vocal separation requires GPU memory and compute power:
+1. If VRAM is insufficient, try a smaller quantized model (Q5_0 or Q4_1)
+2. Long videos are automatically processed in segments (30 minutes each) — please be patient
+3. Ensure no other programs are heavily using the GPU
+
+### GPU error / Shader compilation failed?
+
+Some GPU and driver combinations may encounter Vulkan shader compilation issues (especially with older drivers). Try:
+1. Update your GPU drivers to the latest version
+2. If the error persists, try a different quantization level (e.g., switch from Q8_0 to FP16)
+
+### When should I enable vocal separation?
+
+- ✅ Videos with background music (MVs, variety shows, vlogs)
+- ✅ Videos with significant ambient noise (live recordings, stream replays)
+- ❌ Clean speech or podcast audio (not needed — only adds processing time)

@@ -1,4 +1,12 @@
 {
   "title": "使用指南",
-  "pages": ["index", "get-key", "whisper", "alignment", "video-download", "migration"]
+  "pages": [
+    "index",
+    "get-key",
+    "whisper",
+    "vocal-separation",
+    "alignment",
+    "video-download",
+    "migration"
+  ]
 }

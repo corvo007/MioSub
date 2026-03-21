@@ -1,0 +1,103 @@
+---
+title: '人声提取'
+description: '使用 AI 模型从视频中分离人声，提升嘈杂音频的转写质量'
+---
+
+<Callout type="warn" title="硬件要求">
+  人声提取功能需要 **GPU 加速**，仅以下设备支持：
+  - **macOS**: Apple Silicon（M1/M2/M3/M4），通过 Metal 加速。Intel Mac 不支持。
+  - **Windows**: 配备 NVIDIA / AMD 独立显卡，通过 Vulkan 加速
+
+  没有独立显卡的 Windows 电脑（如集成显卡的轻薄本）**无法使用**此功能。
+</Callout>
+
+人声提取会在转写之前自动分离视频中的人声和背景音乐/噪声，仅将纯人声送入 Whisper 进行识别，从而显著提升嘈杂音频（如 MV、综艺、带 BGM 的视频）的转写准确率。
+
+---
+
+## ⚡ 快速开始
+
+1. **下载模型**: 下载一个 `.gguf` 格式的模型文件（见下方推荐）
+2. **启用功能**: 设置 > 增强 > 人声提取，打开开关
+3. **选择模型**: 点击「浏览」选择下载的 `.gguf` 文件
+4. **开始使用**: 生成字幕时会自动先提取人声
+
+<Callout type="info" title="功能不可用？">
+  如果开关显示为灰色，说明未检测到可用的 GPU。请确认你的设备满足上述硬件要求。
+</Callout>
+
+---
+
+## 📦 模型下载
+
+### 模型规格表
+
+| 量化精度 | 文件名 | 大小 | 质量 | 推荐 |
+|:---------|:-------|:-----|:-----|:-----|
+| **Q8_0** | `voc_fv6-Q8_0.gguf` | 240 MB | 接近无损 | ⭐ 推荐 |
+| **FP16** | `voc_fv6-FP16.gguf` | 436 MB | 无损 | 追求最高质量 |
+| Q5_1 | `voc_fv6-Q5_1.gguf` | 173 MB | 轻微损失 | 显存不足时 |
+| Q5_0 | `voc_fv6-Q5_0.gguf` | 160 MB | 轻微损失 | 显存不足时 |
+
+### 量化精度说明
+
+- **FP16**: 半精度浮点，质量无损，体积适中。追求最高分离质量选这个。
+- **Q8_0**: 8-bit 量化，质量接近无损，体积仅 FP16 的一半多。**性价比最高，推荐大多数用户使用。**
+- **Q5_0 / Q5_1**: 5-bit 量化，体积更小，质量略有下降。适合显存紧张的情况。
+
+<Callout type="info" title="下载链接">
+  请点击下载对应的模型文件：
+
+  **Hugging Face（原始地址）**
+
+  [Q8_0（推荐）](https://huggingface.co/chenmozhijin/BSRoformer-GGUF/resolve/main/GaboxR67/MelBandRoformers/melbandroformers/vocals/voc_fv6-Q8_0.gguf)
+   ·  [FP16](https://huggingface.co/chenmozhijin/BSRoformer-GGUF/resolve/main/GaboxR67/MelBandRoformers/melbandroformers/vocals/voc_fv6-FP16.gguf)
+   ·  [Q5_1](https://huggingface.co/chenmozhijin/BSRoformer-GGUF/resolve/main/GaboxR67/MelBandRoformers/melbandroformers/vocals/voc_fv6-Q5_1.gguf)
+   ·  [Q5_0](https://huggingface.co/chenmozhijin/BSRoformer-GGUF/resolve/main/GaboxR67/MelBandRoformers/melbandroformers/vocals/voc_fv6-Q5_0.gguf)
+
+  **HF Mirror（国内用户）**
+
+  [Q8_0（推荐）](https://hf-mirror.com/chenmozhijin/BSRoformer-GGUF/resolve/main/GaboxR67/MelBandRoformers/melbandroformers/vocals/voc_fv6-Q8_0.gguf)
+   ·  [FP16](https://hf-mirror.com/chenmozhijin/BSRoformer-GGUF/resolve/main/GaboxR67/MelBandRoformers/melbandroformers/vocals/voc_fv6-FP16.gguf)
+   ·  [Q5_1](https://hf-mirror.com/chenmozhijin/BSRoformer-GGUF/resolve/main/GaboxR67/MelBandRoformers/melbandroformers/vocals/voc_fv6-Q5_1.gguf)
+   ·  [Q5_0](https://hf-mirror.com/chenmozhijin/BSRoformer-GGUF/resolve/main/GaboxR67/MelBandRoformers/melbandroformers/vocals/voc_fv6-Q5_0.gguf)
+</Callout>
+
+---
+
+## 🎯 工作原理
+
+基于 MelBandRoformer（Mel 频带分离 Roformer）架构的 AI 人声提取：
+
+1. **音频提取**: 从视频中提取 44.1kHz 立体声 WAV 音频
+2. **频带分离**: 模型将音频按频率划分为多个子频带，分别用 Transformer 注意力机制处理
+3. **人声分离**: 输出纯人声轨道，自动送入后续的 Whisper 转写流程
+
+---
+
+## ❓ 常见问题
+
+### 开关是灰色的，无法开启？
+
+说明未检测到兼容的 GPU。请确认：
+- **macOS**: 使用 Apple Silicon Mac（M1 及以上），Intel Mac 不支持
+- **Windows**: 确认系统已安装支持 Vulkan 的显卡驱动（大多数 NVIDIA/AMD 独显默认支持）
+
+### 处理速度很慢？
+
+人声提取对显存和计算能力有一定要求：
+1. 如果显存不足，尝试使用更小的量化模型（Q5_0 或 Q4_1）
+2. 长视频会自动分段处理（每段 30 分钟），请耐心等待
+3. 确保没有其他程序大量占用 GPU
+
+### GPU 报错 / Shader 编译失败？
+
+部分 GPU 和驱动组合可能遇到 Vulkan shader 编译问题（尤其是较旧的驱动版本）。建议：
+1. 更新显卡驱动到最新版本
+2. 如果仍然报错，尝试更换量化精度（如从 Q8_0 换成 FP16）
+
+### 什么场景需要开启人声提取？
+
+- ✅ 带背景音乐的视频（MV、综艺、Vlog）
+- ✅ 环境噪声较大的视频（现场录制、直播回放）
+- ❌ 纯人声或播客类音频（无需开启，反而会增加处理时间）

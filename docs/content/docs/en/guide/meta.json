@@ -1,4 +1,4 @@
 {
   "title": "Guides",
-  "pages": ["index", "get-key", "whisper", "alignment", "migration"]
+  "pages": ["index", "get-key", "whisper", "vocal-separation", "alignment", "migration"]
 }
