@@ -272,24 +272,14 @@ const VocalSeparationSection: React.FC<{
             </div>
           </div>
 
-          <div className="text-xs text-slate-600 bg-slate-50 p-3 rounded-lg border border-slate-200">
-            <p className="font-medium mb-1 text-slate-800">
-              {t('enhance.vocalSeparation.instructions')}
-            </p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>
-                {t('enhance.vocalSeparation.instructionModel')}{' '}
-                <a
-                  href="https://huggingface.co/chenmozhijin/BSRoformer-GGUF"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
-                >
-                  Download
-                </a>
-              </li>
-            </ul>
-          </div>
+          <a
+            href="https://www.miosub.app/docs/guide/vocal-separation"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block w-full text-center py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-sm text-blue-600 hover:text-blue-700 transition-colors font-medium"
+          >
+            {t('enhance.vocalSeparation.docLink')}
+          </a>
         </div>
       )}
     </div>

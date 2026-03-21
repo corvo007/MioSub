@@ -24,12 +24,13 @@ export class VocalSeparator {
   private processSeq = 0;
 
   /**
-   * Detect if GPU (Vulkan) is available.
-   * Returns false on non-Windows platforms (no prebuilt binaries).
+   * Detect if GPU acceleration is available for vocal separation.
+   * - Windows: checks for Vulkan runtime (NVIDIA/AMD dedicated GPU)
+   * - macOS: checks for Apple Silicon (Metal acceleration)
+   * - Linux: not currently supported
    *
-   * NOTE: Even if Vulkan is detected, BSRoformer may fail due to shader compilation issues.
-   * Known issue: Q8_0 models fail with "NVVM compilation failed" on some GPU/driver combinations.
-   * Workaround: Use CPU backend (set BSR_FORCE_CPU=1) or try FP16 models instead.
+   * NOTE: Even if Vulkan is detected on Windows, BSRoformer may fail due to
+   * shader compilation issues on some GPU/driver combinations.
    */
   detectGpu(): boolean {
     // Check binary exists first
@@ -43,11 +44,16 @@ export class VocalSeparator {
       return false;
     }
 
-    // Vulkan runtime present = has Vulkan-capable GPU driver
-    // However, this doesn't guarantee BSRoformer will work (shader compilation may fail)
     if (process.platform === 'win32') {
+      // Vulkan runtime present = has Vulkan-capable GPU driver
       return fs.existsSync('C:\\Windows\\System32\\vulkan-1.dll');
     }
+
+    if (process.platform === 'darwin') {
+      // Apple Silicon (arm64) has Metal acceleration; Intel Macs are not supported
+      return os.arch() === 'arm64';
+    }
+
     return false;
   }
 
