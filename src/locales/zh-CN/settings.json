@@ -157,15 +157,16 @@
       "title": "人声分离",
       "enable": "启用人声分离",
       "enableDesc": "在转录前分离人声和背景音乐，提高含 BGM 视频的转录准确率（需要 GPU）",
-      "noGpu": "未检测到 Vulkan GPU，无法使用人声分离",
+      "noGpu": "未检测到可用的 GPU，无法使用人声分离。仅支持 Apple Silicon Mac 和带独立显卡的 Windows。",
       "memWarning": "启用此功能需要大量的内存，请确保可用内存充足。",
       "modelPath": "模型路径",
       "modelPathDesc": "选择 GGUF 格式的 MelBandRoformer 模型文件",
       "modelPathPlaceholder": "请选择模型文件",
       "selectModel": "选择模型",
       "browseButton": "📁 浏览",
-      "instructions": "设置说明：",
-      "instructionModel": "需要下载 GGUF 格式的 BSRoformer 模型"
+      "instructions": "请参阅文档完成配置：",
+      "instructionModel": "下载模型并配置",
+      "docLink": "📖 查看配置文档"
     },
     "alignment": {
       "title": "时间轴对齐",
@@ -308,6 +309,14 @@
     "privacy": {
       "title": "数据与隐私",
       "description": "本应用会收集匿名诊断数据及错误报告，以帮助我们持续改进产品稳定性。"
+    },
+    "changelog": {
+      "whatsNew": "更新内容",
+      "title": "更新内容",
+      "loading": "正在加载更新日志...",
+      "error": "无法加载更新日志",
+      "retry": "重试",
+      "dismiss": "知道了"
     }
   }
 }

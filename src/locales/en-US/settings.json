@@ -157,15 +157,16 @@
       "title": "Vocal Separation",
       "enable": "Enable vocal separation",
       "enableDesc": "Separate vocals from background music before transcription to improve accuracy for videos with BGM (requires GPU)",
-      "noGpu": "Vulkan GPU not detected, vocal separation unavailable",
+      "noGpu": "No compatible GPU detected. Vocal separation requires Apple Silicon Mac or Windows with a dedicated GPU.",
       "memWarning": "This feature requires significant memory. Please ensure sufficient available memory.",
       "modelPath": "Model Path",
       "modelPathDesc": "Select a MelBandRoformer model file in GGUF format",
       "modelPathPlaceholder": "Please select a model file",
       "selectModel": "Select Model",
       "browseButton": "📁 Browse",
-      "instructions": "Setup Instructions:",
-      "instructionModel": "Download BSRoformer model in GGUF format"
+      "instructions": "See documentation to set up:",
+      "instructionModel": "Download model and configure",
+      "docLink": "📖 View Setup Guide"
     },
     "alignment": {
       "title": "Timestamp Alignment",
@@ -303,6 +304,14 @@
     "privacy": {
       "title": "Data & Privacy",
       "description": "This application will collect anonymous diagnostic data and error reports to help us continuously improve product stability."
+    },
+    "changelog": {
+      "whatsNew": "What's New",
+      "title": "What's New",
+      "loading": "Loading release notes...",
+      "error": "Failed to load release notes.",
+      "retry": "Retry",
+      "dismiss": "Got it"
     }
   }
 }

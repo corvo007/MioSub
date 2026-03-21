@@ -158,15 +158,16 @@
       "title": "ボーカル分離",
       "enable": "ボーカル分離を有効化",
       "enableDesc": "文字起こし前にボーカルとBGMを分離し、BGM付き動画の精度を向上（GPU必須）",
-      "noGpu": "Vulkan GPU が検出されませんでした。ボーカル分離は利用できません",
+      "noGpu": "互換性のあるGPUが検出されませんでした。Apple Silicon Macまたは専用GPUを搭載したWindowsが必要です。",
       "memWarning": "この機能を有効にすると大量のメモリが必要です。十分な空きメモリを確保してください。",
       "modelPath": "モデルパス",
       "modelPathDesc": "GGUF形式のMelBandRoformerモデルファイルを選択",
       "modelPathPlaceholder": "モデルファイルを選択してください",
       "selectModel": "モデルを選択",
       "browseButton": "📁 参照",
-      "instructions": "設定手順：",
-      "instructionModel": "GGUF形式のBSRoformerモデルをダウンロード"
+      "instructions": "ドキュメントを参照してセットアップ：",
+      "instructionModel": "モデルをダウンロードして設定",
+      "docLink": "📖 設定ガイドを見る"
     },
     "alignment": {
       "title": "タイムスタンプ調整",
@@ -304,6 +305,14 @@
     "privacy": {
       "title": "データとプライバシー",
       "description": "本アプリは、製品の安定性を継続的に向上させるために、匿名の診断データおよびエラーレポートを収集します。"
+    },
+    "changelog": {
+      "whatsNew": "新機能",
+      "title": "新機能",
+      "loading": "リリースノートを読み込み中...",
+      "error": "リリースノートの読み込みに失敗しました",
+      "retry": "再試行",
+      "dismiss": "OK"
     }
   }
 }
