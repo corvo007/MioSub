@@ -5,6 +5,34 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.0] - 2026-03-22
+
+### Features
+
+- **Vocal Separation**: Integrate BSRoformer neural vocal separation — automatically isolate vocals from background music/noise before transcription for dramatically better accuracy on music videos and noisy audio.
+- **Vocal Separation**: Add Apple Silicon (Metal) GPU acceleration support for vocal separation on macOS arm64.
+- **Native VAD**: Migrate from browser-based VAD to native binary for 10x+ faster voice activity detection, with reliable support for long videos without loading entire audio buffers into memory.
+- **Anti-Hallucination**: Add multi-layer Whisper hallucination filter — curated blacklists for EN/CN/JP/KR, repetition cleaning (kana floods, phrase loops), and cross-subtitle deduplication using Dice coefficient matching.
+- **Changelog Modal**: Auto-display release notes on first launch after update, with a "What's New" button in the About tab.
+- **Progress**: Tighten end-to-end progress reporting with vocal separation percentage display.
+- **LLM**: Normalize usage metadata across LLM adapters for consistent token tracking.
+
+### Fixes
+
+- **Audio**: Handle non-ASCII file paths in FFmpeg and audio decoder on Windows, fixing EILSEQ errors for users with CJK usernames.
+- **Pipeline**: Pass abort signal through parallel processing for proper cancellation, cap semaphore release to prevent over-release, and fix Gemini token usage aggregation.
+- **Pipeline**: Add WAV parser bounds checking, RFC 4180 CSV parsing, and null safety for Whisper segment text.
+- **Electron**: Security hardening with async I/O and proper resource cleanup.
+- **React**: Fix memo safety, stale closures, unmount guards, and selector stability.
+- **Types**: Unify interfaces, type the IPC contract, and fix config/i18n inconsistencies.
+- **Audio**: Improve vocal separation and compression plumbing.
+
+### Refactor
+
+- **Update Service**: Split 997-line monolith into 7 focused modules (types, GitHub API, app updater, version checker, installer, IPC handlers, orchestrator).
+- **Pipeline**: Harden generation flow with lint cleanup.
+- **Binary**: Extract shared `detectBinaryVersion` utility for reuse across binary managers.
+
 ## [3.0.20] - 2026-02-26
 
 ### Fixes
