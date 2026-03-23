@@ -5,7 +5,7 @@ import { spawn, type ChildProcess } from 'child_process';
 import * as Sentry from '@sentry/electron/main';
 import { t } from '../i18n.ts';
 import { getBinaryPath } from '../utils/paths.ts';
-import { buildSpawnArgs, ensureAsciiSafePath } from '../utils/shell.ts';
+import { buildSpawnArgs, ensureAsciiSafePath, getAsciiSafeTempPath } from '../utils/shell.ts';
 import { ExpectedError } from '../utils/expectedError.ts';
 import { detectBinaryVersion } from '../utils/version.ts';
 import { extractAudioFromVideo } from './ffmpegAudioExtractor.ts';
@@ -71,10 +71,10 @@ export class VocalSeparator {
     const { safePath: safeModelPath, cleanup: cleanupModel } = await ensureAsciiSafePath(modelPath);
 
     // Step 2: Extract audio to WAV (44.1kHz stereo as required by MelBandRoformer)
-    const tempDir = os.tmpdir();
     const timestamp = Date.now();
 
     let inputWav: string | null = null;
+    const outputBase = getAsciiSafeTempPath(`mbr_output_${timestamp}`);
 
     try {
       inputWav = await extractAudioFromVideo(safeVideoPath, {
@@ -108,7 +108,6 @@ export class VocalSeparator {
       if (!fs.existsSync(safeModelPath)) {
         throw new ExpectedError(`Model file not found: ${modelPath}`);
       }
-      const outputBase = path.join(tempDir, `mbr_output_${timestamp}`);
 
       const {
         command,
@@ -245,12 +244,29 @@ export class VocalSeparator {
         throw error;
       }
 
-      // Step 4: Return vocals path (stem_0.wav)
-      const vocalsPath = `${outputBase}_stem_0.wav`;
-      if (!fs.existsSync(vocalsPath)) {
-        const error = new Error(`Vocal separation output not found: ${vocalsPath}`);
+      // Step 4: Find the vocals output file
+      // BSRoformer may use different naming conventions depending on version.
+      // Parse stdout for the actual path, then try known patterns as fallback.
+      const stemMatch = stdout.match(/Saved output stem 0:\s*(.+?)(?:[\r\n]|$)/);
+      const parsedStemPath = stemMatch?.[1]?.trim();
+
+      const candidates = [
+        // Parsed path from stdout (most reliable)
+        ...(parsedStemPath
+          ? [parsedStemPath, ...(parsedStemPath.endsWith('.wav') ? [] : [`${parsedStemPath}.wav`])]
+          : []),
+        // Known naming patterns
+        `${outputBase}_stem_0.wav`,
+        `${outputBase}.wav`,
+      ];
+
+      const vocalsPath = candidates.find((p) => fs.existsSync(p));
+      if (!vocalsPath) {
+        const error = new Error(
+          `Vocal separation output not found: ${candidates[0] || outputBase}`
+        );
         Sentry.captureException(error, {
-          extra: { outputBase, exitCode, stdout, stderr },
+          extra: { outputBase, exitCode, stdout, stderr, parsedStemPath, candidates },
         });
         throw error;
       }
@@ -261,10 +277,12 @@ export class VocalSeparator {
       if (inputWav && fs.existsSync(inputWav)) {
         fs.unlinkSync(inputWav);
       }
-      // Cleanup accompaniment (stem_1.wav) if exists
-      const accompPath = path.join(tempDir, `mbr_output_${timestamp}_stem_1.wav`);
-      if (fs.existsSync(accompPath)) {
-        fs.unlinkSync(accompPath);
+      // Cleanup accompaniment stems if they exist (try both naming patterns)
+      for (const suffix of ['_stem_1.wav', '_stem_1']) {
+        const accompPath = `${outputBase}${suffix}`;
+        if (fs.existsSync(accompPath)) {
+          fs.unlinkSync(accompPath);
+        }
       }
       await cleanupVideo();
       await cleanupModel();
@@ -302,8 +320,14 @@ export class VocalSeparator {
    * Read vocals file as Buffer (for renderer to decode).
    */
   async readVocalsFile(filePath: string): Promise<Buffer> {
-    // Security: only allow reading from temp directory
-    if (!filePath.startsWith(os.tmpdir())) {
+    // Security: only allow reading from temp directories
+    // Normalize paths and compare case-insensitively on Windows (paths are case-insensitive)
+    const allowedDirs = [os.tmpdir()];
+    const programData = process.env.ProgramData;
+    if (programData) allowedDirs.push(path.join(programData, 'miosub', 'tmp'));
+
+    const normalized = path.normalize(filePath).toLowerCase();
+    if (!allowedDirs.some((dir) => normalized.startsWith(path.normalize(dir).toLowerCase()))) {
       throw new ExpectedError(t('vocalSeparator.accessDenied'));
     }
     return fs.promises.readFile(filePath);

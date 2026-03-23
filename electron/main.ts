@@ -1400,11 +1400,49 @@ ipcMain.handle('vocal:detect-gpu', () => {
 });
 
 ipcMain.handle('vocal:separate', async (event, input: { videoPath: string; modelPath: string }) => {
-  return vocalSeparatorService.separate(input.videoPath, input.modelPath, (pct) => {
-    if (!event.sender.isDestroyed()) {
-      event.sender.send('vocal:progress', { percent: pct });
+  const startAt = Date.now();
+
+  // Analytics: Vocal Separation Started
+  void analyticsService.track(
+    'vocal_separation_started',
+    {
+      model_file: path.basename(input.modelPath),
+      has_gpu: vocalSeparatorService.detectGpu(),
+    },
+    'interaction'
+  );
+
+  try {
+    const result = await vocalSeparatorService.separate(input.videoPath, input.modelPath, (pct) => {
+      if (!event.sender.isDestroyed()) {
+        event.sender.send('vocal:progress', { percent: pct });
+      }
+    });
+
+    // Analytics: Vocal Separation Completed
+    void analyticsService.track(
+      'vocal_separation_completed',
+      {
+        duration_ms: Date.now() - startAt,
+      },
+      'interaction'
+    );
+
+    return result;
+  } catch (error: any) {
+    // Analytics: Vocal Separation Failed (skip if cancelled)
+    if (!(error as any).isExpected) {
+      void analyticsService.track(
+        'vocal_separation_failed',
+        {
+          duration_ms: Date.now() - startAt,
+          error: error.message,
+        },
+        'interaction'
+      );
     }
-  });
+    throw error;
+  }
 });
 
 ipcMain.handle('vocal:abort', () => {
