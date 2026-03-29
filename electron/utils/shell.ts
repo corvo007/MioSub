@@ -92,6 +92,16 @@ function hasNonAscii(str: string): boolean {
 }
 
 /**
+ * Check if a path contains characters that FFmpeg interprets as special syntax.
+ * - `[` `]` — glob/sequence patterns (e.g., file[0-9].mp4)
+ * - `%` — image sequence numbering (e.g., frame%03d.png)
+ * - `'` — quoting issues on some platforms
+ */
+function hasFfmpegUnsafeChars(str: string): boolean {
+  return /[[\]%']/.test(str);
+}
+
+/**
  * Get an ASCII-safe temporary directory on Windows.
  *
  * The default os.tmpdir() is under the user profile (C:\Users\用户名\AppData\...),
@@ -130,7 +140,7 @@ export async function ensureAsciiSafePath(filePath: string): Promise<{
   safePath: string;
   cleanup: () => Promise<void>;
 }> {
-  if (process.platform !== 'win32' || !hasNonAscii(filePath)) {
+  if (process.platform !== 'win32' || (!hasNonAscii(filePath) && !hasFfmpegUnsafeChars(filePath))) {
     return { safePath: filePath, cleanup: async () => {} };
   }
 

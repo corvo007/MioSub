@@ -586,7 +586,19 @@ export class EndToEndPipeline {
 
       const responseChannel = 'end-to-end:subtitle-complete';
       const progressChannel = 'end-to-end:subtitle-progress';
-      const SUBTITLE_GENERATION_TIMEOUT = 30 * 60 * 1000;
+      // Activity-based timeout: reset on each progress update.
+      // Only fires if no progress received for this duration.
+      const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+
+      let timeoutId: ReturnType<typeof setTimeout>;
+
+      const resetTimeout = () => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error('Subtitle generation timed out (no progress for 10 minutes)'));
+        }, INACTIVITY_TIMEOUT);
+      };
 
       const cleanup = () => {
         clearTimeout(timeoutId);
@@ -598,6 +610,7 @@ export class EndToEndPipeline {
       };
 
       const progressHandler = (_event: Electron.IpcMainEvent, chunkStatus: any) => {
+        resetTimeout();
         if (onChunkProgress) {
           onChunkProgress(chunkStatus);
         }
@@ -625,10 +638,8 @@ export class EndToEndPipeline {
         reject(new Error('Main window was closed during subtitle generation'));
       };
 
-      const timeoutId = setTimeout(() => {
-        cleanup();
-        reject(new Error('Subtitle generation timed out after 30 minutes'));
-      }, SUBTITLE_GENERATION_TIMEOUT);
+      // Start the initial inactivity timer
+      resetTimeout();
 
       if (this.mainWindow) {
         this.mainWindow.on('closed', onWindowClosed);

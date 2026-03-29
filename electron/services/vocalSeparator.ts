@@ -245,20 +245,45 @@ export class VocalSeparator {
       }
 
       // Step 4: Find the vocals output file
-      // BSRoformer may use different naming conventions depending on version.
-      // Parse stdout for the actual path, then try known patterns as fallback.
-      const stemMatch = stdout.match(/Saved output stem 0:\s*(.+?)(?:[\r\n]|$)/);
-      const parsedStemPath = stemMatch?.[1]?.trim();
+      // BSRoformer may use different naming conventions depending on version and mode.
+      // In segmented mode (--segment-minutes), multiple "Saved output stem 0:" lines
+      // appear — one per segment, then the final assembled output. Use the LAST match.
+      const stemMatches = [...stdout.matchAll(/Saved output stem 0:\s*(.+?)(?:[\r\n]|$)/g)];
+      const parsedStemPath = stemMatches[stemMatches.length - 1]?.[1]?.trim();
 
-      const candidates = [
-        // Parsed path from stdout (most reliable)
-        ...(parsedStemPath
-          ? [parsedStemPath, ...(parsedStemPath.endsWith('.wav') ? [] : [`${parsedStemPath}.wav`])]
-          : []),
-        // Known naming patterns
-        `${outputBase}_stem_0.wav`,
-        `${outputBase}.wav`,
-      ];
+      const candidates: string[] = [];
+
+      // 1. Parsed path from stdout (last match = final output in segmented mode)
+      if (parsedStemPath) {
+        candidates.push(parsedStemPath);
+        if (!parsedStemPath.endsWith('.wav')) candidates.push(`${parsedStemPath}.wav`);
+      }
+
+      // 2. Known naming patterns at outputBase
+      candidates.push(`${outputBase}_stem_0.wav`, `${outputBase}.wav`);
+
+      // 3. Search temp directory for stem files (handles unexpected naming)
+      const tempDir = path.dirname(outputBase);
+      const baseName = path.basename(outputBase);
+      try {
+        for (const f of fs.readdirSync(tempDir)) {
+          // Files matching our outputBase prefix with stem pattern
+          if (f.startsWith(baseName) && f.includes('stem') && f.endsWith('.wav')) {
+            candidates.push(path.join(tempDir, f));
+          }
+          // BSRoformer segments directories — search for stem outputs inside
+          const fullPath = path.join(tempDir, f);
+          if (f.startsWith('bs_roformer_segments_') && fs.statSync(fullPath).isDirectory()) {
+            for (const sf of fs.readdirSync(fullPath)) {
+              if (sf.includes('stem') && sf.endsWith('.wav')) {
+                candidates.push(path.join(fullPath, sf));
+              }
+            }
+          }
+        }
+      } catch {
+        // Ignore directory read errors
+      }
 
       const vocalsPath = candidates.find((p) => fs.existsSync(p));
       if (!vocalsPath) {
