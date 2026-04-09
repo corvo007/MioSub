@@ -92,6 +92,12 @@ export class SpeakerAnalyzer {
       }));
     } catch (e: any) {
       logger.error('Speaker profile extraction failed', e);
+
+      // User-initiated cancellation — not an error, skip Sentry
+      if (e.name === 'AbortError' || signal?.aborted) {
+        return [];
+      }
+
       // Use actionable error info if available
       const actionableInfo = getActionableErrorInfo(e);
       const errorMsg =
