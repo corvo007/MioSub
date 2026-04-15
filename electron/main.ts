@@ -224,6 +224,7 @@ import { analyticsService } from './services/analyticsService.ts';
 import { initUpdateService } from './services/update/index.ts';
 import { systemInfoService } from './services/systemInfoService.ts';
 import { runPreflightCheck, type PreflightSettings } from './services/preflightCheck.ts';
+import { runCambDub } from './services/cambDubbing.ts';
 
 const videoCompressorService = new VideoCompressorService();
 const nativeVadService = new NativeVadService();
@@ -342,6 +343,30 @@ ipcMain.handle('binaries:getInfo', async () => {
     return null;
   }
 });
+
+// IPC Handler: Camb AI Dubbing
+ipcMain.handle(
+  'camb:dub',
+  async (
+    _event,
+    opts: {
+      // Camb's dub endpoint requires a public HTTP(S) URL — local file paths
+      // are NOT supported. The renderer must surface this constraint to users.
+      videoUrl: string;
+      apiKey: string;
+      sourceLanguage: string;
+      targetLanguage: string;
+      outputDir?: string;
+    }
+  ) => {
+    try {
+      return await runCambDub(opts);
+    } catch (error: any) {
+      console.error('[Main] Camb dub failed:', error);
+      return { success: false, error: error?.message || String(error) };
+    }
+  }
+);
 
 // IPC Handler: Transcribe Local
 ipcMain.handle(

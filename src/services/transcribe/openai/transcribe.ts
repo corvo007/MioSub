@@ -4,6 +4,7 @@ import i18n from '@/i18n';
 import { transcribeWithWhisper } from '@/services/transcribe/openai/whisper';
 import { transcribeWithOpenAIChat } from '@/services/transcribe/openai/chat';
 import { transcribeWithLocalWhisper } from '@/services/transcribe/whisper-local/transcribe';
+import { transcribeWithCamb } from '@/services/transcribe/camb/transcribe';
 
 export const transcribeAudio = async (
   audioBlob: Blob,
@@ -15,15 +16,28 @@ export const transcribeAudio = async (
   localModelPath?: string,
   localThreads?: number,
   signal?: AbortSignal,
-  customBinaryPath?: string
+  customBinaryPath?: string,
+  provider?: 'openai' | 'local' | 'camb',
+  cambApiKey?: string
 ): Promise<SubtitleItem[]> => {
   // Check cancellation
   if (signal?.aborted) {
     throw new Error(i18n.t('services:pipeline.errors.cancelled'));
   }
 
+  // Resolve effective provider. Explicit `provider` wins; otherwise derive from
+  // legacy `useLocalWhisper` flag for backward compatibility.
+  const effectiveProvider: 'openai' | 'local' | 'camb' =
+    provider ?? (useLocalWhisper ? 'local' : 'openai');
+
+  // Camb AI cloud transcription
+  if (effectiveProvider === 'camb') {
+    logger.debug('Using Camb AI for transcription');
+    return transcribeWithCamb(audioBlob, cambApiKey || '', timeout, signal);
+  }
+
   // Try local Whisper
-  if (useLocalWhisper && window.electronAPI) {
+  if (effectiveProvider === 'local' && window.electronAPI) {
     if (!localModelPath) {
       throw new Error(i18n.t('services:api.whisperLocal.errors.noModelPath'));
     }

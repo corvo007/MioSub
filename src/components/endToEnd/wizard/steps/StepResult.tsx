@@ -1,9 +1,10 @@
-import React from 'react';
-import { CheckCircle, XCircle, Film, FileText, Wand2, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle, XCircle, Film, FileText, Wand2, RefreshCw, Mic } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 import { OutputItem } from '@/components/endToEnd/wizard/shared/OutputItem';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { useAppStore } from '@/store/useAppStore';
 
 /** 步骤 4: 结果展示 */
 export function StepResult({
@@ -18,10 +19,46 @@ export function StepResult({
   const { t } = useTranslation('endToEnd');
   const success = result?.success;
   const outputs = result?.outputs || {};
+  const settings = useAppStore((s) => s.settings);
+  const addToast = useAppStore((s) => s.addToast);
+  const [dubbing, setDubbing] = useState(false);
+  const [dubbedPath, setDubbedPath] = useState<string | undefined>(undefined);
 
   const handleOpenFolder = (path: string) => {
     if (window.electronAPI?.showItemInFolder) {
       void window.electronAPI.showItemInFolder(path);
+    }
+  };
+
+  const handleDub = async () => {
+    const src = outputs.outputVideoPath || outputs.videoPath;
+    if (!src) return;
+    if (!window.electronAPI?.camb?.dub) {
+      addToast?.('Dubbing only available in desktop app', 'warning');
+      return;
+    }
+    if (!settings.cambApiKey) {
+      addToast?.('Please set Camb API key in Settings → Services', 'warning');
+      return;
+    }
+    setDubbing(true);
+    try {
+      const res = await window.electronAPI.camb.dub({
+        videoPath: src,
+        apiKey: settings.cambApiKey,
+        targetLanguage: settings.cambTargetLanguage || 'en',
+        voiceId: settings.cambDefaultVoiceId,
+      });
+      if (res.success && res.outputPath) {
+        setDubbedPath(res.outputPath);
+        addToast?.('Dub complete', 'success');
+      } else {
+        addToast?.(`Dub failed: ${res.error || 'unknown'}`, 'error');
+      }
+    } catch (e: any) {
+      addToast?.(`Dub failed: ${e?.message || e}`, 'error');
+    } finally {
+      setDubbing(false);
     }
   };
 
@@ -83,6 +120,34 @@ export function StepResult({
               highlight
             />
           )}
+          {dubbedPath && (
+            <OutputItem
+              icon={<Mic className="w-5 h-5" />}
+              label="Dubbed Video (Camb AI)"
+              path={dubbedPath}
+              onOpen={() => handleOpenFolder(dubbedPath)}
+              highlight
+            />
+          )}
+        </div>
+      )}
+
+      {/* Dub action */}
+      {success && (outputs.outputVideoPath || outputs.videoPath) && (
+        <div className="flex justify-center mb-6">
+          <button
+            onClick={handleDub}
+            disabled={dubbing}
+            className={cn(
+              'px-5 py-2.5 rounded-xl text-sm font-medium border shadow-sm transition-colors flex items-center gap-2',
+              dubbing
+                ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-wait'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+            )}
+          >
+            <Mic className="w-4 h-4" />
+            {dubbing ? 'Dubbing…' : 'Dub video with Camb AI'}
+          </button>
         </div>
       )}
 

@@ -390,6 +390,17 @@ export interface ElectronAPI {
     };
   }>;
 
+  // Camb AI Dubbing
+  camb: {
+    dub: (opts: {
+      videoPath: string;
+      apiKey: string;
+      targetLanguage: string;
+      voiceId?: string;
+      outputDir?: string;
+    }) => Promise<{ success: boolean; outputPath?: string; taskId?: string; error?: string }>;
+  };
+
   // Video Compression APIs
   compression: {
     compress: (

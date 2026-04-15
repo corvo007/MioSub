@@ -68,6 +68,19 @@ export interface AppSettings {
   glossaryAutoConfirm?: boolean; // Default: false (show dialog)
   requestTimeout?: number; // Default: 600 (seconds)
 
+  // Camb AI Settings
+  /**
+   * Transcription provider. When set, overrides the binary useLocalWhisper flag
+   * for selecting between OpenAI / local Whisper / Camb AI.
+   * - 'openai': cloud OpenAI Whisper/gpt-4o
+   * - 'local': whisper.cpp via Electron
+   * - 'camb': Camb AI cloud transcription
+   */
+  transcriptionProvider?: 'openai' | 'local' | 'camb';
+  cambApiKey?: string;
+  cambDefaultVoiceId?: string; // default voice id for dubbing
+  cambTargetLanguage?: string; // default target language for dubbing (e.g. "en" or Camb language id)
+
   // Local Whisper Settings
   useLocalWhisper?: boolean; // Whether to use local Whisper
   whisperModelPath?: string; // Model file path (.bin)

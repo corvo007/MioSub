@@ -153,6 +153,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
   showItemInFolder: (path: string) => ipcRenderer.invoke('shell:show-item-in-folder', path),
   getAboutInfo: (lastHash?: string) => ipcRenderer.invoke('util:get-about-info', lastHash),
 
+  // Camb AI Dubbing
+  camb: {
+    dub: (opts: {
+      videoPath: string;
+      apiKey: string;
+      targetLanguage: string;
+      voiceId?: string;
+      outputDir?: string;
+    }) => ipcRenderer.invoke('camb:dub', opts),
+  },
+
   // Video Compression APIs
   compression: {
     compress: (inputPath: string, outputPath: string, options: any) =>
