@@ -681,8 +681,9 @@ export const SubtitleEditor: React.FC<SubtitleEditorProps> = React.memo(
           onWheel={handleUserScrollInteraction}
           onTouchMove={handleUserScrollInteraction}
         >
-          {/* Always show BatchHeader when completed or cancelled (so UI remains usable after abort) */}
-          {(status === GenerationStatus.COMPLETED || status === GenerationStatus.CANCELLED) && (
+          {(status === GenerationStatus.COMPLETED ||
+            status === GenerationStatus.CANCELLED ||
+            status === GenerationStatus.ERROR) && (
             <BatchHeader
               chunks={chunks}
               selectedBatches={selectedBatches}
