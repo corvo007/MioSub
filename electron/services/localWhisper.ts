@@ -265,7 +265,10 @@ export class LocalWhisperService {
           }
 
           const jsonContent = await fs.promises.readFile(outputPath, 'utf-8');
-          const result = JSON.parse(jsonContent);
+          // Sanitize control characters that whisper.cpp may emit unescaped via fprintf
+          // eslint-disable-next-line no-control-regex
+          const sanitized = jsonContent.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '');
+          const result = JSON.parse(sanitized);
 
           const subtitles: SubtitleItem[] = (result.transcription || []).map((item: any) => ({
             start: item.timestamps.from,
@@ -330,7 +333,8 @@ export class LocalWhisperService {
     language: string = 'auto',
     threads: number = 4,
     onLog?: (message: string) => void,
-    customBinaryPath?: string
+    customBinaryPath?: string,
+    gpuSupport?: boolean
   ): Promise<TranscribeResult> {
     // Reset cancellation flag at start of new transcription
     this.isCancelled = false;
@@ -407,12 +411,19 @@ export class LocalWhisperService {
         console.warn(`[LocalWhisper] VAD model not found, running without VAD.`);
       }
 
-      // First attempt: run with default GPU settings
+      // Proactively disable GPU when detection says no GPU support,
+      // to avoid hard crashes on ancient GPUs that die during init
+      if (gpuSupport === false) {
+        args.push('-ng');
+        if (onLog) onLog('[DEBUG] [LocalWhisper] GPU not supported — using CPU mode (-ng)');
+      }
+
+      // First attempt: run with current GPU settings
       try {
         return await this._runWhisperProcess(binaryPath, args, jobId, inputPath, onLog);
       } catch (error: any) {
         // If GPU error and not cancelled, retry with CPU-only mode (-ng)
-        if (!this.isCancelled && this.isGpuError(error.message)) {
+        if (!this.isCancelled && !args.includes('-ng') && this.isGpuError(error.message)) {
           console.warn('[LocalWhisper] GPU error detected, retrying with CPU mode (-ng)...');
           if (onLog)
             onLog('[WARN] [LocalWhisper] GPU transcription failed, retrying with CPU mode...');
