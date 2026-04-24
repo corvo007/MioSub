@@ -69,6 +69,10 @@ export interface StepContext {
   base64Audio?: string;
   rawSegments?: SubtitleItem[]; // Raw segments before refinement (for reconciliation)
 
+  // Diagnostics (set by steps for downstream consumers)
+  /** Number of segments before postProcess filtering (set by TranscriptionStep) */
+  transcriptionPreFilterCount?: number;
+
   // Mock stage helpers
   mockStageIndex: number;
   mockInputSegments: SubtitleItem[];

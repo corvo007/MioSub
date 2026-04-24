@@ -145,7 +145,8 @@
       "missingOpenAIKey": "缺少 OpenAI API Key (或未启用本地 Whisper)",
       "cancelled": "操作已取消",
       "translationFailedKeepRefined": "翻译失败 (第 {{index}} 块)，保留优化结果",
-      "decodeFailed": "音频解码失败"
+      "decodeFailed": "音频解码失败",
+      "allSegmentsFiltered": "全部 {{count}} 个转录片段均为非语音内容"
     }
   },
   "utils": {

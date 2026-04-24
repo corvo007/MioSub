@@ -146,7 +146,8 @@
       "missingOpenAIKey": "OpenAI API キーがありません（またはローカル Whisper が無効です）",
       "cancelled": "操作がキャンセルされました",
       "translationFailedKeepRefined": "翻訳失敗 (第 {{index}} 塊)、精製結果を保持",
-      "decodeFailed": "音声デコード失敗"
+      "decodeFailed": "音声デコード失敗",
+      "allSegmentsFiltered": "全 {{count}} 件の文字起こしセグメントが非音声コンテンツでした"
     }
   },
   "utils": {

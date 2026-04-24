@@ -480,8 +480,10 @@ export function useGeneration({
         const allFailuresUserActionable =
           failedChunks.length > 0 && failedChunks.every((c) => c.isUserActionable);
 
-        // Aggregate unique error messages from failed chunks
-        const uniqueErrors = [...new Set(failedChunks.map((c) => c.errorMessage).filter(Boolean))];
+        // Aggregate unique error messages from all chunks (failed + empty with filtered content)
+        const uniqueErrors = [
+          ...new Set(chunkAnalytics.map((c) => c.errorMessage).filter(Boolean)),
+        ];
         const aggregatedReason =
           uniqueErrors.length > 0
             ? uniqueErrors.join('; ')

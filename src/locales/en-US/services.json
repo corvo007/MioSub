@@ -145,7 +145,8 @@
       "missingOpenAIKey": "OpenAI API Key missing (or local Whisper not enabled)",
       "cancelled": "Operation cancelled",
       "translationFailedKeepRefined": "Translation failed (Chunk {{index}}), keeping refined text",
-      "decodeFailed": "Audio decoding failed"
+      "decodeFailed": "Audio decoding failed",
+      "allSegmentsFiltered": "All {{count}} transcribed segments were non-speech content"
     }
   },
   "utils": {

@@ -149,7 +149,17 @@ export class ChunkProcessor {
 
       // Skip if no segments
       if (rawSegments.length === 0) {
-        logger.warn(`[Chunk ${index}] No segments available, skipping`);
+        const filteredCount = ctx.transcriptionPreFilterCount;
+        if (filteredCount) {
+          logger.warn(
+            `[Chunk ${index}] All ${filteredCount} transcribed segments filtered (non-speech content)`
+          );
+          analytics.errorMessage = i18n.t('services:pipeline.errors.allSegmentsFiltered', {
+            count: filteredCount,
+          });
+        } else {
+          logger.warn(`[Chunk ${index}] No segments available, skipping`);
+        }
         onProgress?.({
           id: index,
           total: totalChunks,

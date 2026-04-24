@@ -80,7 +80,9 @@ export class TranscriptionStep extends BaseStep<TranscriptionInput, SubtitleItem
     return rawSegments;
   }
 
-  protected postProcess(output: SubtitleItem[], _ctx: StepContext): SubtitleItem[] {
+  protected postProcess(output: SubtitleItem[], ctx: StepContext): SubtitleItem[] {
+    const preFilterCount = output.length;
+
     // 1. Text cleaning: remove non-speech annotations + repetition patterns
     let segments = output
       .map((seg) => ({
@@ -94,6 +96,11 @@ export class TranscriptionStep extends BaseStep<TranscriptionInput, SubtitleItem
 
     // 3. Merge consecutive near-duplicate segments (Whisper "stuck loop")
     segments = deduplicateConsecutive(segments);
+
+    // Track pre-filter count so ChunkProcessor can report why segments disappeared
+    if (segments.length === 0 && preFilterCount > 0) {
+      ctx.transcriptionPreFilterCount = preFilterCount;
+    }
 
     return segments;
   }
