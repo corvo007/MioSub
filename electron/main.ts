@@ -1149,11 +1149,16 @@ async function applyProxyConfig(config: {
   url?: string;
 }): Promise<{ success: boolean; error?: string }> {
   if (config.mode === 'custom' && config.url) {
-    if (!/^(https?|socks5):\/\/.+/.test(config.url)) {
-      return {
-        success: false,
-        error: 'Invalid proxy URL: must start with http://, https://, or socks5://',
-      };
+    try {
+      const u = new URL(config.url);
+      if (!['http:', 'https:', 'socks5:'].includes(u.protocol) || !u.hostname) {
+        return {
+          success: false,
+          error: 'Invalid proxy URL: must use http://, https://, or socks5:// protocol',
+        };
+      }
+    } catch {
+      return { success: false, error: 'Invalid proxy URL format' };
     }
   }
 
@@ -1173,9 +1178,17 @@ async function applyProxyConfig(config: {
     else delete process.env.HTTPS_PROXY;
   }
 
-  console.log(
-    `[Proxy] Applied proxy mode: ${config.mode}${config.mode === 'custom' ? ` (${config.url})` : ''}`
-  );
+  if (config.mode === 'custom' && config.url) {
+    try {
+      const u = new URL(config.url);
+      if (u.password) u.password = '***';
+      console.log(`[Proxy] Applied proxy mode: custom (${u.toString()})`);
+    } catch {
+      console.log('[Proxy] Applied proxy mode: custom');
+    }
+  } else {
+    console.log(`[Proxy] Applied proxy mode: ${config.mode}`);
+  }
   return { success: true };
 }
 
