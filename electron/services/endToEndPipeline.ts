@@ -506,7 +506,8 @@ export class EndToEndPipeline {
       } else if (
         error.message === t('endToEnd.userCancelled') ||
         error.message?.includes('cancelled') ||
-        error.message?.includes('canceled')
+        error.message?.includes('canceled') ||
+        error.message?.includes('window was closed')
       ) {
         isExpected = true;
       }
