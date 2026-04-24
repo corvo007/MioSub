@@ -38,6 +38,23 @@
       "bilingual": "バイリンガル字幕",
       "targetOnly": "翻訳のみ",
       "bilingualHint": "バイリンガルモードでは、原文と訳文を並べて表示します。"
+    },
+    "proxy": {
+      "title": "ネットワークプロキシ",
+      "mode": "プロキシモード",
+      "system": "システム設定",
+      "custom": "カスタムプロキシ",
+      "direct": "直接接続",
+      "systemHint": "OSのプロキシ設定を使用します。",
+      "customHint": "カスタムプロキシサーバーを使用します。HTTPとSOCKS5プロトコルに対応。",
+      "directHint": "プロキシを使用せず、直接接続します。",
+      "url": "プロキシURL",
+      "urlPlaceholder": "http://127.0.0.1:7890",
+      "urlHint": "http://、https://、socks5:// プロトコルに対応。認証: http://ユーザー名:パスワード@ホスト:ポート",
+      "test": "接続テスト",
+      "testing": "テスト中...",
+      "testSuccess": "接続成功 ({{latency}}ms)",
+      "testFail": "接続に失敗しました"
     }
   },
   "services": {

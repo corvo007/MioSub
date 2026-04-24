@@ -86,6 +86,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     setSettings: (settings: any) => ipcRenderer.invoke('storage-set', settings),
   },
 
+  // Proxy
+  proxy: {
+    apply: (config: { mode: 'system' | 'custom' | 'direct'; url?: string }) =>
+      ipcRenderer.invoke('proxy:apply', config),
+    test: (config: { mode: 'system' | 'custom' | 'direct'; url?: string }) =>
+      ipcRenderer.invoke('proxy:test', config),
+  },
+
   // i18n - sync language to main process
   i18n: {
     changeLanguage: (lang: string) => ipcRenderer.invoke('i18n:change-language', lang),

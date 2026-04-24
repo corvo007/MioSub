@@ -99,6 +99,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   useSpeakerStyledTranslation: true,
   // Smart default: If high DPI (e.g. 200% scale), default to 80% zoom to fit more content
   zoomLevel: typeof window !== 'undefined' && window.devicePixelRatio >= 2 ? 0.8 : 1.0,
+  proxyMode: 'system',
 };
 
 const SETTINGS_KEY = 'gemini_subtitle_settings';

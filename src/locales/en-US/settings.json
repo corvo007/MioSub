@@ -38,6 +38,23 @@
       "bilingual": "Bilingual Subtitles",
       "targetOnly": "Translation Only",
       "bilingualHint": "Bilingual mode displays both original and translated text in subtitles."
+    },
+    "proxy": {
+      "title": "Network Proxy",
+      "mode": "Proxy Mode",
+      "system": "System Proxy",
+      "custom": "Custom Proxy",
+      "direct": "Direct",
+      "systemHint": "Use your operating system's proxy settings.",
+      "customHint": "Use a custom proxy server. Supports HTTP and SOCKS5 protocols.",
+      "directHint": "Connect directly without any proxy.",
+      "url": "Proxy URL",
+      "urlPlaceholder": "http://127.0.0.1:7890",
+      "urlHint": "Supports http://, https://, socks5:// protocols. For authentication: http://user:pass@host:port",
+      "test": "Test Connection",
+      "testing": "Testing...",
+      "testSuccess": "Connection successful ({{latency}}ms)",
+      "testFail": "Connection failed"
     }
   },
   "services": {

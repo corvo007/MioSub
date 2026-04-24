@@ -137,6 +137,10 @@ export interface AppSettings {
   };
   providerCapabilities?: Record<string, { jsonMode: string; probedAt: number }>;
 
+  // Network Proxy Settings
+  proxyMode?: 'system' | 'custom' | 'direct'; // default: 'system'
+  proxyUrl?: string; // Only used when proxyMode === 'custom' (e.g., 'http://host:port', 'socks5://host:port')
+
   // Changelog tracking
   lastSeenChangelog?: string; // Version string of last seen changelog (e.g., "3.2.0")
 }

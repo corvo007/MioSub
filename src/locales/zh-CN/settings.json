@@ -38,6 +38,23 @@
       "bilingual": "双语字幕",
       "targetOnly": "仅译文",
       "bilingualHint": "双语模式会在字幕中同时显示原文和译文。"
+    },
+    "proxy": {
+      "title": "网络代理",
+      "mode": "代理模式",
+      "system": "跟随系统",
+      "custom": "自定义代理",
+      "direct": "直连",
+      "systemHint": "使用操作系统的代理设置。",
+      "customHint": "使用自定义代理服务器，支持 HTTP 和 SOCKS5 协议。",
+      "directHint": "不使用任何代理，直接连接。",
+      "url": "代理地址",
+      "urlPlaceholder": "http://127.0.0.1:7890",
+      "urlHint": "支持 http://、https://、socks5:// 协议。如需认证：http://用户名:密码@地址:端口",
+      "test": "测试连接",
+      "testing": "测试中...",
+      "testSuccess": "连接成功 ({{latency}}ms)",
+      "testFail": "连接失败"
     }
   },
   "services": {

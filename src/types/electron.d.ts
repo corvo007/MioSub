@@ -206,6 +206,18 @@ export interface ElectronAPI {
     setSettings: (settings: Partial<AppSettings>) => Promise<SaveResult | void>;
   };
 
+  // Proxy
+  proxy: {
+    apply: (config: {
+      mode: 'system' | 'custom' | 'direct';
+      url?: string;
+    }) => Promise<{ success: boolean; error?: string }>;
+    test: (config: {
+      mode: 'system' | 'custom' | 'direct';
+      url?: string;
+    }) => Promise<{ success: boolean; latencyMs?: number; error?: string }>;
+  };
+
   // Video Preview Cache
   cache: {
     getSize: () => Promise<{ size: number; fileCount: number }>;

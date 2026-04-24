@@ -392,7 +392,8 @@ ipcMain.handle(
         language,
         threads,
         (msg) => console.log(msg),
-        customBinaryPath
+        customBinaryPath,
+        whisperDetails.gpuSupport
       );
 
       // Analytics: Transcription Completed
@@ -1119,6 +1120,124 @@ ipcMain.handle('storage-set', async (_event, data: any) => {
   }
 });
 
+// ============================================================================
+// IPC Handler: Proxy
+// ============================================================================
+
+const originalEnvProxy = {
+  HTTP_PROXY: process.env.HTTP_PROXY,
+  HTTPS_PROXY: process.env.HTTPS_PROXY,
+};
+
+function proxyConfigToElectron(config: {
+  mode: 'system' | 'custom' | 'direct';
+  url?: string;
+}): Electron.ProxyConfig {
+  switch (config.mode) {
+    case 'custom':
+      return { proxyRules: config.url || '', proxyBypassRules: 'localhost,127.0.0.1' };
+    case 'direct':
+      return { proxyRules: 'direct://' };
+    case 'system':
+    default:
+      return { mode: 'system' as const };
+  }
+}
+
+async function applyProxyConfig(config: {
+  mode: 'system' | 'custom' | 'direct';
+  url?: string;
+}): Promise<{ success: boolean; error?: string }> {
+  if (config.mode === 'custom' && config.url) {
+    if (!/^(https?|socks5):\/\/.+/.test(config.url)) {
+      return {
+        success: false,
+        error: 'Invalid proxy URL: must start with http://, https://, or socks5://',
+      };
+    }
+  }
+
+  await session.defaultSession.setProxy(proxyConfigToElectron(config));
+
+  if (config.mode === 'custom' && config.url) {
+    process.env.HTTP_PROXY = config.url;
+    process.env.HTTPS_PROXY = config.url;
+  } else if (config.mode === 'direct') {
+    delete process.env.HTTP_PROXY;
+    delete process.env.HTTPS_PROXY;
+  } else {
+    // system mode: restore original env vars from process startup
+    if (originalEnvProxy.HTTP_PROXY) process.env.HTTP_PROXY = originalEnvProxy.HTTP_PROXY;
+    else delete process.env.HTTP_PROXY;
+    if (originalEnvProxy.HTTPS_PROXY) process.env.HTTPS_PROXY = originalEnvProxy.HTTPS_PROXY;
+    else delete process.env.HTTPS_PROXY;
+  }
+
+  console.log(
+    `[Proxy] Applied proxy mode: ${config.mode}${config.mode === 'custom' ? ` (${config.url})` : ''}`
+  );
+  return { success: true };
+}
+
+ipcMain.handle(
+  'proxy:apply',
+  async (_event, config: { mode: 'system' | 'custom' | 'direct'; url?: string }) => {
+    try {
+      return await applyProxyConfig(config);
+    } catch (error: any) {
+      console.error('[Proxy] Failed to apply proxy:', error);
+      return { success: false, error: error.message };
+    }
+  }
+);
+
+ipcMain.handle(
+  'proxy:test',
+  async (_event, config: { mode: 'system' | 'custom' | 'direct'; url?: string }) => {
+    try {
+      const tempSession = session.fromPartition('proxy-test', { cache: false });
+      await tempSession.setProxy(proxyConfigToElectron(config));
+
+      const { net } = await import('electron');
+      const start = Date.now();
+
+      const response = await new Promise<{ ok: boolean; status: number }>((resolve, reject) => {
+        let settled = false;
+        const settle = (fn: () => void) => {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            fn();
+          }
+        };
+        const request = net.request({
+          url: 'https://generativelanguage.googleapis.com',
+          method: 'HEAD',
+          partition: 'proxy-test',
+        });
+        request.on('response', (res) =>
+          settle(() => resolve({ ok: res.statusCode < 500, status: res.statusCode }))
+        );
+        request.on('error', (err) => settle(() => reject(err)));
+        const timer = setTimeout(
+          () =>
+            settle(() => {
+              request.abort();
+              reject(new Error('Connection timeout (10s)'));
+            }),
+          10000
+        );
+        request.end();
+      });
+
+      const latencyMs = Date.now() - start;
+      return { success: response.ok, latencyMs };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }
+);
+
 // IPC Handler: History
 ipcMain.handle('history-get', async () => {
   try {
@@ -1344,7 +1463,11 @@ ipcMain.handle(
       return result.outputPath;
     } catch (error: any) {
       console.error('[Main] Compression failed:', error);
-      Sentry.captureException(error);
+
+      // Skip Sentry for user-initiated cancellation
+      if (error.name !== 'CancellationError') {
+        Sentry.captureException(error);
+      }
 
       // Analytics: Fail
       void analyticsService.track('compression_failed', { error: error.message });
@@ -2089,6 +2212,16 @@ const createMenu = () => {
 app.on('ready', async () => {
   // Initialize logger file system (requires app to be ready for getPath)
   mainLogger.init();
+
+  // Apply proxy settings from persisted config (before any network requests)
+  try {
+    const settings = await storageService.readSettings();
+    if (settings?.proxyMode && settings.proxyMode !== 'system') {
+      await applyProxyConfig({ mode: settings.proxyMode, url: settings.proxyUrl });
+    }
+  } catch (error) {
+    console.error('[Main] Failed to apply proxy settings on startup:', error);
+  }
 
   // Initialize Analytics with version info
   // Initialize Analytics with version info (non-blocking)
