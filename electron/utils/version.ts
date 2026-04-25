@@ -15,6 +15,16 @@ export function isRealVersion(v: string | undefined): v is string {
   return !!v && !VERSION_SENTINELS.has(v.toLowerCase());
 }
 
+/**
+ * True only for the "binary file is missing" sentinel — distinct from other
+ * sentinels ('unknown' / 'timeout' / 'error') which mean the file exists but
+ * the probe failed. Update flows should force-download only on missing files,
+ * not on transient probe failures (cold-start AV scan, Gatekeeper, etc.).
+ */
+export function isMissingSentinel(v: string | undefined): boolean {
+  return !!v && v.toLowerCase() === 'not found';
+}
+
 /** Matches a simple semver-like string: optional "v" prefix + dot-separated digits. */
 const SEMVER_RE = /^v?\d+(\.\d+)*$/i;
 

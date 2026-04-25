@@ -669,6 +669,10 @@ class YtDlpService {
   private activeParseProcesses: Map<string, ChildProcess> = new Map();
   // Track active download output path for cleanup
   private currentDownloadOutputPath: string | null = null;
+  // Cached version probe result. Populated on first successful probe so
+  // subsequent calls (binaryVersionChecker, About tab refresh) don't re-spawn
+  // the binary on slow-disk / AV-scanning systems.
+  private cachedVersions: { ytdlp: string; qjs: string } | null = null;
 
   constructor() {
     this.binaryPath = getBinaryPath('yt-dlp');
@@ -702,7 +706,11 @@ class YtDlpService {
       const timeoutHandle = setTimeout(() => {
         killed = true;
         proc.kill('SIGTERM');
-        reject(new Error(t('error.ytdlpTimeout', { seconds: timeoutMs / 1000 })));
+        const timeoutErr = new Error(
+          t('error.ytdlpTimeout', { seconds: timeoutMs / 1000 })
+        ) as Error & { isTimeout?: boolean };
+        timeoutErr.isTimeout = true;
+        reject(timeoutErr);
       }, timeoutMs);
 
       proc.stdout.on('data', (data) => {
@@ -1231,12 +1239,16 @@ class YtDlpService {
   }
 
   async getVersions(): Promise<{ ytdlp: string; qjs: string }> {
+    if (this.cachedVersions) return this.cachedVersions;
+
     let ytdlpVersion = fs.existsSync(this.binaryPath) ? 'unknown' : 'Not found';
     let qjsVersion = 'unknown';
 
     if (ytdlpVersion !== 'Not found') {
       try {
-        const ytdlpOutput = await this.execute(['--version'], 5000);
+        // 30s timeout: first launch on Windows-with-Defender / macOS-Gatekeeper /
+        // portable-from-slow-disk can take >5s for the bundled-Python binary.
+        const ytdlpOutput = await this.execute(['--version'], 30000);
         ytdlpVersion = ytdlpOutput.trim();
       } catch (error: any) {
         console.warn('[YtDlpService] Failed to get yt-dlp version', {
@@ -1244,7 +1256,12 @@ class YtDlpService {
           code: error.code,
           binaryPath: this.binaryPath,
         });
-        Sentry.captureException(error, { tags: { action: 'ytdlp-version' } });
+        // Don't report timeouts to Sentry: the error is handled, version falls
+        // through as 'unknown', and the noise drowns out genuine binary
+        // failures (ENOENT/EACCES/non-zero exit) that we *do* want to see.
+        if (!error?.isTimeout) {
+          Sentry.captureException(error, { tags: { action: 'ytdlp-version' } });
+        }
       }
     }
 
@@ -1281,7 +1298,14 @@ class YtDlpService {
       Sentry.captureException(error, { tags: { action: 'quickjs-version' } });
     }
 
-    return { ytdlp: ytdlpVersion, qjs: qjsVersion };
+    const result = { ytdlp: ytdlpVersion, qjs: qjsVersion };
+    // Only cache when *both* probes produced a real version. A transient
+    // 'unknown' must not be locked in for the rest of the process lifetime —
+    // the next call (e.g. About-tab refresh) gets to retry.
+    if (ytdlpVersion !== 'unknown' && ytdlpVersion !== 'Not found' && qjsVersion !== 'unknown') {
+      this.cachedVersions = result;
+    }
+    return result;
   }
 }
 

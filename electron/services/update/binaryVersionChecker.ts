@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/electron/main';
 import fs from 'fs';
 import path from 'path';
 import { getBinaryPath } from '../../utils/paths.ts';
-import { compareVersions, isRealVersion } from '../../utils/version.ts';
+import { compareVersions, isMissingSentinel, isRealVersion } from '../../utils/version.ts';
 import { ctcAlignerService } from '../ctcAligner.ts';
 import { ytDlpService } from '../ytdlp.ts';
 import { localWhisperService } from '../localWhisper.ts';
@@ -103,8 +103,10 @@ export async function checkBinaryUpdate(
       // Aligner: tag is "v0.1.2" or "0.1.2"
       result.latest = tagName.replace(/^v/, '');
       const currentParsed = parseAlignerVersion(current);
-      if (!isRealVersion(currentParsed)) {
-        result.hasUpdate = true;
+      if (isMissingSentinel(current)) {
+        result.hasUpdate = true; // Binary missing — force download.
+      } else if (!isRealVersion(currentParsed)) {
+        result.hasUpdate = false; // Probe failed (timeout/unknown) — don't nag.
       } else {
         result.hasUpdate = compareVersions(result.latest, currentParsed) > 0;
       }
@@ -164,8 +166,10 @@ export async function checkBinaryUpdate(
       // yt-dlp: tag is "2024.12.23"
       result.latest = tagName;
       const currentParsed = parseYtdlpVersion(current);
-      if (!isRealVersion(currentParsed)) {
-        result.hasUpdate = true;
+      if (isMissingSentinel(current)) {
+        result.hasUpdate = true; // Binary missing — force download.
+      } else if (!isRealVersion(currentParsed)) {
+        result.hasUpdate = false; // Probe failed (timeout/unknown) — don't nag.
       } else {
         result.hasUpdate = compareYtdlpVersions(result.latest, currentParsed) > 0;
       }
@@ -198,8 +202,10 @@ export async function checkBinaryUpdate(
       const latestVersion = tagName.replace(/^v/, '').replace(/-custom$/, '');
       result.latest = latestVersion;
 
-      if (!isRealVersion(current)) {
-        result.hasUpdate = true;
+      if (isMissingSentinel(current)) {
+        result.hasUpdate = true; // Binary missing — force download.
+      } else if (!isRealVersion(current)) {
+        result.hasUpdate = false; // Probe failed (timeout/unknown) — don't nag.
       } else {
         result.hasUpdate = compareVersions(latestVersion, current) > 0;
       }
@@ -226,8 +232,10 @@ export async function checkBinaryUpdate(
     } else if (name === 'bsroformer') {
       // BSRoformer: tag is "v0.1.0"
       result.latest = tagName.replace(/^v/, '');
-      if (!isRealVersion(current)) {
-        result.hasUpdate = true;
+      if (isMissingSentinel(current)) {
+        result.hasUpdate = true; // Binary missing — force download.
+      } else if (!isRealVersion(current)) {
+        result.hasUpdate = false; // Probe failed (timeout/unknown) — don't nag.
       } else {
         result.hasUpdate = compareVersions(result.latest, current) > 0;
       }
