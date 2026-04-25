@@ -63,9 +63,17 @@ interface DetectBinaryVersionOptions {
   parseRegex: RegExp;
   /** Label for log/Sentry messages (e.g. 'CTCAligner', 'BSRoformer'). */
   label: string;
-  /** Timeout in milliseconds (default: 3000). */
+  /** Timeout in milliseconds. 30s default — generous enough for cold-start
+   *  on Windows-Defender / macOS-Gatekeeper / portable-from-slow-disk. */
   timeoutMs?: number;
 }
+
+// In-memory cache: key is the absolute binary path, value is the resolved
+// version string. Only successful probes are cached; sentinels ('unknown',
+// 'Timeout', 'Error', 'Not found') are not cached so the next call gets to
+// retry. This eliminates re-probe noise on About-tab refreshes within a
+// session — same pattern as ytdlp.cachedVersions in commit 09c0b12.
+const versionCache = new Map<string, string>();
 
 /**
  * Spawn a binary with a version flag, parse the output with a regex,
@@ -75,11 +83,14 @@ interface DetectBinaryVersionOptions {
  * CTCAligner, VocalSeparator, and other binary services.
  */
 export async function detectBinaryVersion(opts: DetectBinaryVersionOptions): Promise<string> {
-  const { binaryPath, versionFlag, parseRegex, label, timeoutMs = 3000 } = opts;
+  const { binaryPath, versionFlag, parseRegex, label, timeoutMs = 30000 } = opts;
 
   if (!fs.existsSync(binaryPath)) {
     return 'Not found';
   }
+
+  const cached = versionCache.get(binaryPath);
+  if (cached) return cached;
 
   return new Promise((resolve) => {
     try {
@@ -90,6 +101,12 @@ export async function detectBinaryVersion(opts: DetectBinaryVersionOptions): Pro
       });
 
       let output = '';
+      // Tracks whether the timeout fired and we killed the process. The
+      // close handler must skip Sentry capture in that case — empty output
+      // after a kill is *not* a parse failure worth reporting; the 'Timeout'
+      // sentinel already conveys that state to the caller.
+      let timedOut = false;
+
       proc.stdout.on('data', (d) => {
         output += d.toString();
       });
@@ -98,15 +115,25 @@ export async function detectBinaryVersion(opts: DetectBinaryVersionOptions): Pro
       });
 
       proc.on('close', () => {
-        const match = output.trim().match(parseRegex);
-        if (!match) {
-          console.warn(`[${label}] Version parse failed, output: ${output.trim().slice(0, 200)}`);
+        const trimmed = output.trim();
+        const match = trimmed.match(parseRegex);
+        if (match) {
+          versionCache.set(binaryPath, match[1]);
+          resolve(match[1]);
+          return;
+        }
+
+        // Skip Sentry noise from two known-benign cases:
+        //   1. We killed the process via timeout — 'Timeout' was already resolved.
+        //   2. The process exited cleanly with empty output — no diagnostic value.
+        if (!timedOut && trimmed.length > 0) {
+          console.warn(`[${label}] Version parse failed, output: ${trimmed.slice(0, 200)}`);
           Sentry.captureMessage(`${label} version parse failed`, {
             level: 'warning',
-            extra: { output: output.trim().slice(0, 500) },
+            extra: { output: trimmed.slice(0, 500), binaryPath },
           });
         }
-        resolve(match ? match[1] : 'unknown');
+        resolve('unknown');
       });
 
       proc.on('error', (err) => {
@@ -117,6 +144,7 @@ export async function detectBinaryVersion(opts: DetectBinaryVersionOptions): Pro
 
       setTimeout(() => {
         if (!proc.killed) {
+          timedOut = true;
           proc.kill();
           resolve('Timeout');
         }

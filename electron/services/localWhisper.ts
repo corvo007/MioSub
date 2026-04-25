@@ -111,6 +111,10 @@ export class LocalWhisperService {
 
   private activeProcesses: Map<string, ChildProcess> = new Map();
   private isCancelled = false;
+  // Cached whisper-details probe result, keyed by resolved binary path so
+  // a switch between Custom/Bundled gets a fresh probe. Eliminates re-probe
+  // cost on About-tab refreshes within a session.
+  private cachedDetails: Map<string, WhisperDetails> = new Map();
 
   validateModel(filePath: string): { valid: boolean; error?: string } {
     try {
@@ -461,14 +465,20 @@ export class LocalWhisperService {
 
     if (!info.path) return { ...details, version: 'Not found' };
 
+    const cached = this.cachedDetails.get(info.path);
+    if (cached) return cached;
+
     try {
       const { spawnSync } = await import('child_process');
 
       // Try --version first (supported in our custom builds v1.8.4+)
+      // 30s timeout: cold-start of a CUDA/Metal-linked whisper binary on a
+      // fresh app launch can exceed 5s when AV scans the binary or Gatekeeper
+      // verifies signatures.
       const versionConfig = buildSpawnArgs(info.path, ['--version']);
       const versionResult = spawnSync(versionConfig.command, versionConfig.args, {
         windowsHide: true,
-        timeout: 5000,
+        timeout: 30000,
       });
       const versionOutput =
         (versionResult.stdout?.toString() || '') + (versionResult.stderr?.toString() || '');
@@ -493,19 +503,27 @@ export class LocalWhisperService {
           console.warn(
             `[LocalWhisper] Version parse failed, output: ${output.trim().slice(0, 200)}`
           );
-          Sentry.captureMessage('Whisper version parse failed', {
-            level: 'warning',
-            extra: {
-              output: output.trim().slice(0, 500),
-              versionExitCode: versionResult.status,
-              versionSignal: versionResult.signal,
-              versionError: versionResult.error?.message,
-              helpExitCode: result.status,
-              helpSignal: result.signal,
-              helpError: result.error?.message,
-              binaryPath: info.path,
-            },
-          });
+          // Skip Sentry capture for Custom builds: those don't embed a version
+          // string in their help/--version output and produce ~95% of the
+          // "Whisper version parse failed" volume (MIOSUB-37). The fallback to
+          // 'unknown' still works correctly and the user sees the source as
+          // "Custom" in the About tab.
+          if (info.source !== 'Custom') {
+            Sentry.captureMessage('Whisper version parse failed', {
+              level: 'warning',
+              extra: {
+                output: output.trim().slice(0, 500),
+                versionExitCode: versionResult.status,
+                versionSignal: versionResult.signal,
+                versionError: versionResult.error?.message,
+                helpExitCode: result.status,
+                helpSignal: result.signal,
+                helpError: result.error?.message,
+                binaryPath: info.path,
+                source: info.source,
+              },
+            });
+          }
         }
       }
 
@@ -536,6 +554,12 @@ export class LocalWhisperService {
       Sentry.captureException(e, { tags: { action: 'get-whisper-details' } });
     }
 
+    // Only cache when version probing actually succeeded — a transient
+    // 'unknown' (custom build, timeout, parse failure) must not be locked
+    // in for the rest of the process lifetime.
+    if (details.version !== 'unknown' && details.version !== 'Not found') {
+      this.cachedDetails.set(info.path, details);
+    }
     return details;
   }
 
