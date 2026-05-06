@@ -56,8 +56,8 @@ export function isTransientError(error: any): boolean {
 
   const msg = (error.message || '').toLowerCase();
 
-  // Network / fetch errors
-  const errorCode = ((error as any).code || '').toUpperCase();
+  // Network / fetch errors (code may be numeric from third-party API relays)
+  const errorCode = String((error as any).code || '').toUpperCase();
   if (
     errorCode === 'ECONNRESET' ||
     errorCode === 'ETIMEDOUT' ||
