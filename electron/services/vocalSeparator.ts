@@ -222,23 +222,9 @@ export class VocalSeparator {
       if (stderr.length > 0) console.log(`[VocalSeparator] stderr:\n${stderr}`);
 
       if (exitCode !== 0) {
-        // Extract key error line for message
-        const errorLines = stderr
-          .split('\n')
-          .filter((line) => line.toLowerCase().includes('error'));
-        const keyError =
-          errorLines[errorLines.length - 1] || stderr.trim().split('\n').pop() || 'Unknown error';
-
-        // Report to Sentry with full context
-        const error = new Error(`Vocal separation failed (exit code ${exitCode}): ${keyError}`);
+        const error = new Error(`Vocal separation failed (exit code ${exitCode}): ${stderr}`);
         Sentry.captureException(error, {
-          extra: {
-            exitCode,
-            stderr_full: stderr,
-            stdout_full: stdout,
-            stderr_length: stderr.length,
-            stdout_length: stdout.length,
-          },
+          extra: { exitCode, stdout_full: stdout },
         });
 
         throw error;
