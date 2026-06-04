@@ -132,8 +132,8 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
       .map((item, index) => ({ item, originalIndex: index }))
       .filter(
         ({ item }) =>
-          item.term.toLowerCase().includes(lowerSearch) ||
-          item.translation.toLowerCase().includes(lowerSearch)
+          item.term?.toLowerCase().includes(lowerSearch) ||
+          item.translation?.toLowerCase().includes(lowerSearch)
       );
   }, [selectedGlossary, searchTerm]);
 
@@ -274,18 +274,20 @@ export const GlossaryManager: React.FC<GlossaryManagerProps> = ({
       const targetGlossary = glossaries.find((g) => g.id === targetId);
       if (targetGlossary) {
         let mergedTerms = [...targetGlossary.terms];
-        const existingMap = new Map(targetGlossary.terms.map((t) => [t.term.toLowerCase(), t]));
+        const existingMap = new Map(
+          targetGlossary.terms.filter((t) => t.term).map((t) => [t.term.toLowerCase(), t])
+        );
 
         if (conflictMode === 'skip') {
           // Add only terms that don't exist
-          const newUnique = items.filter((t) => !existingMap.has(t.term.toLowerCase()));
+          const newUnique = items.filter((t) => t.term && !existingMap.has(t.term.toLowerCase()));
           mergedTerms = [...mergedTerms, ...newUnique];
         } else {
           // Overwrite: Add all new terms, replacing existing ones
-          const newMap = new Map(items.map((t) => [t.term.toLowerCase(), t]));
+          const newMap = new Map(items.filter((t) => t.term).map((t) => [t.term.toLowerCase(), t]));
           // Keep existing terms that are NOT in new items
           const keptExisting = targetGlossary.terms.filter(
-            (t) => !newMap.has(t.term.toLowerCase())
+            (t) => !t.term || !newMap.has(t.term.toLowerCase())
           );
           mergedTerms = [...keptExisting, ...items];
         }

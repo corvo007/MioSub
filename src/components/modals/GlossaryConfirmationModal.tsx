@@ -89,7 +89,7 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
   useEffect(() => {
     if (!initialized.current && pendingResults.length > 0) {
       const newUnique = unique.filter(
-        (u) => !activeTerms.some((g) => g.term.toLowerCase() === u.term.toLowerCase())
+        (u) => u.term && !activeTerms.some((g) => g.term?.toLowerCase() === u.term.toLowerCase())
       );
       setSelectedTerms(new Set(newUnique.map((t) => t.term)));
 
@@ -127,10 +127,12 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
       const updatedGlossaries = settings.glossaries.map((g) => {
         if (g.id === targetGlossaryId) {
           const uniqueMap = new Map<string, GlossaryItem>();
-          (g.terms || []).forEach((item: GlossaryItem) =>
-            uniqueMap.set(item.term.toLowerCase(), item)
-          );
-          newTerms.forEach((item) => uniqueMap.set(item.term.toLowerCase(), item));
+          (g.terms || []).forEach((item: GlossaryItem) => {
+            if (item.term) uniqueMap.set(item.term.toLowerCase(), item);
+          });
+          newTerms.forEach((item) => {
+            if (item.term) uniqueMap.set(item.term.toLowerCase(), item);
+          });
           return { ...g, terms: Array.from(uniqueMap.values()) };
         }
         return g;
@@ -142,7 +144,9 @@ export const GlossaryConfirmationModal: React.FC<GlossaryConfirmationModalProps>
     } else {
       const finalGlossary = [...getActiveGlossaryTerms(settings), ...newTerms];
       const uniqueMap = new Map<string, GlossaryItem>();
-      finalGlossary.forEach((item) => uniqueMap.set(item.term.toLowerCase(), item));
+      finalGlossary.forEach((item) => {
+        if (item.term) uniqueMap.set(item.term.toLowerCase(), item);
+      });
       const deduplicated = Array.from(uniqueMap.values());
 
       // Note: This branch should ideally not be reached since we always have glossaries array now

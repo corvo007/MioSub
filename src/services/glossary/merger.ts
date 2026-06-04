@@ -30,6 +30,7 @@ export function mergeGlossaryResults(
   // Add existing glossary terms to the map for conflict checking
   const existingMap = new Map<string, GlossaryItem>();
   for (const item of existingGlossary) {
+    if (!item.term) continue;
     existingMap.set(item.term.toLowerCase().trim(), item);
   }
 

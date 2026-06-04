@@ -77,8 +77,8 @@ export function autoConfirmGlossaryTerms(options: AutoConfirmOptions): AutoConfi
   // 4. Filter duplicates
   const activeG = updatedGlossaries.find((g) => g.id === targetGlossaryId);
   const activeTerms = activeG?.terms || [];
-  const existingTerms = new Set(activeTerms.map((g) => g.term.toLowerCase()));
-  const newTerms = allTerms.filter((t) => !existingTerms.has(t.term.toLowerCase()));
+  const existingTerms = new Set(activeTerms.filter((g) => g.term).map((g) => g.term.toLowerCase()));
+  const newTerms = allTerms.filter((t) => t.term && !existingTerms.has(t.term.toLowerCase()));
 
   // 5. Persist to settings
   if (newTerms.length > 0 || updatedGlossaries !== currentGlossaries) {
