@@ -16,8 +16,16 @@ export default defineConfig(({ mode }) => {
   return {
     base: './',
     server: {
-      port: 3000,
+      // Port is above Windows' ephemeral range (1024-14999 on this machine),
+      // so the proxy/ephemeral allocator can't randomly grab it out from under
+      // the dev server. Keep it in sync with electron:dev's `wait-on` URL and
+      // electron/main.ts (loadURL + will-navigate allow-list).
+      port: 24678,
       host: '0.0.0.0',
+      // Fail loudly if the port is taken instead of silently drifting to the
+      // next one. electron:dev's `wait-on` watches a fixed port, so a silent
+      // change would leave it polling forever and Electron would never launch.
+      strictPort: true,
     },
     plugins: [
       react({

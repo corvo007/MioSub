@@ -84,6 +84,14 @@ if (SENTRY_DSN) {
       // Electron lifecycle (window destroyed during async operation)
       if (msg.includes('object has been destroyed')) return null;
 
+      // Benign stream teardown (MIOSUB-14): the local-video:// protocol returns a Node
+      // stream wrapped by Electron into a web ReadableStream. When the renderer <video>
+      // seeks/disconnects mid-stream, Electron's internal bridge calls controller.close()
+      // on an already-closed stream → "Invalid state: ReadableStream is already closed".
+      // The throw is inside Electron internals (unreachable at our call site) and harmless
+      // — it only marks the end of a cancelled range request.
+      if (msg.includes('readablestream is already closed')) return null;
+
       return event;
     },
   });
@@ -2117,7 +2125,7 @@ const createWindow = () => {
   if (app.isPackaged) {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html')).catch(console.error);
   } else {
-    mainWindow.loadURL('http://localhost:3000').catch(console.error);
+    mainWindow.loadURL('http://localhost:24678').catch(console.error);
     mainWindow.webContents.openDevTools();
   }
 
@@ -2469,7 +2477,7 @@ app.on('web-contents-created', (_event, contents) => {
       const parsedUrl = new URL(navigationUrl);
 
       // In development, allow localhost
-      if (!app.isPackaged && parsedUrl.origin === 'http://localhost:3000') {
+      if (!app.isPackaged && parsedUrl.origin === 'http://localhost:24678') {
         return; // Allow navigation
       }
 
