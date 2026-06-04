@@ -97,6 +97,25 @@
         "selectError": "Model selection failed: {{error}}",
         "selectErrorGeneric": "Failed to select model"
       }
+    },
+    "geminiModels": {
+      "button": "Custom Model Names",
+      "buttonHint": "Set a custom Gemini model per pipeline step. Leave blank to use the default.",
+      "title": "Custom Gemini Models",
+      "warning": "Gemini-series models only (the model id must contain the \"gemini\" keyword). The whole pipeline relies on Gemini-specific features; other providers will fail.",
+      "hint": "The placeholder in each field is its current default model; leave a field blank to use that step’s default. Gemini-series only.",
+      "steps": {
+        "refinement": "Refinement (timing / transcript polish)",
+        "translation": "Translation",
+        "glossaryExtraction": "Glossary Extraction",
+        "speakerProfile": "Speaker Analysis",
+        "batchProofread": "Batch Proofread"
+      },
+      "reset": "Reset to Default",
+      "cancel": "Cancel",
+      "save": "Save",
+      "saved": "Custom models saved",
+      "invalidModel": "These steps are not Gemini-series models: {{fields}}"
     }
   },
   "performance": {

@@ -16,7 +16,7 @@ import {
   getActionableErrorInfo,
 } from '@/services/llm/providers/gemini';
 import { GLOSSARY_EXTRACTION_PROMPT } from '@/services/llm/prompts';
-import { STEP_MODELS, buildStepConfig } from '@/config';
+import { getStepModel, buildStepConfig } from '@/config';
 
 export const extractGlossaryFromAudio = async (
   ai: GoogleGenAI,
@@ -61,7 +61,7 @@ export const extractGlossaryFromAudio = async (
       const terms = await generateContentWithRetry<GlossaryItem[]>(
         ai,
         {
-          model: STEP_MODELS.glossaryExtraction,
+          model: getStepModel('glossaryExtraction'),
           contents: {
             parts: [{ inlineData: { mimeType: 'audio/wav', data: base64Audio } }, { text: prompt }],
           },

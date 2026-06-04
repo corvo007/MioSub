@@ -24,7 +24,7 @@ import { getActiveGlossaryTerms } from '@/services/glossary/utils';
 import { getProofreadPrompt } from '@/services/llm/prompts';
 import { createBatchSchema, createBatchWithDiarizationSchema } from '@/services/llm/schemas';
 import { generateContentWithLongOutput } from '@/services/llm/providers/gemini';
-import { STEP_MODELS, buildStepConfig } from '@/config';
+import { getStepModel, buildStepConfig } from '@/config';
 import { UserActionableError } from '@/services/utils/errors';
 import { ExpectedError } from '@/utils/expectedError';
 import { removeTrailingPunctuation } from '@/services/subtitle/punctuationCleaner';
@@ -287,7 +287,7 @@ export class ProofreadStep {
       } as { text: string } & { inlineData?: { mimeType: string; data: string } });
     }
 
-    const model = STEP_MODELS.batchProofread;
+    const model = getStepModel('batchProofread');
     const stepConfig = buildStepConfig('batchProofread');
 
     const text = await generateContentWithLongOutput(

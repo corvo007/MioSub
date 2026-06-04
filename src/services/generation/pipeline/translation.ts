@@ -20,7 +20,7 @@ import {
   createTranslationSchema,
   createTranslationWithDiarizationSchema,
 } from '@/services/llm/schemas';
-import { STEP_MODELS, buildStepConfig } from '@/config';
+import { getStepModel, buildStepConfig } from '@/config';
 import { withPostCheck } from '@/services/subtitle/postCheck';
 import * as Sentry from '@sentry/electron/renderer';
 import {
@@ -62,7 +62,7 @@ export async function processTranslationBatch(
         const translatedData = await generateContentWithRetry<any[]>(
           ai,
           {
-            model: STEP_MODELS.translation,
+            model: getStepModel('translation'),
             contents: { parts: [{ text: prompt }] },
             config: {
               responseSchema: useDiarization

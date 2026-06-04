@@ -11,6 +11,7 @@ import type { ToastMessage } from '@/components/ui';
 import { logger } from '@/services/utils/logger';
 import { debounce } from '@/services/utils/time';
 import { migrateAllGlossaries } from '@/services/glossary/migrate';
+import { setGeminiModelOverrides } from '@/config/models';
 
 // ============================================================================
 // Types
@@ -247,6 +248,10 @@ export const initializeSettings = async (): Promise<void> => {
     setSettings(newSettings);
   }
 
+  // Sync user-configured custom Gemini model names into the model resolver,
+  // so every pipeline step picks up the override on startup.
+  setGeminiModelOverrides(useAppStore.getState().settings.geminiModelOverrides);
+
   setIsSettingsLoaded(true);
 };
 
@@ -289,6 +294,18 @@ useAppStore.subscribe(
   (state) => state.settings,
   (settings) => {
     saveSettings(settings);
+  }
+);
+
+// ============================================================================
+// Gemini Model Overrides Side Effect
+// Keep the model resolver in sync when the user changes custom model names.
+// ============================================================================
+
+useAppStore.subscribe(
+  (state) => state.settings.geminiModelOverrides,
+  (overrides) => {
+    setGeminiModelOverrides(overrides);
   }
 );
 

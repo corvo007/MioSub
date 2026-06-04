@@ -97,6 +97,25 @@
         "selectError": "模型选择失败: {{error}}",
         "selectErrorGeneric": "选择模型失败"
       }
+    },
+    "geminiModels": {
+      "button": "自定义模型名称",
+      "buttonHint": "为各处理步骤指定自定义的 Gemini 模型，留空则使用默认值。",
+      "title": "自定义 Gemini 模型",
+      "warning": "仅限 Gemini 系列模型（模型名需包含 gemini 关键字）。整个管线依赖 Gemini 专有能力，填写其他厂商的模型会导致调用失败。",
+      "hint": "输入框中的占位符即为当前默认模型；留空则使用对应步骤的默认值。仅支持 Gemini 系列。",
+      "steps": {
+        "refinement": "精修（时间轴 / 转写润色）",
+        "translation": "翻译",
+        "glossaryExtraction": "术语提取",
+        "speakerProfile": "说话人分析",
+        "batchProofread": "批量校对"
+      },
+      "reset": "重置默认",
+      "cancel": "取消",
+      "save": "保存",
+      "saved": "自定义模型已保存",
+      "invalidModel": "以下步骤填写的不是 Gemini 系列模型：{{fields}}"
     }
   },
   "performance": {

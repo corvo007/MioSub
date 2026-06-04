@@ -98,6 +98,25 @@
         "selectError": "モデルの選択に失敗しました: {{error}}",
         "selectErrorGeneric": "モデルの選択に失敗しました"
       }
+    },
+    "geminiModels": {
+      "button": "カスタムモデル名",
+      "buttonHint": "各処理ステップに使用する Gemini モデルを指定できます。空欄の場合はデフォルトを使用します。",
+      "title": "カスタム Gemini モデル",
+      "warning": "Gemini シリーズのモデルのみ対応（モデル名に gemini を含む必要があります）。パイプライン全体が Gemini 固有の機能に依存しているため、他社モデルでは失敗します。",
+      "hint": "各入力欄のプレースホルダーが現在のデフォルトモデルです。空欄にするとそのステップのデフォルトを使用します。Gemini シリーズのみ対応。",
+      "steps": {
+        "refinement": "精修（タイムスタンプ / 文字起こし調整）",
+        "translation": "翻訳",
+        "glossaryExtraction": "用語抽出",
+        "speakerProfile": "話者分析",
+        "batchProofread": "一括校正"
+      },
+      "reset": "デフォルトに戻す",
+      "cancel": "キャンセル",
+      "save": "保存",
+      "saved": "カスタムモデルを保存しました",
+      "invalidModel": "次のステップは Gemini シリーズのモデルではありません：{{fields}}"
     }
   },
   "performance": {

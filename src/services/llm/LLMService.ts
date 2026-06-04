@@ -5,7 +5,7 @@
 
 import type { ProviderConfig, ILLMAdapter, StepName, StepProviders } from '@/types/llm';
 import type { AppSettings } from '@/types/settings';
-import { STEP_MODELS } from '@/config/models';
+import { type STEP_MODELS, getStepModel } from '@/config/models';
 import { GeminiAdapter } from './adapters/GeminiAdapter';
 import { OpenAIAdapter } from './adapters/OpenAIAdapter';
 import { ClaudeAdapter } from './adapters/ClaudeAdapter';
@@ -62,7 +62,7 @@ class LLMServiceClass {
     };
 
     const configStepName = stepMapping[stepName];
-    return STEP_MODELS[configStepName] || 'gemini-2.5-flash';
+    return getStepModel(configStepName) || 'gemini-2.5-flash';
   }
 
   /**

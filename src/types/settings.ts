@@ -34,12 +34,29 @@ export interface DebugSettings {
   saveIntermediateArtifacts?: boolean;
 }
 
+/**
+ * Per-step custom Gemini model names (user override).
+ * Keys match STEP_MODELS in src/config/models.ts. When a value is set, it
+ * replaces the built-in default for that step everywhere in the pipeline.
+ * Only Gemini-series model ids are valid (must contain the "gemini" keyword).
+ * An empty/undefined value falls back to the built-in default.
+ */
+export interface GeminiModelOverrides {
+  refinement?: string;
+  translation?: string;
+  glossaryExtraction?: string;
+  speakerProfile?: string;
+  batchProofread?: string;
+}
+
 export interface AppSettings {
   debug?: DebugSettings;
   geminiKey: string;
   openaiKey: string;
   openaiEndpoint?: string;
   geminiEndpoint?: string;
+  /** Per-step custom Gemini model names (Gemini-only). Empty = use defaults. */
+  geminiModelOverrides?: GeminiModelOverrides;
   transcriptionModel: string; // 'whisper-1' | 'gpt-4o-audio-preview'
   genre: string; // Changed from Genre to string to support custom input
   customTranslationPrompt: string;

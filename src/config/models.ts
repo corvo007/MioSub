@@ -37,6 +37,61 @@ export const STEP_MODELS = {
 export type StepName = keyof typeof STEP_MODELS;
 
 // ============================================================================
+// Runtime model overrides (user-configured, Gemini-only)
+// ----------------------------------------------------------------------------
+// STEP_MODELS above are the built-in defaults. Users can override the model
+// name per step via Settings. Because the model id is read at many call sites
+// that do NOT receive the settings object, we keep the active overrides in
+// module-level state (synced from the settings store) and expose a resolver.
+// This mirrors the existing module-constant pattern and guarantees the
+// override reaches every pipeline path.
+//
+// NOTE: This is renderer-only state, intentionally synced from the settings
+// store (see setGeminiModelOverrides callers in useAppStore). If unit tests
+// are ever added, reset it between tests via setGeminiModelOverrides(undefined)
+// to avoid cross-test contamination.
+// ============================================================================
+
+let stepModelOverrides: Partial<Record<StepName, string>> = {};
+
+/**
+ * Validate that a model id belongs to the Gemini series.
+ * Every Gemini model id contains the "gemini" keyword (case-insensitive),
+ * e.g. "gemini-2.5-flash", "gemini-3-pro-preview". The whole pipeline relies
+ * on Gemini-specific API features, so non-Gemini ids are rejected.
+ */
+export function isGeminiModel(name: string): boolean {
+  return typeof name === 'string' && /gemini/i.test(name.trim());
+}
+
+/**
+ * Sync user overrides into the resolver. Called from the settings store on
+ * load and whenever the override map changes. Empty or non-Gemini values are
+ * ignored (defensive — the UI also validates before saving).
+ */
+export function setGeminiModelOverrides(overrides?: Partial<Record<StepName, string>>): void {
+  const next: Partial<Record<StepName, string>> = {};
+  if (overrides) {
+    for (const step of Object.keys(STEP_MODELS) as StepName[]) {
+      const value = overrides[step]?.trim();
+      if (value && isGeminiModel(value)) {
+        next[step] = value;
+      }
+    }
+  }
+  stepModelOverrides = next;
+}
+
+/**
+ * Resolve the active model id for a step: the user override if set and valid,
+ * otherwise the built-in default. Use this instead of reading STEP_MODELS
+ * directly at API call sites.
+ */
+export function getStepModel(step: StepName): string {
+  return stepModelOverrides[step] || STEP_MODELS[step];
+}
+
+// ============================================================================
 // Step-specific model configurations
 // Configure thinking, tools, and output limits for each step
 // ============================================================================

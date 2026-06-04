@@ -12,7 +12,7 @@ import { blobToBase64 } from '@/services/audio/converter';
 import { getSystemInstructionWithDiarization, getRefinementPrompt } from '@/services/llm/prompts';
 import { REFINEMENT_SCHEMA, REFINEMENT_WITH_DIARIZATION_SCHEMA } from '@/services/llm/schemas';
 import { generateContentWithRetry, formatGeminiError } from '@/services/llm/providers/gemini';
-import { STEP_MODELS, buildStepConfig } from '@/config';
+import { getStepModel, buildStepConfig } from '@/config';
 import { parseGeminiResponse } from '@/services/subtitle/parser';
 import { withPostCheck } from '@/services/subtitle/postCheck';
 import { reconcile } from '@/services/subtitle/reconciler';
@@ -121,7 +121,7 @@ export class RefinementStep extends BaseStep<RefinementInput, SubtitleItem[]> {
       const response = await generateContentWithRetry(
         ai,
         {
-          model: STEP_MODELS.refinement,
+          model: getStepModel('refinement'),
           contents: {
             parts: [
               { inlineData: { mimeType: 'audio/wav', data: base64Audio } },

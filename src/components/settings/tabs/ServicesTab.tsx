@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Cpu } from 'lucide-react';
 import { PasswordInput } from '@/components/ui/PasswordInput';
 import { InputWithReset } from '@/components/ui/InputWithReset';
 import { EnvKeyHint } from '@/components/ui/EnvKeyHint';
 import { OptionButton } from '@/components/ui/OptionButton';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { LocalWhisperSettings } from '@/components/settings/LocalWhisperSettings';
+import { GeminiModelOverridesModal } from '@/components/settings/GeminiModelOverridesModal';
 import type { ServicesTabProps } from './types';
 
 export const ServicesTab: React.FC<ServicesTabProps> = ({
@@ -17,6 +19,7 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
 }) => {
   const { t } = useTranslation('settings');
   const isElectron = typeof window !== 'undefined' && window.electronAPI !== undefined;
+  const [showModelOverrides, setShowModelOverrides] = useState(false);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -58,8 +61,28 @@ export const ServicesTab: React.FC<ServicesTabProps> = ({
               {t('services.translation.geminiEndpointHint')}
             </p>
           </div>
+          {/* Custom per-step Gemini model names (Gemini-only) */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowModelOverrides(true)}
+              className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm font-medium"
+            >
+              <Cpu className="w-4 h-4 text-brand-purple" />
+              {t('services.geminiModels.button')}
+            </button>
+            <p className="text-xs text-slate-500 mt-1">{t('services.geminiModels.buttonHint')}</p>
+          </div>
         </div>
       </div>
+
+      <GeminiModelOverridesModal
+        isOpen={showModelOverrides}
+        onClose={() => setShowModelOverrides(false)}
+        settings={settings}
+        updateSetting={updateSetting}
+        addToast={addToast}
+      />
 
       {/* Transcription Provider Settings */}
       <div className="space-y-4 pt-4 border-t border-slate-200">

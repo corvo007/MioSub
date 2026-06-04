@@ -5,7 +5,7 @@ import { type TokenUsage } from '@/types/api';
 import { SPEAKER_PROFILE_SCHEMA } from '@/services/llm/schemas';
 import { getSpeakerProfileExtractionPrompt } from '@/services/llm/prompts';
 import { generateContentWithRetry, formatGeminiError } from '@/services/llm/providers/gemini';
-import { STEP_MODELS, buildStepConfig } from '@/config';
+import { getStepModel, buildStepConfig } from '@/config';
 
 export interface SpeakerProfile {
   id: string;
@@ -73,7 +73,7 @@ export async function extractSpeakerProfiles(
     const data = await generateContentWithRetry<{ profiles?: SpeakerProfile[] }>(
       ai,
       {
-        model: STEP_MODELS.speakerProfile,
+        model: getStepModel('speakerProfile'),
         contents: {
           parts: [
             { text: prompt },
@@ -104,7 +104,7 @@ export async function extractSpeakerProfiles(
       profiles: data.profiles || [],
       extractedAt: new Date(),
       audioDuration: audioDuration,
-      modelVersion: STEP_MODELS.speakerProfile,
+      modelVersion: getStepModel('speakerProfile'),
     };
   } catch (error) {
     logger.error('Speaker profile extraction failed', formatGeminiError(error));

@@ -24,7 +24,7 @@ import {
   createTranslationWithDiarizationSchema,
 } from '@/services/llm/schemas';
 import {
-  STEP_MODELS,
+  getStepModel,
   buildStepConfig,
   SUBTITLE_MAX_WIDTH,
   SUBTITLE_MIN_SPLIT_WIDTH,
@@ -200,7 +200,7 @@ export function createTranslationPostProcessor(
         const retryData = await generateContentWithRetry<any[]>(
           ai,
           {
-            model: STEP_MODELS.translation,
+            model: getStepModel('translation'),
             contents: { parts: [{ text: retryPrompt }] },
             config: {
               responseSchema: useDiarization
