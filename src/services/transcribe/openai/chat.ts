@@ -134,6 +134,26 @@ export const transcribeWithOpenAIChat = async (
         promptPreview: (requestBody.messages[0]?.content as any[])?.[0]?.text?.substring(0, 100),
       },
     });
+    // Preserve user-actionable errors (auth/quota/permission) thrown above — otherwise
+    // they'd be re-wrapped into a generic message and lose their actionable code.
+    if (e instanceof UserActionableError) throw e;
+
+    // Classify bare network/connection failures (no HTTP status) so the user gets an
+    // actionable "check network/proxy" message instead of a generic transcription error.
+    const lower = (e.message || '').toLowerCase();
+    const codeUpper = String(e.code || '').toUpperCase();
+    if (
+      lower.includes('failed to fetch') ||
+      lower.includes('fetch failed') ||
+      lower.includes('network error') ||
+      ['ENOTFOUND', 'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT'].includes(codeUpper)
+    ) {
+      throw new UserActionableError(
+        i18n.t('services:api.errors.connectionFailed'),
+        'NETWORK_ERROR'
+      );
+    }
+
     throw new Error(i18n.t('services:api.openai.errors.transcriptionFailed', { error: e.message }));
   }
 };

@@ -82,6 +82,44 @@ function validateOnnxHeader(filePath: string): boolean {
   }
 }
 
+// Mach-O magic numbers (thin 32/64-bit both endians, and fat/universal).
+const MACHO_MAGICS = new Set([
+  0xfeedface, 0xfeedfacf, 0xcefaedfe, 0xcffaedfe, 0xcafebabe, 0xbebafeca,
+]);
+
+/**
+ * Verify a file is a native executable for the current platform by checking its
+ * magic bytes. Catches the common misconfiguration of pointing a custom binary
+ * path at a model file (e.g. ggml-*.bin), which existence/permission checks miss
+ * and which otherwise fails late with `spawn EFTYPE` on Windows / ENOEXEC on
+ * Unix (MIOSUB-5X).
+ *
+ * Returns true when the format looks valid OR the file cannot be read for an
+ * unrelated reason (we don't want a probe glitch to false-block a real binary —
+ * the spawn path will surface any genuine error).
+ */
+function isExecutableFormat(filePath: string): boolean {
+  let fd: number | undefined;
+  try {
+    fd = fs.openSync(filePath, 'r');
+    const buf = Buffer.alloc(4);
+    const n = fs.readSync(fd, buf, 0, 4, 0);
+    if (n < 2) return false;
+    if (process.platform === 'win32') {
+      return buf[0] === 0x4d && buf[1] === 0x5a; // "MZ" — PE/DOS executable header
+    }
+    if (process.platform === 'darwin') {
+      return MACHO_MAGICS.has(buf.readUInt32BE(0));
+    }
+    // Linux ELF: 0x7F 'E' 'L' 'F'
+    return buf[0] === 0x7f && buf[1] === 0x45 && buf[2] === 0x4c && buf[3] === 0x46;
+  } catch {
+    return true; // Unreadable for an unrelated reason — let the spawn path decide.
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+  }
+}
+
 // Minimum file sizes
 const MIN_WHISPER_MODEL_SIZE = 50 * 1024 * 1024; // 50MB
 
@@ -312,6 +350,18 @@ function validateBinaryExists(
     return {
       code: errorCode,
       message: t(errorKey),
+      field,
+      tab: 'services',
+    };
+  }
+  // Verify the file is actually a native executable, not e.g. a GGML model
+  // (.bin) mistakenly selected as the binary. On Windows existence is the only
+  // other signal, so without this a model file passes preflight and fails later
+  // with `spawn EFTYPE` (MIOSUB-5X).
+  if (!isExecutableFormat(filePath)) {
+    return {
+      code: `${errorCode}_wrong_format`,
+      message: t('preflight.binaryNotExecutableFormat', { path: path.basename(filePath) }),
       field,
       tab: 'services',
     };

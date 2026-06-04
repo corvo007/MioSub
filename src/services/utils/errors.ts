@@ -13,6 +13,7 @@ export type UserActionableErrorCode =
   | 'REGION_RESTRICTED'
   | 'MODEL_NOT_FOUND'
   | 'NOT_FOUND'
+  | 'NETWORK_ERROR'
   | 'NO_SUBTITLES'
   | 'UNKNOWN';
 

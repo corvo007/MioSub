@@ -1,7 +1,7 @@
 import { app } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { spawn, type ChildProcess } from 'child_process';
+import { spawn, spawnSync, type ChildProcess } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';
 import * as Sentry from '@sentry/electron/main';
 import { t } from '../i18n.ts';
@@ -454,6 +454,53 @@ export class LocalWhisperService {
     }
   }
 
+  /**
+   * Probe a whisper binary once for its version + help output (used for GPU
+   * detection). Synchronous (spawnSync). Returns version=null when no version
+   * string could be parsed from either `--version` or `-h`.
+   *
+   * 30s timeout on --version: cold-start of a CUDA/Metal-linked whisper binary
+   * on a fresh app launch can exceed 5s when AV scans the binary or Gatekeeper
+   * verifies signatures.
+   */
+  private probeWhisperBinary(binaryPath: string): {
+    version: string | null;
+    helpOutput: string;
+    diag: Record<string, unknown>;
+  } {
+    const versionConfig = buildSpawnArgs(binaryPath, ['--version']);
+    const versionResult = spawnSync(versionConfig.command, versionConfig.args, {
+      windowsHide: true,
+      timeout: 30000,
+    });
+    const versionOutput =
+      (versionResult.stdout?.toString() || '') + (versionResult.stderr?.toString() || '');
+
+    // Use -h for GPU detection (and fallback version detection for older builds)
+    const spawnConfig = buildSpawnArgs(binaryPath, ['-h']);
+    const result = spawnSync(spawnConfig.command, spawnConfig.args, { windowsHide: true });
+    const helpOutput = (result.stdout?.toString() || '') + (result.stderr?.toString() || '');
+
+    const match =
+      versionOutput.match(/whisper\.cpp v?(\d+\.\d+\.\d+)/i) ||
+      versionOutput.match(/v?(\d+\.\d+\.\d+)/i) ||
+      helpOutput.match(/whisper\.cpp v?(\d+\.\d+\.\d+)/i) ||
+      helpOutput.match(/v?(\d+\.\d+\.\d+)/i);
+
+    return {
+      version: match ? `v${match[1]}` : null,
+      helpOutput,
+      diag: {
+        versionExitCode: versionResult.status,
+        versionSignal: versionResult.signal,
+        versionError: versionResult.error?.message,
+        helpExitCode: result.status,
+        helpSignal: result.signal,
+        helpError: result.error?.message,
+      },
+    };
+  }
+
   async getWhisperDetails(customBinaryPath?: string): Promise<WhisperDetails> {
     const info = this.getBinaryPathWithSource(customBinaryPath);
     const details: WhisperDetails = {
@@ -469,63 +516,41 @@ export class LocalWhisperService {
     if (cached) return cached;
 
     try {
-      const { spawnSync } = await import('child_process');
+      let probe = this.probeWhisperBinary(info.path);
 
-      // Try --version first (supported in our custom builds v1.8.4+)
-      // 30s timeout: cold-start of a CUDA/Metal-linked whisper binary on a
-      // fresh app launch can exceed 5s when AV scans the binary or Gatekeeper
-      // verifies signatures.
-      const versionConfig = buildSpawnArgs(info.path, ['--version']);
-      const versionResult = spawnSync(versionConfig.command, versionConfig.args, {
-        windowsHide: true,
-        timeout: 30000,
-      });
-      const versionOutput =
-        (versionResult.stdout?.toString() || '') + (versionResult.stderr?.toString() || '');
-      const versionMatch =
-        versionOutput.match(/whisper\.cpp v?(\d+\.\d+\.\d+)/i) ||
-        versionOutput.match(/v?(\d+\.\d+\.\d+)/i);
-      if (versionMatch) {
-        details.version = `v${versionMatch[1]}`;
-      }
-
-      // Use -h for GPU detection (and fallback version detection)
-      const spawnConfig = buildSpawnArgs(info.path, ['-h']);
-      const result = spawnSync(spawnConfig.command, spawnConfig.args, { windowsHide: true });
-      const output = (result.stdout?.toString() || '') + (result.stderr?.toString() || '');
-
-      // Fallback version detection from -h output (older builds without --version)
-      if (!versionMatch) {
-        const helpVersionMatch =
-          output.match(/whisper\.cpp v?(\d+\.\d+\.\d+)/i) || output.match(/v?(\d+\.\d+\.\d+)/i);
-        details.version = helpVersionMatch ? `v${helpVersionMatch[1]}` : 'unknown';
-        if (!helpVersionMatch) {
+      // Transient cold-start probe failures (AV scan / cold disk / Gatekeeper
+      // verification) are the dominant source of MIOSUB-37 noise — the SAME
+      // binary parses fine on a later attempt (confirmed: a Bundled v1.8.6 user
+      // failed at startup, parsed v1.8.6 ~70 min later). Retry once after a short
+      // warm-up delay, and only capture to Sentry if the retry ALSO fails.
+      //
+      // Custom builds are skipped entirely: they often don't embed a version
+      // string and produced the bulk of the original MIOSUB-37 volume. 'unknown'
+      // still works correctly and the About tab shows the source as "Custom".
+      if (!probe.version && info.source !== 'Custom') {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const retry = this.probeWhisperBinary(info.path);
+        if (retry.version) {
+          probe = retry; // cold-start transient — recovered, no Sentry noise
+        } else {
           console.warn(
-            `[LocalWhisper] Version parse failed, output: ${output.trim().slice(0, 200)}`
+            `[LocalWhisper] Version parse failed (2 attempts), output: ${retry.helpOutput.trim().slice(0, 200)}`
           );
-          // Skip Sentry capture for Custom builds: those don't embed a version
-          // string in their help/--version output and produce ~95% of the
-          // "Whisper version parse failed" volume (MIOSUB-37). The fallback to
-          // 'unknown' still works correctly and the user sees the source as
-          // "Custom" in the About tab.
-          if (info.source !== 'Custom') {
-            Sentry.captureMessage('Whisper version parse failed', {
-              level: 'warning',
-              extra: {
-                output: output.trim().slice(0, 500),
-                versionExitCode: versionResult.status,
-                versionSignal: versionResult.signal,
-                versionError: versionResult.error?.message,
-                helpExitCode: result.status,
-                helpSignal: result.signal,
-                helpError: result.error?.message,
-                binaryPath: info.path,
-                source: info.source,
-              },
-            });
-          }
+          Sentry.captureMessage('Whisper version parse failed', {
+            level: 'warning',
+            extra: {
+              output: retry.helpOutput.trim().slice(0, 500),
+              attempt1: probe.diag,
+              attempt2: retry.diag,
+              binaryPath: info.path,
+              source: info.source,
+            },
+          });
+          probe = retry; // use latest help output for GPU detection
         }
       }
+
+      details.version = probe.version ?? 'unknown';
 
       // Detect GPU support
       // Search for specific GPU acceleration library names in build info
@@ -544,10 +569,7 @@ export class LocalWhisperService {
         'BLAS = 1',
       ];
 
-      // Log which keywords matched
-      const matchedKeywords = gpuKeywords.filter((key) => output.includes(key));
-      // console.log('[DEBUG] [LocalWhisper] getWhisperDetails - Matched GPU keywords:', matchedKeywords);
-
+      const matchedKeywords = gpuKeywords.filter((key) => probe.helpOutput.includes(key));
       details.gpuSupport = matchedKeywords.length > 0;
     } catch (e) {
       console.warn('[LocalWhisperService] Failed to get whisper details:', e);

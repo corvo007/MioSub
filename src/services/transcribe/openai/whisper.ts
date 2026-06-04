@@ -94,6 +94,24 @@ function getActionableWhisperError(
     }
   }
 
+  // === Network / connection failure (no HTTP response: DNS blocked, offline, proxy) ===
+  // fetch() rejects with "Failed to fetch" (Chromium) / "fetch failed" (undici) and no
+  // status. Very common for users behind the GFW with no proxy to api.openai.com — this
+  // must surface as an actionable "check your network/proxy" message rather than a generic
+  // "no subtitles produced" failure, which previously sent users into long retry loops.
+  if (
+    !httpStatus &&
+    (combined.includes('failed to fetch') ||
+      combined.includes('fetch failed') ||
+      combined.includes('network error') ||
+      combined.includes('enotfound') ||
+      combined.includes('econnrefused') ||
+      combined.includes('econnreset') ||
+      combined.includes('etimedout'))
+  ) {
+    return { message: i18n.t('services:api.errors.connectionFailed'), code: 'NETWORK_ERROR' };
+  }
+
   return undefined;
 }
 

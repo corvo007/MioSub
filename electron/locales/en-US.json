@@ -119,6 +119,7 @@
     "ctcAlignerNotExist": "Custom aligner executable does not exist",
     "ctcAlignerVersionTooOld": "Aligner version {{current}} is too old for the Omnilingual model. Please update to v{{required}} or later (Settings > About > Check for Updates)",
     "ctcAlignerVersionUnknown": "Could not determine aligner version. The Omnilingual model requires aligner v{{required}} or later — proceed with caution.",
+    "binaryNotExecutableFormat": "{{path}} is not a valid executable (you may have selected a model file such as .bin). Point the custom path to the whisper-cli executable, or re-download via Settings > About.",
     "binaryNotExecutable": "{{path}} exists but is not executable. On macOS/Linux, ensure it has execute permission (chmod +x). You can also re-download via Settings > About > Check for Updates",
     "ctcCompanionLibMissing": "Required dynamic library {{lib}} not found alongside the aligner binary. You can re-download via Settings > About > Check for Updates",
     "bundledBinaryNotFound": "{{name}} not found. The installation may be corrupted — please reinstall the application.",
