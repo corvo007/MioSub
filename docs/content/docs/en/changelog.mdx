@@ -5,6 +5,19 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.5] - 2026-06-05
+
+### Features
+
+- **Settings**: Add per-step custom Gemini model names — a new "Custom Model Names" dialog under Settings > Services lets you override the Gemini model used for each pipeline step (refinement, translation, glossary extraction, speaker analysis, batch proofread). Gemini-series only (validated on save); blank fields fall back to the defaults.
+
+### Fixes
+
+- **Whisper (Local)**: Detect when a model file (e.g. `.bin`) is mistakenly selected as the Whisper executable and show a clear, actionable error during preflight, instead of failing later with a cryptic spawn error (Fixes MIOSUB-5X).
+- **Whisper (Local)**: Retry the binary version/GPU probe once after a brief warm-up on transient cold-start failures, improving the reliability of version and GPU-support detection.
+- **Transcription (OpenAI)**: Classify network/connection failures (offline, DNS blocked, no proxy) as an actionable "check your network/proxy" error instead of a generic transcription failure, avoiding long retry loops.
+- **Glossary**: Guard all glossary term lookups against undefined values to prevent a crash when a term is missing (Fixes LOCAL-L10).
+
 ## [3.1.4] - 2026-05-06
 
 ### Fixes
