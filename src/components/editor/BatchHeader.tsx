@@ -24,7 +24,7 @@ import {
 import { type SubtitleItem, type SubtitleIssueType } from '@/types';
 import { getSpeakerColorWithCustom } from '@/services/utils/colors';
 import { cn } from '@/lib/cn';
-import { useDropdown } from '@/hooks/useDropdown';
+import { useDropdown, getDropdownMaxHeight } from '@/hooks/useDropdown';
 import { Portal } from '@/components/ui/Portal';
 import { useWorkspaceStore, selectUIState, selectFileState } from '@/store/useWorkspaceStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -261,13 +261,14 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                 <div
                   ref={issueContentRef}
                   className={cn(
-                    'fixed bg-white border border-slate-200 rounded-lg shadow-xl z-100 min-w-45 py-1 animate-fade-in ring-1 ring-slate-900/5',
+                    'fixed bg-white border border-slate-200 rounded-lg shadow-xl z-100 min-w-45 overflow-y-auto py-1 animate-fade-in ring-1 ring-slate-900/5',
                     issueDropUp ? 'origin-bottom-left' : 'origin-top-left'
                   )}
                   style={{
                     left: issueCoords.left,
                     top: issueDropUp ? undefined : issueCoords.bottom + 6,
                     bottom: issueDropUp ? window.innerHeight - issueCoords.top + 6 : undefined,
+                    maxHeight: getDropdownMaxHeight(issueCoords, issueDropUp, { gap: 6 }),
                   }}
                 >
                   {/* Duration Filter */}
@@ -500,13 +501,14 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
                 <div
                   ref={speakerContentRef}
                   className={cn(
-                    'fixed bg-white border border-slate-200 rounded-lg shadow-xl z-100 min-w-50 max-h-[60vh] overflow-y-auto py-1 animate-fade-in ring-1 ring-slate-900/5',
+                    'fixed bg-white border border-slate-200 rounded-lg shadow-xl z-100 min-w-50 overflow-y-auto py-1 animate-fade-in ring-1 ring-slate-900/5',
                     speakerDropUp ? 'origin-bottom-left' : 'origin-top-left'
                   )}
                   style={{
                     left: speakerCoords.left,
                     top: speakerDropUp ? undefined : speakerCoords.bottom + 6,
                     bottom: speakerDropUp ? window.innerHeight - speakerCoords.top + 6 : undefined,
+                    maxHeight: getDropdownMaxHeight(speakerCoords, speakerDropUp, { gap: 6 }),
                   }}
                 >
                   {

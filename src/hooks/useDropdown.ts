@@ -23,6 +23,35 @@ interface DropdownCoords {
   bottom: number;
 }
 
+/** Margin kept between a portal dropdown and the viewport edge. */
+const DROPDOWN_VIEWPORT_MARGIN = 8;
+
+/**
+ * Compute the max-height for a portal dropdown so it never spills past the
+ * viewport edge in its chosen direction.
+ *
+ * `max-h-[60vh]` alone is viewport-relative, not trigger-relative: a trigger
+ * partway down the screen leaves less room below than 60vh, so the panel (and
+ * the bottom of its scrollbar) renders off-screen and can't be scrolled. This
+ * clamps the height to the real space below (or above, when dropping up),
+ * capped by `cap` so it stays visually reasonable on tall monitors.
+ *
+ * Pass the same `gap` used to offset the panel from the trigger (e.g. the `+6`
+ * in `top: coords.bottom + 6`).
+ */
+export function getDropdownMaxHeight(
+  coords: Pick<DropdownCoords, 'top' | 'bottom'>,
+  dropUp: boolean,
+  options: { gap?: number; margin?: number; cap?: number } = {}
+): number {
+  const { gap = 6, margin = DROPDOWN_VIEWPORT_MARGIN } = options;
+  const cap = options.cap ?? window.innerHeight * 0.6;
+  const available = dropUp
+    ? coords.top - gap - margin
+    : window.innerHeight - coords.bottom - gap - margin;
+  return Math.max(0, Math.min(available, cap));
+}
+
 // ... imports
 
 /**

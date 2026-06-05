@@ -6,7 +6,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/store/useAppStore';
 import { getSpeakerColorWithCustom } from '@/services/utils/colors';
 import { cn } from '@/lib/cn';
-import { useDropdown } from '@/hooks/useDropdown';
+import { useDropdown, getDropdownMaxHeight } from '@/hooks/useDropdown';
 import { Portal } from '@/components/ui/Portal';
 
 interface SpeakerSelectProps {
@@ -61,13 +61,14 @@ export const SpeakerSelect: React.FC<SpeakerSelectProps> = ({ currentSpeakerId, 
           <div
             ref={contentRef}
             className={cn(
-              'fixed bg-white/95 backdrop-blur-xl border border-slate-200/60 rounded-xl shadow-xl shadow-brand-purple/10 z-100 min-w-37.5 py-1.5 animate-fade-in ring-1 ring-slate-900/5',
+              'fixed bg-white/95 backdrop-blur-xl border border-slate-200/60 rounded-xl shadow-xl shadow-brand-purple/10 z-100 min-w-37.5 py-1.5 overflow-y-auto animate-fade-in ring-1 ring-slate-900/5',
               dropUp ? 'origin-bottom' : 'origin-top'
             )}
             style={{
               left: coords.left,
               top: dropUp ? undefined : coords.bottom + 4,
               bottom: dropUp ? window.innerHeight - coords.top + 4 : undefined,
+              maxHeight: getDropdownMaxHeight(coords, dropUp, { gap: 4 }),
             }}
           >
             {speakerProfiles.length === 0 ? (
