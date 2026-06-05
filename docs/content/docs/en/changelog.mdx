@@ -5,6 +5,13 @@ description: "All notable changes to MioSub"
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.7] - 2026-06-05
+
+### Fixes
+
+- **Editor**: Fix long dropdown menus overflowing past the bottom of the screen, which left their scrollbar unreachable. The Speaker filter and the per-row speaker picker now cap their height to the space available above/below the trigger and scroll internally.
+- **Import**: When importing a single-language subtitle (for example a translation-only export), MioSub now asks whether the text is the original or the translation, instead of always treating it as the original. Re-importing a translation-only file no longer puts the translation in the source column. Bilingual files import as before.
+
 ## [3.1.6] - 2026-06-05
 
 ### Fixes
