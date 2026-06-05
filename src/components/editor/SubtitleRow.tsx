@@ -112,6 +112,12 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
     const [tempStartTime, setTempStartTime] = React.useState('');
     const [tempEndTime, setTempEndTime] = React.useState('');
     const [validationError, setValidationError] = React.useState<string | null>(null);
+    // Anchor for the validation-error tooltip. The tooltip is rendered in a Portal
+    // (fixed positioning) so it isn't clipped by the SubtitleBatch card's overflow-hidden.
+    const timeColRef = React.useRef<HTMLDivElement>(null);
+    const [errorCoords, setErrorCoords] = React.useState<{ left: number; bottom: number } | null>(
+      null
+    );
 
     const [showAddMenu, setShowAddMenu] = React.useState(false);
     const [showAddSubmenu, setShowAddSubmenu] = React.useState(false);
@@ -153,7 +159,16 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
 
     // Clear validation error after 3 seconds
     React.useEffect(() => {
-      if (!validationError) return;
+      if (!validationError) {
+        setErrorCoords(null);
+        return;
+      }
+      // Capture the anchor's viewport position for the fixed-position Portal tooltip.
+      // Opens upward, so we anchor the tooltip's bottom edge to the anchor's top.
+      if (timeColRef.current) {
+        const rect = timeColRef.current.getBoundingClientRect();
+        setErrorCoords({ left: rect.left, bottom: window.innerHeight - rect.top });
+      }
       const timer = setTimeout(() => setValidationError(null), 3000);
       return () => clearTimeout(timer);
     }, [validationError]);
@@ -404,15 +419,23 @@ export const SubtitleRow: React.FC<SubtitleRowProps> = React.memo(
             )}
           </button>
         )}
-        <div className="flex flex-col text-[11px] sm:text-sm font-mono text-slate-500 min-w-18.75 sm:min-w-23.75 pt-1 relative">
-          {validationError && (
-            <div className="absolute bottom-full left-0 mb-2 z-50 animate-fade-in-up">
-              <div className="bg-red-500 text-white text-[11px] sm:text-xs py-1 px-2 rounded shadow-lg whitespace-nowrap relative font-sans font-medium">
-                {validationError}
-                {/* Tooltip arrow */}
-                <div className="absolute top-full left-4 -translate-y-px border-8 border-transparent border-t-red-500" />
+        <div
+          ref={timeColRef}
+          className="flex flex-col text-[11px] sm:text-sm font-mono text-slate-500 min-w-18.75 sm:min-w-23.75 pt-1 relative"
+        >
+          {validationError && errorCoords && (
+            <Portal>
+              <div
+                className="fixed z-100 animate-fade-in-up"
+                style={{ left: errorCoords.left, bottom: errorCoords.bottom + 8 }}
+              >
+                <div className="bg-red-500 text-white text-[11px] sm:text-xs py-1 px-2 rounded shadow-lg whitespace-nowrap relative font-sans font-medium">
+                  {validationError}
+                  {/* Tooltip arrow */}
+                  <div className="absolute top-full left-4 -translate-y-px border-8 border-transparent border-t-red-500" />
+                </div>
               </div>
-            </div>
+            </Portal>
           )}
           {editing ? (
             // Editable time inputs - compact style matching display

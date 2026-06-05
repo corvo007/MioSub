@@ -25,6 +25,7 @@ import { type SubtitleItem, type SubtitleIssueType } from '@/types';
 import { getSpeakerColorWithCustom } from '@/services/utils/colors';
 import { cn } from '@/lib/cn';
 import { useDropdown } from '@/hooks/useDropdown';
+import { Portal } from '@/components/ui/Portal';
 import { useWorkspaceStore, selectUIState, selectFileState } from '@/store/useWorkspaceStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/store/useAppStore';
@@ -114,8 +115,10 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
     setIsOpen: setIsIssueFilterOpen,
     toggle: toggleIssueFilterBase,
     triggerRef: issueFilterRef,
+    contentRef: issueContentRef,
+    coords: issueCoords,
     direction: { dropUp: issueDropUp },
-  } = useDropdown<HTMLDivElement>();
+  } = useDropdown<HTMLDivElement, HTMLDivElement>();
 
   const internalSearchInputRef = React.useRef<HTMLInputElement>(null);
   const searchInputRef = externalSearchInputRef || internalSearchInputRef;
@@ -125,8 +128,10 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
     setIsOpen: setIsSpeakerFilterOpen,
     toggle: toggleSpeakerFilterBase,
     triggerRef: speakerFilterRef,
+    contentRef: speakerContentRef,
+    coords: speakerCoords,
     direction: { dropUp: speakerDropUp },
-  } = useDropdown<HTMLDivElement>();
+  } = useDropdown<HTMLDivElement, HTMLDivElement>();
 
   // Toggle issue filter (and close speaker)
   const toggleIssueFilter = () => {
@@ -251,209 +256,215 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
               />
             </button>
 
-            {isIssueFilterOpen && (
-              <div
-                className={cn(
-                  'absolute left-0 bg-white border border-slate-200 rounded-lg shadow-xl z-30 min-w-45 py-1 animate-fade-in ring-1 ring-slate-900/5',
-                  issueDropUp
-                    ? 'bottom-full mb-1.5 origin-bottom-left'
-                    : 'top-full mt-1.5 origin-top-left'
-                )}
-              >
-                {/* Duration Filter */}
-                <button
-                  onClick={() => toggleFilter('duration')}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
+            {isIssueFilterOpen && issueCoords && (
+              <Portal>
+                <div
+                  ref={issueContentRef}
+                  className={cn(
+                    'fixed bg-white border border-slate-200 rounded-lg shadow-xl z-100 min-w-45 py-1 animate-fade-in ring-1 ring-slate-900/5',
+                    issueDropUp ? 'origin-bottom-left' : 'origin-top-left'
+                  )}
+                  style={{
+                    left: issueCoords.left,
+                    top: issueDropUp ? undefined : issueCoords.bottom + 6,
+                    bottom: issueDropUp ? window.innerHeight - issueCoords.top + 6 : undefined,
+                  }}
                 >
-                  <div className="flex items-center space-x-2">
-                    <Timer className="w-3.5 h-3.5 text-amber-500" />
-                    <span
-                      className={
-                        filters.issues.has('duration')
-                          ? 'text-amber-600 font-medium'
-                          : 'text-slate-600'
-                      }
-                    >
-                      {t('batchHeader.durationTooLong')}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {issueCounts && (
-                      <span className="text-slate-400 text-[10px]">({issueCounts.duration})</span>
-                    )}
-                    {filters.issues.has('duration') ? (
-                      <CheckSquare className="w-4 h-4 text-brand-purple" />
-                    ) : (
-                      <Square className="w-4 h-4 text-slate-300" />
-                    )}
-                  </div>
-                </button>
-
-                {/* Length Filter */}
-                <button
-                  onClick={() => toggleFilter('length')}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex items-center space-x-2">
-                    <Type className="w-3.5 h-3.5 text-rose-500" />
-                    <span
-                      className={
-                        filters.issues.has('length')
-                          ? 'text-rose-600 font-medium'
-                          : 'text-slate-600'
-                      }
-                    >
-                      {t('batchHeader.tooManyChars')}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {issueCounts && (
-                      <span className="text-slate-400 text-[10px]">({issueCounts.length})</span>
-                    )}
-                    {filters.issues.has('length') ? (
-                      <CheckSquare className="w-4 h-4 text-brand-purple" />
-                    ) : (
-                      <Square className="w-4 h-4 text-slate-300" />
-                    )}
-                  </div>
-                </button>
-
-                {/* Overlap Filter */}
-                <button
-                  onClick={() => toggleFilter('overlap')}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex items-center space-x-2">
-                    <AlertTriangle className="w-3.5 h-3.5 text-orange-500" />
-                    <span
-                      className={
-                        filters.issues.has('overlap')
-                          ? 'text-orange-600 font-medium'
-                          : 'text-slate-600'
-                      }
-                    >
-                      {t('batchHeader.timeOverlap')}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {issueCounts && (
-                      <span className="text-slate-400 text-[10px]">({issueCounts.overlap})</span>
-                    )}
-                    {filters.issues.has('overlap') ? (
-                      <CheckSquare className="w-4 h-4 text-brand-purple" />
-                    ) : (
-                      <Square className="w-4 h-4 text-slate-300" />
-                    )}
-                  </div>
-                </button>
-
-                {/* Confidence Filter */}
-                <button
-                  onClick={() => toggleFilter('confidence')}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex items-center space-x-2">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                    <span
-                      className={
-                        filters.issues.has('confidence')
-                          ? 'text-amber-600 font-medium'
-                          : 'text-slate-600'
-                      }
-                    >
-                      {t('batchHeader.lowConfidence')}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {issueCounts && (
-                      <span className="text-slate-400 text-[10px]">
-                        ({issueCounts.confidence || 0})
+                  {/* Duration Filter */}
+                  <button
+                    onClick={() => toggleFilter('duration')}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Timer className="w-3.5 h-3.5 text-amber-500" />
+                      <span
+                        className={
+                          filters.issues.has('duration')
+                            ? 'text-amber-600 font-medium'
+                            : 'text-slate-600'
+                        }
+                      >
+                        {t('batchHeader.durationTooLong')}
                       </span>
-                    )}
-                    {filters.issues.has('confidence') ? (
-                      <CheckSquare className="w-4 h-4 text-brand-purple" />
-                    ) : (
-                      <Square className="w-4 h-4 text-slate-300" />
-                    )}
-                  </div>
-                </button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {issueCounts && (
+                        <span className="text-slate-400 text-[10px]">({issueCounts.duration})</span>
+                      )}
+                      {filters.issues.has('duration') ? (
+                        <CheckSquare className="w-4 h-4 text-brand-purple" />
+                      ) : (
+                        <Square className="w-4 h-4 text-slate-300" />
+                      )}
+                    </div>
+                  </button>
 
-                {/* Regression Filter */}
-                <button
-                  onClick={() => toggleFilter('regression')}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex items-center space-x-2">
-                    <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
-                    <span
-                      className={
-                        filters.issues.has('regression')
-                          ? 'text-red-600 font-medium'
-                          : 'text-slate-600'
-                      }
-                    >
-                      {t('batchHeader.regression')}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {issueCounts && (
-                      <span className="text-slate-400 text-[10px]">
-                        ({issueCounts.regression || 0})
+                  {/* Length Filter */}
+                  <button
+                    onClick={() => toggleFilter('length')}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Type className="w-3.5 h-3.5 text-rose-500" />
+                      <span
+                        className={
+                          filters.issues.has('length')
+                            ? 'text-rose-600 font-medium'
+                            : 'text-slate-600'
+                        }
+                      >
+                        {t('batchHeader.tooManyChars')}
                       </span>
-                    )}
-                    {filters.issues.has('regression') ? (
-                      <CheckSquare className="w-4 h-4 text-brand-purple" />
-                    ) : (
-                      <Square className="w-4 h-4 text-slate-300" />
-                    )}
-                  </div>
-                </button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {issueCounts && (
+                        <span className="text-slate-400 text-[10px]">({issueCounts.length})</span>
+                      )}
+                      {filters.issues.has('length') ? (
+                        <CheckSquare className="w-4 h-4 text-brand-purple" />
+                      ) : (
+                        <Square className="w-4 h-4 text-slate-300" />
+                      )}
+                    </div>
+                  </button>
 
-                {/* Corrupted Filter */}
-                <button
-                  onClick={() => toggleFilter('corrupted')}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
-                >
-                  <div className="flex items-center space-x-2">
-                    <AlertTriangle className="w-3.5 h-3.5 text-purple-500" />
-                    <span
-                      className={
-                        filters.issues.has('corrupted')
-                          ? 'text-purple-600 font-medium'
-                          : 'text-slate-600'
-                      }
-                    >
-                      {t('batchHeader.corrupted')}
-                    </span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    {issueCounts && (
-                      <span className="text-slate-400 text-[10px]">
-                        ({issueCounts.corrupted || 0})
+                  {/* Overlap Filter */}
+                  <button
+                    onClick={() => toggleFilter('overlap')}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <AlertTriangle className="w-3.5 h-3.5 text-orange-500" />
+                      <span
+                        className={
+                          filters.issues.has('overlap')
+                            ? 'text-orange-600 font-medium'
+                            : 'text-slate-600'
+                        }
+                      >
+                        {t('batchHeader.timeOverlap')}
                       </span>
-                    )}
-                    {filters.issues.has('corrupted') ? (
-                      <CheckSquare className="w-4 h-4 text-brand-purple" />
-                    ) : (
-                      <Square className="w-4 h-4 text-slate-300" />
-                    )}
-                  </div>
-                </button>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {issueCounts && (
+                        <span className="text-slate-400 text-[10px]">({issueCounts.overlap})</span>
+                      )}
+                      {filters.issues.has('overlap') ? (
+                        <CheckSquare className="w-4 h-4 text-brand-purple" />
+                      ) : (
+                        <Square className="w-4 h-4 text-slate-300" />
+                      )}
+                    </div>
+                  </button>
 
-                {/* Clear Issues */}
-                {activeIssueFilterCount > 0 && (
-                  <>
-                    <div className="border-t border-slate-200 my-1" />
-                    <button
-                      onClick={clearIssueFilters}
-                      className="w-full flex items-center justify-center px-3 py-2 text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors"
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      {t('batchHeader.clearIssueFilters')}
-                    </button>
-                  </>
-                )}
-              </div>
+                  {/* Confidence Filter */}
+                  <button
+                    onClick={() => toggleFilter('confidence')}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                      <span
+                        className={
+                          filters.issues.has('confidence')
+                            ? 'text-amber-600 font-medium'
+                            : 'text-slate-600'
+                        }
+                      >
+                        {t('batchHeader.lowConfidence')}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {issueCounts && (
+                        <span className="text-slate-400 text-[10px]">
+                          ({issueCounts.confidence || 0})
+                        </span>
+                      )}
+                      {filters.issues.has('confidence') ? (
+                        <CheckSquare className="w-4 h-4 text-brand-purple" />
+                      ) : (
+                        <Square className="w-4 h-4 text-slate-300" />
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Regression Filter */}
+                  <button
+                    onClick={() => toggleFilter('regression')}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+                      <span
+                        className={
+                          filters.issues.has('regression')
+                            ? 'text-red-600 font-medium'
+                            : 'text-slate-600'
+                        }
+                      >
+                        {t('batchHeader.regression')}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {issueCounts && (
+                        <span className="text-slate-400 text-[10px]">
+                          ({issueCounts.regression || 0})
+                        </span>
+                      )}
+                      {filters.issues.has('regression') ? (
+                        <CheckSquare className="w-4 h-4 text-brand-purple" />
+                      ) : (
+                        <Square className="w-4 h-4 text-slate-300" />
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Corrupted Filter */}
+                  <button
+                    onClick={() => toggleFilter('corrupted')}
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <AlertTriangle className="w-3.5 h-3.5 text-purple-500" />
+                      <span
+                        className={
+                          filters.issues.has('corrupted')
+                            ? 'text-purple-600 font-medium'
+                            : 'text-slate-600'
+                        }
+                      >
+                        {t('batchHeader.corrupted')}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {issueCounts && (
+                        <span className="text-slate-400 text-[10px]">
+                          ({issueCounts.corrupted || 0})
+                        </span>
+                      )}
+                      {filters.issues.has('corrupted') ? (
+                        <CheckSquare className="w-4 h-4 text-brand-purple" />
+                      ) : (
+                        <Square className="w-4 h-4 text-slate-300" />
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Clear Issues */}
+                  {activeIssueFilterCount > 0 && (
+                    <>
+                      <div className="border-t border-slate-200 my-1" />
+                      <button
+                        onClick={clearIssueFilters}
+                        className="w-full flex items-center justify-center px-3 py-2 text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors"
+                      >
+                        <X className="w-3 h-3 mr-1" />
+                        {t('batchHeader.clearIssueFilters')}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </Portal>
             )}
           </div>
 
@@ -484,95 +495,104 @@ export const BatchHeader: React.FC<BatchHeaderProps> = ({
               />
             </button>
 
-            {isSpeakerFilterOpen && (
-              <div
-                className={cn(
-                  'absolute left-0 bg-white border border-slate-200 rounded-lg shadow-xl z-30 min-w-50 max-h-[60vh] overflow-y-auto py-1 animate-fade-in ring-1 ring-slate-900/5',
-                  speakerDropUp
-                    ? 'bottom-full mb-1.5 origin-bottom-left'
-                    : 'top-full mt-1.5 origin-top-left'
-                )}
-              >
-                {
-                  /* Speaker Profiles */
-                  speakerProfiles.map((profile) => (
-                    <button
-                      key={profile.id}
-                      onClick={() => toggleSpeaker(profile.name)}
-                      className="w-full flex items-center justify-between px-3 py-1.5 text-xs hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="flex items-center space-x-2 overflow-hidden">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/10"
-                          style={{
-                            backgroundColor: getSpeakerColorWithCustom(profile.name, profile.color),
-                          }}
-                        />
-                        <span
-                          className={cn(
-                            'truncate',
-                            filters.speakers.has(profile.name)
-                              ? 'text-brand-purple font-medium'
-                              : 'text-slate-700'
-                          )}
-                        >
-                          {profile.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2 pl-2 shrink-0">
-                        {speakerCounts && speakerCounts[profile.name] !== undefined && (
-                          <span className="text-slate-400 text-[10px]">
-                            ({speakerCounts[profile.name]})
+            {isSpeakerFilterOpen && speakerCoords && (
+              <Portal>
+                <div
+                  ref={speakerContentRef}
+                  className={cn(
+                    'fixed bg-white border border-slate-200 rounded-lg shadow-xl z-100 min-w-50 max-h-[60vh] overflow-y-auto py-1 animate-fade-in ring-1 ring-slate-900/5',
+                    speakerDropUp ? 'origin-bottom-left' : 'origin-top-left'
+                  )}
+                  style={{
+                    left: speakerCoords.left,
+                    top: speakerDropUp ? undefined : speakerCoords.bottom + 6,
+                    bottom: speakerDropUp ? window.innerHeight - speakerCoords.top + 6 : undefined,
+                  }}
+                >
+                  {
+                    /* Speaker Profiles */
+                    speakerProfiles.map((profile) => (
+                      <button
+                        key={profile.id}
+                        onClick={() => toggleSpeaker(profile.name)}
+                        className="w-full flex items-center justify-between px-3 py-1.5 text-xs hover:bg-slate-50 transition-colors"
+                      >
+                        <div className="flex items-center space-x-2 overflow-hidden">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0 border border-black/10"
+                            style={{
+                              backgroundColor: getSpeakerColorWithCustom(
+                                profile.name,
+                                profile.color
+                              ),
+                            }}
+                          />
+                          <span
+                            className={cn(
+                              'truncate',
+                              filters.speakers.has(profile.name)
+                                ? 'text-brand-purple font-medium'
+                                : 'text-slate-700'
+                            )}
+                          >
+                            {profile.name}
                           </span>
-                        )}
-                        {filters.speakers.has(profile.name) ? (
-                          <CheckSquare className="w-4 h-4 text-brand-purple" />
-                        ) : (
-                          <Square className="w-4 h-4 text-slate-300" />
-                        )}
-                      </div>
-                    </button>
-                  ))
-                }
+                        </div>
+                        <div className="flex items-center space-x-2 pl-2 shrink-0">
+                          {speakerCounts && speakerCounts[profile.name] !== undefined && (
+                            <span className="text-slate-400 text-[10px]">
+                              ({speakerCounts[profile.name]})
+                            </span>
+                          )}
+                          {filters.speakers.has(profile.name) ? (
+                            <CheckSquare className="w-4 h-4 text-brand-purple" />
+                          ) : (
+                            <Square className="w-4 h-4 text-slate-300" />
+                          )}
+                        </div>
+                      </button>
+                    ))
+                  }
 
-                {/* Empty State Hint */}
-                {speakerProfiles.length === 0 && (
-                  <div className="px-3 py-2 text-xs text-slate-400 text-center">
-                    {t('batchHeader.noSpeakers')}
-                  </div>
-                )}
+                  {/* Empty State Hint */}
+                  {speakerProfiles.length === 0 && (
+                    <div className="px-3 py-2 text-xs text-slate-400 text-center">
+                      {t('batchHeader.noSpeakers')}
+                    </div>
+                  )}
 
-                {/* Clear Speakers */}
-                {activeSpeakerFilterCount > 0 && (
-                  <>
-                    <div className="border-t border-slate-200 my-1" />
-                    <button
-                      onClick={clearSpeakerFilters}
-                      className="w-full flex items-center justify-center px-3 py-2 text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors"
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      {t('batchHeader.clearSpeakerFilters')}
-                    </button>
-                  </>
-                )}
+                  {/* Clear Speakers */}
+                  {activeSpeakerFilterCount > 0 && (
+                    <>
+                      <div className="border-t border-slate-200 my-1" />
+                      <button
+                        onClick={clearSpeakerFilters}
+                        className="w-full flex items-center justify-center px-3 py-2 text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors"
+                      >
+                        <X className="w-3 h-3 mr-1" />
+                        {t('batchHeader.clearSpeakerFilters')}
+                      </button>
+                    </>
+                  )}
 
-                {/* Manage Speakers */}
-                {onManageSpeakers && (
-                  <>
-                    <div className="border-t border-slate-200 my-1" />
-                    <button
-                      onClick={() => {
-                        onManageSpeakers();
-                        setIsSpeakerFilterOpen(false);
-                      }}
-                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-brand-purple hover:text-brand-purple-dark hover:bg-slate-50 transition-colors"
-                    >
-                      <Users className="w-3 h-3" />
-                      {t('batchHeader.manageSpeakers')}
-                    </button>
-                  </>
-                )}
-              </div>
+                  {/* Manage Speakers */}
+                  {onManageSpeakers && (
+                    <>
+                      <div className="border-t border-slate-200 my-1" />
+                      <button
+                        onClick={() => {
+                          onManageSpeakers();
+                          setIsSpeakerFilterOpen(false);
+                        }}
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-2 text-xs text-brand-purple hover:text-brand-purple-dark hover:bg-slate-50 transition-colors"
+                      >
+                        <Users className="w-3 h-3" />
+                        {t('batchHeader.manageSpeakers')}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </Portal>
             )}
           </div>
         </div>
