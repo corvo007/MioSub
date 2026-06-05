@@ -9,6 +9,10 @@ import { useDebouncedCallback } from '@/hooks/useDebouncedCallback';
 import { type SnapshotsValuesProps } from '@/types/workspace';
 import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 import { processSubtitleImport } from '@/hooks/useWorkspaceLogic/processSubtitleImport';
+import {
+  isSingleLanguageImport,
+  reassignOriginalAsTranslation,
+} from '@/services/subtitle/importTrack';
 
 interface UseFileOperationsProps {
   // External dependencies still passed as props/context
@@ -21,6 +25,11 @@ interface UseFileOperationsProps {
   snapshotsValues: Pick<SnapshotsValuesProps, 'setSnapshots' | 'createSnapshot'>;
   parseSubtitle: (content: string, type: 'srt' | 'ass') => Promise<SubtitleItem[]>;
   audioCacheRef: React.RefObject<{ file: File; buffer: AudioBuffer } | null>;
+  /**
+   * Ask the user whether a single-language import is the original or the
+   * translation. Resolves to 'original' on dismiss (the common default).
+   */
+  askImportTrack: () => Promise<'original' | 'translated'>;
 }
 
 interface UseFileOperationsReturn {
@@ -85,11 +94,24 @@ export function useFileOperations({
   showConfirm,
   snapshotsValues,
   parseSubtitle,
+  askImportTrack,
 }: UseFileOperationsProps): UseFileOperationsReturn {
   const { t } = useTranslation(['workspace', 'services']);
 
   // Ref to track the latest operation ID to prevent race conditions
   const operationIdRef = useRef(0);
+
+  // For single-track imports (e.g. a translation-only export), the parser can't
+  // know whether the lone text track is the source or the translation, so ask
+  // the user and route the text accordingly. Bilingual files skip the prompt.
+  const resolveImportTrack = useCallback(
+    async (parsed: SubtitleItem[]): Promise<SubtitleItem[]> => {
+      if (!isSingleLanguageImport(parsed)) return parsed;
+      const choice = await askImportTrack();
+      return choice === 'translated' ? reassignOriginalAsTranslation(parsed) : parsed;
+    },
+    [askImportTrack]
+  );
 
   // Common file processing logic - confirmation is handled by callers
   // forceReset: when true (user confirmed replacement), clears all workspace state including subtitles
@@ -317,11 +339,13 @@ export function useFileOperations({
           const fileType = subFile.name.endsWith('.ass') ? 'ass' : 'srt';
 
           const parsed = await parseSubtitle(content, fileType);
+          const resolved = await resolveImportTrack(parsed);
+          if (currentOpId !== operationIdRef.current) return;
 
           // For web import, use file name as a simple ID
           const fileId = subFile.name;
 
-          processSubtitleImport(parsed, subFile.name, fileType, fileId, content, snapshotsValues);
+          processSubtitleImport(resolved, subFile.name, fileType, fileId, content, snapshotsValues);
         } catch (error: unknown) {
           if (currentOpId !== operationIdRef.current) return;
 
@@ -336,7 +360,7 @@ export function useFileOperations({
         }
       }
     },
-    [snapshotsValues, parseSubtitle, t]
+    [snapshotsValues, parseSubtitle, resolveImportTrack, t]
   );
 
   // Native dialog handler for subtitle import (Electron only)
@@ -363,11 +387,14 @@ export function useFileOperations({
       const parsed = await parseSubtitle(result.content, fileType);
       if (currentOpId !== operationIdRef.current) return;
 
+      const resolved = await resolveImportTrack(parsed);
+      if (currentOpId !== operationIdRef.current) return;
+
       // Use full path as ID for native imports
       const fileId = result.filePath || result.fileName;
 
       processSubtitleImport(
-        parsed,
+        resolved,
         result.fileName,
         fileType,
         fileId,
@@ -386,7 +413,7 @@ export function useFileOperations({
         setIsLoadingSubtitle(false);
       }
     }
-  }, [snapshotsValues, parseSubtitle, t]);
+  }, [snapshotsValues, parseSubtitle, resolveImportTrack, t]);
 
   // 防抖版本 - 防止快速重复点击文件选择按钮
   const debouncedHandleFileSelectNative = useDebouncedCallback(handleFileSelectNative);

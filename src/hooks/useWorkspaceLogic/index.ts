@@ -35,6 +35,8 @@ interface UseWorkspaceLogicProps {
     onConfirm: () => void,
     type?: 'info' | 'warning' | 'danger'
   ) => void;
+  /** Ask whether a single-language subtitle import is the original or translation. */
+  askImportTrack: () => Promise<'original' | 'translated'>;
   glossaryFlow: {
     glossaryMetadata: GlossaryExtractionMetadata | null;
     setGlossaryMetadata: (data: GlossaryExtractionMetadata | null) => void;
@@ -71,6 +73,7 @@ import { useWorkspaceStore } from '@/store/useWorkspaceStore';
 export const useWorkspaceLogic = ({
   addToast,
   showConfirm,
+  askImportTrack,
   glossaryFlow,
   snapshotsValues,
   setShowSettings,
@@ -169,6 +172,7 @@ export const useWorkspaceLogic = ({
   } = useFileOperations({
     audioCacheRef,
     showConfirm,
+    askImportTrack,
     snapshotsValues,
     parseSubtitle,
   });

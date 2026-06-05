@@ -28,5 +28,11 @@
     "compactTitle": "组件错误",
     "unknownError": "未知错误",
     "retry": "重试"
+  },
+  "importTrack": {
+    "title": "这是原文还是译文？",
+    "message": "导入的字幕只有一条文本轨。请选择它应放入哪一栏：作为原文（待翻译的源语言），或作为译文（已翻译好的内容）。",
+    "asOriginal": "作为原文",
+    "asTranslation": "作为译文"
   }
 }

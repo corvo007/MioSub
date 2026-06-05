@@ -28,5 +28,11 @@
     "compactTitle": "Component Error",
     "unknownError": "Unknown Error",
     "retry": "Try Again"
+  },
+  "importTrack": {
+    "title": "Original or translation?",
+    "message": "The imported subtitle has only one text track. Choose which column it belongs in: the original (source text to be translated) or the translation (already-translated text).",
+    "asOriginal": "As Original",
+    "asTranslation": "As Translation"
   }
 }

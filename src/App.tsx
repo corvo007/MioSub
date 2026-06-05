@@ -157,10 +157,36 @@ export default function App() {
     []
   );
 
+  // Single-language subtitle import: a plain SRT/ASS carries only one text track
+  // per cue, so when importing one we ask the user whether it is the original or
+  // the translation (fixes re-importing a translation-only export as "original").
+  const [importTrackChoice, setImportTrackChoice] = useState<{
+    isOpen: boolean;
+    resolve: ((choice: 'original' | 'translated') => void) | null;
+  }>({ isOpen: false, resolve: null });
+
+  const askImportTrack = useCallback(
+    () =>
+      new Promise<'original' | 'translated'>((resolve) => {
+        setImportTrackChoice({ isOpen: true, resolve });
+      }),
+    []
+  );
+
+  // Settle the pending promise. The resolver is nulled atomically so the
+  // modal's confirm→close sequence can't resolve twice (first call wins).
+  const resolveImportTrackChoice = useCallback((choice: 'original' | 'translated') => {
+    setImportTrackChoice((prev) => {
+      prev.resolve?.(choice);
+      return { isOpen: false, resolve: null };
+    });
+  }, []);
+
   // Workspace Logic
   const workspace = useWorkspaceLogic({
     addToast,
     showConfirm,
+    askImportTrack,
     glossaryFlow,
     snapshotsValues,
     setShowSettings,
@@ -348,6 +374,17 @@ export default function App() {
         title={confirmation.title}
         message={confirmation.message}
         type={confirmation.type}
+      />
+      {/* Single-language import: choose whether the lone text track is original or translation */}
+      <SimpleConfirmationModal
+        isOpen={importTrackChoice.isOpen}
+        onClose={() => resolveImportTrackChoice('original')}
+        onConfirm={() => resolveImportTrackChoice('translated')}
+        title={t('importTrack.title')}
+        message={t('importTrack.message')}
+        confirmText={t('importTrack.asTranslation')}
+        cancelText={t('importTrack.asOriginal')}
+        type="info"
       />
       <CloseConfirmModal
         isOpen={closeConfirm.isOpen}
