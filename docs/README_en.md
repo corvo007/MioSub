@@ -156,7 +156,7 @@ Found a bug? Have a great idea?
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=corvo007/Gemini-Subtitle-Pro&type=Date)](https://star-history.com/#corvo007/Gemini-Subtitle-Pro&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=corvo007/Gemini-Subtitle-Pro&type=Date)](https://star-history.dera.page/#corvo007/Gemini-Subtitle-Pro&Date)
 
 ---
 
